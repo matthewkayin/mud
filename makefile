@@ -2,7 +2,7 @@
 # Project
 # ------------------------------------------------------------------------------
 
-ASSEMBLY        := backend
+ASSEMBLY        := mud
 BUILD_DIR       := bin
 OBJ_DIR         := obj
 SRC_DIR         := src

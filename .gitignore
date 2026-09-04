@@ -1,4 +1,4 @@
-backend/bin
-backend/obj
-backend/.cache
-backend/compile_commands.json
+bin
+obj
+.cache
+compile_commands.json
