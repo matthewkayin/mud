@@ -1,4 +1,6 @@
-bin
-obj
+server/bin
+server/obj
+server/.cache
+server/compile_commands.json
+backend/node_modules
 .cache
-compile_commands.json

@@ -170,8 +170,7 @@ void network_poll() {
                     byte_index++;
 
                     // If next byte is IAC (Interpret As Command), then the next 2 bytes
-                    // are a command
-                    // and we should not treat them as regular text
+                    // are a command and we should not treat them as regular text
                     if ((unsigned char)next_byte == NETWORK_BYTE_IAC) {
                         // TODO: handle IAC?
                         byte_index += 2;
