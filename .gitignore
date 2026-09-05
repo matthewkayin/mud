@@ -4,4 +4,6 @@ server/.cache
 server/compile_commands.json
 frontend/secrets.json
 frontend/node_modules
+backend/node_modules
+backend/.env
 .cache
