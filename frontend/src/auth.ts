@@ -50,42 +50,6 @@ export const useAuth = () => {
     window.location.href = `${RC_AUTH_URL}?${params.toString()}`;
   };
 
-  const exchangeCodeForToken = async (code: string) => {
-    setLoading(true);
-    setError(null);
-
-    const codeVerifier = sessionStorage.getItem('pkce_code_verifier') || '';
-
-    try {
-      const response = await fetch(BACKEND_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          code,
-          code_verifier: codeVerifier,
-          redirect_uri: REDIRECT_URI
-        })
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to exchange token.');
-      }
-
-      const tokenData = data as TokenResponse;
-      setToken(tokenData.access_token);
-
-      // Clear URL query params
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } catch (err) {
-      setError(err.message || 'An error occurred during authentication.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
@@ -93,6 +57,43 @@ export const useAuth = () => {
     if (!code) {
       return;
     }
+
+    const exchangeCodeForToken = async (code: string) => {
+      setLoading(true);
+      setError(null);
+
+      const codeVerifier = sessionStorage.getItem('pkce_code_verifier') || '';
+
+      try {
+        const response = await fetch(BACKEND_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            code,
+            code_verifier: codeVerifier,
+            redirect_uri: REDIRECT_URI
+          })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to exchange token.');
+        }
+
+        const tokenData = data as TokenResponse;
+        setToken(tokenData.access_token);
+
+        // Clear URL query params
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } catch (err) {
+        setError(err.message || 'An error occurred during authentication.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     window.history.replaceState({}, document.title, window.location.pathname);
     exchangeCodeForToken(code);
   }, []);
