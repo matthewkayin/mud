@@ -2,5 +2,6 @@ server/bin
 server/obj
 server/.cache
 server/compile_commands.json
-backend/node_modules
+frontend/secrets.json
+frontend/node_modules
 .cache
