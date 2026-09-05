@@ -9,10 +9,29 @@ export const useTerminal = (prompt = '> ') => {
   const inputBufferRef = useRef('');
   const onSubmitRef = useRef(null);
 
-  const writeLine = useCallback((text: string) => {
-    if (terminalRef.current) {
-      terminalRef.current.write(`${text}\r\n${prompt}`);
+  const drawBottomPrompt = () => {
+    if (!terminalRef.current) {
+      return;
     }
+
+    // Move cursor to the bottom row, first column
+    terminalRef.current.write(`\x1b[${terminalRef.current.rows};1H`);
+
+    // Clear the entire bottom line
+    terminalRef.current.write('\x1b[2K');
+
+    // Write prompt and current user input
+    terminalRef.current.write(`${prompt} ${inputBufferRef.current}`);
+  };
+
+
+  const writeLine = useCallback((text: string) => {
+    if (!terminalRef.current) {
+      return;
+    }
+
+    terminalRef.current.write(`\x1b[${terminalRef.current.rows - 1};1H${text}\r\n`);
+    drawBottomPrompt();
   }, []);
 
   const setOnSubmit = useCallback((callback) => {
@@ -36,24 +55,25 @@ export const useTerminal = (prompt = '> ') => {
 
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
-
     fitAddon.fit();
 
-    term.writeln('Hey friend.');
-    term.write(prompt);
+    // Set the scrolling region to exclude the bottom row
+    const totalRows = term.rows;
+    const promptRow = totalRows - 1;
+    term.write(`\x1b[1;${promptRow}r`);
 
     const dataListener = term.onData((data) => {
+      // Submit
       if (data === '\r') {
         const command = inputBufferRef.current.trim();
+        inputBufferRef.current = '';
         term.write('\r\n');
 
         if (onSubmitRef.current && command) {
           onSubmitRef.current(command);
         } else {
-          term.writeln('Warning: On submit not handled.');
-          term.write(prompt);
+          writeLine('Warning: On submit not handled.');
         }
-        inputBufferRef.current = '';
 
         return;
       }
@@ -65,14 +85,19 @@ export const useTerminal = (prompt = '> ') => {
         return;
       }
 
-      term.write(data);
-      inputBufferRef.current += data;
+      // Visible characters
+      if (data >= ' ' && data <= '~') {
+        term.write(data);
+        inputBufferRef.current += data;
+      }
     });
 
     const onResize = () => {
       fitAddon.fit();
     }
     window.addEventListener('resize', onResize);
+
+    drawBottomPrompt();
 
     return () => {
       window.removeEventListener('resize', onResize);

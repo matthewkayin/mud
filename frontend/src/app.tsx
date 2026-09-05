@@ -1,7 +1,7 @@
 import { useTerminal } from './terminal'
 
 export const App = () => {
-  const { containerRef, writeLine, setOnSubmit } = useTerminal('prompt> ');
+  const { containerRef, writeLine, setOnSubmit } = useTerminal('prompt>');
 
   setOnSubmit((command) => {
     writeLine(`You typed: ${command}`);
