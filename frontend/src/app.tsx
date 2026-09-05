@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useAuth } from './auth';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
@@ -25,6 +25,8 @@ export const App = () => {
       return;
     }
 
+    console.log('Terminal draw bottom prompt.');
+
     // Move cursor to the bottom row, first column
     terminalInstanceRef.current.write(`\x1b[${terminalInstanceRef.current.rows};1H`);
 
@@ -35,15 +37,33 @@ export const App = () => {
     terminalInstanceRef.current.write(`${TERMINAL_PROMPT} ${terminalCommandBufferRef.current}`);
   };
 
-  const terminalWriteLine = (message: string) => {
+  const terminalWriteLine = useCallback((message: string) => {
     if (!terminalInstanceRef.current) {
       console.log('Warn: called terminalWriteLine but terminalInstanceRef is empty.');
       return;
     }
+    console.log('Terminal write line ', message);
 
-    terminalInstanceRef.current.write(`\x1b[${terminalInstanceRef.current.rows - 1};1H${message}\r\n`);
-    terminalDrawBottomPrompt();
-  };
+    // Move cursor to the bottom row, first column
+    terminalInstanceRef.current.write(`\x1b[${terminalInstanceRef.current.rows};1H`);
+
+    // Clear the entire bottom line
+    terminalInstanceRef.current.write('\x1b[2K');
+
+    // Move to the line above the bottom
+    terminalInstanceRef.current.write(`\x1b[${terminalInstanceRef.current.rows - 1};1H`);
+
+    // Write message
+    terminalInstanceRef.current.write(`${message}`);
+
+    // Move cursor to the bottom row, first column
+    terminalInstanceRef.current.write(`\x1b[${terminalInstanceRef.current.rows};1H`);
+
+    // Write prompt and current user input
+    terminalInstanceRef.current.write(`${TERMINAL_PROMPT} ${terminalCommandBufferRef.current}`);
+
+    // terminalDrawBottomPrompt();
+  }, []);
 
   // Init terminal
   useEffect(() => {
@@ -100,7 +120,10 @@ export const App = () => {
       if (data === '\u007F') {
         // Writes three characters
         // One moves the cursor back, one inserts a space, the other moves the cursor back again
-        terminal.write('\b \b');
+        if (terminalCommandBufferRef.current.length > 0) {
+          terminal.write('\b \b');
+          terminalCommandBufferRef.current = terminalCommandBufferRef.current.slice(0, -1);
+        }
         return;
       }
 
@@ -162,7 +185,7 @@ export const App = () => {
       webSocketRef.current.removeEventListener('message');
       webSocketRef.current.removeEventListener('close');
     };
-  }, [token]);
+  }, [token, terminalWriteLine]);
 
   return (
     <div>

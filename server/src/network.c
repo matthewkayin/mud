@@ -144,7 +144,7 @@ void network_poll() {
                 log_info("New player connected on FD %d", new_client_fd);
 
                 // Send a welcome message
-                network_send(new_client_fd, "Welcome to %s!\r\n>", APP_NAME);
+                network_send(new_client_fd, "Welcome to %s!\r\n", APP_NAME);
             }
         }
 
@@ -188,7 +188,7 @@ void network_poll() {
                         log_info("[Player %d]: %s", state.fds[index].fd, state.players[index].in_buffer);
 
                         // Broadcast the message to the other players
-                        network_broadcast("\r\n[Player %d]: %s\r\n>", state.fds[index].fd, state.players[index].in_buffer);
+                        network_broadcast("[Player %d]: %s\r\n", state.fds[index].fd, state.players[index].in_buffer);
 
                         // Reset the playe's in_buffer for the next command
                         state.players[index].in_buffer_length = 0;

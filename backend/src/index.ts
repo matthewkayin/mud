@@ -74,10 +74,22 @@ webSocketServer.on('connection', (webSocket: WebSocket, request: IncomingMessage
   telnetSocket.connect(MUD_PORT, '127.0.0.1');
 
   telnetSocket.on('data', (data) => webSocket.send(data.toString()));
-  webSocket.on('message', (message) => telnetSocket.write(message.toString()));
-  telnetSocket.on('close', () => webSocket.close());
-  telnetSocket.on('error', () => webSocket.close());
-  webSocket.on('error', () => telnetSocket.end());
+  webSocket.on('message', (message) => {
+    console.log(`Web socket received ${message}`);
+    telnetSocket.write(`${message.toString()}\r\n`);
+  });
+  telnetSocket.on('close', () => {
+    console.log('Telnet socket closed.');
+    webSocket.close()
+  });
+  telnetSocket.on('error', () => {
+    console.log('Telnet socket error.');
+    webSocket.close()
+  });
+  webSocket.on('error', () => {
+    console.log('Web socket error.');
+    telnetSocket.end()
+  });
 });
 
 server.listen(PORT, () => {
