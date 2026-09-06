@@ -17,19 +17,19 @@ type Env struct {
 var env Env
 
 func LoadFromFile(path string) {
-	log.Printf("Opening env %v...", path)
+	log.Printf("Opening env %s...", path)
 
 	// Open file
 	file, openError := os.Open(path)
 	if openError != nil {
-		log.Fatalf("Failed to open env file: %v", openError.Error())
+		log.Fatalf("Failed to open env file: %s", openError.Error())
 	}
 	defer file.Close()
 
 	jsonParser := json.NewDecoder(file)
 	decodeError := jsonParser.Decode(&env)
 	if decodeError != nil {
-		log.Fatalf("Error parsing env file: %v", decodeError.Error())
+		log.Fatalf("Error parsing env file: %s", decodeError.Error())
 	}
 
 	log.Printf("Loaded env.")

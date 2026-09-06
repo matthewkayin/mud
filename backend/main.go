@@ -18,13 +18,17 @@ func main() {
 	mudenv.LoadFromFile("env.json")
 	env := mudenv.Get()
 
-	log.Printf("Beginning server on port %v...", env.Port)
+	log.Printf("Beginning server on port %d...", env.Port)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/auth", api.HandlePostAuth)
+	mux.HandleFunc("GET /api/websocket", api.HandleGetWebSocket)
 
-	address := fmt.Sprintf(":%v", env.Port)
-	log.Fatal(http.ListenAndServe(address, corsMiddleware(mux)))
+	address := fmt.Sprintf(":%d", env.Port)
+	serveErr := http.ListenAndServe(address, corsMiddleware(mux))
+	if serveErr != nil && serveErr != http.ErrServerClosed {
+		log.Fatal(serveErr.Error())
+	}
 }
 
 func corsMiddleware(next http.Handler) http.Handler {
