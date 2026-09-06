@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const BACKEND_URL = 'http://localhost:3000/api/auth/token';
+const BACKEND_URL = 'http://localhost:7272/api/auth';
 const REDIRECT_URI = 'http://localhost:5173';
 const RC_CLIENT_ID = 'EMGGeo9Ve3scRNKDgUhN02Su0hx7fMRkIOcQLp42JgA';
 const RC_AUTH_URL = 'https://www.recurse.com/oauth/authorize';

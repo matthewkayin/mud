@@ -145,6 +145,7 @@ export const App = () => {
   }, []);
 
   // Init web socket
+  /*
   useEffect(() => {
     if (token === null) {
       return;
@@ -186,6 +187,7 @@ export const App = () => {
       webSocketRef.current.removeEventListener('close');
     };
   }, [token, terminalWriteLine]);
+  */
 
   return (
     <div>
