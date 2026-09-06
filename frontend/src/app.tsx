@@ -145,13 +145,12 @@ export const App = () => {
   }, []);
 
   // Init web socket
-  /*
   useEffect(() => {
     if (token === null) {
       return;
     }
 
-    webSocketRef.current = new WebSocket('ws://localhost:3000/ws-telnet', [token]);
+    webSocketRef.current = new WebSocket(`ws://localhost:7272/api/websocket?token=${token}`);
     console.log('Created web socket.');
     webSocketRef.current.addEventListener('open', () => {
       console.log('Web socket connected.');
@@ -185,9 +184,9 @@ export const App = () => {
       webSocketRef.current.removeEventListener('open');
       webSocketRef.current.removeEventListener('message');
       webSocketRef.current.removeEventListener('close');
+      webSocketRef.current.close();
     };
   }, [token, terminalWriteLine]);
-  */
 
   return (
     <div>
