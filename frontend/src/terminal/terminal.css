@@ -1,0 +1,47 @@
+.terminal {
+    display: flex;
+    flex-direction: column-reverse;
+    background-color: #1e1e1e;
+    padding: 10px;
+    border-radius: 4px;
+    height: 400px;
+}
+
+.terminal-prompt-container {
+    max-width: 100%;
+    display: block;
+    overflow: auto;
+    width: 100%;
+    min-height: 18px;
+    margin-top: 8px;
+}
+
+.terminal-contents-container {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+
+    scrollbar-color: #ffffff #1e1e1e;
+}
+
+.terminal-text {
+    color: #ffffff;
+    margin: 0;
+    font-family: monospace;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.terminal-prompt-cursor-focused {
+    animation: blink 1s step-end infinite;
+}
+
+.terminal-prompt-cursor-hidden {
+    animation: none;
+    color: #00000000;
+}
+
+@keyframes blink {
+    from, to { color: #00000000 }
+    50% { color: #ffffffff }
+}

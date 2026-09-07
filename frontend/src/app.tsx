@@ -1,15 +1,26 @@
-import { useEffect, useRef, useCallback } from 'react';
-import { useAuth } from './auth';
-import { Terminal } from '@xterm/xterm';
-import { FitAddon } from '@xterm/addon-fit';
-import '@xterm/xterm/css/xterm.css';
-
-const TERMINAL_PROMPT = '>';
+// import { useEffect, useRef, useCallback } from 'react';
+import { useState } from 'react';
+// import { useAuth } from './auth';
+import { Terminal } from './terminal/terminal';
 
 export const App = () => {
   // Auth
-  const { token, loading, error, handleLogin } = useAuth();
+  // const { token, loading, error, handleLogin } = useAuth();
+  const [command, setCommand] = useState('');
+  const [lines, setLines] = useState<string[]>([]);
 
+  const onSubmit = (command: string) => {
+    setLines([...lines, `You Said: ${command}`]);
+  };
+
+  return (
+    <div>
+      <h1>RC Disco MUD!</h1>
+      <Terminal prompt=">" lines={lines} command={command} setCommand={setCommand} onSubmit={onSubmit} />
+    </div>
+  );
+
+  /*
   // Terminal state
   const terminalContainerRef = useRef(null);
   const terminalInstanceRef = useRef(null);
@@ -218,4 +229,5 @@ export const App = () => {
       </div>
     </div>
   );
+  */
 };
