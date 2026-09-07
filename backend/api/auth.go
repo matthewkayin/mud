@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 	"encoding/json"
-	"mud/mudenv"
+	"mud/core"
 )
 
 type PostAuthRequest struct {
@@ -26,7 +26,7 @@ type RecursePostTokenBody struct {
 
 func HandlePostAuth(writer http.ResponseWriter, request *http.Request) {
 	log.Printf("Invoked POST /api/auth")
-	env := mudenv.Get()
+	env := core.GetEnv()
 
 	// Get request data into struct
 	var requestData PostAuthRequest

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"mud/mudenv"
+	"mud/core"
 	"net/http"
 	"sync"
 
@@ -25,7 +25,7 @@ var state sessionState
 
 func HandleGetWebSocket(writer http.ResponseWriter, request *http.Request) {
 	log.Printf("Invoked GET /api/websocket")
-	env := mudenv.Get()
+	env := core.GetEnv()
 
 	// Get the auth token from the query param
 	token := request.URL.Query().Get("token")
