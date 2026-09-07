@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"context"
 	"time"
 	"log"
@@ -44,13 +45,29 @@ func (gameState *GameState) Run(ctx context.Context) {
 	// TODO: end of game loop, save off game state data before exiting
 }
 
-func (gameState *GameState) RegisterPlayer(playerId int, outbox *chan string) {
-	gameState.playerInboxes[playerId] = outbox
-	*outbox <- "Welcome to the RC Disco MUD!"
+func (gameState *GameState) RegisterPlayer(playerId int, playerInbox *chan string) {
+	gameState.broadcast(fmt.Sprintf("Player %d has joined the game.\n", playerId))
+
+	gameState.playerInboxes[playerId] = playerInbox
+	*playerInbox <- "Welcome to the RC Disco MUD!\n"
 }
 
+func (gameState *GameState) RemovePlayer(playerId int) {
+	delete(gameState.playerInboxes, playerId)
+
+	gameState.broadcast(fmt.Sprintf("Player %d has left the game.\n", playerId))
+}
+
+// Handles a player command
 func (gameState *GameState) handleCommand(command Command) {
 	log.Printf("Received command. Player %d Payload %s", command.PlayerId, command.Payload)
+}
+
+// Sends a message to all player inboxes
+func (gameState *GameState) broadcast(message string) {
+	for _, inbox := range gameState.playerInboxes {
+		*inbox <- message
+	}
 }
 
 func (gameState *GameState) update() {

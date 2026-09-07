@@ -144,5 +144,5 @@ func (apiState *ApiState) runSocketWriteLoop(ctx context.Context, connection *we
 		}
 	}
 
-	// TODO: on exit, unregister the player
+	apiState.gameState.RemovePlayer(userId)
 }
