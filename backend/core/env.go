@@ -1,4 +1,4 @@
-package mudenv
+package core
 
 import (
 	"log"
@@ -16,7 +16,7 @@ type Env struct {
 }
 var env Env
 
-func LoadFromFile(path string) {
+func LoadEnv(path string) {
 	log.Printf("Opening env %s...", path)
 
 	// Open file
@@ -35,6 +35,6 @@ func LoadFromFile(path string) {
 	log.Printf("Loaded env.")
 }
 
-func Get() *Env {
+func GetEnv() *Env {
 	return &env
 }
