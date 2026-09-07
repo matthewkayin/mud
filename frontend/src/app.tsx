@@ -42,7 +42,6 @@ export const App = () => {
       console.log('Warn: called terminalWriteLine but terminalInstanceRef is empty.');
       return;
     }
-    console.log('Terminal write line ', message);
 
     // Move cursor to the bottom row, first column
     terminalInstanceRef.current.write(`\x1b[${terminalInstanceRef.current.rows};1H`);
@@ -99,7 +98,7 @@ export const App = () => {
 
     // Define data listener
     const dataListener = terminal.onData((data) => {
-      // Submit
+      // Handle submit
       if (data === '\r') {
         const command = terminalCommandBufferRef.current.trim();
         terminalCommandBufferRef.current = '';
@@ -116,7 +115,7 @@ export const App = () => {
         return;
       }
 
-      // Backspace
+      // Handle backspace
       if (data === '\u007F') {
         // Writes three characters
         // One moves the cursor back, one inserts a space, the other moves the cursor back again
@@ -127,7 +126,7 @@ export const App = () => {
         return;
       }
 
-      // Append visible characters to command
+      // Handle visible characters
       if (data >= ' ' && data <= '~') {
         terminal.write(data);
         terminalCommandBufferRef.current += data;
@@ -150,8 +149,11 @@ export const App = () => {
       return;
     }
 
+    // Create web socket
     webSocketRef.current = new WebSocket(`ws://localhost:7272/api/websocket?token=${token}`);
     console.log('Created web socket.');
+
+    // Web socket open listener
     webSocketRef.current.addEventListener('open', () => {
       console.log('Web socket connected.');
 
@@ -162,6 +164,8 @@ export const App = () => {
 
       terminalDrawBottomPrompt();
     });
+
+    // Web socket message listener
     webSocketRef.current.addEventListener('message', (messageEvent) => {
       console.log('Web socket received message: ', messageEvent);
 
@@ -172,6 +176,8 @@ export const App = () => {
 
       terminalWriteLine(messageEvent.data);
     });
+
+    // Web socket close listener
     webSocketRef.current.addEventListener('close', () => {
       if (!terminalInstanceRef.current) {
         return;

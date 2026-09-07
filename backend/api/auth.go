@@ -24,7 +24,7 @@ type RecursePostTokenBody struct {
 	RedirectUri string `json:"redirect_uri"`
 }
 
-func HandlePostAuth(writer http.ResponseWriter, request *http.Request) {
+func (apiState *ApiState) HandlePostAuth(writer http.ResponseWriter, request *http.Request) {
 	log.Printf("Invoked POST /api/auth")
 	env := core.GetEnv()
 

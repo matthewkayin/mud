@@ -6,33 +6,45 @@ import (
 	"os"
 	"time"
 	"io"
+	"context"
 	"net/http"
 	"mud/core"
 	"mud/api"
+	"mud/game"
 )
 
-type ErrorResponse struct {
-	error string
-}
-
 func main() {
+	// Init logger
 	logfile := initLogger()
 	defer logfile.Close()
 
+	// Load env
 	core.LoadEnv("env.json")
 	env := core.GetEnv()
 
-	log.Printf("Beginning server on port %d...", env.Port)
+	// Init gamestate
+	gameState := game.InitState()
+	gameContext, gameCancel := context.WithCancel(context.Background())
 
+	// Kick off game loop in a separate goroutine
+	go gameState.Run(gameContext)
+
+	// Set server endpoint handlers
+	apiState := api.InitState(gameState)
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /api/auth", api.HandlePostAuth)
-	mux.HandleFunc("GET /api/websocket", api.HandleGetWebSocket)
+	mux.HandleFunc("POST /api/auth", apiState.HandlePostAuth)
+	mux.HandleFunc("GET /api/websocket", apiState.HandleGetWebSocket)
 
+	// Begin server
+	log.Printf("Beginning server on port %d...", env.Port)
 	address := fmt.Sprintf(":%d", env.Port)
 	serveErr := http.ListenAndServe(address, corsMiddleware(mux))
 	if serveErr != nil && serveErr != http.ErrServerClosed {
-		log.Fatal(serveErr.Error())
+		log.Printf("Server failed with error: %s", serveErr.Error())
 	}
+
+	// Trigger the game loop goroutine to end
+	gameCancel()
 }
 
 func initLogger() *os.File {
