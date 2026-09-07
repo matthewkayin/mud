@@ -5,6 +5,7 @@ import (
 	"context"
 	"time"
 	"log"
+	"strings"
 )
 
 const GAME_UPDATE_INTERVAL = 3 * time.Second
@@ -61,6 +62,33 @@ func (gameState *GameState) RemovePlayer(playerId int) {
 // Handles a player command
 func (gameState *GameState) handleCommand(command Command) {
 	log.Printf("Received command. Player %d Payload %s", command.PlayerId, command.Payload)
+
+	playerInbox, playerInboxExists := gameState.playerInboxes[command.PlayerId]
+	if !playerInboxExists {
+		log.Printf("No Inbox for player %d", command.PlayerId)
+		return
+	}
+
+	words := strings.Split(command.Payload, " ")
+	wordsLength := len(words)
+
+	verb := words[0]
+	
+	switch verb {
+		//case "quit", "logout":
+
+		case "say":
+			if wordsLength < 2 {
+				*playerInbox <- "You must include a message that you want to say. For example: \"Say hello!\" will say \"hello!\""
+				return
+			}
+			gameState.broadcast(fmt.Sprintf("Player %d: \"%s\"", command.PlayerId, strings.Join(words[1:], " ")))
+			
+		default:
+			*playerInbox <- fmt.Sprintf("%s is not a legal action", verb)
+
+	}
+
 }
 
 // Sends a message to all player inboxes
