@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"strings"
 	"mud/core"
+	"mud/game"
 	"net/http"
-	"sync"
 
 	"github.com/coder/websocket"
 )
@@ -17,13 +18,7 @@ type recurseApiGetProfilesResponseSuccess struct {
 	Id int `json:"id"`
 }
 
-type sessionState struct {
-	sessionMutex sync.RWMutex
-	tokenToIdMap map[string]int
-}
-var state sessionState
-
-func HandleGetWebSocket(writer http.ResponseWriter, request *http.Request) {
+func (apiState* ApiState) HandleGetWebSocket(writer http.ResponseWriter, request *http.Request) {
 	log.Printf("Invoked GET /api/websocket")
 	env := core.GetEnv()
 
@@ -31,13 +26,9 @@ func HandleGetWebSocket(writer http.ResponseWriter, request *http.Request) {
 	token := request.URL.Query().Get("token")
 
 	// Check the list of active auth tokens
-	state.sessionMutex.RLock()
-	if state.tokenToIdMap == nil {
-		state.tokenToIdMap = make(map[string]int)
-		log.Printf("Initialized token to ID map")
-	}
-	userId, authenticated := state.tokenToIdMap[token]
-	state.sessionMutex.RUnlock()
+	apiState.tokenToIdMutex.RLock()
+	userId, authenticated := apiState.tokenToIdMap[token]
+	apiState.tokenToIdMutex.RUnlock()
 
 	// TODO: handle token expiration and clear the cache?
 
@@ -87,7 +78,7 @@ func HandleGetWebSocket(writer http.ResponseWriter, request *http.Request) {
 		}
 
 		// Cache the ID for later
-		state.tokenToIdMap[token] = recurseResponseBody.Id
+		apiState.tokenToIdMap[token] = recurseResponseBody.Id
 		userId = recurseResponseBody.Id
 	}
 
@@ -107,27 +98,51 @@ func HandleGetWebSocket(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	log.Printf("Player %d connected.", userId)
-	runSocketLoop(request.Context(), connection, userId)
-}
 
-func runSocketLoop(ctx context.Context, connection *websocket.Conn, userId int) {
+	// Kick off write loop in a separate goroutine
+	writerContext, cancelWriter := context.WithCancel(request.Context())
+	defer cancelWriter()
+	go apiState.runSocketWriteLoop(writerContext, connection, userId)
+
+	// Run read loop until connection closes
+	readLoop:
 	for {
-		messageType, data, err := connection.Read(ctx)
+		messageType, messageData, err := connection.Read(request.Context())
 		if err != nil {
 			log.Printf("Player %d disconnected.", userId)
-			break
+			break readLoop
 		}
 
 		if messageType == websocket.MessageText {
-			command := string(data)
-			log.Printf("[Player %d]: %s", userId, command)
-
-			response := fmt.Sprintf("[Player %d]: %s\r\n", userId, command)
-			err = connection.Write(ctx, websocket.MessageText, []byte(response))
-			if err != nil {
-				log.Printf("Failed writing to user %d: %s", userId, err.Error())
-				break
+			apiState.gameState.Commands <- game.Command {
+				PlayerId: userId,
+				Payload: strings.TrimSpace(string(messageData)),
 			}
 		}
 	}
+}
+
+func (apiState *ApiState) runSocketWriteLoop(ctx context.Context, connection *websocket.Conn, userId int) {
+	inbox := make(chan string, 100)
+	apiState.gameState.RegisterPlayer(userId, &inbox)
+
+	writeLoop:
+	for {
+		select {
+			case <- ctx.Done():
+				break writeLoop
+			case message, ok := <- inbox:
+				if !ok {
+					break writeLoop
+				}
+
+				err := connection.Write(ctx, websocket.MessageText, []byte(message))
+				if err != nil {
+					log.Printf("Failed to write to player %d: %s", userId, err.Error())
+					break writeLoop
+				}
+		}
+	}
+
+	// TODO: on exit, unregister the player
 }
