@@ -39,6 +39,11 @@ func CommandRegistryInit() map[string]CommandRegistryEntry {
 		usage: "login <character>",
 		description: "Login to an existing character.",
 	}
+	registry["look"] = CommandRegistryEntry {
+		handler: handleCommandLook,
+		usage: "look",
+		description: "Describe the current room.",
+	}
 
 	return registry
 }
@@ -59,6 +64,31 @@ func handleCommandHelp(gameState *GameState, player *Player, playerId int, args 
 	for _, registryEntry := range gameState.commandRegistry {
 		*(player.inbox) <- fmt.Sprintf("%s - %s", registryEntry.usage, registryEntry.description)
 	}
+	return true
+}
+
+func handleCommandLook(gameState *GameState, player *Player, playerId int, args []string) bool {
+	room := &gameState.world.rooms[player.character.currentRoom]
+	
+	*(player.inbox) <- room.description
+	
+	if len(room.playersInRoom) > 1 { 
+		playersInRoom := "The following players are in this room: "
+		for index, inRoomPlayerId := range room.playersInRoom {
+			if index == len(room.playersInRoom) - 1 {
+				playersInRoom += "and "
+			}
+			playersInRoom += gameState.players[gameState.playerIdToIndexMap[inRoomPlayerId]].character.name
+			if index < len(room.playersInRoom) - 1 {
+				playersInRoom += ", "
+			}
+			if index == len(room.playersInRoom) - 1 {
+				playersInRoom += "."
+			}
+		} 
+		*(player.inbox) <- playersInRoom
+	}
+
 	return true
 }
 

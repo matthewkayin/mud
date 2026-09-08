@@ -146,6 +146,7 @@ func (gameState *GameState) handleCommand(command Command) {
 		gameState.world.CreateCharacter(command.PlayerId, Character {
 			playerId: command.PlayerId,
 			name: command.Payload,
+			currentRoom : 0,
 		})
 		player.mode = PlayerModeMenuLogin
 		*(player.inbox) <- fmt.Sprintf("Your character has been created. Type \"login %s\" to login to them.", command.Payload)

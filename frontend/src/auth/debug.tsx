@@ -22,12 +22,12 @@ export const DebugLogin = ({ token, setToken }: DebugLoginProps) => {
   };
 
   return (
-    <>
+    <form onSubmit = {onButtonClick}>
       {token === null &&
         <div>
           <input value={tokenInput} onChange={(event) => setTokenInput(event.target.value)}></input>
           <button onClick={onButtonClick}>Login</button>
         </div>}
-    </>
+    </form>
   )
 };
