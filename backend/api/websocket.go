@@ -7,9 +7,11 @@ import (
 	"io"
 	"log"
 	"strings"
+	"strconv"
+	"net/http"
+
 	"mud/core"
 	"mud/game"
-	"net/http"
 
 	"github.com/coder/websocket"
 )
@@ -18,9 +20,10 @@ type recurseApiGetProfilesResponseSuccess struct {
 	Id int `json:"id"`
 }
 
+const RECURSE_USER_ID_NOT_FOUND int = -1
+
 func (apiState* ApiState) HandleGetWebSocket(writer http.ResponseWriter, request *http.Request) {
 	log.Printf("Invoked GET /api/websocket")
-	env := core.GetEnv()
 
 	// Get the auth token from the query param
 	token := request.URL.Query().Get("token")
@@ -35,51 +38,24 @@ func (apiState* ApiState) HandleGetWebSocket(writer http.ResponseWriter, request
 	// If it's not, then try querying the RC API for this user
 	if !authenticated || token == "" {
 		log.Printf("User ID not found in cache. Querying RC API...")
+		env := core.GetEnv()
 
-		// Build a GET request to the RC API
-		recurseRequest, newRequestError := http.NewRequest("GET", fmt.Sprintf("%s/profiles/me", env.RecurseApiUrl), nil)
-		if newRequestError != nil {
-			http.Error(writer, newRequestError.Error(), http.StatusInternalServerError)
-			return
-		}
-		recurseRequest.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-
-		// Make the GET request
-		httpClient := &http.Client{}
-		recurseResponse, recurseError := httpClient.Do(recurseRequest)
-		if recurseError != nil {
-			http.Error(writer, recurseError.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer func() {
-			io.Copy(io.Discard, recurseResponse.Body)
-			recurseResponse.Body.Close()
-		}()
-
-		// For some reason RC returns 404 when you don't provide an auth token
-		if recurseResponse.StatusCode == http.StatusNotFound || recurseResponse.StatusCode == http.StatusUnauthorized {
-			http.Error(writer, "Invalid auth token", http.StatusUnauthorized)
-			return
+		var err error
+		if env.EnableDebugAuth {
+			userId, err = strconv.Atoi(token)
+		} else {
+			userId, err = getUserIdFromRcApi(token)
 		}
 
-		// Get the contents of the response body
-		recurseResponseBodyBytes, err := io.ReadAll(recurseResponse.Body)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
-			return
 		}
-
-		// Convert the response from JSON
-		var recurseResponseBody recurseApiGetProfilesResponseSuccess
-		unmarshalError := json.Unmarshal(recurseResponseBodyBytes, &recurseResponseBody)
-		if unmarshalError != nil {
-			http.Error(writer, unmarshalError.Error(), http.StatusInternalServerError)
-			return
+		if userId == RECURSE_USER_ID_NOT_FOUND {
+			http.Error(writer, "Invalid auth token.", http.StatusUnauthorized)
 		}
 
 		// Cache the ID for later
-		apiState.tokenToIdMap[token] = recurseResponseBody.Id
-		userId = recurseResponseBody.Id
+		apiState.tokenToIdMap[token] = userId
 	}
 
 	log.Printf("Authenticated user %d", userId)
@@ -120,6 +96,49 @@ func (apiState* ApiState) HandleGetWebSocket(writer http.ResponseWriter, request
 			}
 		}
 	}
+}
+
+func getUserIdFromRcApi(token string) (int, error) {
+	env := core.GetEnv()
+
+	// Build a GET request to the RC API
+	recurseRequest, err := http.NewRequest("GET", fmt.Sprintf("%s/profiles/me", env.RecurseApiUrl), nil)
+	if err != nil {
+		return RECURSE_USER_ID_NOT_FOUND, err
+	}
+
+	recurseRequest.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	// Make the GET request
+	httpClient := &http.Client{}
+	recurseResponse, err := httpClient.Do(recurseRequest)
+	if err != nil {
+		return RECURSE_USER_ID_NOT_FOUND, err
+	}
+	defer func() {
+		io.Copy(io.Discard, recurseResponse.Body)
+		recurseResponse.Body.Close()
+	}()
+
+	// For some reason RC returns 404 when you don't provide an auth token
+	if recurseResponse.StatusCode == http.StatusNotFound || recurseResponse.StatusCode == http.StatusUnauthorized {
+		return RECURSE_USER_ID_NOT_FOUND, nil
+	}
+
+	// Get the contents of the response body
+	recurseResponseBodyBytes, err := io.ReadAll(recurseResponse.Body)
+	if err != nil {
+		return RECURSE_USER_ID_NOT_FOUND, err
+	}
+
+	// Convert the response from JSON
+	var recurseResponseBody recurseApiGetProfilesResponseSuccess
+	err = json.Unmarshal(recurseResponseBodyBytes, &recurseResponseBody)
+	if err != nil {
+		return RECURSE_USER_ID_NOT_FOUND, err
+	}
+
+	return recurseResponseBody.Id, nil
 }
 
 func (apiState *ApiState) runSocketWriteLoop(ctx context.Context, connection *websocket.Conn, userId int) {
