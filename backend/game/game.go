@@ -25,15 +25,18 @@ type Command struct {
 type Player struct {
 	mode PlayerMode
 	inbox *chan string
+
+	character *Character
 }
 
 type GameState struct {
 	Commands chan Command
+	commandRegistry map[string]CommandRegistryEntry
 
 	players []Player
 	playerIdToIndexMap map[int]int
 
-	commandRegistry map[string]CommandRegistryEntry
+	world World
 }
 
 func InitState() *GameState {
@@ -42,6 +45,7 @@ func InitState() *GameState {
 		players: make([]Player, 0, 64),
 		playerIdToIndexMap: make(map[int]int),
 		commandRegistry: CommandRegistryInit(),
+		world: WorldInit(),
 	}
 }
 
@@ -111,6 +115,43 @@ func (gameState *GameState) handleCommand(command Command) {
 
 	// Get pointer to the player
 	player := &gameState.players[playerIndex]
+
+	if player.mode == PlayerModeMenuCreateCharacter {
+		// Handle back
+		if command.Payload == "back" {
+			player.mode = PlayerModeMenuLogin
+			return
+		}
+
+		// Handle empty name
+		if len(command.Payload) == 0 {
+			*(player.inbox) <- "No name provided! Please enter a name or type back."
+			return
+		}
+
+		// Handle name with space
+		if strings.Contains(command.Payload, " ") {
+			*(player.inbox) <- "Hey man you like, can't put a space in there."
+			return
+		}
+
+		// Check if character exists
+		_, characterExists := gameState.world.characters[command.Payload]
+		if characterExists {
+			*(player.inbox) <- fmt.Sprintf("A character named \"%s\" already exists.", command.Payload)
+			return
+		}
+
+		// Create the character
+		gameState.world.CreateCharacter(command.PlayerId, Character {
+			playerId: command.PlayerId,
+			name: command.Payload,
+		})
+		player.mode = PlayerModeMenuLogin
+		*(player.inbox) <- fmt.Sprintf("Your character has been created. Type \"login %s\" to login to them.", command.Payload)
+
+		return
+	}
 
 	// Get command verb and arguments
 	words := strings.Split(command.Payload, " ")
