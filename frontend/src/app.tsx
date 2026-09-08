@@ -31,7 +31,8 @@ export const App = () => {
     }
 
     // Create web socket
-    webSocketRef.current = new WebSocket(`ws://localhost:7272/api/websocket?token=${token}`);
+    // TODO: configure for prod
+    webSocketRef.current = new WebSocket(`ws://${window.location.hostname}:5173/api/websocket?token=${token}`);
     console.log('Created web socket.');
 
     // Web socket open listener

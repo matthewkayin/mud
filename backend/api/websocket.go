@@ -62,8 +62,11 @@ func (apiState* ApiState) HandleGetWebSocket(writer http.ResponseWriter, request
 
 	// Upgrade the HTTP connection to a WebSocket connection
 	connection, acceptError := websocket.Accept(writer, request, &websocket.AcceptOptions {
+		// TODO: configure this for prod
 		OriginPatterns: []string {
 			"localhost:5173",
+			"192.168.*:5173",
+			"10.100.*:5173",
 		},
 	})
 	if acceptError != nil {
