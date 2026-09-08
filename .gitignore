@@ -7,3 +7,5 @@ backend/.env
 backend/env.json
 backend/logs
 .cache
+.DS_Store
+backend/.DS_Store
