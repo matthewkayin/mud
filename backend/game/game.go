@@ -144,13 +144,6 @@ func (gameState *GameState) handleCommandHelp(player *Player) {
 	}
 }
 
-func (gameState *GameState) handleCommandSay(playerId int, player *Player, args []string) {
-	if len(args) < 1 {
-		*(player.inbox) <- "You must include a message that you want to say. For example: \"Say hello!\" will say \"hello!\""
-		return
-	}
-}
-
 // Sends a message to all player inboxes
 func (gameState *GameState) broadcast(message string) {
 	for _, player := range gameState.players {

@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { useAuth } from './auth';
+import { RecurseLogin } from './auth/recurse';
+import { DebugLogin } from './auth/debug';
 import { Terminal } from './terminal/terminal';
 
 export const App = () => {
   // Auth state
-  const { token, loading, error, handleLogin } = useAuth();
+  const [token, setToken] = useState<string | null>(null);
+  const useDebugAuth = import.meta.env.VITE_ENABLE_DEBUG_AUTH === 'true';
 
   // Terminal state
   const [command, setCommand] = useState('');
@@ -29,7 +31,8 @@ export const App = () => {
     }
 
     // Create web socket
-    webSocketRef.current = new WebSocket(`ws://localhost:7272/api/websocket?token=${token}`);
+    // TODO: configure for prod
+    webSocketRef.current = new WebSocket(`ws://${window.location.hostname}:5173/api/websocket?token=${token}`);
     console.log('Created web socket.');
 
     // Web socket open listener
@@ -58,9 +61,8 @@ export const App = () => {
   return (
     <div>
       <h1>RC Disco MUD!</h1>
-      {loading && <p>Authorizing...</p>}
-      {error && <p>Error: {error}</p>}
-      {(!token && !loading) && <button onClick={handleLogin}>Login with Recurse</button>}
+      { useDebugAuth && <DebugLogin token={token} setToken={setToken} /> }
+      { !useDebugAuth && <RecurseLogin token={token} setToken={setToken} /> }
       <Terminal prompt=">" lines={lines} command={command} setCommand={setCommand} onSubmit={onSubmit} />
     </div>
   );

@@ -1,9 +1,7 @@
-server/bin
-server/obj
-server/.cache
-server/compile_commands.json
 frontend/secrets.json
 frontend/node_modules
+frontend/.env
+
 backend/node_modules
 backend/.env
 backend/env.json

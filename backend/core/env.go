@@ -9,6 +9,8 @@ import (
 type Env struct {
 	Port int `json:"PORT"`
 
+	EnableDebugAuth bool `json:"ENABLE_DEBUG_AUTH"`
+
 	RecurseApiUrl string `json:"RC_API_URL"`
 	RecurseTokenUrl string `json:"RC_TOKEN_URL"`
 	RecurseClientId string `json:"RC_CLIENT_ID"`

@@ -5,31 +5,18 @@ const REDIRECT_URI = 'http://localhost:5173';
 const RC_CLIENT_ID = 'EMGGeo9Ve3scRNKDgUhN02Su0hx7fMRkIOcQLp42JgA';
 const RC_AUTH_URL = 'https://www.recurse.com/oauth/authorize';
 
+type RecurseLoginProps = {
+  token: string | null;
+  setToken: (value: string | null) => void;
+}
+
 type TokenResponse = {
   access_token: string;
   token_type: string;
   scope?: string;
 }
 
-function generateCodeVerifier(): string {
-  const array = new Uint32Array(56);
-  window.crypto.getRandomValues(array);
-  return Array.from(array, (dec) => ('0' + dec.toString(16)).substr(-2)).join('');
-}
-
-async function generateCodeChallenge(verifier: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(verifier);
-  const hash = await window.crypto.subtle.digest('SHA-256', data);
-
-  return btoa(String.fromCharCode(...new Uint8Array(hash)))
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
-}
-
-export const useAuth = () => {
-  const [token, setToken] = useState<string | null>(null);
+export const RecurseLogin = ({ token, setToken }: RecurseLoginProps) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -96,9 +83,30 @@ export const useAuth = () => {
 
     window.history.replaceState({}, document.title, window.location.pathname);
     exchangeCodeForToken(code);
-  }, []);
+  }, [setToken]);
 
-  return {
-    token, loading, error, handleLogin
-  };
+  return (
+    <>
+      { loading && <p>Authorizing...</p> }
+      { error && <p>Error: { error }</p> }
+      { (!token && !loading) && <button onClick={handleLogin}>Login with Recurse</button> }
+    </>
+  );
 };
+
+function generateCodeVerifier(): string {
+  const array = new Uint32Array(56);
+  window.crypto.getRandomValues(array);
+  return Array.from(array, (dec) => ('0' + dec.toString(16)).substr(-2)).join('');
+}
+
+async function generateCodeChallenge(verifier: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(verifier);
+  const hash = await window.crypto.subtle.digest('SHA-256', data);
+
+  return btoa(String.fromCharCode(...new Uint8Array(hash)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
