@@ -12,7 +12,7 @@ func MenuWorld() Menu {
 	entries["logout"] = MenuEntry {
 		usage: "logout",
 		description: "Logout of the world.",
-		handler: func (gameState *GameState, player *Player, playerId int, args []string) bool {
+		handler: func (gameState *GameState, player *Player, args []string) bool {
 			return true
 		},
 	}
@@ -21,7 +21,7 @@ func MenuWorld() Menu {
 	entries["look"] = MenuEntry {
 		usage: "look",
 		description: "Describe the current room.",
-		handler: func (gameState *GameState, player *Player, playerId int, args []string) bool {
+		handler: func (gameState *GameState, player *Player, args []string) bool {
 			room := &gameState.world.rooms[player.character.currentRoom]
 
 			*(player.inbox) <- room.description
@@ -51,7 +51,7 @@ func MenuWorld() Menu {
 	entries["say"] = MenuEntry {
 		usage: "say <message>",
 		description: "Send a messsage to the current room.",
-		handler: func (gameState *GameState, player *Player, playerId int, args []string) bool {
+		handler: func (gameState *GameState, player *Player, args []string) bool {
 			if len(args) < 1 {
 				*(player.inbox) <- "You must include a message that you want to say."
 				return false
@@ -65,7 +65,7 @@ func MenuWorld() Menu {
 	return Menu {
 		previous: nil,
 		entries: entries,
-		getHelpDescription: func (gameState *GameState, player *Player, playerId int) string {
+		getHelpDescription: func (gameState *GameState, player *Player) string {
 			return "You are in the world."
 		},
 	}

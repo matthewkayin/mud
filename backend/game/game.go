@@ -22,6 +22,7 @@ type Command struct {
 }
 
 type Player struct {
+	id int
 	inbox *chan string
 	menu *Menu
 
@@ -84,6 +85,7 @@ func (gameState *GameState) RegisterPlayer(playerId int, playerInbox *chan strin
 	gameState.broadcast(fmt.Sprintf("Player %d has joined the game.", playerId))
 
 	gameState.players = append(gameState.players, Player {
+		id: playerId,
 		inbox: playerInbox,
 		menu: &gameState.menuLogin,
 
@@ -138,7 +140,14 @@ func (gameState *GameState) handleCommand(command Command) {
 		return
 	}
 
-	player.menu.HandleCommand(gameState, player, command.PlayerId, command.Payload)
+	player.menu.HandleCommand(gameState, player, command.Payload)
+}
+
+func (gameState *GameState) setPlayerMenu(player *Player, menu *Menu) {
+	player.menu = menu
+	if player.menu.onEnter != nil {
+		player.menu.onEnter(gameState, player)
+	}
 }
 
 // Sends a message to all player inboxes

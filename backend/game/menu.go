@@ -8,16 +8,17 @@ import (
 type MenuEntry struct {
 	usage string
 	description string
-	handler func(gameState *GameState, player *Player, playerId int, args []string) bool
+	handler func(gameState *GameState, player *Player, args []string) bool
 }
 
 type Menu struct {
 	previous *Menu
 	entries map[string]MenuEntry
-	getHelpDescription func(gameState *GameState, player *Player, playerId int) string
+	getHelpDescription func(gameState *GameState, player *Player) string
+	onEnter func(gameState *GameState, player *Player)
 }
 
-func (menu *Menu) HandleCommand(gameState *GameState, player *Player, playerId int, command string) {
+func (menu *Menu) HandleCommand(gameState *GameState, player *Player, command string) {
 	// Get verb and arguments
 	words := strings.Split(command, " ")
 	verb := words[0]
@@ -36,7 +37,7 @@ func (menu *Menu) HandleCommand(gameState *GameState, player *Player, playerId i
 
 	// Handle help
 	if verb == "help" {
-		menu.handleHelpCommand(gameState, player, playerId, args)
+		menu.handleHelpCommand(gameState, player, args)
 		return
 	}
 
@@ -50,7 +51,7 @@ func (menu *Menu) HandleCommand(gameState *GameState, player *Player, playerId i
 	}
 
 	// Execute command
-	executedSuccessfully := entry.handler(gameState, player, playerId, args)
+	executedSuccessfully := entry.handler(gameState, player, args)
 
 	// If not executed successfully, print usage back to user
 	if !executedSuccessfully {
@@ -62,7 +63,7 @@ func (menu *Menu) allowsBackCommand() bool {
 	return menu.previous != nil
 }
 
-func (menu *Menu) handleHelpCommand(gameState *GameState, player *Player, playerId int, args []string) {
+func (menu *Menu) handleHelpCommand(gameState *GameState, player *Player, args []string) {
 	// User asked for help about the `back` command
 	if len(args) >= 1 && args[0] == "back" {
 		if menu.allowsBackCommand() {
@@ -90,7 +91,7 @@ func (menu *Menu) handleHelpCommand(gameState *GameState, player *Player, player
 
 	// If there is a help description for this menu, print it
 	if menu.getHelpDescription != nil {
-		*(player.inbox) <- menu.getHelpDescription(gameState, player, playerId)
+		*(player.inbox) <- menu.getHelpDescription(gameState, player)
 	}
 
 	// Print help about all commands in this menu
