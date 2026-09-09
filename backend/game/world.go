@@ -9,12 +9,12 @@ type Character struct {
 }
 
 type Room struct {
-	exitNorth int `json:"exit_north"` 
+	exitNorth int `json:"exit_north"`
 	exitSouth int `json:"exit_south"`
 	exitEast int `json:"exit_east"`
 	exitWest int `json:"exit_west"`
 	description string `json:"description"`
-	playersInRoom []int `json:"players_in_room"` 
+	playersInRoom []int `json:"players_in_room"`
 }
 
 type World struct {
@@ -26,27 +26,27 @@ type World struct {
 func WorldInit() World {
 	rooms := make([]Room, 0, 1)
 	rooms = append(rooms, Room {
-		exitNorth : ROOM_NONE,
-		exitSouth : 1,
-		exitEast : ROOM_NONE,
-		exitWest : ROOM_NONE,
-		description : "This room has descript qualities.",
+		exitNorth: ROOM_NONE,
+		exitSouth: 1,
+		exitEast: ROOM_NONE,
+		exitWest: ROOM_NONE,
+		description: "This room has descript qualities.",
 		playersInRoom : make([]int, 0, 1),
-	})	
+	})
 
 	rooms = append(rooms, Room {
-		exitNorth : 0,
-		exitSouth : ROOM_NONE,
-		exitEast : ROOM_NONE,
-		exitWest : ROOM_NONE,
-		description : "And here is another room! I wonder what qualities it might have...",
-		playersInRoom : make([]int, 0, 1),
+		exitNorth: 0,
+		exitSouth: ROOM_NONE,
+		exitEast: ROOM_NONE,
+		exitWest: ROOM_NONE,
+		description: "And here is another room! I wonder what qualities it might have...",
+		playersInRoom: make([]int, 0, 1),
 	})
 
 	return World {
 		characters: make(map[string]Character),
 		playerCharacters: make(map[int][]string),
-		rooms : rooms,
+		rooms: rooms,
 	}
 }
 
