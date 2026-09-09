@@ -15,7 +15,7 @@ func MenuWorld() Menu {
 		handler: func (gameState *GameState, player *Player, args []string) bool {
 			// TODO: remove player from current room
 			// TODO: broadcast world message to everyone who is logged in? or just to the current room?
-			gameState.setPlayerMenu(player, &gameState.menuLogin)
+			player.enterMenu(gameState, &gameState.menuLogin)
 			return true
 		},
 	}
@@ -93,7 +93,6 @@ func MenuWorld() Menu {
 	}
 
 	return Menu {
-		previous: nil,
 		entries: entries,
 		getDescription: func (gameState *GameState, player *Player) string {
 			return "You are in the world."

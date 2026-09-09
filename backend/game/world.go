@@ -50,9 +50,9 @@ func WorldInit() World {
 	}
 }
 
-func CharacterInitEmpty(playerId int) Character {
+func CharacterInitEmpty() Character {
 	return Character {
-		playerId: playerId,
+		playerId: 0,
 		name: "",
 		currentRoom: 0,
 	}

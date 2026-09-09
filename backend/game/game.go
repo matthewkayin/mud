@@ -21,20 +21,6 @@ type Command struct {
 	Payload string
 }
 
-type Player struct {
-	id int
-	inbox *chan string
-	menu *Menu
-
-	// newCharacter is an in-progress character that is
-	// edited by the player during character creation
-	newCharacter Character
-
-	// character is a pointer to the character that the
-	// player is currently using
-	character *Character
-}
-
 type GameState struct {
 	Commands chan Command
 
@@ -53,7 +39,7 @@ type GameState struct {
 func InitState() *GameState {
 	// Create menus
 	menuLogin := MenuLogin()
-	menuCreateCharacter := MenuCreateCharacter(&menuLogin)
+	menuCreateCharacter := MenuCreateCharacter()
 	menuWorld := MenuWorld()
 
 	return &GameState {
@@ -93,7 +79,7 @@ func (gameState *GameState) RegisterPlayer(playerId int, playerInbox *chan strin
 	gameState.players = append(gameState.players, Player {
 		id: playerId,
 		inbox: playerInbox,
-		menu: nil,
+		menuInstance: nil,
 
 		character: nil,
 	})
@@ -101,11 +87,8 @@ func (gameState *GameState) RegisterPlayer(playerId int, playerInbox *chan strin
 	gameState.playerIdToIndexMap[playerId] = newPlayerIndex
 
 	newPlayer := &gameState.players[newPlayerIndex]
-	// Intetionally not using setPlayerMenu() here because I want to print
-	// a special help message
-	newPlayer.menu = &gameState.menuLogin
-	*(newPlayer.inbox) <- "Welcome to the RC Disco MUD!"
-	*(newPlayer.inbox) <- fmt.Sprintf("%s Type 'help' for a list of options.", newPlayer.menu.getDescription(gameState, newPlayer))
+	*newPlayer.inbox <- "Welcome to the RC Disco MUD!"
+	newPlayer.enterMenu(gameState, &gameState.menuLogin)
 }
 
 func (gameState *GameState) RemovePlayer(playerId int) {
@@ -141,8 +124,8 @@ func (gameState *GameState) handleCommand(command Command) {
 
 	// Handle command using the player's current menu
 	player := &gameState.players[playerIndex]
-	if player.menu == nil {
-		log.Printf("Received command from player %d but they don't have a menu.", command.PlayerId)
+	if player.menuInstance == nil {
+		log.Printf("Received command from player %d but they don't have a menu instance.", command.PlayerId)
 
 		// Remove the player because they are in an unrecoverable state
 		// TODO: We should also develop a way to kick them / i.e. trigger a close in their web socket connection
@@ -150,18 +133,13 @@ func (gameState *GameState) handleCommand(command Command) {
 		return
 	}
 
-	player.menu.HandleCommand(gameState, player, command.Payload)
-}
-
-func (gameState *GameState) setPlayerMenu(player *Player, menu *Menu) {
-	player.menu = menu
-	menu.printDescription(gameState, player)
+	player.menuInstance.HandleCommand(gameState, player, command.Payload)
 }
 
 // Sends a message to all player inboxes
 func (gameState *GameState) broadcast(message string) {
 	for _, player := range gameState.players {
-		*(player.inbox) <- message
+		*player.inbox <- message
 	}
 }
 
