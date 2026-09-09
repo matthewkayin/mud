@@ -14,8 +14,7 @@ type MenuEntry struct {
 type Menu struct {
 	previous *Menu
 	entries map[string]MenuEntry
-	getHelpDescription func(gameState *GameState, player *Player) string
-	onEnter func(gameState *GameState, player *Player)
+	getDescription func(gameState *GameState, player *Player) string
 }
 
 func (menu *Menu) HandleCommand(gameState *GameState, player *Player, command string) {
@@ -64,6 +63,12 @@ func (menu *Menu) allowsBackCommand() bool {
 	return menu.previous != nil
 }
 
+func (menu *Menu) printDescription(gameState *GameState, player *Player) {
+	if menu.getDescription != nil {
+		*(player.inbox) <- fmt.Sprintf("\n%s", menu.getDescription(gameState, player))
+	}
+}
+
 func (menu *Menu) handleHelpCommand(gameState *GameState, player *Player, args []string) {
 	// User asked for help about the `back` command
 	if len(args) >= 1 && args[0] == "back" {
@@ -90,15 +95,13 @@ func (menu *Menu) handleHelpCommand(gameState *GameState, player *Player, args [
 		return
 	}
 
-	// If there is a help description for this menu, print it
-	if menu.getHelpDescription != nil {
-		*(player.inbox) <- menu.getHelpDescription(gameState, player)
-	}
+	// Print menu description
+	menu.printDescription(gameState, player)
 
 	// Print help about all commands in this menu
 	*(player.inbox) <- "Commands:"
 	if menu.allowsBackCommand() {
-		*(player.inbox) <- "Go back to the previous menu."
+		*(player.inbox) <- "\tback - Go back to the previous menu."
 	}
 	for _, entry := range menu.entries {
 		*(player.inbox) <- fmt.Sprintf("\t%s - %s", entry.usage, entry.description)

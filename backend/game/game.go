@@ -90,8 +90,6 @@ func (gameState *GameState) Run(ctx context.Context) {
 }
 
 func (gameState *GameState) RegisterPlayer(playerId int, playerInbox *chan string) {
-	gameState.broadcast(fmt.Sprintf("Player %d has joined the game.", playerId))
-
 	gameState.players = append(gameState.players, Player {
 		id: playerId,
 		inbox: playerInbox,
@@ -102,7 +100,12 @@ func (gameState *GameState) RegisterPlayer(playerId int, playerInbox *chan strin
 	newPlayerIndex := len(gameState.players) - 1
 	gameState.playerIdToIndexMap[playerId] = newPlayerIndex
 
-	gameState.setPlayerMenu(&gameState.players[newPlayerIndex], &gameState.menuLogin)
+	newPlayer := &gameState.players[newPlayerIndex]
+	// Intetionally not using setPlayerMenu() here because I want to print
+	// a special help message
+	newPlayer.menu = &gameState.menuLogin
+	*(newPlayer.inbox) <- "Welcome to the RC Disco MUD!"
+	*(newPlayer.inbox) <- fmt.Sprintf("%s Type 'help' for a list of options.", newPlayer.menu.getDescription(gameState, newPlayer))
 }
 
 func (gameState *GameState) RemovePlayer(playerId int) {
@@ -152,9 +155,7 @@ func (gameState *GameState) handleCommand(command Command) {
 
 func (gameState *GameState) setPlayerMenu(player *Player, menu *Menu) {
 	player.menu = menu
-	if player.menu.onEnter != nil {
-		player.menu.onEnter(gameState, player)
-	}
+	menu.printDescription(gameState, player)
 }
 
 // Sends a message to all player inboxes

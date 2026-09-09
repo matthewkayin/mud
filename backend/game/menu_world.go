@@ -95,9 +95,8 @@ func MenuWorld() Menu {
 	return Menu {
 		previous: nil,
 		entries: entries,
-		getHelpDescription: func (gameState *GameState, player *Player) string {
+		getDescription: func (gameState *GameState, player *Player) string {
 			return "You are in the world."
 		},
-		onEnter: nil,
 	}
 }

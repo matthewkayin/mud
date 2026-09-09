@@ -71,13 +71,8 @@ func MenuLogin() Menu {
 	return Menu {
 		previous: nil,
 		entries: entries,
-		getHelpDescription: func (gameState *GameState, player *Player) string {
+		getDescription: func (gameState *GameState, player *Player) string {
 			return "You are in the login screen."
-		},
-		onEnter: func (gameState *GameState, player *Player) {
-			*(player.inbox) <- "\nWelcome to the RC Disco MUD!"
-			*(player.inbox) <- "You are in the login screen."
-		 	*(player.inbox) <- "Type 'login <character>' to login to an existing character or type 'help' for more options."
 		},
 	}
 }
@@ -159,11 +154,8 @@ func MenuCreateCharacter(previous *Menu) Menu {
 	return Menu {
 		previous: previous,
 		entries: entries,
-		getHelpDescription: func (gameState *GameState, player *Player) string {
+		getDescription: func (gameState *GameState, player *Player) string {
 			return "You are in the character creation menu."
-		},
-		onEnter: func (gameState *GameState, player *Player) {
-			menuCreateCharacterPrintCharacterSheet(player)
 		},
 	}
 }
@@ -178,7 +170,4 @@ func menuCreateCharacterPrintCharacterSheet(player *Player) {
 	*(player.inbox) <- fmt.Sprintf("\nName: %s", characterName)
 
 	*(player.inbox) <- "\nType 'set <property> <value>' to change a detail on your character."
-	*(player.inbox) <- "Type 'view' to see this character sheet again."
-	*(player.inbox) <- "Type 'finish' to create your character."
-	*(player.inbox) <- "Type 'back' to cancel character creation and return to the login screen."
 }
