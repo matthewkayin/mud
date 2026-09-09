@@ -113,8 +113,6 @@ func (gameState *GameState) RemovePlayer(playerId int) {
 
 // Handles a player command
 func (gameState *GameState) handleCommand(command Command) {
-	log.Printf("Received command. Player %d Payload %s", command.PlayerId, command.Payload)
-
 	// Lookup player index
 	playerIndex, playerIndexExists := gameState.playerIdToIndexMap[command.PlayerId]
 	if !playerIndexExists {
