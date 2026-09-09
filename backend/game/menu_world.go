@@ -30,12 +30,11 @@ func MenuWorld() Menu {
 			*(player.inbox) <- room.description
 
 			// Send the list of players in the room
-			if len(room.playersInRoom) > 1 {
-				otherPlayerCount := len(room.playersInRoom) - 1
-				otherPlayersCounted := 0
-				otherPlayersStr := ""
+			if len(room.occupants) > 1 {
+				otherPlayerCount := len(room.occupants) - 1
 
-				for _, otherPlayerId := range room.playersInRoom {
+				otherPlayerNames := make([]string, 0, otherPlayerCount)
+				for _, otherPlayerId := range room.occupants {
 					// Don't tell the player about themselves being in the room
 					if otherPlayerId == player.id {
 						continue
@@ -45,31 +44,11 @@ func MenuWorld() Menu {
 					otherPlayerIndex := gameState.playerIdToIndexMap[otherPlayerId]
 					otherPlayer := &gameState.players[otherPlayerIndex]
 
-					// Add their name to the string
-					otherPlayersStr += otherPlayer.character.name
-
-					// The format of other players string will be as follows:
-					// 1 other player => <player name>
-					// 2 other players => <player1> and <player2>
-					// 3 or more => <player1>, <player2>, and <player3>
-
-					// Note: we have to use otherPlayersCounted rather than index
-					// because we don't know whether the current player will be the
-					// last player in the list
-					isLastOtherPlayer := otherPlayersCounted == otherPlayerCount - 1
-					isSecondToLastOtherPlayer := otherPlayersCounted == otherPlayerCount - 2
-
-					// Add comma and 'and' to the string as necessary
-					if otherPlayerCount >= 3 && !isLastOtherPlayer {
-						otherPlayersStr += ", "
-					}
-					if otherPlayerCount >= 2 && isSecondToLastOtherPlayer {
-						otherPlayersStr += "and "
-					}
-
-					otherPlayersCounted += 1
+					// Add their name to the list
+					otherPlayerNames = append(otherPlayerNames, otherPlayer.character.name)
 				}
 
+				otherPlayersStr := menuWorldCombineNames(otherPlayerNames)
 				*(player.inbox) <- fmt.Sprintf("Players in this room: %s", otherPlayersStr)
 			}
 
@@ -95,7 +74,21 @@ func MenuWorld() Menu {
 	return Menu {
 		entries: entries,
 		getDescription: func (gameState *GameState, player *Player) string {
-			return "You are in the world."
+			room := &gameState.world.rooms[player.character.currentRoom]
+			return fmt.Sprintf("You are in %s.", room.name)
 		},
+	}
+}
+
+func menuWorldCombineNames(names []string) string {
+	switch len(names) {
+		case 0:
+			return ""
+		case 1:
+			return names[0]
+		case 2:
+			return names[0] + " and " + names[1]
+		default:
+			return strings.Join(names[:len(names) - 1], ", ") + ", and " + names[len(names) - 1]
 	}
 }
