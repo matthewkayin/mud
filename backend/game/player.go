@@ -30,5 +30,9 @@ func (player *Player) enterMenu(gameState* GameState, menu *Menu) {
 	previous := player.menuInstance
 	player.menuInstance = menu.createInstance()
 	player.menuInstance.previous = previous
-	player.menuInstance.menu.onEnter(gameState, player)
+
+	*player.inbox <- player.menuInstance.menu.getDescription(gameState, player)
+	if player.menuInstance.menu.onEnter != nil {
+		player.menuInstance.menu.onEnter(gameState, player)
+	}
 }

@@ -5,22 +5,22 @@ import (
 	"strings"
 )
 
-type MenuCreateCharacterState struct {
+type MenuCreateCharacterData struct {
 	character Character
 }
 
-func MenuCreateCharacterStateInit() MenuCreateCharacterState {
-	return MenuCreateCharacterState {
+func MenuCreateCharacterDataInit() *MenuCreateCharacterData {
+	return &MenuCreateCharacterData {
 		character: CharacterInitEmpty(),
 	}
 }
 
-func (state *MenuCreateCharacterState) printCharacterSheet(player *Player) {
+func (menuData *MenuCreateCharacterData) printCharacterSheet(player *Player) {
 	*player.inbox <- "This is your character sheet:"
 
 	characterName := "<not set>"
-	if state.character.name != "" {
-		characterName = player.character.name
+	if menuData.character.name != "" {
+		characterName = menuData.character.name
 	}
 	*player.inbox <- fmt.Sprintf("\nName: %s", characterName)
 }
@@ -33,8 +33,8 @@ func MenuCreateCharacter() Menu {
 		usage: "view",
 		description: "View details of the character you are creating.",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
-			state := player.menuInstance.data.(MenuCreateCharacterState)
-			state.printCharacterSheet(player)
+			menuData := player.menuInstance.data.(*MenuCreateCharacterData)
+			menuData.printCharacterSheet(player)
 			return true
 		},
 	}
@@ -49,7 +49,7 @@ func MenuCreateCharacter() Menu {
 				return false
 			}
 
-			menuData := player.menuInstance.data.(MenuCreateCharacterState)
+			menuData := player.menuInstance.data.(*MenuCreateCharacterData)
 			property := strings.ToLower(args[0])
 			value := args[1]
 
@@ -77,7 +77,7 @@ func MenuCreateCharacter() Menu {
 		usage: "finish",
 		description: "Finish character creation.",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
-			menuData := player.menuInstance.data.(MenuCreateCharacterState)
+			menuData := player.menuInstance.data.(*MenuCreateCharacterData)
 
 			if menuData.character.name == "" {
 				*player.inbox <- "Cannot finish character. Your character is missing a name!"
@@ -107,10 +107,16 @@ func MenuCreateCharacter() Menu {
 	return Menu {
 		entries: entries,
 		createInstanceData: func () any {
-			return MenuCreateCharacterStateInit()
+			return MenuCreateCharacterDataInit()
 		},
 		getDescription: func (gameState *GameState, player *Player) string {
 			return "You are in the character creation menu."
+		},
+		onEnter: func (gameState *GameState, player *Player) {
+			menuData := player.menuInstance.data.(*MenuCreateCharacterData)
+			menuData.printCharacterSheet(player)
+
+			*player.inbox <- "\nType 'help' to see a list of options."
 		},
 	}
 }

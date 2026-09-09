@@ -69,5 +69,8 @@ func MenuLogin() Menu {
 		getDescription: func (gameState *GameState, player *Player) string {
 			return "You are in the login screen."
 		},
+		onEnter: func (gameState *GameState, player *Player) {
+			*player.inbox <- "Type 'help' to see a list of options."
+		},
 	}
 }

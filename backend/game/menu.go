@@ -27,7 +27,7 @@ type MenuInstance struct {
 func (menu *Menu) createInstance() *MenuInstance {
 	var data any
 	if menu.createInstanceData != nil {
-		data = menu.createInstanceData
+		data = menu.createInstanceData()
 	} else {
 		data = nil
 	}
