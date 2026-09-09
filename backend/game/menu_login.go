@@ -58,6 +58,8 @@ func MenuLogin() Menu {
 			}
 
 			player.character = &character
+			playerRoom := &(gameState.world.rooms[player.character.currentRoom])
+			playerRoom.playersInRoom = append(playerRoom.playersInRoom, player.character.playerId)
 			*player.inbox <- fmt.Sprintf("You have logged in. Welcome, %s.", args[0])
 			player.enterMenu(gameState, &gameState.menuWorld)
 			return true

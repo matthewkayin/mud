@@ -13,7 +13,22 @@ func MenuWorld() Menu {
 		usage: "logout",
 		description: "Logout of the world.",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
-			// TODO: remove player from current room
+
+			//remove them from room
+			playerRoom := &(gameState.world.rooms[player.character.currentRoom])
+			pIndex := -1
+			for index := range playerRoom.playersInRoom {
+				if index == player.character.playerId {
+					pIndex = index
+				}
+			}
+			if pIndex > -1 {
+				playerRoom.playersInRoom = append(playerRoom.playersInRoom[:pIndex], playerRoom.playersInRoom[pIndex+1:]...)
+			}
+
+			//stash their gamestate, including location?
+			gameState.world.characters[player.character.name] = *player.character
+
 			// TODO: broadcast world message to everyone who is logged in? or just to the current room?
 			player.enterMenu(gameState, &gameState.menuLogin)
 			return true
@@ -39,7 +54,7 @@ func MenuWorld() Menu {
 					// Don't tell the player about themselves being in the room
 					if otherPlayerId == player.id {
 						continue
-					}
+						}
 
 					// Get a handle to the other player
 					otherPlayerIndex := gameState.playerIdToIndexMap[otherPlayerId]
@@ -91,6 +106,62 @@ func MenuWorld() Menu {
 			return true
 		},
 	}
+
+	entries["move"] = MenuEntry {
+		usage: "move <direction>",
+		description: "Walk to an adjacent room.",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			if len(args) < 1 {
+				*(player.inbox) <- "You must include a direction in which you wish to travel."
+				return true
+			}
+
+			oldRoomId := player.character.currentRoom
+			newRoomId := oldRoomId
+			oldRoomPtr := &(gameState.world.rooms[oldRoomId])
+
+			switch args[0] {
+				case "north":
+			 		newRoomId = oldRoomPtr.exitNorth
+				case "south":
+		 			newRoomId = oldRoomPtr.exitSouth
+				case "east":
+		 			newRoomId = oldRoomPtr.exitEast
+				case "west":
+		 			newRoomId = oldRoomPtr.exitWest
+				default:
+					return false
+			}
+
+			if newRoomId == ROOM_NONE {
+				*(player.inbox) <- "There is no exit in that direction."
+				return true
+			}
+
+			//move in character sheet
+			player.character.currentRoom = newRoomId
+
+			//change in room arrays
+			pIndex := -1
+			for index, id := range oldRoomPtr.playersInRoom {
+				if id == player.character.playerId {
+					pIndex = index
+				}
+			}
+			if pIndex > -1 {
+				oldRoomPtr.playersInRoom = append(oldRoomPtr.playersInRoom[:pIndex], oldRoomPtr.playersInRoom[pIndex+1:]...)
+			}
+
+			newRoomPtr := &(gameState.world.rooms[newRoomId])
+			newRoomPtr.playersInRoom = append(newRoomPtr.playersInRoom, player.character.playerId)
+
+			//give player feedback
+			*(player.inbox) <- fmt.Sprintf("You have arrived in %s.", newRoomPtr.name)
+
+			return true
+		},
+	}
+
 
 	return Menu {
 		entries: entries,

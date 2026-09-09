@@ -1,5 +1,7 @@
 package game
 
+
+
 const ROOM_NONE int = -1
 
 type Character struct {
@@ -13,6 +15,7 @@ type Room struct {
 	exitSouth int `json:"exit_south"`
 	exitEast int `json:"exit_east"`
 	exitWest int `json:"exit_west"`
+	name string `json:"name"`
 	description string `json:"description"`
 	playersInRoom []int `json:"players_in_room"`
 }
@@ -25,12 +28,14 @@ type World struct {
 
 func WorldInit() World {
 	rooms := make([]Room, 0, 1)
+
 	rooms = append(rooms, Room {
 		exitNorth: ROOM_NONE,
 		exitSouth: 1,
 		exitEast: ROOM_NONE,
 		exitWest: ROOM_NONE,
 		description: "This room has descript qualities.",
+		name: "room 0",
 		playersInRoom : make([]int, 0, 1),
 	})
 
@@ -40,6 +45,7 @@ func WorldInit() World {
 		exitEast: ROOM_NONE,
 		exitWest: ROOM_NONE,
 		description: "And here is another room! I wonder what qualities it might have...",
+		name: "room 1",
 		playersInRoom: make([]int, 0, 1),
 	})
 
@@ -59,6 +65,7 @@ func CharacterInitEmpty() Character {
 }
 
 func (world *World) CreateCharacter(playerId int, character Character) {
+	character.currentRoom = 0
 	world.characters[character.name] = character
 
 	_, playerCharactersListExists := world.playerCharacters[playerId]
