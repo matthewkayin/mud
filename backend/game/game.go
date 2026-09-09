@@ -26,16 +26,24 @@ type Player struct {
 	inbox *chan string
 	menu *Menu
 
+	// newCharacter is an in-progress character that is
+	// edited by the player during character creation
+	newCharacter Character
+
+	// character is a pointer to the character that the
+	// player is currently using
 	character *Character
 }
 
 type GameState struct {
 	Commands chan Command
 
+	// Menus
 	menuLogin Menu
 	menuCreateCharacter Menu
 	menuWorld Menu
 
+	// Players
 	players []Player
 	playerIdToIndexMap map[int]int
 
@@ -87,15 +95,14 @@ func (gameState *GameState) RegisterPlayer(playerId int, playerInbox *chan strin
 	gameState.players = append(gameState.players, Player {
 		id: playerId,
 		inbox: playerInbox,
-		menu: &gameState.menuLogin,
+		menu: nil,
 
 		character: nil,
 	})
 	newPlayerIndex := len(gameState.players) - 1
 	gameState.playerIdToIndexMap[playerId] = newPlayerIndex
 
-	*playerInbox <- "Welcome to the RC Disco MUD!"
-	*playerInbox <- "Type \"login <character>\" to login or \"help\" for more options."
+	gameState.setPlayerMenu(&gameState.players[newPlayerIndex], &gameState.menuLogin)
 }
 
 func (gameState *GameState) RemovePlayer(playerId int) {

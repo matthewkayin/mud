@@ -50,6 +50,14 @@ func WorldInit() World {
 	}
 }
 
+func CharacterInitEmpty(playerId int) Character {
+	return Character {
+		playerId: playerId,
+		name: "",
+		currentRoom: 0,
+	}
+}
+
 func (world *World) CreateCharacter(playerId int, character Character) {
 	world.characters[character.name] = character
 

@@ -13,6 +13,9 @@ func MenuWorld() Menu {
 		usage: "logout",
 		description: "Logout of the world.",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
+			// TODO: remove player from current room
+			// TODO: broadcast world message to everyone who is logged in? or just to the current room?
+			gameState.setPlayerMenu(player, &gameState.menuLogin)
 			return true
 		},
 	}
@@ -26,21 +29,48 @@ func MenuWorld() Menu {
 
 			*(player.inbox) <- room.description
 
+			// Send the list of players in the room
 			if len(room.playersInRoom) > 1 {
-				playersInRoom := "The following players are in this room: "
-				for index, inRoomPlayerId := range room.playersInRoom {
-					if index == len(room.playersInRoom) - 1 {
-						playersInRoom += "and "
+				otherPlayerCount := len(room.playersInRoom) - 1
+				otherPlayersCounted := 0
+				otherPlayersStr := ""
+
+				for _, otherPlayerId := range room.playersInRoom {
+					// Don't tell the player about themselves being in the room
+					if otherPlayerId == player.id {
+						continue
 					}
-					playersInRoom += gameState.players[gameState.playerIdToIndexMap[inRoomPlayerId]].character.name
-					if index < len(room.playersInRoom) - 1 {
-						playersInRoom += ", "
+
+					// Get a handle to the other player
+					otherPlayerIndex := gameState.playerIdToIndexMap[otherPlayerId]
+					otherPlayer := &gameState.players[otherPlayerIndex]
+
+					// Add their name to the string
+					otherPlayersStr += otherPlayer.character.name
+
+					// The format of other players string will be as follows:
+					// 1 other player => <player name>
+					// 2 other players => <player1> and <player2>
+					// 3 or more => <player1>, <player2>, and <player3>
+
+					// Note: we have to use otherPlayersCounted rather than index
+					// because we don't know whether the current player will be the
+					// last player in the list
+					isLastOtherPlayer := otherPlayersCounted == otherPlayerCount - 1
+					isSecondToLastOtherPlayer := otherPlayersCounted == otherPlayerCount - 2
+
+					// Add comma and 'and' to the string as necessary
+					if otherPlayerCount >= 3 && !isLastOtherPlayer {
+						otherPlayersStr += ", "
 					}
-					if index == len(room.playersInRoom) - 1 {
-						playersInRoom += "."
+					if otherPlayerCount >= 2 && isSecondToLastOtherPlayer {
+						otherPlayersStr += "and "
 					}
+
+					otherPlayersCounted += 1
 				}
-				*(player.inbox) <- playersInRoom
+
+				*(player.inbox) <- fmt.Sprintf("Players in this room: %s", otherPlayersStr)
 			}
 
 			return true
@@ -57,7 +87,7 @@ func MenuWorld() Menu {
 				return false
 			}
 
-			gameState.broadcast(fmt.Sprintf("%s: \"%s\"", player.character.name, strings.Join(args, " ")))
+			gameState.broadcast(fmt.Sprintf("%s: '%s'", player.character.name, strings.Join(args, " ")))
 			return true
 		},
 	}
@@ -68,5 +98,6 @@ func MenuWorld() Menu {
 		getHelpDescription: func (gameState *GameState, player *Player) string {
 			return "You are in the world."
 		},
+		onEnter: nil,
 	}
 }

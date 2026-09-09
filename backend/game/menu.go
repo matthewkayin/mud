@@ -21,13 +21,13 @@ type Menu struct {
 func (menu *Menu) HandleCommand(gameState *GameState, player *Player, command string) {
 	// Get verb and arguments
 	words := strings.Split(command, " ")
-	verb := words[0]
+	verb := strings.ToLower(words[0])
 	args := words[1:]
 
 	// Handle back
 	if verb == "back" {
 		if menu.allowsBackCommand() {
-			player.menu = menu.previous
+			gameState.setPlayerMenu(player, player.menu.previous)
 		} else {
 			*(player.inbox) <- "You aren't in a menu!"
 		}
@@ -55,7 +55,8 @@ func (menu *Menu) HandleCommand(gameState *GameState, player *Player, command st
 
 	// If not executed successfully, print usage back to user
 	if !executedSuccessfully {
-		*(player.inbox) <- entry.usage
+		*(player.inbox) <- "Your command was invalid."
+		*(player.inbox) <- fmt.Sprintf("Usage: %s", entry.usage)
 	}
 }
 
