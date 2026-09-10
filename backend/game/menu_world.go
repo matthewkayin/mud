@@ -18,6 +18,9 @@ func MenuWorld() Menu {
 			playerRoom := &gameState.world.Rooms[playerMob.Data.Room]
 			playerRoom.RemoveOccupant(player.mobHandle)
 
+			// Save player mob data back to their character
+			player.character.Data = playerMob.Data
+
 			// TODO: broadcast world message to everyone who is logged in? or just to the current room?
 			player.enterMenu(gameState, &gameState.menuLogin)
 			return true
@@ -32,29 +35,7 @@ func MenuWorld() Menu {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 			room := &gameState.world.Rooms[playerMob.Data.Room]
 
-			*(player.inbox) <- room.Description
-
-			// Send the list of players in the room
-			if len(room.Occupants) > 1 {
-				otherPlayerCount := len(room.Occupants) - 1
-
-				otherPlayerNames := make([]string, 0, otherPlayerCount)
-				for _, mobHandle := range room.Occupants {
-					// Don't tell the player about themselves being in the room
-					if mobHandle.Equals(player.mobHandle) {
-						continue
-					}
-
-					// Get a pointer to the mob
-					mob := gameState.world.Mobs.Get(mobHandle)
-					// Add their name to the list
-					otherPlayerNames = append(otherPlayerNames, mob.Data.Name)
-				}
-
-				otherPlayersStr := menuWorldCombineNames(otherPlayerNames)
-				*(player.inbox) <- fmt.Sprintf("%s are here.", otherPlayersStr)
-			}
-
+			describeRoomToPlayer(gameState, player, room)
 			return true
 		},
 	}
@@ -65,11 +46,60 @@ func MenuWorld() Menu {
 		description: "Send a messsage to the current room.",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
 			if len(args) < 1 {
-				*(player.inbox) <- "You must include a message that you want to say."
+				*player.inbox <- "You must include a message that you want to say."
 				return false
 			}
 
-			gameState.broadcast(fmt.Sprintf("%s: '%s'", player.character.Data.Name, strings.Join(args, " ")))
+			gameState.broadcast(fmt.Sprintf("%s said '%s'", player.character.Data.Name, strings.Join(args, " ")))
+			return true
+		},
+	}
+
+	// Move
+	entries["move"] = MenuEntry {
+		usage: "move <direction>",
+		description: "Walk to an adjacent room.",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			if len(args) != 1 {
+				return false
+			}
+
+			// Get the player mob and room
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			playerRoom := &gameState.world.Rooms[playerMob.Data.Room]
+
+			// Determine the index of the target room
+			newRoomIndex := ROOM_NONE
+			switch strings.ToLower(args[0]) {
+				case "north":
+					newRoomIndex = playerRoom.ExitNorth
+				case "south":
+					newRoomIndex = playerRoom.ExitSouth
+				case "east":
+					newRoomIndex = playerRoom.ExitEast
+				case "west":
+					newRoomIndex = playerRoom.ExitWest
+				default:
+					*player.inbox <- fmt.Sprintf("'%s' is not a direction. The directions are 'north', 'south', 'east', and 'west'.", args[0])
+					return false
+			}
+
+			// Check to make sure there is an exit
+			if newRoomIndex == ROOM_NONE {
+				*player.inbox <- "There is not exit in that direction."
+				return true
+			}
+
+			// Get a pointer to the new room
+			newRoom := &gameState.world.Rooms[newRoomIndex]
+
+			// Move the player
+			playerRoom.RemoveOccupant(player.mobHandle)
+			newRoom.AddOccupant(player.mobHandle)
+			playerMob.Data.Room = uint(newRoomIndex)
+
+			*player.inbox <- fmt.Sprintf("You moved into %s.", newRoom.Name)
+			describeRoomToPlayer(gameState, player, newRoom)
 			return true
 		},
 	}
@@ -84,7 +114,7 @@ func MenuWorld() Menu {
 	}
 }
 
-func menuWorldCombineNames(names []string) string {
+func combineNames(names []string) string {
 	switch len(names) {
 		case 0:
 			return ""
@@ -94,5 +124,34 @@ func menuWorldCombineNames(names []string) string {
 			return names[0] + " and " + names[1]
 		default:
 			return strings.Join(names[:len(names) - 1], ", ") + ", and " + names[len(names) - 1]
+	}
+}
+
+func describeRoomToPlayer(gameState *GameState, player *Player, room *Room) {
+	*player.inbox <- room.Description
+
+	// Send the list of players in the room
+	if len(room.Occupants) > 1 {
+		otherPlayerCount := len(room.Occupants) - 1
+
+		otherPlayerNames := make([]string, 0, otherPlayerCount)
+		for _, mobHandle := range room.Occupants {
+			// Don't tell the player about themselves being in the room
+			if mobHandle.Equals(player.mobHandle) {
+				continue
+			}
+
+			// Get a pointer to the mob
+			mob := gameState.world.Mobs.Get(mobHandle)
+			// Add their name to the list
+			otherPlayerNames = append(otherPlayerNames, mob.Data.Name)
+		}
+
+		otherPlayersStr := combineNames(otherPlayerNames)
+		isString := "are"
+		if otherPlayerCount == 1 {
+			isString = "is"
+		}
+		*player.inbox <- fmt.Sprintf("%s %s here.", otherPlayersStr, isString)
 	}
 }

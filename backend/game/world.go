@@ -126,6 +126,9 @@ func MobInitFromCharacter(character *Character) Mob {
 	}
 }
 
+func (room *Room) AddOccupant(handle MobHandle) {
+	room.Occupants = append(room.Occupants, handle)
+}
 
 func (room *Room) RemoveOccupant(handle MobHandle) {
 	occupantIndex := -1
