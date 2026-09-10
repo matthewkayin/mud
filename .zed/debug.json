@@ -5,9 +5,9 @@
 [
   {
     "label": "Run Server",
-    "adapter": "CodeLLDB",
+    "adapter": "Delve",
     "request": "launch",
-    "program": "bin/mud",
-    "cwd": "$ZED_WORKTREE_ROOT/bin",
+    "program": ".",
+    "cwd": "$ZED_WORKTREE_ROOT/backend",
   },
 ]

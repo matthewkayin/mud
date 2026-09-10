@@ -1,8 +1,12 @@
 package game
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+)
 
 type MobHandle struct {
+	// TODO: make this public? to save occupants? or else make occupants private and store state elsewhere
 	id uint32
 	generation uint32
 }
@@ -75,6 +79,7 @@ func (array *MobArray) Push(mob Mob) MobHandle {
 		index: uint32(len(array.data)),
 		generation: handle.generation,
 	}
+	log.Printf("Mob Push - Id %d to Index %d:%d", handle.id, array.idToIndex[handle.id].index, array.idToIndex[handle.id].generation)
 
 	// Add data
 	array.data = append(array.data, mob)

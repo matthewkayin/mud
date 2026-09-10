@@ -95,6 +95,57 @@ func MenuWorld() Menu {
 		},
 	}
 
+	// Status
+	entries["status"] = MenuEntry {
+		usage: "status",
+		description: "Show your current status.",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			player.printStatus(gameState)
+			return true
+		},
+	}
+
+	// Attack
+	entries["attack"] = MenuEntry {
+		usage: "attack <target>",
+		description: "Attack the target.",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			if len(args) != 1 {
+				return false
+			}
+
+			targetName := strings.ToLower(args[0])
+
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			playerRoom := gameState.world.Rooms[playerMob.Data.Room]
+
+			var targetHandle MobHandle
+			targetFound := false
+			for _, occupantHandle := range playerRoom.Occupants {
+				occupant := gameState.world.Mobs.Get(occupantHandle)
+				if strings.ToLower(occupant.Data.Name) == targetName {
+					targetHandle = occupantHandle
+					targetFound = true
+					break
+				}
+			}
+
+			if !targetFound {
+				*player.inbox <- fmt.Sprintf("No target named '%s' is in this room.", args[0])
+				return true
+			}
+
+			player.nextAction = Action {
+				actionType: ActionTypeAttack,
+				data: ActionAttack {
+					target: targetHandle,
+				},
+			}
+
+			return true
+		},
+	}
+
 	return Menu {
 		entries: entries,
 		getDescription: func (gameState *GameState, player *Player) string {

@@ -8,6 +8,7 @@ import (
 type Player struct {
 	id int
 	inbox *chan string
+	nextAction Action
 	isLoggedIn bool
 	menuInstance *MenuInstance
 	character *Character
@@ -18,6 +19,10 @@ func PlayerInit(playerId int, playerInbox *chan string) Player {
 	return Player {
 		id: playerId,
 		inbox: playerInbox,
+		nextAction: Action {
+			actionType: ActionTypeNone,
+			data: nil,
+		},
 		isLoggedIn: false,
 		menuInstance: nil,
 		character: nil,
@@ -76,4 +81,10 @@ func (player *Player) exitWorld(gameState *GameState) {
 
 	player.isLoggedIn = false
 	player.enterMenu(gameState, &gameState.menuLogin)
+}
+
+
+func (player *Player) printStatus(gameState *GameState) {
+	playerMob := gameState.world.Mobs.Get(player.mobHandle)
+	*player.inbox <- fmt.Sprintf("Health: %d / %d", playerMob.Data.Health, playerMob.Data.MaxHealth)
 }

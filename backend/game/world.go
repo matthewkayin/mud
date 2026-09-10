@@ -8,17 +8,8 @@ import (
 
 const ROOM_NONE int = -1
 
-type CharacterData struct {
-	Name string
-	Room uint
-}
-
 type Character struct {
 	PlayerId int
-	Data CharacterData
-}
-
-type Mob struct {
 	Data CharacterData
 }
 
@@ -133,8 +124,8 @@ func CharacterInitEmpty() Character {
 	}
 }
 
-func (world *World) CreateCharacter(playerId int, character Character) {
-	world.Characters[character.Data.Name] = &character
+func (world *World) CreateCharacter(playerId int, character *Character) {
+	world.Characters[character.Data.Name] = character
 
 	_, playerCharactersListExists := world.PlayerCharacters[playerId]
 	if !playerCharactersListExists {
@@ -143,12 +134,6 @@ func (world *World) CreateCharacter(playerId int, character Character) {
 
 	oldCharacterList := world.PlayerCharacters[playerId]
 	world.PlayerCharacters[playerId] = append(oldCharacterList, character.Data.Name)
-}
-
-func MobInitFromCharacter(character *Character) Mob {
-	return Mob {
-		Data: character.Data,
-	}
 }
 
 func (room *Room) AddOccupant(handle MobHandle) {
@@ -168,7 +153,37 @@ func (room *Room) RemoveOccupant(handle MobHandle) {
 			handle.id, handle.generation, room.Name)
 	}
 
+	room.RemoveOccupantByIndex(occupantIndex)
+}
+
+func (room *Room) RemoveOccupantByIndex(index int) {
 	lastIndex := len(room.Occupants) - 1
-	room.Occupants[occupantIndex] = room.Occupants[lastIndex]
+	room.Occupants[index] = room.Occupants[lastIndex]
 	room.Occupants = room.Occupants[:lastIndex]
+}
+
+func (room *Room) Update(gameState *GameState) {
+	occupantIndex := 0
+	for occupantIndex < len(room.Occupants) {
+		occupantHandle := room.Occupants[occupantIndex]
+		occupantMob := gameState.world.Mobs.Get(occupantHandle)
+		if occupantMob.IsDead() {
+			room.RemoveOccupantByIndex(occupantIndex)
+			continue
+		}
+
+		occupantMob.Update(gameState)
+		occupantIndex += 1
+	}
+}
+
+func (room *Room) broadcast(gameState *GameState, message string) {
+	for _, occupantHandle := range room.Occupants {
+		occupantMob := gameState.world.Mobs.Get(occupantHandle)
+		if occupantMob.player == nil {
+			continue
+		}
+
+		*occupantMob.player.inbox <- message
+	}
 }

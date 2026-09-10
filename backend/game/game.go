@@ -153,5 +153,7 @@ func (gameState *GameState) broadcast(message string) {
 }
 
 func (gameState *GameState) update() {
-
+	for _, room := range gameState.world.Rooms {
+		room.Update(gameState)
+	}
 }
