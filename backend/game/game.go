@@ -5,9 +5,11 @@ import (
 	"context"
 	"time"
 	"log"
+	"os"
 )
 
 const GAME_UPDATE_INTERVAL = 3 * time.Second
+const GAME_WORLD_JSON_PATH = "./world.json"
 
 type PlayerMode int
 const (
@@ -23,6 +25,7 @@ type Command struct {
 
 type GameState struct {
 	Commands chan Command
+	sigintChannel chan os.Signal
 
 	// Menus
 	menuLogin Menu
@@ -33,7 +36,7 @@ type GameState struct {
 	players []Player
 	playerIdToIndexMap map[int]int
 
-	world World
+	world *World
 }
 
 func InitState() *GameState {
@@ -42,8 +45,15 @@ func InitState() *GameState {
 	menuCreateCharacter := MenuCreateCharacter()
 	menuWorld := MenuWorld()
 
+	// Create world
+	world := WorldInitFromFile(GAME_WORLD_JSON_PATH)
+	if world == nil {
+		world = WorldInitNew()
+	}
+
 	return &GameState {
 		Commands: make(chan Command, 1024),
+		sigintChannel: make(chan os.Signal, 1),
 
 		menuLogin: menuLogin,
 		menuCreateCharacter: menuCreateCharacter,
@@ -52,7 +62,7 @@ func InitState() *GameState {
 		players: make([]Player, 0, 64),
 		playerIdToIndexMap: make(map[int]int),
 
-		world: WorldInit(),
+		world: world,
 	}
 }
 
@@ -72,6 +82,7 @@ func (gameState *GameState) Run(ctx context.Context) {
 		}
 	}
 
+	log.Printf("Shutdown signal received. Shutting down server...")
 	gameState.world.Save("./world.json")
 }
 

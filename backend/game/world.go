@@ -42,7 +42,32 @@ type World struct {
 	Rooms []Room
 }
 
-func WorldInit() World {
+func WorldInitFromFile(path string) *World {
+	log.Printf("Opening world file %s...", path)
+
+	// Open file
+	file, err := os.Open(path)
+	if err != nil {
+		log.Printf("Unable to open world JSON: %s", err.Error())
+		return nil
+	}
+	defer file.Close()
+
+	world := &World{}
+	jsonParser := json.NewDecoder(file)
+	err = jsonParser.Decode(world)
+	if err != nil {
+		log.Printf("Error parsing world JSON: %s", err.Error())
+		return nil
+	}
+
+	log.Printf("Opened world from file.")
+	return world
+}
+
+func WorldInitNew() *World {
+	log.Printf("Generating new world...")
+
 	rooms := make([]Room, 0, 1)
 	rooms = append(rooms, Room {
 		Name: "Presentation Space",
@@ -68,7 +93,7 @@ func WorldInit() World {
 		Occupants: make([]MobHandle, 0, 1),
 	})
 
-	return World {
+	return &World {
 		Characters: make(map[string]Character),
 		PlayerCharacters: make(map[int][]string),
 
