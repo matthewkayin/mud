@@ -87,13 +87,7 @@ func (gameState *GameState) Run(ctx context.Context) {
 }
 
 func (gameState *GameState) RegisterPlayer(playerId int, playerInbox *chan string) {
-	gameState.players = append(gameState.players, Player {
-		id: playerId,
-		inbox: playerInbox,
-		menuInstance: nil,
-
-		character: nil,
-	})
+	gameState.players = append(gameState.players, PlayerInit(playerId, playerInbox))
 	newPlayerIndex := len(gameState.players) - 1
 	gameState.playerIdToIndexMap[playerId] = newPlayerIndex
 
@@ -108,6 +102,12 @@ func (gameState *GameState) RemovePlayer(playerId int) {
 	if !exists {
 		log.Printf("Tried to remove player %d, but they don't exist!", playerId)
 		return
+	}
+
+	// Check if they are logged in
+	player := &gameState.players[playerIndex]
+	if player.isLoggedIn {
+		player.exitWorld(gameState)
 	}
 
 	// Swap and pop them from the array

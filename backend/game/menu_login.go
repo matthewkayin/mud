@@ -57,16 +57,7 @@ func MenuLogin() Menu {
 				return true
 			}
 
-			player.character = &character
-
-			// Create a mob for the player
-			playerMob := MobInitFromCharacter(player.character)
-			player.mobHandle = gameState.world.Mobs.Push(playerMob)
-			playerRoom := &gameState.world.Rooms[playerMob.Data.Room]
-			playerRoom.AddOccupant(player.mobHandle)
-
-			*player.inbox <- fmt.Sprintf("You have logged in. Welcome, %s.", args[0])
-			player.enterMenu(gameState, &gameState.menuWorld)
+			player.enterWorld(gameState, character)
 			return true
 		},
 	}

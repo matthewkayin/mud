@@ -13,16 +13,7 @@ func MenuWorld() Menu {
 		usage: "logout",
 		description: "Logout of the world.",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
-			// Remove player from current room
-			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			playerRoom := &gameState.world.Rooms[playerMob.Data.Room]
-			playerRoom.RemoveOccupant(player.mobHandle)
-
-			// Save player mob data back to their character
-			player.character.Data = playerMob.Data
-
-			// TODO: broadcast world message to everyone who is logged in? or just to the current room?
-			player.enterMenu(gameState, &gameState.menuLogin)
+			player.exitWorld(gameState)
 			return true
 		},
 	}

@@ -35,7 +35,7 @@ type Room struct {
 }
 
 type World struct {
-	Characters map[string]Character
+	Characters map[string]*Character
 	PlayerCharacters map[int][]string
 
 	Mobs MobArray
@@ -94,7 +94,7 @@ func WorldInitNew() *World {
 	})
 
 	return &World {
-		Characters: make(map[string]Character),
+		Characters: make(map[string]*Character),
 		PlayerCharacters: make(map[int][]string),
 
 		Mobs: MobArrayInit(),
@@ -134,7 +134,7 @@ func CharacterInitEmpty() Character {
 }
 
 func (world *World) CreateCharacter(playerId int, character Character) {
-	world.Characters[character.Data.Name] = character
+	world.Characters[character.Data.Name] = &character
 
 	_, playerCharactersListExists := world.PlayerCharacters[playerId]
 	if !playerCharactersListExists {
