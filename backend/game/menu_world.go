@@ -13,7 +13,11 @@ func MenuWorld() Menu {
 		usage: "logout",
 		description: "Logout of the world.",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
-			// TODO: remove player from current room
+			// Remove player from current room
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			playerRoom := &gameState.world.Rooms[playerMob.Data.Room]
+			playerRoom.RemoveOccupant(player.mobHandle)
+
 			// TODO: broadcast world message to everyone who is logged in? or just to the current room?
 			player.enterMenu(gameState, &gameState.menuLogin)
 			return true
@@ -25,31 +29,30 @@ func MenuWorld() Menu {
 		usage: "look",
 		description: "Describe the current room.",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
-			room := &gameState.world.rooms[player.character.currentRoom]
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			room := &gameState.world.Rooms[playerMob.Data.Room]
 
-			*(player.inbox) <- room.description
+			*(player.inbox) <- room.Description
 
 			// Send the list of players in the room
-			if len(room.occupants) > 1 {
-				otherPlayerCount := len(room.occupants) - 1
+			if len(room.Occupants) > 1 {
+				otherPlayerCount := len(room.Occupants) - 1
 
 				otherPlayerNames := make([]string, 0, otherPlayerCount)
-				for _, otherPlayerId := range room.occupants {
+				for _, mobHandle := range room.Occupants {
 					// Don't tell the player about themselves being in the room
-					if otherPlayerId == player.id {
+					if mobHandle.Equals(player.mobHandle) {
 						continue
 					}
 
-					// Get a handle to the other player
-					otherPlayerIndex := gameState.playerIdToIndexMap[otherPlayerId]
-					otherPlayer := &gameState.players[otherPlayerIndex]
-
+					// Get a pointer to the mob
+					mob := gameState.world.Mobs.Get(mobHandle)
 					// Add their name to the list
-					otherPlayerNames = append(otherPlayerNames, otherPlayer.character.name)
+					otherPlayerNames = append(otherPlayerNames, mob.Data.Name)
 				}
 
 				otherPlayersStr := menuWorldCombineNames(otherPlayerNames)
-				*(player.inbox) <- fmt.Sprintf("Players in this room: %s", otherPlayersStr)
+				*(player.inbox) <- fmt.Sprintf("%s are here.", otherPlayersStr)
 			}
 
 			return true
@@ -66,7 +69,7 @@ func MenuWorld() Menu {
 				return false
 			}
 
-			gameState.broadcast(fmt.Sprintf("%s: '%s'", player.character.name, strings.Join(args, " ")))
+			gameState.broadcast(fmt.Sprintf("%s: '%s'", player.character.Data.Name, strings.Join(args, " ")))
 			return true
 		},
 	}
@@ -74,8 +77,9 @@ func MenuWorld() Menu {
 	return Menu {
 		entries: entries,
 		getDescription: func (gameState *GameState, player *Player) string {
-			room := &gameState.world.rooms[player.character.currentRoom]
-			return fmt.Sprintf("You are in %s.", room.name)
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			room := &gameState.world.Rooms[playerMob.Data.Room]
+			return fmt.Sprintf("You are in %s.", room.Name)
 		},
 	}
 }

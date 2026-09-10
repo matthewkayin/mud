@@ -72,7 +72,7 @@ func (gameState *GameState) Run(ctx context.Context) {
 		}
 	}
 
-	// TODO: end of game loop, save off game state data before exiting
+	gameState.world.Save("./world.json")
 }
 
 func (gameState *GameState) RegisterPlayer(playerId int, playerInbox *chan string) {

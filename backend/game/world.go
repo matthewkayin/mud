@@ -1,80 +1,146 @@
 package game
 
+import (
+	"os"
+	"log"
+	"encoding/json"
+)
+
 const ROOM_NONE int = -1
 
+type CharacterData struct {
+	Name string
+	Room uint
+}
+
 type Character struct {
-	playerId int `json:"playerId"`
-	name string `json:"name"`
-	currentRoom int `json:"current_room"`
+	PlayerId int
+	Data CharacterData
+}
+
+type Mob struct {
+	Data CharacterData
 }
 
 type Room struct {
-	name string `json:"name"`
-	description string `json:"description"`
+	Name string
+	Description string
 
-	exitNorth int `json:"exit_north"`
-	exitSouth int `json:"exit_south"`
-	exitEast int `json:"exit_east"`
-	exitWest int `json:"exit_west"`
+	ExitNorth int
+	ExitSouth int
+	ExitEast int
+	ExitWest int
 
-	occupants []int `json:"occupants"`
+	Occupants []MobHandle
 }
 
 type World struct {
-	characters map[string]Character `json:"characters"`
-	playerCharacters map[int][]string `json:"player_characters"`
-	rooms []Room `json:"rooms"`
+	Characters map[string]Character
+	PlayerCharacters map[int][]string
+
+	Mobs MobArray
+	Rooms []Room
 }
 
 func WorldInit() World {
 	rooms := make([]Room, 0, 1)
 	rooms = append(rooms, Room {
-		name: "Presentation Space",
-		description: "You're in an open room with white walls and tan-wood flooring. Various pairing tables are strewn about the space, and a makeshift blue octopus floats overhead.",
+		Name: "Presentation Space",
+		Description: "You're in an open room with white walls and tan-wood flooring. Various pairing tables are strewn about the space, and a makeshift blue octopus floats overhead.",
 
-		occupants: make([]int, 0, 1),
+		ExitNorth: ROOM_NONE,
+		ExitSouth: 1,
+		ExitEast: ROOM_NONE,
+		ExitWest: ROOM_NONE,
 
-		exitNorth: ROOM_NONE,
-		exitSouth: 1,
-		exitEast: ROOM_NONE,
-		exitWest: ROOM_NONE,
+		Occupants: make([]MobHandle, 0, 1),
 	})
 
 	rooms = append(rooms, Room {
-		name: "The Kitchen",
-		description: "Explosions of red, blue, and yellow tape paint the far wall. In front of this sits a long, oak dining table with chairs. A kitchenette hugs the far-left corner, complete with three different kinds of coffee makers and more in the cubboards.",
+		Name: "The Kitchen",
+		Description: "Bursts of red, blue, and yellow tape paint the far wall. In front of this sits a long, oak dining table with chairs. A kitchenette hugs the far-left corner, complete with three different kinds of coffee makers and more in the cubboards.",
 
-		occupants: make([]int, 0, 1),
+		ExitNorth: 0,
+		ExitSouth: ROOM_NONE,
+		ExitEast: ROOM_NONE,
+		ExitWest: ROOM_NONE,
 
-		exitNorth: 0,
-		exitSouth: ROOM_NONE,
-		exitEast: ROOM_NONE,
-		exitWest: ROOM_NONE,
+		Occupants: make([]MobHandle, 0, 1),
 	})
 
 	return World {
-		characters: make(map[string]Character),
-		playerCharacters: make(map[int][]string),
-		rooms: rooms,
+		Characters: make(map[string]Character),
+		PlayerCharacters: make(map[int][]string),
+
+		Mobs: MobArrayInit(),
+		Rooms: rooms,
 	}
+}
+
+func (world *World) Save(path string) {
+	fileOpenFlags := os.O_CREATE | os.O_WRONLY
+	saveFile, err := os.OpenFile(path, fileOpenFlags, 0644)
+	if err != nil {
+		log.Printf("Failed to open world JSON for saving: %s", err.Error())
+		return
+	}
+	defer saveFile.Close()
+
+	encoder := json.NewEncoder(saveFile)
+	encoder.SetIndent("", "  ")
+
+	err = encoder.Encode(world)
+	if err != nil {
+		log.Printf("Failed to encode world JSON: %s", err.Error())
+		return
+	}
+
+	log.Printf("World has been saved.")
 }
 
 func CharacterInitEmpty() Character {
 	return Character {
-		playerId: 0,
-		name: "",
-		currentRoom: 0,
+		PlayerId: 0,
+		Data: CharacterData {
+			Name: "",
+			Room: 0,
+		},
 	}
 }
 
 func (world *World) CreateCharacter(playerId int, character Character) {
-	world.characters[character.name] = character
+	world.Characters[character.Data.Name] = character
 
-	_, playerCharactersListExists := world.playerCharacters[playerId]
+	_, playerCharactersListExists := world.PlayerCharacters[playerId]
 	if !playerCharactersListExists {
-		world.playerCharacters[playerId] = make([]string, 0, 1)
+		world.PlayerCharacters[playerId] = make([]string, 0, 1)
 	}
 
-	oldCharacterList := world.playerCharacters[playerId]
-	world.playerCharacters[playerId] = append(oldCharacterList, character.name)
+	oldCharacterList := world.PlayerCharacters[playerId]
+	world.PlayerCharacters[playerId] = append(oldCharacterList, character.Data.Name)
+}
+
+func MobInitFromCharacter(character *Character) Mob {
+	return Mob {
+		Data: character.Data,
+	}
+}
+
+
+func (room *Room) RemoveOccupant(handle MobHandle) {
+	occupantIndex := -1
+	for index, occupant := range room.Occupants {
+		if occupant.Equals(handle) {
+			occupantIndex = index
+			break
+		}
+	}
+	if occupantIndex == -1 {
+		log.Printf("Warning: Tried to remove occupant with handle %d:%d from room %s, but no such occupant was found.",
+			handle.id, handle.generation, room.Name)
+	}
+
+	lastIndex := len(room.Occupants) - 1
+	room.Occupants[occupantIndex] = room.Occupants[lastIndex]
+	room.Occupants = room.Occupants[:lastIndex]
 }

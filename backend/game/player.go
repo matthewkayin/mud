@@ -9,6 +9,7 @@ type Player struct {
 	inbox *chan string
 	menuInstance *MenuInstance
 	character *Character
+	mobHandle MobHandle
 }
 
 func (player *Player) exitMenu(gameState* GameState) {
