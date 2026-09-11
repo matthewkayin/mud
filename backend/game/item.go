@@ -17,7 +17,7 @@ type ItemData struct {
 }
 
 type Item struct {
-	itemType ItemType
+	Type ItemType
 }
 
 var ITEM_DATA = map[ItemType]*ItemData{
@@ -41,7 +41,7 @@ func (inventory *ItemList) AddItem(item Item) {
 
 func (inventory *ItemList) FindItem(name string) (int, bool) {
 	for index := 0; index < len(inventory.Items); index++ {
-		if strings.EqualFold(name, ITEM_DATA[inventory.Items[index].itemType].name) {
+		if strings.EqualFold(name, ITEM_DATA[inventory.Items[index].Type].name) {
 			return index, true
 		}
 	}

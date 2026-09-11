@@ -75,7 +75,7 @@ func WorldInitNew() *World {
 		Inventory: ItemList{
 			Items: []Item{
 				Item{
-					itemType: ITEM_AXE,
+					Type: ITEM_AXE,
 				},
 			},
 		},
@@ -95,7 +95,7 @@ func WorldInitNew() *World {
 		Inventory: ItemList{
 			Items: []Item{
 				Item{
-					itemType: ITEM_SWORD,
+					Type: ITEM_SWORD,
 				},
 			},
 		},

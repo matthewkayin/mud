@@ -108,7 +108,7 @@ func MenuWorld() Menu {
 			inventorySize := len(player.character.Data.Inventory.Items)
 			itemNames := make([]string, 0, inventorySize)
 			for _, item := range player.character.Data.Inventory.Items {
-				itemNames = append(itemNames, ITEM_DATA[item.itemType].name)
+				itemNames = append(itemNames, ITEM_DATA[item.Type].name)
 			}
 			*player.inbox <- fmt.Sprintf("You are carrying the following items: %s", combineNames(itemNames))
 			return true
@@ -131,7 +131,7 @@ func MenuWorld() Menu {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 			playerRoom := &gameState.world.Rooms[playerMob.Data.Room]
 			playerRoom.Inventory.AddItem(droppedItem)
-			*player.inbox <- fmt.Sprintf("You have dropped %s.", ITEM_DATA[droppedItem.itemType].name)
+			*player.inbox <- fmt.Sprintf("You have dropped %s.", ITEM_DATA[droppedItem.Type].name)
 			return true
 		},
 	}
@@ -153,7 +153,7 @@ func MenuWorld() Menu {
 			}
 			grabbedItem := playerRoom.Inventory.RemoveItem(itemIndex)
 			playerMob.Data.Inventory.AddItem(grabbedItem)
-			*player.inbox <- fmt.Sprintf("You have picked up %s.", ITEM_DATA[grabbedItem.itemType].name)
+			*player.inbox <- fmt.Sprintf("You have picked up %s.", ITEM_DATA[grabbedItem.Type].name)
 			return true
 		},
 	}
@@ -263,7 +263,7 @@ func describeRoomToPlayer(gameState *GameState, player *Player, room *Room) {
 	if len(room.Inventory.Items) > 0 {
 		itemNames := make([]string, 0, len(room.Inventory.Items))
 		for _, item := range room.Inventory.Items {
-			itemNames = append(itemNames, ITEM_DATA[item.itemType].name)
+			itemNames = append(itemNames, ITEM_DATA[item.Type].name)
 		}
 		*player.inbox <- fmt.Sprintf("The following items are in this room: %s.", combineNames(itemNames))
 	}
