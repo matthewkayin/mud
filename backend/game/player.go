@@ -59,6 +59,12 @@ func (player *Player) enterWorld(gameState *GameState, asCharacter *Character) {
 	player.isLoggedIn = true
 	player.character = asCharacter
 
+	// Clear the player's action in case they had any leftover from a previous login session
+	player.nextAction = Action {
+		actionType: ActionTypeNone,
+		data: nil,
+	}
+
 	// Create a mob for the player
 	playerMob := MobInitFromCharacter(player, player.character)
 	player.mobHandle = gameState.world.Mobs.Push(playerMob)
@@ -87,4 +93,14 @@ func (player *Player) exitWorld(gameState *GameState) {
 func (player *Player) printStatus(gameState *GameState) {
 	playerMob := gameState.world.Mobs.Get(player.mobHandle)
 	*player.inbox <- fmt.Sprintf("Health: %d / %d", playerMob.Data.Health, playerMob.Data.MaxHealth)
+}
+
+func (player *Player) onDeath(gameState *GameState) {
+	*player.inbox <- fmt.Sprintf("Your character %s has died, and death is forever. RIP", player.character.Data.Name)
+
+	gameState.world.RemoveCharacter(player.character)
+	player.character = nil
+	player.isLoggedIn = false
+
+	player.enterMenu(gameState, &gameState.menuLogin)
 }

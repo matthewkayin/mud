@@ -48,7 +48,6 @@ func (mob *Mob) Update(gameState *GameState) {
 			targetMob, targetExists := gameState.world.Mobs.GetIfExists(mob.Target)
 			if !targetExists || targetMob.Data.Health == 0 || targetMob.Data.Room != mob.Data.Room {
 				mob.Mode = MobModeIdle
-				log.Printf("Target is invalid, canceling attack")
 				break
 			}
 
@@ -58,7 +57,6 @@ func (mob *Mob) Update(gameState *GameState) {
 				targetMob.Data.Health -= mob.Data.Damage
 			}
 
-			log.Printf("Performed attack")
 			room := gameState.world.Rooms[mob.Data.Room]
 			room.broadcast(gameState, fmt.Sprintf("%s attacked %s for %d damage.", mob.Data.Name, targetMob.Data.Name, mob.Data.Damage))
 			if targetMob.Data.Health == 0 {
