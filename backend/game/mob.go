@@ -69,7 +69,7 @@ func (mob *Mob) Update(gameState *GameState) {
 		case MOB_MODE_IDLE:
 		case MOB_MODE_ATTACK:
 			targetMob, targetExists := gameState.world.Mobs.GetIfExists(mob.Target)
-			if !targetExists || targetMob.Data.Health == 0 || targetMob.Data.Room != mob.Data.Room {
+			if !targetExists || targetMob.IsDead() || targetMob.Data.Room != mob.Data.Room {
 				mob.Mode = MOB_MODE_IDLE
 				break
 			}

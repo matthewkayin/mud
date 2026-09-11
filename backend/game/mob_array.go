@@ -5,7 +5,6 @@ import (
 )
 
 type MobHandle struct {
-	// TODO: make this public? to save occupants? or else make occupants private and store state elsewhere
 	id uint32
 	generation uint32
 }
