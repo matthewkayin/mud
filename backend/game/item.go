@@ -5,7 +5,6 @@ import (
 )
 
 type ItemType int
-
 const (
 	ITEM_SWORD = iota
 	ITEM_AXE

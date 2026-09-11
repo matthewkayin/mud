@@ -44,6 +44,8 @@ func InitState() *GameState {
 		world = WorldInitNew()
 	}
 
+	world.SpawnNpc(1)//TEMPORARY TEST LOCATION
+
 	return &GameState {
 		Commands: make(chan Command, 1024),
 		sigintChannel: make(chan os.Signal, 1),

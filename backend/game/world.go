@@ -1,9 +1,9 @@
 package game
 
 import (
-	"os"
-	"log"
 	"encoding/json"
+	"log"
+	"os"
 )
 
 const ROOM_NONE int = -1
@@ -18,6 +18,7 @@ type Room struct {
 	ExitWest int
 
 	occupants []MobHandle
+	npcs []Npc
 	Inventory ItemList
 }
 
@@ -65,6 +66,7 @@ func WorldInitNew() *World {
 		ExitEast: ROOM_NONE,
 		ExitWest: ROOM_NONE,
 
+		npcs: make([]Npc, 0, 1),
 		occupants: make([]MobHandle, 0, 1),
 		Inventory: ItemList {
 			Items: []Item {
@@ -83,6 +85,7 @@ func WorldInitNew() *World {
 		ExitEast: ROOM_NONE,
 		ExitWest: ROOM_NONE,
 
+		npcs: make([]Npc, 0, 1),
 		occupants: make([]MobHandle, 0, 1),
 		Inventory: ItemList {
 			Items: []Item {},
@@ -193,19 +196,39 @@ func (room *Room) RemoveOccupantByIndex(index int) {
 
 func (room *Room) Update(gameState *GameState) {
 	occupantIndex := 0
+	hasPlayer := false
+	hasNpc := false
 	for occupantIndex < len(room.occupants) {
 		occupantHandle := room.occupants[occupantIndex]
 		occupantMob := gameState.world.Mobs.Get(occupantHandle)
+		if occupantMob.player != nil {
+			hasPlayer = true
+		}
+		if occupantMob.npc != nil {
+			hasNpc = true
+		}
 		if occupantMob.IsDead() {
 			room.RemoveOccupantByIndex(occupantIndex)
 			if occupantMob.player != nil {
 				occupantMob.player.onDeath(gameState)
+			}
+			if occupantMob.npc != nil {
+				occupantMob.npc.onDeath()
 			}
 			continue
 		}
 
 		occupantMob.Update(gameState)
 		occupantIndex += 1
+	}
+
+	if hasPlayer && hasNpc {
+		for _, npc := range room.npcs {
+			if npc.isActive {
+				npcMob := gameState.world.Mobs.Get(npc.mobHandle)
+				npcMob.npc.behavior.handler(gameState, room ,npcMob)
+			}
+		}
 	}
 }
 

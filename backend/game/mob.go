@@ -32,6 +32,7 @@ const (
 
 type Mob struct {
 	player *Player
+	npc *Npc
 	Data MobData
 
 	Mode MobMode
