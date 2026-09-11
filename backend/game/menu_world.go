@@ -31,6 +31,19 @@ func MenuWorld() Menu {
 		},
 	}
 
+	// Exits
+	entries["exits"] = MenuEntry {
+		usage: "exits",
+		description: "Describe the exits of the current room.",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			room := &gameState.world.Rooms[playerMob.Data.Room]
+
+			printRoomExits(gameState, player, room)
+			return true
+		},
+	}
+
 	// Say
 	entries["say"] = MenuEntry {
 		usage: "say <message>",
@@ -340,6 +353,38 @@ func describeRoomToPlayer(gameState *GameState, player *Player, room *Room) {
 			isString = "item is"
 		}
 		*player.inbox <- fmt.Sprintf("The following %s in this room: %s.", isString, combineNames(itemNames))
+	}
+}
+
+func printRoomExits(gameState *GameState, player *Player, room *Room) {
+	exitFound := false
+
+	if room.ExitNorth != ROOM_NONE {
+		exitRoom := &gameState.world.Rooms[room.ExitNorth]
+		*player.inbox <- fmt.Sprintf("To the north is %s", exitRoom.Name)
+		exitFound = true
+	}
+
+	if room.ExitSouth != ROOM_NONE {
+		exitRoom := &gameState.world.Rooms[room.ExitSouth]
+		*player.inbox <- fmt.Sprintf("To the south is %s", exitRoom.Name)
+		exitFound = true
+	}
+
+	if room.ExitEast != ROOM_NONE {
+		exitRoom := &gameState.world.Rooms[room.ExitEast]
+		*player.inbox <- fmt.Sprintf("To the east is %s", exitRoom.Name)
+		exitFound = true
+	}
+
+	if room.ExitWest != ROOM_NONE {
+		exitRoom := &gameState.world.Rooms[room.ExitWest]
+		*player.inbox <- fmt.Sprintf("To the west is %s", exitRoom.Name)
+		exitFound = true
+	}
+
+	if !exitFound {
+		*player.inbox <- "This room has no exits!"
 	}
 }
 
