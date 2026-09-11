@@ -114,22 +114,8 @@ func MenuWorld() Menu {
 				return false
 			}
 
-			targetName := strings.ToLower(args[0])
-
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			playerRoom := gameState.world.Rooms[playerMob.Data.Room]
-
-			var targetHandle MobHandle
-			targetFound := false
-			for _, occupantHandle := range playerRoom.occupants {
-				occupant := gameState.world.Mobs.Get(occupantHandle)
-				if strings.ToLower(occupant.Data.Name) == targetName {
-					targetHandle = occupantHandle
-					targetFound = true
-					break
-				}
-			}
-
+			targetHandle, targetFound := getTargetHandle(gameState, playerMob, args[0])
 			if !targetFound {
 				*player.inbox <- fmt.Sprintf("No target named '%s' is in this room.", args[0])
 				return true
@@ -138,6 +124,72 @@ func MenuWorld() Menu {
 			player.nextAction = Action {
 				actionType: ACTION_TYPE_ATTACK,
 				data: ActionAttack {
+					target: targetHandle,
+				},
+			}
+
+			return true
+		},
+	}
+
+	// Spell list
+	entries["spells"] = MenuEntry {
+		usage: "spells",
+		description: "Show a list of the spells that you know",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			if len(playerMob.Data.Spells) == 0 {
+				*player.inbox <- "You don't know any spells."
+				return true
+			}
+
+			for _, spell := range playerMob.Data.Spells {
+				spellData := SPELL_DATA[spell]
+				*player.inbox <- fmt.Sprintf("%s (Mana Cost: %d) - %s", spellData.name, spellData.manaCost, spellData.description)
+			}
+
+			return true
+		},
+	}
+
+	// Cast
+	entries["cast"] = MenuEntry {
+		usage: "cast <spell> <target>",
+		description: "Cast a spell",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			if len(args) != 2 {
+				return false
+			}
+
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+
+			// Find the spell in their spell list
+			var spellToCast Spell
+			spellFound := false
+			for _, spell := range playerMob.Data.Spells {
+				spellData := SPELL_DATA[spell]
+				if strings.EqualFold(spellData.name, args[0]) {
+					spellToCast = spell
+					spellFound = true
+				}
+			}
+			if !spellFound {
+				*player.inbox <- fmt.Sprintf("You don't know of any spells called '%s'.", args[0])
+				return true
+			}
+
+			// Find the target in the room
+			targetHandle, targetFound := getTargetHandle(gameState, playerMob, args[1])
+			if !targetFound {
+				*player.inbox <- fmt.Sprintf("No target named '%s' is in this room.", args[1])
+				return true
+			}
+
+			// Queue up a cast action
+			player.nextAction = Action {
+				actionType: ACTION_TYPE_CAST,
+				data: ActionCast {
+					spell: spellToCast,
 					target: targetHandle,
 				},
 			}
@@ -196,4 +248,17 @@ func describeRoomToPlayer(gameState *GameState, player *Player, room *Room) {
 		}
 		*player.inbox <- fmt.Sprintf("%s %s here.", otherPlayersStr, isString)
 	}
+}
+
+func getTargetHandle(gameState *GameState, playerMob *Mob, targetName string) (MobHandle, bool) {
+	playerRoom := gameState.world.Rooms[playerMob.Data.Room]
+
+	for _, occupantHandle := range playerRoom.occupants {
+		occupant := gameState.world.Mobs.Get(occupantHandle)
+		if strings.EqualFold(occupant.Data.Name, targetName) {
+			return occupantHandle, true
+		}
+	}
+
+	return MobHandle{}, false
 }

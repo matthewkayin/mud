@@ -11,11 +11,13 @@ const (
 type CharacterClassData struct {
 	Name string
 
-	Vigor int
+	Vitality int
 	Strength int
 	Agility int
 	Intelligence int
 	Faith int
+
+	StartingSpells []Spell
 }
 
 type CharacterRace int
@@ -30,7 +32,7 @@ const (
 type CharacterRaceData struct {
 	Name string
 
-	Vigor int
+	Vitality int
 	Strength int
 	Agility int
 	Intelligence int
@@ -50,38 +52,50 @@ var CLASS_DATA = map[CharacterClass]*CharacterClassData {
 	CHARACTER_CLASS_WARRIOR: {
 		Name: "Warrior",
 
-		Vigor: 8,
+		Vitality: 8,
 		Strength: 10,
 		Agility: 6,
 		Intelligence: 6,
 		Faith: 8,
+
+		StartingSpells: []Spell{},
 	},
 	CHARACTER_CLASS_ROGUE: {
 		Name: "Rogue",
 
-		Vigor: 8,
+		Vitality: 8,
 		Strength: 8,
 		Agility: 10,
 		Intelligence: 6,
 		Faith: 6,
+
+		StartingSpells: []Spell{},
 	},
 	CHARACTER_CLASS_WIZARD: {
 		Name: "Wizard",
 
-		Vigor: 6,
+		Vitality: 6,
 		Strength: 6,
 		Agility: 8,
 		Intelligence: 10,
 		Faith: 8,
+
+		StartingSpells: []Spell{
+			SPELL_FIREBOLT,
+		},
 	},
 	CHARACTER_CLASS_PRIEST: {
 		Name: "Priest",
 
-		Vigor: 6,
+		Vitality: 6,
 		Strength: 6,
 		Agility: 8,
 		Intelligence: 8,
 		Faith: 10,
+
+		StartingSpells: []Spell{
+			SPELL_CURE,
+		},
 	},
 }
 
@@ -89,7 +103,7 @@ var RACE_DATA = map[CharacterRace]*CharacterRaceData {
 	CHARACTER_RACE_HUMAN: {
 		Name: "Human",
 
-		Vigor: 1,
+		Vitality: 1,
 		Strength: 0,
 		Agility: 0,
 		Intelligence: -1,
@@ -98,7 +112,7 @@ var RACE_DATA = map[CharacterRace]*CharacterRaceData {
 	CHARACTER_RACE_ELF: {
 		Name: "Elf",
 
-		Vigor: 0,
+		Vitality: 0,
 		Strength: -1,
 		Agility: 1,
 		Intelligence: 2,
@@ -107,7 +121,7 @@ var RACE_DATA = map[CharacterRace]*CharacterRaceData {
 	CHARACTER_RACE_DWARF: {
 		Name: "Dwarf",
 
-		Vigor: 2,
+		Vitality: 2,
 		Strength: 1,
 		Agility: -1,
 		Intelligence: 0,
@@ -116,7 +130,7 @@ var RACE_DATA = map[CharacterRace]*CharacterRaceData {
 	CHARACTER_RACE_ORC: {
 		Name: "Orc",
 
-		Vigor: 2,
+		Vitality: 2,
 		Strength: 2,
 		Agility: 0,
 		Intelligence: 0,
@@ -125,7 +139,7 @@ var RACE_DATA = map[CharacterRace]*CharacterRaceData {
 	CHARACTER_RACE_GREMLIN: {
 		Name: "Gremlin",
 
-		Vigor: 0,
+		Vitality: 0,
 		Strength: -1,
 		Agility: 2,
 		Intelligence: 1,
@@ -140,15 +154,25 @@ func CharacterNew(playerId int, characterSheet *MenuCharacterSheet) *Character {
 	character.Race = characterSheet.race
 	character.Class = characterSheet.class
 
+	classData := CLASS_DATA[characterSheet.class]
+	raceData := RACE_DATA[characterSheet.race]
+
 	character.Data.Name = characterSheet.name
 	character.Data.Room = 0
-	character.Data.Vigor = CLASS_DATA[character.Class].Vigor + RACE_DATA[character.Race].Vigor
-	character.Data.Strength = CLASS_DATA[character.Class].Strength + RACE_DATA[character.Race].Strength
-	character.Data.Agility = CLASS_DATA[character.Class].Agility + RACE_DATA[character.Race].Agility
-	character.Data.Intelligence = CLASS_DATA[character.Class].Intelligence + RACE_DATA[character.Race].Intelligence
-	character.Data.Faith = CLASS_DATA[character.Class].Faith + RACE_DATA[character.Race].Faith
+	character.Data.Vitality = classData.Vitality + raceData.Vitality
+	character.Data.Strength = classData.Strength + raceData.Strength
+	character.Data.Agility = classData.Agility + raceData.Agility
+	character.Data.Intelligence = classData.Intelligence + raceData.Intelligence
+	character.Data.Faith = classData.Faith + raceData.Faith
 
 	character.Data.Health = character.Data.MaxHealth()
+	character.Data.Mana = character.Data.MaxMana()
+
+	// Add starting spells
+	character.Data.Spells = make([]Spell, 0, len(classData.StartingSpells))
+	for _, spell := range classData.StartingSpells {
+		character.Data.Spells = append(character.Data.Spells, spell)
+	}
 
 	return character
 }
