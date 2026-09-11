@@ -22,7 +22,7 @@ type Room struct {
 	ExitEast int
 	ExitWest int
 
-	Occupants []MobHandle
+	occupants []MobHandle
 }
 
 type World struct {
@@ -69,7 +69,7 @@ func WorldInitNew() *World {
 		ExitEast: ROOM_NONE,
 		ExitWest: ROOM_NONE,
 
-		Occupants: make([]MobHandle, 0, 1),
+		occupants: make([]MobHandle, 0, 1),
 	})
 
 	rooms = append(rooms, Room {
@@ -81,7 +81,7 @@ func WorldInitNew() *World {
 		ExitEast: ROOM_NONE,
 		ExitWest: ROOM_NONE,
 
-		Occupants: make([]MobHandle, 0, 1),
+		occupants: make([]MobHandle, 0, 1),
 	})
 
 	return &World {
@@ -137,12 +137,12 @@ func (world *World) CreateCharacter(playerId int, character *Character) {
 }
 
 func (room *Room) AddOccupant(handle MobHandle) {
-	room.Occupants = append(room.Occupants, handle)
+	room.occupants = append(room.occupants, handle)
 }
 
 func (room *Room) RemoveOccupant(handle MobHandle) {
 	occupantIndex := -1
-	for index, occupant := range room.Occupants {
+	for index, occupant := range room.occupants {
 		if occupant.Equals(handle) {
 			occupantIndex = index
 			break
@@ -157,15 +157,15 @@ func (room *Room) RemoveOccupant(handle MobHandle) {
 }
 
 func (room *Room) RemoveOccupantByIndex(index int) {
-	lastIndex := len(room.Occupants) - 1
-	room.Occupants[index] = room.Occupants[lastIndex]
-	room.Occupants = room.Occupants[:lastIndex]
+	lastIndex := len(room.occupants) - 1
+	room.occupants[index] = room.occupants[lastIndex]
+	room.occupants = room.occupants[:lastIndex]
 }
 
 func (room *Room) Update(gameState *GameState) {
 	occupantIndex := 0
-	for occupantIndex < len(room.Occupants) {
-		occupantHandle := room.Occupants[occupantIndex]
+	for occupantIndex < len(room.occupants) {
+		occupantHandle := room.occupants[occupantIndex]
 		occupantMob := gameState.world.Mobs.Get(occupantHandle)
 		if occupantMob.IsDead() {
 			room.RemoveOccupantByIndex(occupantIndex)
@@ -178,7 +178,7 @@ func (room *Room) Update(gameState *GameState) {
 }
 
 func (room *Room) broadcast(gameState *GameState, message string) {
-	for _, occupantHandle := range room.Occupants {
+	for _, occupantHandle := range room.occupants {
 		occupantMob := gameState.world.Mobs.Get(occupantHandle)
 		if occupantMob.player == nil {
 			continue

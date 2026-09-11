@@ -60,7 +60,7 @@ func (player *Player) enterWorld(gameState *GameState, asCharacter *Character) {
 	player.character = asCharacter
 
 	// Create a mob for the player
-	playerMob := MobInitFromCharacter(player.character)
+	playerMob := MobInitFromCharacter(player, player.character)
 	player.mobHandle = gameState.world.Mobs.Push(playerMob)
 	playerRoom := &gameState.world.Rooms[playerMob.Data.Room]
 	playerRoom.AddOccupant(player.mobHandle)

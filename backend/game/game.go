@@ -152,8 +152,15 @@ func (gameState *GameState) broadcast(message string) {
 	}
 }
 
+// This function is the update that is called on a 3-second interval
 func (gameState *GameState) update() {
-	for _, room := range gameState.world.Rooms {
-		room.Update(gameState)
+	// Apply player actions
+	for index := 0; index < len(gameState.players); index++ {
+		gameState.players[index].doAction(gameState)
+	}
+
+	// Room updates
+	for index := 0; index < len(gameState.world.Rooms); index++ {
+		gameState.world.Rooms[index].Update(gameState)
 	}
 }

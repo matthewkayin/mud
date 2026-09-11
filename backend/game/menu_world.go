@@ -121,7 +121,7 @@ func MenuWorld() Menu {
 
 			var targetHandle MobHandle
 			targetFound := false
-			for _, occupantHandle := range playerRoom.Occupants {
+			for _, occupantHandle := range playerRoom.occupants {
 				occupant := gameState.world.Mobs.Get(occupantHandle)
 				if strings.ToLower(occupant.Data.Name) == targetName {
 					targetHandle = occupantHandle
@@ -173,11 +173,11 @@ func describeRoomToPlayer(gameState *GameState, player *Player, room *Room) {
 	*player.inbox <- room.Description
 
 	// Send the list of players in the room
-	if len(room.Occupants) > 1 {
-		otherPlayerCount := len(room.Occupants) - 1
+	if len(room.occupants) > 1 {
+		otherPlayerCount := len(room.occupants) - 1
 
 		otherPlayerNames := make([]string, 0, otherPlayerCount)
-		for _, mobHandle := range room.Occupants {
+		for _, mobHandle := range room.occupants {
 			// Don't tell the player about themselves being in the room
 			if mobHandle.Equals(player.mobHandle) {
 				continue

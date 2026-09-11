@@ -2,7 +2,6 @@ package game
 
 import (
 	"fmt"
-	"log"
 )
 
 type MobHandle struct {
@@ -79,7 +78,6 @@ func (array *MobArray) Push(mob Mob) MobHandle {
 		index: uint32(len(array.data)),
 		generation: handle.generation,
 	}
-	log.Printf("Mob Push - Id %d to Index %d:%d", handle.id, array.idToIndex[handle.id].index, array.idToIndex[handle.id].generation)
 
 	// Add data
 	array.data = append(array.data, mob)
