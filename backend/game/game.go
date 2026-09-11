@@ -149,6 +149,10 @@ func (gameState *GameState) broadcast(message string) {
 func (gameState *GameState) update() {
 	// Apply player actions
 	for index := 0; index < len(gameState.players); index++ {
+		if !gameState.players[index].isLoggedIn {
+			continue
+		}
+
 		gameState.players[index].doAction(gameState)
 	}
 

@@ -93,6 +93,7 @@ func (mob *Mob) Update(gameState *GameState) {
 			room := gameState.world.Rooms[mob.Data.Room]
 			if mob.Data.Mana < spellData.manaCost {
 				room.broadcast(gameState, fmt.Sprintf("%s tried to cast %s, but they don't have enough mana.", mob.Data.Name, spellData.name))
+				mob.Mode = MOB_MODE_IDLE
 				break
 			}
 
