@@ -201,6 +201,7 @@ func (room *Room) Update(gameState *GameState) {
 			if occupantMob.player != nil {
 				occupantMob.player.onDeath(gameState)
 			}
+			gameState.world.Mobs.Remove(occupantHandle)
 			continue
 		}
 
