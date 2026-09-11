@@ -5,9 +5,11 @@ import (
 	"context"
 	"time"
 	"log"
+	"os"
 )
 
 const GAME_UPDATE_INTERVAL = 3 * time.Second
+const GAME_WORLD_JSON_PATH = "./world.json"
 
 type PlayerMode int
 const (
@@ -23,6 +25,7 @@ type Command struct {
 
 type GameState struct {
 	Commands chan Command
+	sigintChannel chan os.Signal
 
 	// Menus
 	menuLogin Menu
@@ -33,7 +36,7 @@ type GameState struct {
 	players []Player
 	playerIdToIndexMap map[int]int
 
-	world World
+	world *World
 }
 
 func InitState() *GameState {
@@ -42,8 +45,15 @@ func InitState() *GameState {
 	menuCreateCharacter := MenuCreateCharacter()
 	menuWorld := MenuWorld()
 
+	// Create world
+	world := WorldInitFromFile(GAME_WORLD_JSON_PATH)
+	if world == nil {
+		world = WorldInitNew()
+	}
+
 	return &GameState {
 		Commands: make(chan Command, 1024),
+		sigintChannel: make(chan os.Signal, 1),
 
 		menuLogin: menuLogin,
 		menuCreateCharacter: menuCreateCharacter,
@@ -52,7 +62,7 @@ func InitState() *GameState {
 		players: make([]Player, 0, 64),
 		playerIdToIndexMap: make(map[int]int),
 
-		world: WorldInit(),
+		world: world,
 	}
 }
 
@@ -72,17 +82,12 @@ func (gameState *GameState) Run(ctx context.Context) {
 		}
 	}
 
-	// TODO: end of game loop, save off game state data before exiting
+	log.Printf("Shutdown signal received. Shutting down server...")
+	gameState.world.Save("./world.json")
 }
 
 func (gameState *GameState) RegisterPlayer(playerId int, playerInbox *chan string) {
-	gameState.players = append(gameState.players, Player {
-		id: playerId,
-		inbox: playerInbox,
-		menuInstance: nil,
-
-		character: nil,
-	})
+	gameState.players = append(gameState.players, PlayerInit(playerId, playerInbox))
 	newPlayerIndex := len(gameState.players) - 1
 	gameState.playerIdToIndexMap[playerId] = newPlayerIndex
 
@@ -99,6 +104,12 @@ func (gameState *GameState) RemovePlayer(playerId int) {
 		return
 	}
 
+	// Check if they are logged in
+	player := &gameState.players[playerIndex]
+	if player.isLoggedIn {
+		player.exitWorld(gameState)
+	}
+
 	// Swap and pop them from the array
 	lastIndex := len(gameState.players) - 1
 	gameState.players[playerIndex] = gameState.players[lastIndex]
@@ -113,8 +124,6 @@ func (gameState *GameState) RemovePlayer(playerId int) {
 
 // Handles a player command
 func (gameState *GameState) handleCommand(command Command) {
-	log.Printf("Received command. Player %d Payload %s", command.PlayerId, command.Payload)
-
 	// Lookup player index
 	playerIndex, playerIndexExists := gameState.playerIdToIndexMap[command.PlayerId]
 	if !playerIndexExists {
@@ -143,6 +152,15 @@ func (gameState *GameState) broadcast(message string) {
 	}
 }
 
+// This function is the update that is called on a 3-second interval
 func (gameState *GameState) update() {
+	// Apply player actions
+	for index := 0; index < len(gameState.players); index++ {
+		gameState.players[index].doAction(gameState)
+	}
 
+	// Room updates
+	for index := 0; index < len(gameState.world.Rooms); index++ {
+		gameState.world.Rooms[index].Update(gameState)
+	}
 }

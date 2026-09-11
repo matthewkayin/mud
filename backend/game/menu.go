@@ -83,7 +83,7 @@ func (menuInstance *MenuInstance) HandleCommand(gameState *GameState, player *Pl
 
 func (menuInstance *MenuInstance) printDescription(gameState *GameState, player *Player) {
 	if menuInstance.menu.getDescription != nil {
-		*player.inbox <- fmt.Sprintf("\n%s", menuInstance.menu.getDescription(gameState, player))
+		*player.inbox <- fmt.Sprintf("%s", menuInstance.menu.getDescription(gameState, player))
 	}
 }
 

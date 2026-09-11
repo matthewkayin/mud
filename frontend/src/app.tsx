@@ -4,6 +4,8 @@ import { DebugLogin } from './auth/debug';
 import { Terminal } from './terminal/terminal';
 
 export const App = () => {
+  const terminalPrompt = ">";
+
   // Auth state
   const [token, setToken] = useState<string | null>(null);
   const useDebugAuth = import.meta.env.VITE_ENABLE_DEBUG_AUTH === 'true';
@@ -21,6 +23,7 @@ export const App = () => {
       return;
     }
 
+    terminalWriteLine(`\n${terminalPrompt} ${command}`);
     webSocketRef.current.send(command.trim());
   };
 
@@ -63,7 +66,7 @@ export const App = () => {
       <h1>RC Disco MUD!</h1>
       { useDebugAuth && <DebugLogin token={token} setToken={setToken} /> }
       { !useDebugAuth && <RecurseLogin token={token} setToken={setToken} /> }
-      <Terminal prompt=">" lines={lines} command={command} setCommand={setCommand} onSubmit={onSubmit} />
+      <Terminal prompt={terminalPrompt} lines={lines} command={command} setCommand={setCommand} onSubmit={onSubmit} />
     </div>
   );
 };

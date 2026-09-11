@@ -6,6 +6,7 @@ backend/node_modules
 backend/.env
 backend/env.json
 backend/logs
+backend/world.json
 .cache
 .DS_Store
 backend/.DS_Store

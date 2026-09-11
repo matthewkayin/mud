@@ -7,6 +7,8 @@ import (
 	"time"
 	"io"
 	"context"
+	"os/signal"
+	"syscall"
 	"net/http"
 	"mud/core"
 	"mud/api"
@@ -24,10 +26,8 @@ func main() {
 
 	// Init gamestate
 	gameState := game.InitState()
-	gameContext, gameCancel := context.WithCancel(context.Background())
-
-	// Kick off game loop in a separate goroutine
-	go gameState.Run(gameContext)
+	gameContext, gameCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	defer gameCancel()
 
 	// Set server endpoint handlers
 	apiState := api.InitState(gameState)
@@ -35,16 +35,28 @@ func main() {
 	mux.HandleFunc("POST /api/auth", apiState.HandlePostAuth)
 	mux.HandleFunc("GET /api/websocket", apiState.HandleGetWebSocket)
 
+	// Kick off server in a separate goroutine
 	// Begin server
 	log.Printf("Beginning server on port %d...", env.Port)
-	address := fmt.Sprintf(":%d", env.Port)
-	serveErr := http.ListenAndServe(address, corsMiddleware(mux))
-	if serveErr != nil && serveErr != http.ErrServerClosed {
-		log.Printf("Server failed with error: %s", serveErr.Error())
+	server := &http.Server {
+		Addr: fmt.Sprintf(":%d", env.Port),
+		Handler: corsMiddleware(mux),
+	}
+	go runHttpServer(server)
+
+	// Kick off game loop on main thread
+	gameState.Run(gameContext)
+
+	// Tell the HTTP server to shutdown gracefully
+	shutdownContext, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel()
+
+	err := server.Shutdown(shutdownContext)
+	if err != nil {
+		log.Fatalf("HTTP server did not shutdown gracefully: %s", err.Error())
 	}
 
-	// Trigger the game loop goroutine to end
-	gameCancel()
+	log.Printf("Server shutdown gracefully.")
 }
 
 func initLogger() *os.File {
@@ -90,4 +102,11 @@ func corsMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(writer, request)
 	})
+}
+
+func runHttpServer(server *http.Server) {
+	serveErr := server.ListenAndServe()
+	if serveErr != nil && serveErr != http.ErrServerClosed {
+		log.Printf("Server failed with error: %s", serveErr.Error())
+	}
 }

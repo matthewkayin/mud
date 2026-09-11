@@ -12,7 +12,7 @@ func MenuLogin() Menu {
 		usage: "list",
 		description: "Show a list of your characters.",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
-			characterList, characterListExists := gameState.world.playerCharacters[player.id]
+			characterList, characterListExists := gameState.world.PlayerCharacters[player.id]
 			if !characterListExists {
 				*player.inbox <- "You don't have any characters. Type 'create' to make a new one."
 				return true
@@ -46,20 +46,18 @@ func MenuLogin() Menu {
 				return false
 			}
 
-			character, characterExists := gameState.world.characters[args[0]]
+			character, characterExists := gameState.world.Characters[args[0]]
 			if !characterExists {
 				*player.inbox <- fmt.Sprintf("A character named '%s' does not exist.", args[0])
 				return true
 			}
 
-			if character.playerId != player.id {
+			if character.PlayerId != player.id {
 				*player.inbox <- fmt.Sprintf("'%s' is not a character that you own.", args[0])
 				return true
 			}
 
-			player.character = &character
-			*player.inbox <- fmt.Sprintf("You have logged in. Welcome, %s.", args[0])
-			player.enterMenu(gameState, &gameState.menuWorld)
+			player.enterWorld(gameState, character)
 			return true
 		},
 	}
