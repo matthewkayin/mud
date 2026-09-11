@@ -10,7 +10,7 @@ type MenuCreateCharacterData struct {
 }
 
 func MenuCreateCharacterDataInit() *MenuCreateCharacterData {
-	return &MenuCreateCharacterData {
+	return &MenuCreateCharacterData{
 		name: "",
 	}
 }
@@ -29,10 +29,10 @@ func MenuCreateCharacter() Menu {
 	entries := make(map[string]MenuEntry)
 
 	// View
-	entries["view"] = MenuEntry {
-		usage: "view",
+	entries["view"] = MenuEntry{
+		usage:       "view",
 		description: "View details of the character you are creating.",
-		handler: func (gameState *GameState, player *Player, args []string) bool {
+		handler: func(gameState *GameState, player *Player, args []string) bool {
 			menuData := player.menuInstance.data.(*MenuCreateCharacterData)
 			menuData.printCharacterSheet(player)
 			return true
@@ -40,10 +40,10 @@ func MenuCreateCharacter() Menu {
 	}
 
 	// Set
-	entries["set"] = MenuEntry {
-		usage: "set <property> <value>",
+	entries["set"] = MenuEntry{
+		usage:       "set <property> <value>",
 		description: "Set a property of your character equal to a value.",
-		handler: func (gameState *GameState, player *Player, args []string) bool {
+		handler: func(gameState *GameState, player *Player, args []string) bool {
 			// Note: this automatically prevents spaces in names since each arg is separated by spaces
 			if len(args) != 2 {
 				return false
@@ -54,18 +54,18 @@ func MenuCreateCharacter() Menu {
 			value := args[1]
 
 			switch property {
-				case "name":
-					// Check if the name already exists
-					_, nameIsTaken := gameState.world.Characters[value]
-					if nameIsTaken {
-						*player.inbox <- fmt.Sprintf("A character named '%s' already exists.", value)
-						return true
-					}
+			case "name":
+				// Check if the name already exists
+				_, nameIsTaken := gameState.world.Characters[value]
+				if nameIsTaken {
+					*player.inbox <- fmt.Sprintf("A character named '%s' already exists.", value)
+					return true
+				}
 
-					menuData.name = value
-					*player.inbox <- fmt.Sprintf("You set your character's name to '%s'", value)
-				default:
-					*player.inbox <- fmt.Sprintf("'%s' is not a valid property.", property)
+				menuData.name = value
+				*player.inbox <- fmt.Sprintf("You set your character's name to '%s'", value)
+			default:
+				*player.inbox <- fmt.Sprintf("'%s' is not a valid property.", property)
 			}
 
 			return true
@@ -73,10 +73,10 @@ func MenuCreateCharacter() Menu {
 	}
 
 	// Finish
-	entries["finish"] = MenuEntry {
-		usage: "finish",
+	entries["finish"] = MenuEntry{
+		usage:       "finish",
 		description: "Finish character creation.",
-		handler: func (gameState *GameState, player *Player, args []string) bool {
+		handler: func(gameState *GameState, player *Player, args []string) bool {
 			menuData := player.menuInstance.data.(*MenuCreateCharacterData)
 
 			if menuData.name == "" {
@@ -93,15 +93,18 @@ func MenuCreateCharacter() Menu {
 			}
 
 			// Put the character into the characters list
-			character := &Character {
+			character := &Character{
 				PlayerId: player.id,
-				Data: CharacterData {
+				Data: CharacterData{
 					Name: menuData.name,
 					Room: 0,
 
-					Health: 20,
+					Health:    20,
 					MaxHealth: 20,
-					Damage: 7,
+					Damage:    7,
+					Inventory: ItemList{
+						Items: make([]Item, 0, 1),
+					},
 				},
 			}
 			gameState.world.CreateCharacter(player.id, character)
@@ -114,15 +117,15 @@ func MenuCreateCharacter() Menu {
 		},
 	}
 
-	return Menu {
+	return Menu{
 		entries: entries,
-		createInstanceData: func () any {
+		createInstanceData: func() any {
 			return MenuCreateCharacterDataInit()
 		},
-		getDescription: func (gameState *GameState, player *Player) string {
+		getDescription: func(gameState *GameState, player *Player) string {
 			return "You are in the character creation menu."
 		},
-		onEnter: func (gameState *GameState, player *Player) {
+		onEnter: func(gameState *GameState, player *Player) {
 			menuData := player.menuInstance.data.(*MenuCreateCharacterData)
 			menuData.printCharacterSheet(player)
 

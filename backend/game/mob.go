@@ -1,20 +1,23 @@
 package game
 
 import (
-	"log"
 	"fmt"
+	"log"
 )
 
 type CharacterData struct {
 	Name string
 	Room uint
 
-	Health uint
+	Health    uint
 	MaxHealth uint
-	Damage uint
+	Damage    uint
+
+	Inventory ItemList
 }
 
 type MobMode int
+
 const (
 	MobModeIdle MobMode = iota
 	MobModeAttack
@@ -22,16 +25,16 @@ const (
 
 type Mob struct {
 	player *Player
-	Data CharacterData
+	Data   CharacterData
 
-	Mode MobMode
+	Mode   MobMode
 	Target MobHandle
 }
 
 func MobInitFromCharacter(player *Player, character *Character) Mob {
-	return Mob {
+	return Mob{
 		player: player,
-		Data: character.Data,
+		Data:   character.Data,
 
 		Mode: MobModeIdle,
 	}
@@ -43,28 +46,28 @@ func (mob *Mob) IsDead() bool {
 
 func (mob *Mob) Update(gameState *GameState) {
 	switch mob.Mode {
-		case MobModeIdle:
-		case MobModeAttack:
-			targetMob, targetExists := gameState.world.Mobs.GetIfExists(mob.Target)
-			if !targetExists || targetMob.Data.Health == 0 || targetMob.Data.Room != mob.Data.Room {
-				mob.Mode = MobModeIdle
-				log.Printf("Target is invalid, canceling attack")
-				break
-			}
+	case MobModeIdle:
+	case MobModeAttack:
+		targetMob, targetExists := gameState.world.Mobs.GetIfExists(mob.Target)
+		if !targetExists || targetMob.Data.Health == 0 || targetMob.Data.Room != mob.Data.Room {
+			mob.Mode = MobModeIdle
+			log.Printf("Target is invalid, canceling attack")
+			break
+		}
 
-			if mob.Data.Damage > targetMob.Data.Health {
-				targetMob.Data.Health = 0
-			} else {
-				targetMob.Data.Health -= mob.Data.Damage
-			}
+		if mob.Data.Damage > targetMob.Data.Health {
+			targetMob.Data.Health = 0
+		} else {
+			targetMob.Data.Health -= mob.Data.Damage
+		}
 
-			log.Printf("Performed attack")
-			room := gameState.world.Rooms[mob.Data.Room]
-			room.broadcast(gameState, fmt.Sprintf("%s attacked %s for %d damage.", mob.Data.Name, targetMob.Data.Name, mob.Data.Damage))
-			if targetMob.Data.Health == 0 {
-				room.broadcast(gameState, fmt.Sprintf("%s has slain %s.", mob.Data.Name, targetMob.Data.Name))
-			}
-		default:
-			log.Printf("Mob mode %d not handled.", mob.Mode)
+		log.Printf("Performed attack")
+		room := gameState.world.Rooms[mob.Data.Room]
+		room.broadcast(gameState, fmt.Sprintf("%s attacked %s for %d damage.", mob.Data.Name, targetMob.Data.Name, mob.Data.Damage))
+		if targetMob.Data.Health == 0 {
+			room.broadcast(gameState, fmt.Sprintf("%s has slain %s.", mob.Data.Name, targetMob.Data.Name))
+		}
+	default:
+		log.Printf("Mob mode %d not handled.", mob.Mode)
 	}
 }

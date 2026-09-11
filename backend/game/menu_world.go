@@ -9,20 +9,20 @@ func MenuWorld() Menu {
 	entries := make(map[string]MenuEntry)
 
 	// Logout
-	entries["logout"] = MenuEntry {
-		usage: "logout",
+	entries["logout"] = MenuEntry{
+		usage:       "logout",
 		description: "Logout of the world.",
-		handler: func (gameState *GameState, player *Player, args []string) bool {
+		handler: func(gameState *GameState, player *Player, args []string) bool {
 			player.exitWorld(gameState)
 			return true
 		},
 	}
 
 	// Look
-	entries["look"] = MenuEntry {
-		usage: "look",
+	entries["look"] = MenuEntry{
+		usage:       "look",
 		description: "Describe the current room.",
-		handler: func (gameState *GameState, player *Player, args []string) bool {
+		handler: func(gameState *GameState, player *Player, args []string) bool {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 			room := &gameState.world.Rooms[playerMob.Data.Room]
 
@@ -32,10 +32,10 @@ func MenuWorld() Menu {
 	}
 
 	// Say
-	entries["say"] = MenuEntry {
-		usage: "say <message>",
+	entries["say"] = MenuEntry{
+		usage:       "say <message>",
 		description: "Send a messsage to the current room.",
-		handler: func (gameState *GameState, player *Player, args []string) bool {
+		handler: func(gameState *GameState, player *Player, args []string) bool {
 			if len(args) < 1 {
 				*player.inbox <- "You must include a message that you want to say."
 				return false
@@ -47,10 +47,10 @@ func MenuWorld() Menu {
 	}
 
 	// Move
-	entries["move"] = MenuEntry {
-		usage: "move <direction>",
+	entries["move"] = MenuEntry{
+		usage:       "move <direction>",
 		description: "Walk to an adjacent room.",
-		handler: func (gameState *GameState, player *Player, args []string) bool {
+		handler: func(gameState *GameState, player *Player, args []string) bool {
 			if len(args) != 1 {
 				return false
 			}
@@ -62,17 +62,17 @@ func MenuWorld() Menu {
 			// Determine the index of the target room
 			newRoomIndex := ROOM_NONE
 			switch strings.ToLower(args[0]) {
-				case "north":
-					newRoomIndex = playerRoom.ExitNorth
-				case "south":
-					newRoomIndex = playerRoom.ExitSouth
-				case "east":
-					newRoomIndex = playerRoom.ExitEast
-				case "west":
-					newRoomIndex = playerRoom.ExitWest
-				default:
-					*player.inbox <- fmt.Sprintf("'%s' is not a direction. The directions are 'north', 'south', 'east', and 'west'.", args[0])
-					return false
+			case "north":
+				newRoomIndex = playerRoom.ExitNorth
+			case "south":
+				newRoomIndex = playerRoom.ExitSouth
+			case "east":
+				newRoomIndex = playerRoom.ExitEast
+			case "west":
+				newRoomIndex = playerRoom.ExitWest
+			default:
+				*player.inbox <- fmt.Sprintf("'%s' is not a direction. The directions are 'north', 'south', 'east', and 'west'.", args[0])
+				return false
 			}
 
 			// Check to make sure there is an exit
@@ -95,21 +95,84 @@ func MenuWorld() Menu {
 		},
 	}
 
+	//list items in your inventory
+	entries["inventory"] = MenuEntry{
+		usage:       "inventory",
+		description: "List the items in your inventory",
+		handler: func(gameState *GameState, player *Player, args []string) bool {
+			if len(player.character.Data.Inventory.Items) == 0 {
+				*player.inbox <- "There is nothing in your inventory."
+				return true
+			}
+
+			inventorySize := len(player.character.Data.Inventory.Items)
+			itemNames := make([]string, 0, inventorySize)
+			for _, item := range player.character.Data.Inventory.Items {
+				itemNames = append(itemNames, ITEM_DATA[item.itemType].name)
+			}
+			*player.inbox <- fmt.Sprintf("You are carrying the following items: %s", combineNames(itemNames))
+			return true
+		},
+	}
+	//drop an item
+	entries["drop"] = MenuEntry{
+		usage:       "drop <item>",
+		description: "Drop an item from your inventory",
+		handler: func(gameState *GameState, player *Player, args []string) bool {
+			if len(args) != 1 {
+				return false
+			}
+			itemIndex, hasItem := player.character.Data.Inventory.FindItem(args[0])
+			if !hasItem {
+				*player.inbox <- "That item is not in your inventory."
+				return true
+			}
+			droppedItem := player.character.Data.Inventory.RemoveItem(itemIndex)
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			playerRoom := &gameState.world.Rooms[playerMob.Data.Room]
+			playerRoom.Inventory.AddItem(droppedItem)
+			*player.inbox <- fmt.Sprintf("You have dropped %s.", ITEM_DATA[droppedItem.itemType].name)
+			return true
+		},
+	}
+
+	//pickup an item
+	entries["grab"] = MenuEntry{
+		usage:       "grab <item>",
+		description: "Pick up an item in your current room.",
+		handler: func(gameState *GameState, player *Player, args []string) bool {
+			if len(args) != 1 {
+				return false
+			}
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			playerRoom := &gameState.world.Rooms[playerMob.Data.Room]
+			itemIndex, hasItem := playerRoom.Inventory.FindItem(args[0])
+			if !hasItem {
+				*player.inbox <- "That item is not in this room."
+				return true
+			}
+			grabbedItem := playerRoom.Inventory.RemoveItem(itemIndex)
+			playerMob.Data.Inventory.AddItem(grabbedItem)
+			*player.inbox <- fmt.Sprintf("You have picked up %s.", ITEM_DATA[grabbedItem.itemType].name)
+			return true
+		},
+	}
+
 	// Status
-	entries["status"] = MenuEntry {
-		usage: "status",
+	entries["status"] = MenuEntry{
+		usage:       "status",
 		description: "Show your current status.",
-		handler: func (gameState *GameState, player *Player, args []string) bool {
+		handler: func(gameState *GameState, player *Player, args []string) bool {
 			player.printStatus(gameState)
 			return true
 		},
 	}
 
 	// Attack
-	entries["attack"] = MenuEntry {
-		usage: "attack <target>",
+	entries["attack"] = MenuEntry{
+		usage:       "attack <target>",
 		description: "Attack the target.",
-		handler: func (gameState *GameState, player *Player, args []string) bool {
+		handler: func(gameState *GameState, player *Player, args []string) bool {
 			if len(args) != 1 {
 				return false
 			}
@@ -135,9 +198,9 @@ func MenuWorld() Menu {
 				return true
 			}
 
-			player.nextAction = Action {
+			player.nextAction = Action{
 				actionType: ActionTypeAttack,
-				data: ActionAttack {
+				data: ActionAttack{
 					target: targetHandle,
 				},
 			}
@@ -146,9 +209,9 @@ func MenuWorld() Menu {
 		},
 	}
 
-	return Menu {
+	return Menu{
 		entries: entries,
-		getDescription: func (gameState *GameState, player *Player) string {
+		getDescription: func(gameState *GameState, player *Player) string {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 			room := &gameState.world.Rooms[playerMob.Data.Room]
 			return fmt.Sprintf("You are in %s.", room.Name)
@@ -158,14 +221,14 @@ func MenuWorld() Menu {
 
 func combineNames(names []string) string {
 	switch len(names) {
-		case 0:
-			return ""
-		case 1:
-			return names[0]
-		case 2:
-			return names[0] + " and " + names[1]
-		default:
-			return strings.Join(names[:len(names) - 1], ", ") + ", and " + names[len(names) - 1]
+	case 0:
+		return ""
+	case 1:
+		return names[0]
+	case 2:
+		return names[0] + " and " + names[1]
+	default:
+		return strings.Join(names[:len(names)-1], ", ") + ", and " + names[len(names)-1]
 	}
 }
 
@@ -195,5 +258,13 @@ func describeRoomToPlayer(gameState *GameState, player *Player, room *Room) {
 			isString = "is"
 		}
 		*player.inbox <- fmt.Sprintf("%s %s here.", otherPlayersStr, isString)
+	}
+
+	if len(room.Inventory.Items) > 0 {
+		itemNames := make([]string, 0, len(room.Inventory.Items))
+		for _, item := range room.Inventory.Items {
+			itemNames = append(itemNames, ITEM_DATA[item.itemType].name)
+		}
+		*player.inbox <- fmt.Sprintf("The following items are in this room: %s.", combineNames(itemNames))
 	}
 }

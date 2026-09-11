@@ -1,36 +1,39 @@
 package game
 
 import (
-	"os"
-	"log"
 	"encoding/json"
+	"log"
+	"os"
 )
 
 const ROOM_NONE int = -1
 
 type Character struct {
 	PlayerId int
-	Data CharacterData
+	Data     CharacterData
 }
 
 type Room struct {
-	Name string
+	Name        string
 	Description string
 
 	ExitNorth int
 	ExitSouth int
-	ExitEast int
-	ExitWest int
+	ExitEast  int
+	ExitWest  int
 
+	Inventory ItemList
 	occupants []MobHandle
 }
 
 type World struct {
-	Characters map[string]*Character
+	Characters       map[string]*Character
 	PlayerCharacters map[int][]string
 
-	Mobs MobArray
+	Mobs  MobArray
 	Rooms []Room
+
+	ItemData map[string]ItemData
 }
 
 func WorldInitFromFile(path string) *World {
@@ -60,35 +63,51 @@ func WorldInitNew() *World {
 	log.Printf("Generating new world...")
 
 	rooms := make([]Room, 0, 1)
-	rooms = append(rooms, Room {
-		Name: "Presentation Space",
+	rooms = append(rooms, Room{
+		Name:        "Presentation Space",
 		Description: "You're in an open room with white walls and tan-wood flooring. Various pairing tables are strewn about the space, and a makeshift blue octopus floats overhead.",
 
 		ExitNorth: ROOM_NONE,
 		ExitSouth: 1,
-		ExitEast: ROOM_NONE,
-		ExitWest: ROOM_NONE,
+		ExitEast:  ROOM_NONE,
+		ExitWest:  ROOM_NONE,
+
+		Inventory: ItemList{
+			Items: []Item{
+				Item{
+					itemType: ITEM_AXE,
+				},
+			},
+		},
 
 		occupants: make([]MobHandle, 0, 1),
 	})
 
-	rooms = append(rooms, Room {
-		Name: "The Kitchen",
+	rooms = append(rooms, Room{
+		Name:        "The Kitchen",
 		Description: "Bursts of red, blue, and yellow tape paint the far wall. In front of this sits a long, oak dining table with chairs. A kitchenette hugs the far-left corner, complete with three different kinds of coffee makers and more in the cubboards.",
 
 		ExitNorth: 0,
 		ExitSouth: ROOM_NONE,
-		ExitEast: ROOM_NONE,
-		ExitWest: ROOM_NONE,
+		ExitEast:  ROOM_NONE,
+		ExitWest:  ROOM_NONE,
+
+		Inventory: ItemList{
+			Items: []Item{
+				Item{
+					itemType: ITEM_SWORD,
+				},
+			},
+		},
 
 		occupants: make([]MobHandle, 0, 1),
 	})
 
-	return &World {
-		Characters: make(map[string]*Character),
+	return &World{
+		Characters:       make(map[string]*Character),
 		PlayerCharacters: make(map[int][]string),
 
-		Mobs: MobArrayInit(),
+		Mobs:  MobArrayInit(),
 		Rooms: rooms,
 	}
 }
@@ -115,9 +134,9 @@ func (world *World) Save(path string) {
 }
 
 func CharacterInitEmpty() Character {
-	return Character {
+	return Character{
 		PlayerId: 0,
-		Data: CharacterData {
+		Data: CharacterData{
 			Name: "",
 			Room: 0,
 		},
