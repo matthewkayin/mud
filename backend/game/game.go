@@ -11,13 +11,6 @@ import (
 const GAME_UPDATE_INTERVAL = 3 * time.Second
 const GAME_WORLD_JSON_PATH = "./world.json"
 
-type PlayerMode int
-const (
-	PlayerModeMenuLogin PlayerMode = iota
-	PlayerModeMenuCreateCharacter
-	PlayerModeInGame
-)
-
 type Command struct {
 	PlayerId int
 	Payload string
@@ -156,6 +149,10 @@ func (gameState *GameState) broadcast(message string) {
 func (gameState *GameState) update() {
 	// Apply player actions
 	for index := 0; index < len(gameState.players); index++ {
+		if !gameState.players[index].isLoggedIn {
+			continue
+		}
+
 		gameState.players[index].doAction(gameState)
 	}
 

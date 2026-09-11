@@ -1,0 +1,57 @@
+package game
+
+import (
+	"strings"
+)
+
+type ItemType int
+
+const (
+	ITEM_SWORD = iota
+	ITEM_AXE
+)
+
+type ItemData struct {
+	name string
+	description string
+}
+
+type Item struct {
+	Type ItemType
+}
+
+var ITEM_DATA = map[ItemType]*ItemData{
+	ITEM_SWORD: {
+		name: "Sword",
+		description: "A pointy metal stick with a handle.",
+	},
+	ITEM_AXE: {
+		name: "Axe",
+		description: "Cleaver? I barely know her!",
+	},
+}
+
+type ItemList struct {
+	Items []Item
+}
+
+func (inventory *ItemList) AddItem(item Item) {
+	inventory.Items = append(inventory.Items, item)
+}
+
+func (inventory *ItemList) FindItem(name string) (int, bool) {
+	for index := 0; index < len(inventory.Items); index++ {
+		itemData := ITEM_DATA[inventory.Items[index].Type]
+		if strings.EqualFold(name, itemData.name) {
+			return index, true
+		}
+	}
+	return -1, false
+}
+
+func (inventory *ItemList) RemoveItem(index int) Item {
+	drop := inventory.Items[index]
+	inventory.Items[index] = inventory.Items[len(inventory.Items)-1]
+	inventory.Items = inventory.Items[:len(inventory.Items)-1]
+	return drop
+}
