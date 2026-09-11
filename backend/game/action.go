@@ -5,8 +5,8 @@ import "log"
 // You have to actually handle the player actions
 type ActionType int
 const (
-	ActionTypeNone ActionType = iota
-	ActionTypeAttack
+	ACTION_TYPE_NONE ActionType = iota
+	ACTION_TYPE_ATTACK
 )
 
 type Action struct {
@@ -20,20 +20,20 @@ type ActionAttack struct {
 
 func (player *Player) doAction(gameState *GameState) {
 	switch player.nextAction.actionType {
-		case ActionTypeNone:
+		case ACTION_TYPE_NONE:
 			break
-		case ActionTypeAttack:
+		case ACTION_TYPE_ATTACK:
 			actionData := player.nextAction.data.(ActionAttack)
 
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			playerMob.Mode = MobModeAttack
+			playerMob.Mode = MOB_MODE_ATTACK
 			playerMob.Target = actionData.target
 		default:
 			log.Printf("Action type %d not handled!", player.nextAction.actionType)
 	}
 
 	player.nextAction = Action {
-		actionType: ActionTypeNone,
+		actionType: ACTION_TYPE_NONE,
 		data: nil,
 	}
 }

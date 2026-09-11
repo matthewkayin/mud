@@ -20,7 +20,7 @@ func PlayerInit(playerId int, playerInbox *chan string) Player {
 		id: playerId,
 		inbox: playerInbox,
 		nextAction: Action {
-			actionType: ActionTypeNone,
+			actionType: ACTION_TYPE_NONE,
 			data: nil,
 		},
 		isLoggedIn: false,
@@ -61,7 +61,7 @@ func (player *Player) enterWorld(gameState *GameState, asCharacter *Character) {
 
 	// Clear the player's action in case they had any leftover from a previous login session
 	player.nextAction = Action {
-		actionType: ActionTypeNone,
+		actionType: ACTION_TYPE_NONE,
 		data: nil,
 	}
 
@@ -92,7 +92,7 @@ func (player *Player) exitWorld(gameState *GameState) {
 
 func (player *Player) printStatus(gameState *GameState) {
 	playerMob := gameState.world.Mobs.Get(player.mobHandle)
-	*player.inbox <- fmt.Sprintf("Health: %d / %d", playerMob.Data.Health, playerMob.Data.MaxHealth)
+	*player.inbox <- fmt.Sprintf("Health: %d / %d", playerMob.Data.Health, playerMob.Data.MaxHealth())
 }
 
 func (player *Player) onDeath(gameState *GameState) {

@@ -8,11 +8,6 @@ import (
 
 const ROOM_NONE int = -1
 
-type Character struct {
-	PlayerId int
-	Data CharacterData
-}
-
 type Room struct {
 	Name string
 	Description string
@@ -117,7 +112,7 @@ func (world *World) Save(path string) {
 func CharacterInitEmpty() Character {
 	return Character {
 		PlayerId: 0,
-		Data: CharacterData {
+		Data: MobData {
 			Name: "",
 			Room: 0,
 		},

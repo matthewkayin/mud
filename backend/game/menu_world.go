@@ -136,7 +136,7 @@ func MenuWorld() Menu {
 			}
 
 			player.nextAction = Action {
-				actionType: ActionTypeAttack,
+				actionType: ACTION_TYPE_ATTACK,
 				data: ActionAttack {
 					target: targetHandle,
 				},

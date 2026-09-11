@@ -11,13 +11,6 @@ import (
 const GAME_UPDATE_INTERVAL = 3 * time.Second
 const GAME_WORLD_JSON_PATH = "./world.json"
 
-type PlayerMode int
-const (
-	PlayerModeMenuLogin PlayerMode = iota
-	PlayerModeMenuCreateCharacter
-	PlayerModeInGame
-)
-
 type Command struct {
 	PlayerId int
 	Payload string

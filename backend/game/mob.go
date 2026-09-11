@@ -5,24 +5,29 @@ import (
 	"fmt"
 )
 
-type CharacterData struct {
+type MobData struct {
 	Name string
 	Room uint
 
-	Health uint
-	MaxHealth uint
-	Damage uint
+	// Base stats
+	Vigor int
+	Strength int
+	Agility int
+	Intelligence int
+	Faith int
+
+	Health int
 }
 
 type MobMode int
 const (
-	MobModeIdle MobMode = iota
-	MobModeAttack
+	MOB_MODE_IDLE MobMode = iota
+	MOB_MODE_ATTACK
 )
 
 type Mob struct {
 	player *Player
-	Data CharacterData
+	Data MobData
 
 	Mode MobMode
 	Target MobHandle
@@ -33,32 +38,37 @@ func MobInitFromCharacter(player *Player, character *Character) Mob {
 		player: player,
 		Data: character.Data,
 
-		Mode: MobModeIdle,
+		Mode: MOB_MODE_IDLE,
 	}
 }
 
 func (mob *Mob) IsDead() bool {
-	return mob.Data.Health == 0
+	return mob.Data.Health <= 0
+}
+
+func (mobData *MobData) MaxHealth() int {
+	return mobData.Vigor * 5
+}
+
+func (mob *Mob) AttackDamage() int {
+	return mob.Data.Strength
 }
 
 func (mob *Mob) Update(gameState *GameState) {
 	switch mob.Mode {
-		case MobModeIdle:
-		case MobModeAttack:
+		case MOB_MODE_IDLE:
+		case MOB_MODE_ATTACK:
 			targetMob, targetExists := gameState.world.Mobs.GetIfExists(mob.Target)
 			if !targetExists || targetMob.Data.Health == 0 || targetMob.Data.Room != mob.Data.Room {
-				mob.Mode = MobModeIdle
+				mob.Mode = MOB_MODE_IDLE
 				break
 			}
 
-			if mob.Data.Damage > targetMob.Data.Health {
-				targetMob.Data.Health = 0
-			} else {
-				targetMob.Data.Health -= mob.Data.Damage
-			}
+			damage := mob.AttackDamage()
+			targetMob.Data.Health -= damage
 
 			room := gameState.world.Rooms[mob.Data.Room]
-			room.broadcast(gameState, fmt.Sprintf("%s attacked %s for %d damage.", mob.Data.Name, targetMob.Data.Name, mob.Data.Damage))
+			room.broadcast(gameState, fmt.Sprintf("%s attacked %s for %d damage.", mob.Data.Name, targetMob.Data.Name, damage))
 			if targetMob.Data.Health == 0 {
 				room.broadcast(gameState, fmt.Sprintf("%s has slain %s.", mob.Data.Name, targetMob.Data.Name))
 			}
