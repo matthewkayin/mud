@@ -18,6 +18,7 @@ type Room struct {
 	ExitWest int
 
 	occupants []MobHandle
+	Inventory ItemList
 }
 
 type World struct {
@@ -65,6 +66,12 @@ func WorldInitNew() *World {
 		ExitWest: ROOM_NONE,
 
 		occupants: make([]MobHandle, 0, 1),
+		Inventory: ItemList {
+			Items: []Item {
+				Item { Type: ITEM_SWORD },
+				Item { Type: ITEM_AXE },
+			},
+		},
 	})
 
 	rooms = append(rooms, Room {
@@ -77,6 +84,9 @@ func WorldInitNew() *World {
 		ExitWest: ROOM_NONE,
 
 		occupants: make([]MobHandle, 0, 1),
+		Inventory: ItemList {
+			Items: []Item {},
+		},
 	})
 
 	return &World {

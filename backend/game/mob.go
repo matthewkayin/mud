@@ -20,6 +20,7 @@ type MobData struct {
 	Mana int
 
 	Spells []Spell
+	Inventory ItemList
 }
 
 type MobMode int

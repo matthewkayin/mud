@@ -174,5 +174,10 @@ func CharacterNew(playerId int, characterSheet *MenuCharacterSheet) *Character {
 		character.Data.Spells = append(character.Data.Spells, spell)
 	}
 
+	// Init inventory
+	character.Data.Inventory = ItemList {
+		Items: make([]Item, 0, 1),
+	}
+
 	return character
 }

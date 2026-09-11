@@ -132,6 +132,87 @@ func MenuWorld() Menu {
 		},
 	}
 
+	// Inventory
+	entries["inventory"] = MenuEntry {
+		usage: "inventory",
+		description: "List the items in your inventory",
+		handler: func(gameState *GameState, player *Player, args []string) bool {
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			inventorySize := len(playerMob.Data.Inventory.Items)
+
+			if inventorySize == 0 {
+				*player.inbox <- "There is nothing in your inventory."
+				return true
+			}
+
+			itemNames := make([]string, 0, inventorySize)
+			for _, item := range playerMob.Data.Inventory.Items {
+				itemNames = append(itemNames, ITEM_DATA[item.Type].name)
+			}
+			*player.inbox <- fmt.Sprintf("You are carrying the following items: %s", combineNames(itemNames))
+			return true
+		},
+	}
+
+	// Drop an item
+	entries["drop"] = MenuEntry{
+		usage: "drop <item>",
+		description: "Drop an item from your inventory",
+		handler: func(gameState *GameState, player *Player, args []string) bool {
+			if len(args) != 1 {
+				return false
+			}
+
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+
+			// Find item
+			itemIndex, hasItem := playerMob.Data.Inventory.FindItem(args[0])
+			if !hasItem {
+				*player.inbox <- "That item is not in your inventory."
+				return true
+			}
+
+			// Remove item from inventory
+			droppedItem := playerMob.Data.Inventory.RemoveItem(itemIndex)
+
+			// Add item to room
+			playerRoom := &gameState.world.Rooms[playerMob.Data.Room]
+			playerRoom.Inventory.AddItem(droppedItem)
+
+			*player.inbox <- fmt.Sprintf("You dropped %s.", ITEM_DATA[droppedItem.Type].name)
+			return true
+		},
+	}
+
+	// Grab an item
+	entries["grab"] = MenuEntry{
+		usage: "grab <item>",
+		description: "Pick up an item in your current room.",
+		handler: func(gameState *GameState, player *Player, args []string) bool {
+			if len(args) != 1 {
+				return false
+			}
+
+			// Get pointer to room
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			playerRoom := &gameState.world.Rooms[playerMob.Data.Room]
+
+			// Find item in room
+			itemIndex, hasItem := playerRoom.Inventory.FindItem(args[0])
+			if !hasItem {
+				*player.inbox <- "That item is not in this room."
+				return true
+			}
+
+			// Move item from room to player
+			grabbedItem := playerRoom.Inventory.RemoveItem(itemIndex)
+			playerMob.Data.Inventory.AddItem(grabbedItem)
+
+			*player.inbox <- fmt.Sprintf("You picked up %s.", ITEM_DATA[grabbedItem.Type].name)
+			return true
+		},
+	}
+
 	// Spell list
 	entries["spells"] = MenuEntry {
 		usage: "spells",
@@ -247,6 +328,18 @@ func describeRoomToPlayer(gameState *GameState, player *Player, room *Room) {
 			isString = "is"
 		}
 		*player.inbox <- fmt.Sprintf("%s %s here.", otherPlayersStr, isString)
+	}
+
+	if len(room.Inventory.Items) > 0 {
+		itemNames := make([]string, 0, len(room.Inventory.Items))
+		for _, item := range room.Inventory.Items {
+			itemNames = append(itemNames, ITEM_DATA[item.Type].name)
+		}
+		isString := "items are"
+		if len(room.Inventory.Items) == 1 {
+			isString = "item is"
+		}
+		*player.inbox <- fmt.Sprintf("The following %s in this room: %s.", isString, combineNames(itemNames))
 	}
 }
 
