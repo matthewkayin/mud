@@ -159,6 +159,11 @@ func CharacterNew(playerId int, characterSheet *MenuCharacterSheet) *Character {
 
 	character.Data.Name = characterSheet.name
 	character.Data.Room = 0
+
+	character.Data.Level = 1
+	character.Data.Experience = 0
+	character.Data.ExperienceToNextLevel = character.Data.GetExpToNextLevel()
+
 	character.Data.Vitality = classData.Vitality + raceData.Vitality
 	character.Data.Strength = classData.Strength + raceData.Strength
 	character.Data.Agility = classData.Agility + raceData.Agility
