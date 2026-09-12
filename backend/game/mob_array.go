@@ -5,7 +5,6 @@ import (
 )
 
 type MobHandle struct {
-	// TODO: make this public? to save occupants? or else make occupants private and store state elsewhere
 	id uint32
 	generation uint32
 }
@@ -86,39 +85,41 @@ func (array *MobArray) Push(mob Mob) MobHandle {
 	return handle
 }
 
-func (array *MobArray) GetHandleAtIndex(index uint32) MobHandle {
-	if int(index) > len(array.data) {
-		panic(fmt.Sprintf("Cannot remove index %d from MobArray with length %d", index, len(array.data)))
+func (array *MobArray) Remove(handle MobHandle) {
+	// Check that it's a valid handle
+	if int(handle.id) > len(array.idToIndex) {
+		panic(fmt.Sprintf("Tried to remove Mob with ID %d which is greater than the lsit of IDs which has length %d", handle.id, len(array.idToIndex)))
+	}
+	if array.idToIndex[handle.id].generation != handle.generation {
+		panic(fmt.Sprintf("Tried to move Mob with handle %d:%d but the generation does not match the current generation %d",
+			handle.id,
+			handle.generation,
+			array.idToIndex[handle.id].generation),
+		)
 	}
 
-	id := array.indexToId[index]
-	return MobHandle {
-		id: id,
-		generation: array.idToIndex[id].generation,
-	}
-}
+	// Invalidate the current index->ID entry by incrementing the generation
+	array.idToIndex[handle.id].generation++
 
-func (array *MobArray) RemoveAtIndex(index uint32) {
-	mobHandle := array.GetHandleAtIndex(index)
-
-	// Add this handle to the list of free handles
+	// Add the handle to the list of free handles
 	array.freeHandles = append(array.freeHandles, MobHandle {
-		id: mobHandle.id,
-		generation: mobHandle.generation + 1,
+		id: handle.id,
+		generation: handle.generation + 1,
 	})
 
 	// Determine the index and ID of the last element
 	lastIndex := uint32(len(array.data) - 1)
 	lastId := array.indexToId[lastIndex]
 
-	// Redirect the last element's ID to point to the remove index
+	// Redirect the last element's ID to point to the removed index
+	index := array.idToIndex[handle.id].index
 	array.idToIndex[lastId].index = index
 
-	// Move last index into the removed index slot
+	// Move the last index into the removed slot
 	array.data[index] = array.data[lastIndex]
-	array.idToIndex[index] = array.idToIndex[lastIndex]
+	array.indexToId[index] = array.indexToId[lastIndex]
 
 	// Remove the last element from the array
 	array.data = array.data[:lastIndex]
-	array.idToIndex = array.idToIndex[:lastIndex]
+	array.indexToId = array.indexToId[:lastIndex]
 }
