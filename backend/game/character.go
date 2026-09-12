@@ -11,11 +11,11 @@ const (
 type CharacterClassData struct {
 	Name string
 
-	Vitality int
-	Strength int
-	Agility int
-	Intelligence int
-	Faith int
+	Vitality int32
+	Strength int32
+	Agility int32
+	Intelligence int32
+	Faith int32
 
 	StartingSpells []Spell
 }
@@ -32,11 +32,11 @@ const (
 type CharacterRaceData struct {
 	Name string
 
-	Vitality int
-	Strength int
-	Agility int
-	Intelligence int
-	Faith int
+	Vitality int32
+	Strength int32
+	Agility int32
+	Intelligence int32
+	Faith int32
 }
 
 type Character struct {

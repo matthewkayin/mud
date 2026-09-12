@@ -10,20 +10,20 @@ type MobData struct {
 	Room uint
 
 	// Base stats
-	Vitality int
-	Strength int
-	Agility int
-	Intelligence int
-	Faith int
+	Vitality int32
+	Strength int32
+	Agility int32
+	Intelligence int32
+	Faith int32
 
-	Health int
-	Mana int
+	Health int32
+	Mana int32
 
 	Spells []Spell
 	Inventory ItemList
 }
 
-type MobMode int
+type MobMode int32
 const (
 	MOB_MODE_IDLE MobMode = iota
 	MOB_MODE_ATTACK
@@ -52,15 +52,15 @@ func (mob *Mob) IsDead() bool {
 	return mob.Data.Health <= 0
 }
 
-func (mobData *MobData) MaxHealth() int {
+func (mobData *MobData) MaxHealth() int32 {
 	return mobData.Vitality * 5
 }
 
-func (mobData *MobData) MaxMana() int {
+func (mobData *MobData) MaxMana() int32 {
 	return mobData.Intelligence * 5
 }
 
-func (mob *Mob) AttackDamage() int {
+func (mob *Mob) AttackDamage() int32 {
 	return mob.Data.Strength
 }
 

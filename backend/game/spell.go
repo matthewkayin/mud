@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-type Spell int
+type Spell int32
 const (
 	SPELL_FIREBOLT = iota
 	SPELL_CURE
@@ -13,7 +13,7 @@ const (
 type SpellData struct {
 	name string
 	description string
-	manaCost int
+	manaCost int32
 
 	onHit func(gameState *GameState, target *Mob)
 }
@@ -25,7 +25,7 @@ var SPELL_DATA = map[Spell]*SpellData {
 		manaCost: 5,
 
 		onHit: func(gameState *GameState, target *Mob) {
-			damage := 10
+			var damage int32 = 10
 			target.Data.Health -= damage
 
 			room := gameState.world.Rooms[target.Data.Room]
