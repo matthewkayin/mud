@@ -23,7 +23,7 @@ var CHARACTER_SHEET_PROPERTY_REGISTRY = map[string]MenuCharacterSheetProperty {
 		},
 		set: func (gameState *GameState, player *Player, sheet *MenuCharacterSheet, value string) {
 			// Check if the name already exists
-			_, nameIsTaken := gameState.world.Characters[value]
+			_, nameIsTaken := gameState.world.GetCharacterIfExists(value)
 			if nameIsTaken {
 				*player.inbox <- fmt.Sprintf("A character named '%s' already exists.", value)
 				return
@@ -174,7 +174,7 @@ func MenuCreateCharacter() Menu {
 
 			// Check once more that the character name is available
 			// (it might have been taken by the time they finished character creation)
-			_, nameIsTaken := gameState.world.Characters[characterSheet.name]
+			_, nameIsTaken := gameState.world.GetCharacterIfExists(characterSheet.name)
 			if nameIsTaken {
 				*player.inbox <- fmt.Sprintf("A character named '%s' already exists.", characterSheet.name)
 				return true

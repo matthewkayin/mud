@@ -3,6 +3,7 @@ package game
 import (
 	"os"
 	"log"
+	"strings"
 	"encoding/json"
 )
 
@@ -129,8 +130,16 @@ func CharacterInitEmpty() Character {
 	}
 }
 
+// This function just returns the map lookup. Its purpose is to avoid
+// repeating the logic that the key into the character map is a lowercased
+// character name
+func (world *World) GetCharacterIfExists(name string) (*Character, bool) {
+	character, exists := world.Characters[strings.ToLower(name)]
+	return character, exists
+}
+
 func (world *World) CreateCharacter(playerId int, character *Character) {
-	world.Characters[character.Data.Name] = character
+	world.Characters[strings.ToLower(character.Data.Name)] = character
 
 	_, playerCharactersListExists := world.PlayerCharacters[playerId]
 	if !playerCharactersListExists {
