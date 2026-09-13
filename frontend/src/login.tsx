@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 export const LoginPage = () => {
-  const debugAuth = import.meta.env.VITE_ENABLE_DEBUG_AUTH;
+  const debugAuth = import.meta.env.VITE_ENABLE_DEBUG_AUTH === 'true';
   const [debugUser, setDebugUser] = useState('');
 
   const handleLogin = (event) => {
@@ -20,8 +20,7 @@ export const LoginPage = () => {
       return;
     }
 
-    console.log('Navigate! Window location origin is :', window.location.origin);
-    window.location.href = `http://${window.location.hostname}:5173/api/auth/login?hostname=${window.location.origin}`;
+    window.location.href = `http://${window.location.hostname}:5173/api/auth/login?hostname=${window.location.hostname}`;
   };
 
   return (

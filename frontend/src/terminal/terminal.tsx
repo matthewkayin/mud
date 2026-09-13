@@ -66,9 +66,7 @@ export const Terminal = ({ prompt, lines, command, setCommand, onSubmit }: Termi
     const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;
     const lowestPossibleScrollTop = scrollHeight - clientHeight;
     const isScrolledToBottom = scrollTop == lowestPossibleScrollTop;
-    if (!isScrolledToBottom) {
-      setShouldScrollToBottom(false);
-    }
+    setShouldScrollToBottom(isScrolledToBottom);
   };
 
   return (
