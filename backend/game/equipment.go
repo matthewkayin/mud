@@ -10,9 +10,7 @@ type EquipmentSlot int
 const (
 	EQUIPMENT_SLOT_MAIN_HAND = iota
 	EQUIPMENT_SLOT_OFF_HAND
-	EQUIPMENT_SLOT_HELM
-	EQUIPMENT_SLOT_ARMOR
-	EQUIPMENT_SLOT_BOOTS
+	EQUIPMENT_SLOT_OUTFIT
 	EQUIPMENT_SLOT_ACCESSORY
 	EQUIPMENT_SLOT_COUNT
 )
@@ -20,21 +18,29 @@ const (
 var EQUIPMENT_SLOT_TO_STRING = map[EquipmentSlot]string {
 	EQUIPMENT_SLOT_MAIN_HAND: "Main Hand",
 	EQUIPMENT_SLOT_OFF_HAND: "Off Hand",
-	EQUIPMENT_SLOT_HELM: "Helm",
-	EQUIPMENT_SLOT_ARMOR: "Armor",
-	EQUIPMENT_SLOT_BOOTS: "Boots",
+	EQUIPMENT_SLOT_OUTFIT: "Outfit",
 	EQUIPMENT_SLOT_ACCESSORY: "Accessory",
 }
 
 type Equipment struct {
 	IsSlotInUse []bool
 	SlotItem []Item
+
+	// These two fields are private so they will not be saved in world json
+	// Instead, stat bonuses are recalculated when a character logins
+	// This way if an item gets a balance patch, players will get the patch applied
+	// to them when they login
+	statBonuses MobBaseStats
+	isDirty bool
 }
 
 func EquipmentInitEmpty() Equipment {
 	equipment := Equipment {
 		IsSlotInUse: make([]bool, EQUIPMENT_SLOT_COUNT),
 		SlotItem: make([]Item, EQUIPMENT_SLOT_COUNT),
+
+		statBonuses: MobBaseStats {},
+		isDirty: false,
 	}
 	for index := range EQUIPMENT_SLOT_COUNT {
 		equipment.IsSlotInUse[index] = false
@@ -119,12 +125,8 @@ func itemTypeMatchesEquipmentSlot(itemType ItemType, slot EquipmentSlot) bool {
 			return slot == EQUIPMENT_SLOT_MAIN_HAND || slot == EQUIPMENT_SLOT_OFF_HAND
 		case ITEM_TYPE_EQUIPMENT_TWO_HANDED:
 			return slot == EQUIPMENT_SLOT_MAIN_HAND
-		case ITEM_TYPE_EQUIPMENT_HELM:
-			return slot == EQUIPMENT_SLOT_HELM
-		case ITEM_TYPE_EQUIPMENT_ARMOR:
-			return slot == EQUIPMENT_SLOT_ARMOR
-		case ITEM_TYPE_EQUIPMENT_BOOTS:
-			return slot == EQUIPMENT_SLOT_BOOTS
+		case ITEM_TYPE_EQUIPMENT_OUTFIT:
+			return slot == EQUIPMENT_SLOT_OUTFIT
 		case ITEM_TYPE_EQUIPMENT_ACCESSORY:
 			return slot == EQUIPMENT_SLOT_ACCESSORY
 		// For all other items types, return false because they are not equipment
@@ -135,12 +137,8 @@ func itemTypeMatchesEquipmentSlot(itemType ItemType, slot EquipmentSlot) bool {
 
 func EquipmentSlotForItemType(itemType ItemType) (EquipmentSlot, bool) {
 	switch itemType {
-		case ITEM_TYPE_EQUIPMENT_HELM:
-			return EQUIPMENT_SLOT_HELM, true
-		case ITEM_TYPE_EQUIPMENT_ARMOR:
-			return EQUIPMENT_SLOT_ARMOR, true
-		case ITEM_TYPE_EQUIPMENT_BOOTS:
-			return EQUIPMENT_SLOT_BOOTS, true
+		case ITEM_TYPE_EQUIPMENT_OUTFIT:
+			return EQUIPMENT_SLOT_OUTFIT, true
 		case ITEM_TYPE_EQUIPMENT_ACCESSORY:
 			return EQUIPMENT_SLOT_ACCESSORY, true
 		default:
@@ -154,12 +152,8 @@ func EquipmentSlotToString(slot EquipmentSlot) string {
 			return "Main Hand"
 		case EQUIPMENT_SLOT_OFF_HAND:
 			return "Off Hand"
-		case EQUIPMENT_SLOT_HELM:
-			return "Helm"
-		case EQUIPMENT_SLOT_ARMOR:
-			return "Armor"
-		case EQUIPMENT_SLOT_BOOTS:
-			return "Boots"
+		case EQUIPMENT_SLOT_OUTFIT:
+			return "Outfit"
 		case EQUIPMENT_SLOT_ACCESSORY:
 			return "Accessory"
 		default:
@@ -173,15 +167,45 @@ func EquipmentSlotFromCommandString(slotString string) (EquipmentSlot, bool) {
 			return EQUIPMENT_SLOT_MAIN_HAND, true
 		case "offhand":
 			return EQUIPMENT_SLOT_OFF_HAND, true
-		case "helm":
-			return EQUIPMENT_SLOT_HELM, true
-		case "armor":
-			return EQUIPMENT_SLOT_ARMOR, true
-		case "boots":
-			return EQUIPMENT_SLOT_BOOTS, true
+		case "outfit":
+			return EQUIPMENT_SLOT_OUTFIT, true
 		case "accessory":
 			return EQUIPMENT_SLOT_ACCESSORY, true
 		default:
 			return EQUIPMENT_SLOT_COUNT, false
 	}
+}
+
+func (equipment *Equipment) GetStatBonuses() *MobBaseStats {
+	// If equipment has changed, re-calc stat bonuses
+	if equipment.isDirty {
+		equipment.RecalcStatBonuses()
+	}
+
+	return &equipment.statBonuses
+}
+
+func (equipment *Equipment) RecalcStatBonuses() {
+	equipment.statBonuses = MobBaseStats {}
+
+	for slotIndex := range EQUIPMENT_SLOT_COUNT {
+		slot := EquipmentSlot(slotIndex)
+
+		// Get item from equipment
+		item := equipment.Get(slot)
+		if item == nil {
+			continue
+		}
+
+		// Get item stat bonusees
+		itemStatBonuses := ItemGetStatusBonuses(item)
+		if itemStatBonuses == nil {
+			log.Printf("Warn: Equipment should not return nil stat bonuses")
+			continue
+		}
+
+		equipment.statBonuses = equipment.statBonuses.Add(itemStatBonuses)
+	}
+
+	equipment.isDirty = false
 }

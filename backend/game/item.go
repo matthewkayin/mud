@@ -15,9 +15,7 @@ const (
 	ITEM_TYPE_CONSUMABLE = iota
 	ITEM_TYPE_EQUIPMENT_ONE_HANDED
 	ITEM_TYPE_EQUIPMENT_TWO_HANDED
-	ITEM_TYPE_EQUIPMENT_HELM
-	ITEM_TYPE_EQUIPMENT_ARMOR
-	ITEM_TYPE_EQUIPMENT_BOOTS
+	ITEM_TYPE_EQUIPMENT_OUTFIT
 	ITEM_TYPE_EQUIPMENT_ACCESSORY
 )
 
@@ -25,10 +23,25 @@ type ItemData struct {
 	name string
 	description string
 	itemType ItemType
+	data any
 }
 
 type Item struct {
 	Id ItemId
+}
+
+type ItemDataWeapon struct {
+	damage int32
+	statBonuses MobBaseStats
+}
+
+type ItemDataOutfit struct {
+	armor int32
+	statBonuses MobBaseStats
+}
+
+type ItemDataAccessory struct {
+	statBonuses MobBaseStats
 }
 
 var ITEM_DATA = map[ItemId]*ItemData{
@@ -36,11 +49,19 @@ var ITEM_DATA = map[ItemId]*ItemData{
 		name: "Sword",
 		description: "A pointy metal stick with a handle.",
 		itemType: ITEM_TYPE_EQUIPMENT_ONE_HANDED,
+		data: &ItemDataWeapon {
+			damage: 5,
+			statBonuses: MobBaseStats {},
+		},
 	},
 	ITEM_AXE: {
 		name: "Axe",
 		description: "Cleaver? I barely know her!",
 		itemType: ITEM_TYPE_EQUIPMENT_ONE_HANDED,
+		data: &ItemDataWeapon {
+			damage: 6,
+			statBonuses: MobBaseStats {},
+		},
 	},
 }
 
@@ -67,4 +88,21 @@ func (inventory *ItemList) RemoveItem(index int) Item {
 	inventory.Items[index] = inventory.Items[len(inventory.Items)-1]
 	inventory.Items = inventory.Items[:len(inventory.Items)-1]
 	return drop
+}
+
+func ItemGetStatusBonuses(item *Item) *MobBaseStats {
+	itemData := ITEM_DATA[item.Id]
+	switch itemData.itemType {
+		case ITEM_TYPE_EQUIPMENT_ONE_HANDED, ITEM_TYPE_EQUIPMENT_TWO_HANDED:
+			weaponData := itemData.data.(*ItemDataWeapon)
+			return &weaponData.statBonuses
+		case ITEM_TYPE_EQUIPMENT_OUTFIT:
+			outfitData := itemData.data.(*ItemDataOutfit)
+			return &outfitData.statBonuses
+		case ITEM_TYPE_EQUIPMENT_ACCESSORY:
+			accessoryData := itemData.data.(*ItemDataAccessory)
+			return &accessoryData.statBonuses
+		default:
+			return nil
+	}
 }

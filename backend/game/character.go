@@ -11,12 +11,7 @@ const (
 type CharacterClassData struct {
 	Name string
 
-	Vitality int32
-	Strength int32
-	Agility int32
-	Intelligence int32
-	Faith int32
-
+	Stats MobBaseStats
 	StartingSpells []Spell
 }
 
@@ -32,11 +27,7 @@ const (
 type CharacterRaceData struct {
 	Name string
 
-	Vitality int32
-	Strength int32
-	Agility int32
-	Intelligence int32
-	Faith int32
+	Stats MobBaseStats
 }
 
 type Character struct {
@@ -52,33 +43,39 @@ var CLASS_DATA = map[CharacterClass]*CharacterClassData {
 	CHARACTER_CLASS_WARRIOR: {
 		Name: "Warrior",
 
-		Vitality: 8,
-		Strength: 10,
-		Agility: 6,
-		Intelligence: 6,
-		Faith: 8,
+		Stats: MobBaseStats {
+			Vitality: 8,
+			Strength: 10,
+			Agility: 6,
+			Intelligence: 6,
+			Faith: 8,
+		},
 
 		StartingSpells: []Spell{},
 	},
 	CHARACTER_CLASS_ROGUE: {
 		Name: "Rogue",
 
-		Vitality: 8,
-		Strength: 8,
-		Agility: 10,
-		Intelligence: 6,
-		Faith: 6,
+		Stats: MobBaseStats {
+			Vitality: 8,
+			Strength: 8,
+			Agility: 10,
+			Intelligence: 6,
+			Faith: 6,
+		},
 
 		StartingSpells: []Spell{},
 	},
 	CHARACTER_CLASS_WIZARD: {
 		Name: "Wizard",
 
-		Vitality: 6,
-		Strength: 6,
-		Agility: 8,
-		Intelligence: 10,
-		Faith: 8,
+		Stats: MobBaseStats {
+			Vitality: 6,
+			Strength: 6,
+			Agility: 8,
+			Intelligence: 10,
+			Faith: 8,
+		},
 
 		StartingSpells: []Spell{
 			SPELL_FIREBOLT,
@@ -87,11 +84,13 @@ var CLASS_DATA = map[CharacterClass]*CharacterClassData {
 	CHARACTER_CLASS_PRIEST: {
 		Name: "Priest",
 
-		Vitality: 6,
-		Strength: 6,
-		Agility: 8,
-		Intelligence: 8,
-		Faith: 10,
+		Stats: MobBaseStats {
+			Vitality: 6,
+			Strength: 6,
+			Agility: 8,
+			Intelligence: 8,
+			Faith: 10,
+		},
 
 		StartingSpells: []Spell{
 			SPELL_CURE,
@@ -103,47 +102,57 @@ var RACE_DATA = map[CharacterRace]*CharacterRaceData {
 	CHARACTER_RACE_HUMAN: {
 		Name: "Human",
 
-		Vitality: 1,
-		Strength: 0,
-		Agility: 0,
-		Intelligence: -1,
-		Faith: 2,
+		Stats: MobBaseStats {
+			Vitality: 1,
+			Strength: 0,
+			Agility: 0,
+			Intelligence: -1,
+			Faith: 2,
+		},
 	},
 	CHARACTER_RACE_ELF: {
 		Name: "Elf",
 
-		Vitality: 0,
-		Strength: -1,
-		Agility: 1,
-		Intelligence: 2,
-		Faith: 0,
+		Stats: MobBaseStats {
+			Vitality: 0,
+			Strength: -1,
+			Agility: 1,
+			Intelligence: 2,
+			Faith: 0,
+		},
 	},
 	CHARACTER_RACE_DWARF: {
 		Name: "Dwarf",
 
-		Vitality: 2,
-		Strength: 1,
-		Agility: -1,
-		Intelligence: 0,
-		Faith: 0,
+		Stats: MobBaseStats {
+			Vitality: 2,
+			Strength: 1,
+			Agility: -1,
+			Intelligence: 0,
+			Faith: 0,
+		},
 	},
 	CHARACTER_RACE_ORC: {
 		Name: "Orc",
 
-		Vitality: 2,
-		Strength: 2,
-		Agility: 0,
-		Intelligence: 0,
-		Faith: -2,
+		Stats: MobBaseStats {
+			Vitality: 2,
+			Strength: 2,
+			Agility: 0,
+			Intelligence: 0,
+			Faith: -2,
+		},
 	},
 	CHARACTER_RACE_GREMLIN: {
 		Name: "Gremlin",
 
-		Vitality: 0,
-		Strength: -1,
-		Agility: 2,
-		Intelligence: 1,
-		Faith: 0,
+		Stats: MobBaseStats {
+			Vitality: 0,
+			Strength: -1,
+			Agility: 2,
+			Intelligence: 1,
+			Faith: 0,
+		},
 	},
 }
 
@@ -164,11 +173,7 @@ func CharacterNew(playerId int, characterSheet *MenuCharacterSheet) *Character {
 	character.Data.Experience = 0
 	character.Data.ExperienceToNextLevel = character.Data.GetExpToNextLevel()
 
-	character.Data.Vitality = classData.Vitality + raceData.Vitality
-	character.Data.Strength = classData.Strength + raceData.Strength
-	character.Data.Agility = classData.Agility + raceData.Agility
-	character.Data.Intelligence = classData.Intelligence + raceData.Intelligence
-	character.Data.Faith = classData.Faith + raceData.Faith
+	character.Data.Stats = classData.Stats.Add(&raceData.Stats)
 
 	character.Data.Health = character.Data.MaxHealth()
 	character.Data.Mana = character.Data.MaxMana()

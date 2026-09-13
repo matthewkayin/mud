@@ -9,6 +9,14 @@ import (
 const MOB_MAX_LEVEL int32 = 20
 const MOB_EXP_PER_LEVEL int32 = 300
 
+type MobBaseStats struct {
+	Vitality int32
+	Strength int32
+	Agility int32
+	Intelligence int32
+	Faith int32
+}
+
 type MobData struct {
 	Name string
 	Room uint
@@ -17,12 +25,7 @@ type MobData struct {
 	Experience int32
 	ExperienceToNextLevel int32
 
-	// Base stats
-	Vitality int32
-	Strength int32
-	Agility int32
-	Intelligence int32
-	Faith int32
+	Stats MobBaseStats
 
 	Health int32
 	Mana int32
@@ -48,13 +51,28 @@ type Mob struct {
 	CastSpell Spell
 }
 
+func (stats *MobBaseStats) Add(other *MobBaseStats) MobBaseStats {
+	return MobBaseStats {
+		Vitality: stats.Vitality + other.Vitality,
+		Strength: stats.Strength + other.Strength,
+		Agility: stats.Agility + other.Agility,
+		Intelligence: stats.Intelligence + other.Intelligence,
+		Faith: stats.Faith + other.Faith,
+	}
+}
+
 func MobInitFromCharacter(player *Player, character *Character) Mob {
-	return Mob {
+	playerMob := Mob {
 		player: player,
 		Data: character.Data,
 
 		Mode: MOB_MODE_IDLE,
 	}
+
+	// Calculate equipment stat bonuses
+	playerMob.Data.EquippedItems.RecalcStatBonuses()
+
+	return playerMob
 }
 
 func (mob *Mob) IsDead() bool {
@@ -70,11 +88,42 @@ func (mobData *MobData) GetExpToNextLevel() int32 {
 }
 
 func (mobData *MobData) MaxHealth() int32 {
-	return mobData.Vitality * 5
+	return mobData.Vitality() * 5
 }
 
 func (mobData *MobData) MaxMana() int32 {
-	return mobData.Intelligence * 5
+	return mobData.Intelligence() * 5
+}
+
+func (mobData *MobData) Armor() int32 {
+	outfit := mobData.EquippedItems.Get(EQUIPMENT_SLOT_OUTFIT)
+	if outfit == nil {
+		return 0
+	}
+
+	itemData := ITEM_DATA[outfit.Id]
+	outfitData := itemData.data.(*ItemDataOutfit)
+	return outfitData.armor
+}
+
+func (mobData *MobData) Vitality() int32 {
+	return mobData.Stats.Vitality + mobData.EquippedItems.GetStatBonuses().Vitality
+}
+
+func (mobData *MobData) Strength() int32 {
+	return mobData.Stats.Strength + mobData.EquippedItems.GetStatBonuses().Strength
+}
+
+func (mobData *MobData) Agility() int32 {
+	return mobData.Stats.Agility + mobData.EquippedItems.GetStatBonuses().Agility
+}
+
+func (mobData *MobData) Intelligence() int32 {
+	return mobData.Stats.Intelligence + mobData.EquippedItems.GetStatBonuses().Intelligence
+}
+
+func (mobData *MobData) Faith() int32 {
+	return mobData.Stats.Faith + mobData.EquippedItems.GetStatBonuses().Faith
 }
 
 func (mob *Mob) GrantExperience(experience int32) {
@@ -114,29 +163,8 @@ func (mob *Mob) Update(gameState *GameState) {
 			}
 
 			room := &gameState.world.Rooms[mob.Data.Room]
-
-			// Check for evasion
-			toHitDc := min(0.5, 0.25 * (float32(targetMob.Data.Agility) / float32(mob.Data.Agility)))
-			toHitRoll := rand.Float32()
-			if toHitRoll < toHitDc {
-				room.broadcast(gameState, fmt.Sprintf("%s dodged %s's attack!", targetMob.Data.Name, mob.Data.Name))
-				break
-			}
-
-			// TODO: Check for crit.
-
-			// Calculate physical damage
-			// TODO formula is damage = ((strength / 2) + weapon bonus) - armor
-			attackerMinDamage := max(1, mob.Data.Level / 2)
-			damage := mob.Data.Strength / 2
-			damage = max(damage, attackerMinDamage)
-			targetMob.Data.Health -= damage
-
-			// Broadcast result to room
-			room.broadcast(gameState, fmt.Sprintf("%s attacked %s for %d damage.", mob.Data.Name, targetMob.Data.Name, damage))
-			if targetMob.IsDead() {
-				room.broadcast(gameState, fmt.Sprintf("%s has slain %s.", mob.Data.Name, targetMob.Data.Name))
-			}
+			mob.AttackTargetWithWeapon(gameState, room, targetMob, EQUIPMENT_SLOT_MAIN_HAND)
+			mob.AttackTargetWithWeapon(gameState, room, targetMob, EQUIPMENT_SLOT_OFF_HAND)
 		case MOB_MODE_CAST:
 			// Check if target exists
 			targetMob, targetExists := gameState.world.Mobs.GetIfExists(mob.Target)
@@ -162,5 +190,56 @@ func (mob *Mob) Update(gameState *GameState) {
 			mob.Mode = MOB_MODE_IDLE
 		default:
 			log.Printf("Mob mode %d not handled.", mob.Mode)
+	}
+}
+
+func (mob *Mob) AttackTargetWithWeapon(gameState *GameState, room *Room, targetMob *Mob, slot EquipmentSlot) {
+	// Check for weapon
+	weapon := mob.Data.EquippedItems.Get(slot)
+
+	// Don't attack with off-hand unless there is a weapon in off-hand
+	if weapon == nil && slot == EQUIPMENT_SLOT_OFF_HAND {
+		return
+	}
+
+	// Check for evasion
+	toHitDc := min(0.5, 0.25 * (float32(targetMob.Data.Agility()) / float32(mob.Data.Agility())))
+	toHitRoll := rand.Float32()
+	if toHitRoll < toHitDc {
+		room.broadcast(gameState, fmt.Sprintf("%s dodged %s's attack!", targetMob.Data.Name, mob.Data.Name))
+		return
+	}
+
+	// Get item data if the player is holding a weapon
+	var itemData *ItemData = nil
+	if weapon != nil {
+		itemData = ITEM_DATA[weapon.Id]
+	}
+
+	// Get weapon damage from the item
+	var damage int32 = 0
+	if itemData != nil && (itemData.itemType == ITEM_TYPE_EQUIPMENT_ONE_HANDED || itemData.itemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED) {
+		weaponData := itemData.data.(*ItemDataWeapon)
+		damage = weaponData.damage
+	}
+
+	// Add strength to the damage
+	if (slot == EQUIPMENT_SLOT_MAIN_HAND) {
+		damage += mob.Data.Strength() / 2
+	} else {
+		damage += mob.Data.Strength() / 4
+	}
+
+	// Calculate final damage
+	attackerMinDamage := max(1, mob.Data.Level / 2)
+	damage = max(damage, attackerMinDamage)
+
+	// Deal damage
+	targetMob.Data.Health -= damage
+
+	// Broadcast result to room
+	room.broadcast(gameState, fmt.Sprintf("%s attack %s for %d damage.", mob.Data.Name, targetMob.Data.Name, damage))
+	if targetMob.IsDead() {
+		room.broadcast(gameState, fmt.Sprintf("%s has slain %s.", mob.Data.Name, targetMob.Data.Name))
 	}
 }
