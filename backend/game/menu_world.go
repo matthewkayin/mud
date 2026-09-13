@@ -3,6 +3,7 @@ package game
 import (
 	"fmt"
 	"strings"
+	"log"
 )
 
 func MenuWorld() Menu {
@@ -54,7 +55,9 @@ func MenuWorld() Menu {
 				return false
 			}
 
-			gameState.broadcast(fmt.Sprintf("%s said '%s'", player.character.Data.Name, strings.Join(args, " ")))
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			playerRoom := &gameState.world.Rooms[playerMob.Data.Room]
+			playerRoom.broadcast(gameState, fmt.Sprintf("%s said '%s'", player.character.Data.Name, strings.Join(args, " ")))
 			return true
 		},
 	}
@@ -160,7 +163,7 @@ func MenuWorld() Menu {
 
 			itemNames := make([]string, 0, inventorySize)
 			for _, item := range playerMob.Data.Inventory.Items {
-				itemNames = append(itemNames, ITEM_DATA[item.Type].name)
+				itemNames = append(itemNames, ITEM_DATA[item.Id].name)
 			}
 			*player.inbox <- fmt.Sprintf("You are carrying the following items: %s", combineNames(itemNames))
 			return true
@@ -192,15 +195,15 @@ func MenuWorld() Menu {
 			playerRoom := &gameState.world.Rooms[playerMob.Data.Room]
 			playerRoom.Inventory.AddItem(droppedItem)
 
-			*player.inbox <- fmt.Sprintf("You dropped %s.", ITEM_DATA[droppedItem.Type].name)
+			*player.inbox <- fmt.Sprintf("You dropped %s.", ITEM_DATA[droppedItem.Id].name)
 			return true
 		},
 	}
 
 	// Grab an item
-	entries["grab"] = MenuEntry{
-		usage: "grab <item>",
-		description: "Pick up an item in your current room.",
+	entries["take"] = MenuEntry {
+		usage: "take <item>",
+		description: "Pick up an item in your current room",
 		handler: func(gameState *GameState, player *Player, args []string) bool {
 			if len(args) != 1 {
 				return false
@@ -221,7 +224,164 @@ func MenuWorld() Menu {
 			grabbedItem := playerRoom.Inventory.RemoveItem(itemIndex)
 			playerMob.Data.Inventory.AddItem(grabbedItem)
 
-			*player.inbox <- fmt.Sprintf("You picked up %s.", ITEM_DATA[grabbedItem.Type].name)
+			*player.inbox <- fmt.Sprintf("You picked up %s.", ITEM_DATA[grabbedItem.Id].name)
+			return true
+		},
+	}
+
+	// Show equipment
+	entries["equipment"] = MenuEntry {
+		usage: "equipment",
+		description: "Show your current equipment",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			log.Printf("Handling equipment")
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+
+			// Determine if we should skip the offhand item slot
+			mainHandItem := playerMob.Data.EquippedItems.Get(EQUIPMENT_SLOT_MAIN_HAND)
+			shouldSkipOffhand := mainHandItem != nil && ITEM_DATA[mainHandItem.Id].itemType == EQUIPMENT_SLOT_MAIN_HAND
+
+			*player.inbox <- "Your equipment is:"
+
+			for index := range EQUIPMENT_SLOT_COUNT {
+				slot := EquipmentSlot(index)
+				item := playerMob.Data.EquippedItems.Get(slot)
+				var itemData *ItemData = nil
+
+				// If two handed equipped, skip off hand
+				if slot == EQUIPMENT_SLOT_OFF_HAND && shouldSkipOffhand {
+					continue
+				}
+
+				// Determine item name
+				var itemName string
+				if item != nil {
+					itemData = ITEM_DATA[item.Id]
+					itemName = itemData.name
+				} else {
+					itemName = "<Nothing Equipped>"
+				}
+
+				// Determine slot name
+				var slotName string
+				if slot == EQUIPMENT_SLOT_MAIN_HAND && item != nil && itemData.itemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED {
+					slotName = "Both Hands"
+				} else {
+					slotName = EquipmentSlotToString(slot)
+				}
+
+				*player.inbox <- fmt.Sprintf("\t%s - %s", slotName, itemName)
+			}
+
+			return true
+		},
+	}
+
+	// Equip
+	entries["equip"] = MenuEntry {
+		usage: "equip <item> [slot]",
+		description: "Equip the specified item",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			if len(args) < 1 || len(args) > 2 {
+				return false
+			}
+
+			// Determine the item
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			itemIndex, itemFound := playerMob.Data.Inventory.FindItem(args[0])
+			if !itemFound {
+				*player.inbox <- fmt.Sprintf("You have no item called '%s'.", args[0])
+				return true
+			}
+			itemPtr := &playerMob.Data.Inventory.Items[itemIndex]
+			itemData := ITEM_DATA[itemPtr.Id]
+
+			// Determine slot
+			var slot EquipmentSlot
+			if len(args) == 2 {
+				var success bool
+				slot, success = EquipmentSlotFromCommandString(args[1])
+				if !success {
+					*player.inbox <- fmt.Sprintf("'%s' is not a valid equipment slot.", args[1])
+					*player.inbox <- "Valid equipment slots are: 'mainhand', 'offhand', 'helm', 'armor', 'boots', and 'accessory'."
+					return true
+				}
+			} else {
+				if itemData.itemType == ITEM_TYPE_EQUIPMENT_ONE_HANDED {
+					*player.inbox <- fmt.Sprintf("%s is a one-handed item. You must specify whether to equip it to 'mainhand' or 'offhand'.", itemData.name)
+					return true
+				}
+
+				var success bool
+				slot, success = EquipmentSlotForItemType(itemData.itemType)
+				if !success {
+					*player.inbox <- fmt.Sprintf("%s cannot be equipped.", itemData.name)
+					return true
+				}
+			}
+
+			// Try to equip item
+			unequippedItems, success := playerMob.Data.EquippedItems.Equip(slot, *itemPtr)
+			if !success {
+				*player.inbox <- fmt.Sprintf("%s cannot be equipped to slot %s.", itemData.name, EquipmentSlotToString(slot))
+				return true
+			}
+
+			*player.inbox <- fmt.Sprintf("You equipped %s.", itemData.name)
+
+			// Remove item from player inventory
+			playerMob.Data.Inventory.RemoveItem(itemIndex)
+
+			// Add unequipped items to inventory
+			for _, item := range unequippedItems {
+				playerMob.Data.Inventory.AddItem(item)
+				unequippedItemData := ITEM_DATA[item.Id]
+				*player.inbox <- fmt.Sprintf("%s was unequipped and added to your inventory.", unequippedItemData.name)
+			}
+
+			return true
+		},
+	}
+
+	// Unequip
+	entries["remove"] = MenuEntry {
+		usage: "remove <item>",
+		description: "Remove an equipped item",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			if len(args) != 1 {
+				return false
+			}
+
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+
+			// Find the slot
+			var slot EquipmentSlot
+			foundItem := false
+			for slotIndex := range EQUIPMENT_SLOT_COUNT {
+				slot = EquipmentSlot(slotIndex)
+				itemPtr := playerMob.Data.EquippedItems.Get(slot)
+				if itemPtr == nil {
+					continue
+				}
+
+				itemData := ITEM_DATA[itemPtr.Id]
+				if strings.EqualFold(itemData.name, args[0]) {
+					foundItem = true
+					break
+				}
+			}
+
+			// Return early if no item found
+			if !foundItem {
+				*player.inbox <- fmt.Sprintf("You have no equipped items called '%s'.", args[0])
+				return true
+			}
+
+			// Unequip the item
+			item, _ := playerMob.Data.EquippedItems.Unequip(slot)
+			playerMob.Data.Inventory.AddItem(item)
+			*player.inbox <- fmt.Sprintf("You unequipped %s.", ITEM_DATA[item.Id].name)
+
 			return true
 		},
 	}
@@ -346,7 +506,7 @@ func describeRoomToPlayer(gameState *GameState, player *Player, room *Room) {
 	if len(room.Inventory.Items) > 0 {
 		itemNames := make([]string, 0, len(room.Inventory.Items))
 		for _, item := range room.Inventory.Items {
-			itemNames = append(itemNames, ITEM_DATA[item.Type].name)
+			itemNames = append(itemNames, ITEM_DATA[item.Id].name)
 		}
 		isString := "items are"
 		if len(room.Inventory.Items) == 1 {

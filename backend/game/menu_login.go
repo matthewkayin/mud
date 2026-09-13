@@ -46,7 +46,7 @@ func MenuLogin() Menu {
 				return false
 			}
 
-			character, characterExists := gameState.world.Characters[args[0]]
+			character, characterExists := gameState.world.GetCharacterIfExists(args[0])
 			if !characterExists {
 				*player.inbox <- fmt.Sprintf("A character named '%s' does not exist.", args[0])
 				return true
