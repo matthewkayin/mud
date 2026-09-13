@@ -68,8 +68,8 @@ func WorldInitNew() *World {
 		occupants: make([]MobHandle, 0, 1),
 		Inventory: ItemList {
 			Items: []Item {
-				Item { Type: ITEM_SWORD },
-				Item { Type: ITEM_AXE },
+				Item { Id: ITEM_SWORD },
+				Item { Id: ITEM_AXE },
 			},
 		},
 	})

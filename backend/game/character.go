@@ -184,5 +184,8 @@ func CharacterNew(playerId int, characterSheet *MenuCharacterSheet) *Character {
 		Items: make([]Item, 0, 1),
 	}
 
+	// Init Equipment
+	character.Data.EquippedItems = EquipmentInitEmpty()
+
 	return character
 }

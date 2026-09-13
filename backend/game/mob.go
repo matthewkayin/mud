@@ -29,6 +29,7 @@ type MobData struct {
 
 	Spells []Spell
 	Inventory ItemList
+	EquippedItems Equipment
 }
 
 type MobMode int32
