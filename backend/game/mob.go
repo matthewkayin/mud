@@ -9,6 +9,12 @@ import (
 const MOB_MAX_LEVEL int32 = 20
 const MOB_EXP_PER_LEVEL int32 = 300
 
+// Making this higher makes evasion chance smaller
+// Making this smaller makes evasion chance greater
+// Evasion chance of target = T / (T + (A * K))
+// Where T is target AGI and A is attacker AGI
+const MOB_EVASION_K float32 = 6.0
+
 type MobBaseStats struct {
 	Vitality int32
 	Strength int32
@@ -203,9 +209,11 @@ func (mob *Mob) AttackTargetWithWeapon(gameState *GameState, room *Room, targetM
 	}
 
 	// Check for evasion
-	toHitDc := min(0.5, 0.25 * (float32(targetMob.Data.Agility()) / float32(mob.Data.Agility())))
-	toHitRoll := rand.Float32()
-	if toHitRoll < toHitDc {
+	targetAgility := float32(targetMob.Data.Agility())
+	mobAgility := float32(mob.Data.Agility())
+	evasionChance := targetAgility / (targetAgility + (mobAgility * MOB_EVASION_K))
+	evasionRoll := rand.Float32()
+	if evasionRoll < evasionChance {
 		room.broadcast(gameState, fmt.Sprintf("%s dodged %s's attack!", targetMob.Data.Name, mob.Data.Name))
 		return
 	}
@@ -230,6 +238,9 @@ func (mob *Mob) AttackTargetWithWeapon(gameState *GameState, room *Room, targetM
 		damage += mob.Data.Strength() / 4
 	}
 
+	// Subtract target armor from damage
+	damage -= mob.Data.Armor()
+
 	// Calculate final damage
 	attackerMinDamage := max(1, mob.Data.Level / 2)
 	damage = max(damage, attackerMinDamage)
@@ -238,7 +249,7 @@ func (mob *Mob) AttackTargetWithWeapon(gameState *GameState, room *Room, targetM
 	targetMob.Data.Health -= damage
 
 	// Broadcast result to room
-	room.broadcast(gameState, fmt.Sprintf("%s attack %s for %d damage.", mob.Data.Name, targetMob.Data.Name, damage))
+	room.broadcast(gameState, fmt.Sprintf("%s struck %s for %d damage.", mob.Data.Name, targetMob.Data.Name, damage))
 	if targetMob.IsDead() {
 		room.broadcast(gameState, fmt.Sprintf("%s has slain %s.", mob.Data.Name, targetMob.Data.Name))
 	}

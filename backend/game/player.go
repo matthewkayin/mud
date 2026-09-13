@@ -90,11 +90,6 @@ func (player *Player) exitWorld(gameState *GameState) {
 }
 
 
-func (player *Player) printStatus(gameState *GameState) {
-	playerMob := gameState.world.Mobs.Get(player.mobHandle)
-	*player.inbox <- fmt.Sprintf("Health: %d / %d", playerMob.Data.Health, playerMob.Data.MaxHealth())
-}
-
 func (player *Player) onDeath(gameState *GameState) {
 	*player.inbox <- fmt.Sprintf("Your character %s has died, and death is forever. RIP", player.character.Data.Name)
 

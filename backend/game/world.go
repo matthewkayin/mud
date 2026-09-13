@@ -100,7 +100,10 @@ func WorldInitNew() *World {
 }
 
 func (world *World) Save(path string) {
-	fileOpenFlags := os.O_CREATE | os.O_WRONLY
+	// O_CREATE - Creating a file
+	// O_WRONLY - We are writing only
+	// O_TRUNC - Truncate (means that we overwrite any existing file completely)
+	fileOpenFlags := os.O_CREATE | os.O_WRONLY | os.O_TRUNC
 	saveFile, err := os.OpenFile(path, fileOpenFlags, 0644)
 	if err != nil {
 		log.Printf("Failed to open world JSON for saving: %s", err.Error())

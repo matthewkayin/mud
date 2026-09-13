@@ -111,12 +111,41 @@ func MenuWorld() Menu {
 		},
 	}
 
-	// Status
-	entries["status"] = MenuEntry {
-		usage: "status",
-		description: "Show your current status.",
+	// HP
+	entries["hp"] = MenuEntry {
+		usage: "hp",
+		description: "Show your combat status including HP, MP, and conditions.",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
-			player.printStatus(gameState)
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			*player.inbox <- fmt.Sprintf("HP: %d / %d", playerMob.Data.Health, playerMob.Data.MaxHealth())
+			*player.inbox <- fmt.Sprintf("MP: %d / %d", playerMob.Data.Mana, playerMob.Data.MaxMana())
+			return true
+		},
+	}
+
+	// Stats
+	entries["stats"] = MenuEntry {
+		usage: "stats",
+		description: "Show your current stats.",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			classData := CLASS_DATA[player.character.Class]
+			raceData := RACE_DATA[player.character.Race]
+
+			*player.inbox <- fmt.Sprintf("%s - Level %d %s %s",
+				playerMob.Data.Name, playerMob.Data.Level, raceData.Name, classData.Name)
+			*player.inbox <- fmt.Sprintf("Experience: %d / %d", playerMob.Data.Experience, playerMob.Data.ExperienceToNextLevel)
+
+			*player.inbox <- fmt.Sprintf("\nHP: %d / %d", playerMob.Data.Health, playerMob.Data.MaxHealth())
+			*player.inbox <- fmt.Sprintf("MP: %d / %d", playerMob.Data.Mana, playerMob.Data.MaxMana())
+
+			statBonuses := playerMob.Data.EquippedItems.GetStatBonuses()
+			*player.inbox <- fmt.Sprintf("\nVitality: %d (+%d)", playerMob.Data.Stats.Vitality, statBonuses.Vitality)
+			*player.inbox <- fmt.Sprintf("Strength: %d (+%d)", playerMob.Data.Stats.Strength, statBonuses.Strength)
+			*player.inbox <- fmt.Sprintf("Agility: %d (+%d)", playerMob.Data.Stats.Agility, statBonuses.Agility)
+			*player.inbox <- fmt.Sprintf("Intelligence: %d (+%d)", playerMob.Data.Stats.Intelligence, statBonuses.Intelligence)
+			*player.inbox <- fmt.Sprintf("Faith: %d (+%d)", playerMob.Data.Stats.Faith, statBonuses.Faith)
+
 			return true
 		},
 	}

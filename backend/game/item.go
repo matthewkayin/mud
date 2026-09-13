@@ -51,7 +51,9 @@ var ITEM_DATA = map[ItemId]*ItemData{
 		itemType: ITEM_TYPE_EQUIPMENT_ONE_HANDED,
 		data: &ItemDataWeapon {
 			damage: 5,
-			statBonuses: MobBaseStats {},
+			statBonuses: MobBaseStats {
+				Strength: 2,
+			},
 		},
 	},
 	ITEM_AXE: {
