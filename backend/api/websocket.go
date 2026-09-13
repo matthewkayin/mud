@@ -2,60 +2,33 @@ package api
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"io"
 	"log"
 	"strings"
-	"strconv"
 	"net/http"
-
-	"mud/core"
 	"mud/game"
-
 	"github.com/coder/websocket"
 )
 
-type recurseApiGetProfilesResponseSuccess struct {
-	Id int `json:"id"`
-}
-
-const RECURSE_USER_ID_NOT_FOUND int = -1
 
 func (apiState* ApiState) HandleGetWebSocket(writer http.ResponseWriter, request *http.Request) {
-	log.Printf("Invoked GET /api/websocket")
+	log.Printf("Invoked /api/websocket")
 
 	// Get the auth token from the query param
-	token := request.URL.Query().Get("token")
+	sessionToken, err := request.Cookie(MUD_SESSION_COOKIE_NAME)
+	if err != nil {
+		http.Error(writer, err.Error(), http.StatusUnauthorized)
+		return
+	}
 
 	// Check the list of active auth tokens
+	// TODO: handle token expiration and clear the cache?
 	apiState.tokenToIdMutex.RLock()
-	userId, authenticated := apiState.tokenToIdMap[token]
+	userId, authenticated := apiState.tokenToIdMap[sessionToken.Value]
 	apiState.tokenToIdMutex.RUnlock()
 
-	// TODO: handle token expiration and clear the cache?
-
-	// If it's not, then try querying the RC API for this user
-	if !authenticated || token == "" {
-		log.Printf("User ID not found in cache. Querying RC API...")
-		env := core.GetEnv()
-
-		var err error
-		if env.EnableDebugAuth {
-			userId, err = strconv.Atoi(token)
-		} else {
-			userId, err = getUserIdFromRcApi(token)
-		}
-
-		if err != nil {
-			http.Error(writer, err.Error(), http.StatusInternalServerError)
-		}
-		if userId == RECURSE_USER_ID_NOT_FOUND {
-			http.Error(writer, "Invalid auth token.", http.StatusUnauthorized)
-		}
-
-		// Cache the ID for later
-		apiState.tokenToIdMap[token] = userId
+	if !authenticated {
+		http.Error(writer, err.Error(), http.StatusUnauthorized)
+		return
 	}
 
 	log.Printf("Authenticated user %d", userId)
@@ -101,48 +74,6 @@ func (apiState* ApiState) HandleGetWebSocket(writer http.ResponseWriter, request
 	}
 }
 
-func getUserIdFromRcApi(token string) (int, error) {
-	env := core.GetEnv()
-
-	// Build a GET request to the RC API
-	recurseRequest, err := http.NewRequest("GET", fmt.Sprintf("%s/profiles/me", env.RecurseApiUrl), nil)
-	if err != nil {
-		return RECURSE_USER_ID_NOT_FOUND, err
-	}
-
-	recurseRequest.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-
-	// Make the GET request
-	httpClient := &http.Client{}
-	recurseResponse, err := httpClient.Do(recurseRequest)
-	if err != nil {
-		return RECURSE_USER_ID_NOT_FOUND, err
-	}
-	defer func() {
-		io.Copy(io.Discard, recurseResponse.Body)
-		recurseResponse.Body.Close()
-	}()
-
-	// For some reason RC returns 404 when you don't provide an auth token
-	if recurseResponse.StatusCode == http.StatusNotFound || recurseResponse.StatusCode == http.StatusUnauthorized {
-		return RECURSE_USER_ID_NOT_FOUND, nil
-	}
-
-	// Get the contents of the response body
-	recurseResponseBodyBytes, err := io.ReadAll(recurseResponse.Body)
-	if err != nil {
-		return RECURSE_USER_ID_NOT_FOUND, err
-	}
-
-	// Convert the response from JSON
-	var recurseResponseBody recurseApiGetProfilesResponseSuccess
-	err = json.Unmarshal(recurseResponseBodyBytes, &recurseResponseBody)
-	if err != nil {
-		return RECURSE_USER_ID_NOT_FOUND, err
-	}
-
-	return recurseResponseBody.Id, nil
-}
 
 func (apiState *ApiState) runSocketWriteLoop(ctx context.Context, connection *websocket.Conn, userId int) {
 	inbox := make(chan string, 100)

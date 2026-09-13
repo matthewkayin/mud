@@ -32,14 +32,18 @@ func main() {
 	// Set server endpoint handlers
 	apiState := api.InitState(gameState)
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /api/auth", apiState.HandlePostAuth)
-	mux.HandleFunc("GET /api/websocket", apiState.HandleGetWebSocket)
+	mux.HandleFunc("/api/auth/login", apiState.HandleAuthLogin)
+	mux.HandleFunc("/api/auth/callback", apiState.HandleAuthCallback)
+	if env.ENABLE_DEBUG_AUTH {
+		mux.HandleFunc("/api/auth/debug", apiState.HandleDebugLogin)
+	}
+	mux.HandleFunc("/api/websocket", apiState.HandleGetWebSocket)
 
 	// Kick off server in a separate goroutine
 	// Begin server
-	log.Printf("Beginning server on port %d...", env.Port)
+	log.Printf("Beginning server on port %d...", env.PORT)
 	server := &http.Server {
-		Addr: fmt.Sprintf(":%d", env.Port),
+		Addr: fmt.Sprintf(":%d", env.PORT),
 		Handler: corsMiddleware(mux),
 	}
 	go runHttpServer(server)

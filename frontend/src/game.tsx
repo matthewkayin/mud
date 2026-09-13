@@ -1,15 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { RecurseLogin } from './auth/recurse';
-import { DebugLogin } from './auth/debug';
 import { Terminal } from './terminal/terminal';
 
-export const App = () => {
-  const terminalPrompt = ">";
+const terminalPrompt = ">";
 
-  // Auth state
-  const [token, setToken] = useState<string | null>(null);
-  const useDebugAuth = import.meta.env.VITE_ENABLE_DEBUG_AUTH === 'true';
-
+export const GamePage = () => {
   // Terminal state
   const [command, setCommand] = useState('');
   const [lines, setLines] = useState<string[]>([]);
@@ -29,43 +23,42 @@ export const App = () => {
 
   // Init web socket
   useEffect(() => {
-    if (token === null) {
-      return;
-    }
-
     // Create web socket
     // TODO: configure for prod
-    webSocketRef.current = new WebSocket(`ws://${window.location.hostname}:5173/api/websocket?token=${token}`);
+    webSocketRef.current = new WebSocket(`ws://${window.location.hostname}:5173/api/websocket`);
     console.log('Created web socket.');
 
+    // TODO: set onerror listener and log to terminal on error (likely error is unauthorized)
+
     // Web socket open listener
-    webSocketRef.current.addEventListener('open', () => {
+    const onOpen = () => {
       console.log('Web socket connected.');
-    });
+    };
+    webSocketRef.current.addEventListener('open', onOpen);
 
     // Web socket message listener
-    webSocketRef.current.addEventListener('message', (messageEvent) => {
+    const onMessage = (messageEvent) => {
       terminalWriteLine(messageEvent.data);
-    });
+    };
+    webSocketRef.current.addEventListener('message', onMessage);
 
     // Web socket close listener
-    webSocketRef.current.addEventListener('close', () => {
+    const onClose = () => {
       terminalWriteLine('The server has disconnected.');
-    });
+    };
+    webSocketRef.current.addEventListener('close', onClose);
 
     return () => {
-      webSocketRef.current.removeEventListener('open');
-      webSocketRef.current.removeEventListener('message');
-      webSocketRef.current.removeEventListener('close');
+      webSocketRef.current.removeEventListener('open', onOpen);
+      webSocketRef.current.removeEventListener('message', onMessage);
+      webSocketRef.current.removeEventListener('close', onClose);
       webSocketRef.current.close();
     };
-  }, [token]);
+  }, []);
 
   return (
     <div>
       <h1>RC Disco MUD!</h1>
-      { useDebugAuth && <DebugLogin token={token} setToken={setToken} /> }
-      { !useDebugAuth && <RecurseLogin token={token} setToken={setToken} /> }
       <Terminal prompt={terminalPrompt} lines={lines} command={command} setCommand={setCommand} onSubmit={onSubmit} />
     </div>
   );

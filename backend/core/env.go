@@ -7,14 +7,15 @@ import (
 )
 
 type Env struct {
-	Port int `json:"PORT"`
+	PORT int `json:"PORT"`
 
-	EnableDebugAuth bool `json:"ENABLE_DEBUG_AUTH"`
+	ENABLE_DEBUG_AUTH bool `json:"ENABLE_DEBUG_AUTH"`
 
-	RecurseApiUrl string `json:"RC_API_URL"`
-	RecurseTokenUrl string `json:"RC_TOKEN_URL"`
-	RecurseClientId string `json:"RC_CLIENT_ID"`
-	RecurseClientSecret string `json:"RC_CLIENT_SECRET"`
+	RC_API_URL string `json:"RC_API_URL"`
+	RC_AUTH_URL string `json:"RC_AUTH_URL"`
+	RC_TOKEN_URL string `json:"RC_TOKEN_URL"`
+	RC_CLIENT_ID string `json:"RC_CLIENT_ID"`
+	RC_CLIENT_SECRET string `json:"RC_CLIENT_SECRET"`
 }
 var env Env
 
