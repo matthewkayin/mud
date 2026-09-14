@@ -150,6 +150,35 @@ func MenuWorld() Menu {
 		},
 	}
 
+	// Stop
+	entries["stop"] = MenuEntry {
+		usage: "stop",
+		description: "Stop attacking or cancel your current spell",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			playerRoom := &gameState.world.Rooms[playerMob.Data.Room]
+
+			switch playerMob.Mode {
+				case MOB_MODE_IDLE:
+				case MOB_MODE_ATTACK:
+					targetMob, targetExists := gameState.world.Mobs.GetIfExists(playerMob.Target)
+					if targetExists {
+						playerRoom.broadcast(gameState, fmt.Sprintf("%s stopped attacking %s", playerMob.Data.Name, targetMob.Data.Name))
+					}
+				case MOB_MODE_CAST:
+					playerRoom.broadcast(gameState, fmt.Sprintf("%s canceled their spell.", playerMob.Data.Name))
+			}
+
+			playerMob.Mode = MOB_MODE_IDLE
+			player.nextAction = Action {
+				actionType: ACTION_TYPE_NONE,
+				data: nil,
+			}
+
+			return true
+		},
+	}
+
 	// Attack
 	entries["attack"] = MenuEntry {
 		usage: "attack <target>",
