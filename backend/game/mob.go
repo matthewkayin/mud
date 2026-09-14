@@ -62,6 +62,7 @@ type Mob struct {
 	Mode MobMode
 	Target MobHandle
 	CastSpell Spell
+	CastTimer int32
 }
 
 func (stats *MobBaseStats) Add(other *MobBaseStats) MobBaseStats {
@@ -176,6 +177,18 @@ func (mob *Mob) GrantExperience(experience int32) {
 	}
 }
 
+func (mob *Mob) SetModeAttack(targetHandle MobHandle) {
+	mob.Mode = MOB_MODE_ATTACK
+	mob.Target = targetHandle
+}
+
+func (mob *Mob) SetModeCast(spell Spell, targetHandle MobHandle) {
+	mob.Mode = MOB_MODE_CAST
+	mob.Target = targetHandle
+	mob.CastSpell = spell
+	mob.CastTimer = SPELL_DATA[spell].castTime
+}
+
 func (mob *Mob) Update(gameState *GameState) {
 	switch mob.Mode {
 		case MOB_MODE_IDLE:
@@ -202,8 +215,15 @@ func (mob *Mob) Update(gameState *GameState) {
 			spellData := SPELL_DATA[mob.CastSpell]
 			room := gameState.world.Rooms[mob.Data.Room]
 			if mob.Data.Mana < spellData.manaCost {
-				room.broadcast(gameState, fmt.Sprintf("%s tried to cast %s, but they don't have enough mana.", mob.Data.Name, spellData.name))
 				mob.Mode = MOB_MODE_IDLE
+				room.broadcast(gameState, fmt.Sprintf("%s tried to cast %s, but they don't have enough mana.", mob.Data.Name, spellData.name))
+				break
+			}
+
+			// Check spell timer
+			if mob.CastTimer > 0 {
+				mob.CastTimer--
+				room.broadcast(gameState, fmt.Sprintf("%s is charging a spell...", mob.Data.Name))
 				break
 			}
 
@@ -285,9 +305,38 @@ func (mob *Mob) AttackTargetWithWeapon(gameState *GameState, room *Room, targetM
 	room.broadcast(gameState, fmt.Sprintf("%s%s struck %s for %d damage.", critStr, mob.Data.Name, targetMob.Data.Name, damage))
 	if targetMob.IsDead() {
 		room.broadcast(gameState, fmt.Sprintf("%s has slain %s.", mob.Data.Name, targetMob.Data.Name))
+	} else {
+		targetMob.RollForConcentration(gameState, damage)
 	}
 }
 
 func (mob *Mob) CalculateMagicDamage(baseDamage int32, target *Mob) int32 {
 	return baseDamage + (mob.Data.Faith() / 2) + (target.Data.Faith() / 4)
+}
+
+func (mob *Mob) RollForConcentration(gameState *GameState, damage int32) {
+	// Not concentrating
+	if mob.Mode != MOB_MODE_CAST {
+		return
+	}
+
+	// Don't break concentration for instants or spells that have already been charged
+	if mob.CastTimer == 0 {
+		return
+	}
+
+	mobFaith := float32(mob.Data.Faith())
+	attackDamage := float32(damage)
+
+	concentrationChance := mobFaith / (mobFaith + (attackDamage / 2))
+	concentrationRoll := rand.Float32()
+	if concentrationRoll < concentrationChance {
+		// Concentration maintained!
+		return
+	}
+
+	// Concentration broken!
+	mob.Mode = MOB_MODE_IDLE
+	mobRoom := &gameState.world.Rooms[mob.Data.Room]
+	mobRoom.broadcast(gameState, fmt.Sprintf("%s lost concentration on their spell!", mob.Data.Name))
 }
