@@ -3,7 +3,6 @@ package game
 import (
 	"log"
 	"sort"
-	"fmt"
 )
 
 const ROOM_NONE int = -1
