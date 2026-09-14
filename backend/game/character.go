@@ -1,13 +1,5 @@
 package game
 
-// Stat at level L = Base + (2 * (L - 1) * Scaling / 10)
-// The scaling is really a percent. Scaling of 10 = 1.0 scaling, 8 = 0.8, 6 = 0.6
-// The reason why they are ints is so that we can reuse the MobBaseStats type, that way
-// if any of the stats change the scaling types will change with it
-var STAT_SCALING_BEST int32 = 10
-var STAT_SCALING_GOOD int32 = 8
-var STAT_SCALING_POOR int32 = 6
-
 type CharacterClass int
 const (
 	CHARACTER_CLASS_WARRIOR = iota
