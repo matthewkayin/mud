@@ -210,7 +210,7 @@ func (mob *Mob) Update(gameState *GameState) {
 			// Cast spell
 			room.broadcast(gameState, fmt.Sprintf("%s cast %s!", mob.Data.Name, spellData.name))
 			mob.Data.Mana -= spellData.manaCost
-			spellData.onHit(gameState, targetMob)
+			spellData.onHit(gameState, mob, targetMob)
 
 			mob.Mode = MOB_MODE_IDLE
 		default:
@@ -286,4 +286,8 @@ func (mob *Mob) AttackTargetWithWeapon(gameState *GameState, room *Room, targetM
 	if targetMob.IsDead() {
 		room.broadcast(gameState, fmt.Sprintf("%s has slain %s.", mob.Data.Name, targetMob.Data.Name))
 	}
+}
+
+func (mob *Mob) CalculateMagicDamage(baseDamage int32, target *Mob) int32 {
+	return baseDamage + (mob.Data.Faith() / 2) + (target.Data.Faith() / 4)
 }
