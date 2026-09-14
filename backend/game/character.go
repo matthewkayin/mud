@@ -1,5 +1,13 @@
 package game
 
+// Stat at level L = Base + (2 * (L - 1) * Scaling / 10)
+// The scaling is really a percent. Scaling of 10 = 1.0 scaling, 8 = 0.8, 6 = 0.6
+// The reason why they are ints is so that we can reuse the MobBaseStats type, that way
+// if any of the stats change the scaling types will change with it
+var STAT_SCALING_BEST int32 = 10
+var STAT_SCALING_GOOD int32 = 8
+var STAT_SCALING_POOR int32 = 6
+
 type CharacterClass int
 const (
 	CHARACTER_CLASS_WARRIOR = iota
@@ -12,7 +20,7 @@ type CharacterClassData struct {
 	Name string
 
 	Stats MobBaseStats
-	StartingSpells []Spell
+	Scaling MobBaseStats
 }
 
 type CharacterRace int
@@ -50,8 +58,13 @@ var CLASS_DATA = map[CharacterClass]*CharacterClassData {
 			Intelligence: 6,
 			Faith: 8,
 		},
-
-		StartingSpells: []Spell{},
+		Scaling: MobBaseStats {
+			Vitality: 8,
+			Strength: 10,
+			Agility: 6,
+			Intelligence: 6,
+			Faith: 8,
+		},
 	},
 	CHARACTER_CLASS_ROGUE: {
 		Name: "Rogue",
@@ -63,8 +76,13 @@ var CLASS_DATA = map[CharacterClass]*CharacterClassData {
 			Intelligence: 6,
 			Faith: 6,
 		},
-
-		StartingSpells: []Spell{},
+		Scaling: MobBaseStats {
+			Vitality: 8,
+			Strength: 8,
+			Agility: 10,
+			Intelligence: 6,
+			Faith: 6,
+		},
 	},
 	CHARACTER_CLASS_WIZARD: {
 		Name: "Wizard",
@@ -76,9 +94,12 @@ var CLASS_DATA = map[CharacterClass]*CharacterClassData {
 			Intelligence: 10,
 			Faith: 8,
 		},
-
-		StartingSpells: []Spell{
-			SPELL_FIREBOLT,
+		Scaling: MobBaseStats {
+			Vitality: 6,
+			Strength: 6,
+			Agility: 8,
+			Intelligence: 10,
+			Faith: 8,
 		},
 	},
 	CHARACTER_CLASS_PRIEST: {
@@ -91,9 +112,12 @@ var CLASS_DATA = map[CharacterClass]*CharacterClassData {
 			Intelligence: 8,
 			Faith: 10,
 		},
-
-		StartingSpells: []Spell{
-			SPELL_CURE,
+		Scaling: MobBaseStats {
+			Vitality: 6,
+			Strength: 6,
+			Agility: 8,
+			Intelligence: 8,
+			Faith: 10,
 		},
 	},
 }
@@ -178,11 +202,8 @@ func CharacterNew(playerId int, characterSheet *MenuCharacterSheet) *Character {
 	character.Data.Health = character.Data.MaxHealth()
 	character.Data.Mana = character.Data.MaxMana()
 
-	// Add starting spells
-	character.Data.Spells = make([]Spell, 0, len(classData.StartingSpells))
-	for _, spell := range classData.StartingSpells {
-		character.Data.Spells = append(character.Data.Spells, spell)
-	}
+	// Init spell list
+	character.Data.Spells = make([]Spell, 0, 1)
 
 	// Init inventory
 	character.Data.Inventory = ItemList {
@@ -193,4 +214,8 @@ func CharacterNew(playerId int, characterSheet *MenuCharacterSheet) *Character {
 	character.Data.EquippedItems = EquipmentInitEmpty()
 
 	return character
+}
+
+func CharacterStatAtLevel(base int32, scaling int32, level int32) int32 {
+	return base + int32(2.0 * float32(level - 1) * (float32(scaling) / 10.0))
 }

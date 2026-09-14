@@ -9,11 +9,18 @@ import (
 const MOB_MAX_LEVEL int32 = 20
 const MOB_EXP_PER_LEVEL int32 = 300
 
-// Making this higher makes evasion chance smaller
+// Making Evasion K higher makes evasion chance smaller
 // Making this smaller makes evasion chance greater
 // Evasion chance of target = T / (T + (A * K))
 // Where T is target AGI and A is attacker AGI
 const MOB_EVASION_K float32 = 6.0
+
+// Making Crit K higher increases the likelihood of crits
+// Crit chance =  (AGI / 50) * 0.33
+//			   => AGI * (0.33 / 50)
+// A mob with a base AGI of 12 and high crit scaling will have 50 AGI at level 20,
+// so 50 is roughly the "max agility" a mob can have
+const MOB_CRIT_K float32 = 0.33 / 50.0
 
 type MobBaseStats struct {
 	Vitality int32
@@ -142,10 +149,23 @@ func (mob *Mob) GrantExperience(experience int32) {
 		if mob.Data.Experience + experience >= mob.Data.ExperienceToNextLevel {
 			experience -= mob.Data.ExperienceToNextLevel
 
+			// Increase level
 			mob.Data.Experience = 0
 			mob.Data.ExperienceToNextLevel = mob.Data.GetExpToNextLevel()
 			mob.Data.Level++
 
+			// Increase stats
+			classData := CLASS_DATA[mob.player.character.Class]
+			raceData := RACE_DATA[mob.player.character.Race]
+			baseStats := classData.Stats.Add(&raceData.Stats)
+
+			mob.Data.Stats.Vitality = CharacterStatAtLevel(baseStats.Vitality, classData.Stats.Vitality, mob.Data.Level)
+			mob.Data.Stats.Strength = CharacterStatAtLevel(baseStats.Strength, classData.Stats.Strength, mob.Data.Level)
+			mob.Data.Stats.Agility = CharacterStatAtLevel(baseStats.Agility, classData.Stats.Agility, mob.Data.Level)
+			mob.Data.Stats.Intelligence = CharacterStatAtLevel(baseStats.Intelligence, classData.Stats.Intelligence, mob.Data.Level)
+			mob.Data.Stats.Faith = CharacterStatAtLevel(baseStats.Faith, classData.Stats.Faith, mob.Data.Level)
+
+			// Announce level up message
 			*mob.player.inbox <- fmt.Sprintf("Level up! %s is now level %d", mob.Data.Name, mob.Data.Level)
 
 			continue
@@ -155,7 +175,6 @@ func (mob *Mob) GrantExperience(experience int32) {
 		experience = 0
 	}
 }
-
 
 func (mob *Mob) Update(gameState *GameState) {
 	switch mob.Mode {
@@ -218,6 +237,11 @@ func (mob *Mob) AttackTargetWithWeapon(gameState *GameState, room *Room, targetM
 		return
 	}
 
+	// Check for critical hit
+	critChance := mobAgility * MOB_CRIT_K
+	critRoll := rand.Float32()
+	crit := critRoll < critChance
+
 	// Get item data if the player is holding a weapon
 	var itemData *ItemData = nil
 	if weapon != nil {
@@ -239,7 +263,12 @@ func (mob *Mob) AttackTargetWithWeapon(gameState *GameState, room *Room, targetM
 	}
 
 	// Subtract target armor from damage
-	damage -= mob.Data.Armor()
+	// Crits ignore half armor
+	if crit {
+		damage -= mob.Data.Armor() / 2.0
+	} else {
+		damage -= mob.Data.Armor()
+	}
 
 	// Calculate final damage
 	attackerMinDamage := max(1, mob.Data.Level / 2)
@@ -249,7 +278,11 @@ func (mob *Mob) AttackTargetWithWeapon(gameState *GameState, room *Room, targetM
 	targetMob.Data.Health -= damage
 
 	// Broadcast result to room
-	room.broadcast(gameState, fmt.Sprintf("%s struck %s for %d damage.", mob.Data.Name, targetMob.Data.Name, damage))
+	critStr := ""
+	if crit {
+		critStr = "Critical hit! "
+	}
+	room.broadcast(gameState, fmt.Sprintf("%s%s struck %s for %d damage.", critStr, mob.Data.Name, targetMob.Data.Name, damage))
 	if targetMob.IsDead() {
 		room.broadcast(gameState, fmt.Sprintf("%s has slain %s.", mob.Data.Name, targetMob.Data.Name))
 	}
