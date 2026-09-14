@@ -3,6 +3,7 @@ package game
 import (
 	"log"
 	"sort"
+	"math/rand"
 )
 
 const ROOM_NONE int = -1
@@ -51,6 +52,12 @@ func (room *Room) Update(gameState *GameState) {
 	sort.Slice(room.occupants, func(i int, j int) bool {
 		mobI := gameState.world.Mobs.Get(room.occupants[i])
 		mobJ := gameState.world.Mobs.Get(room.occupants[j])
+
+		// If they have the same agility, choose a random one to go first
+		if mobI.Data.Agility() == mobJ.Data.Agility() {
+			return rand.Intn(2) == 0
+		}
+
 		return mobI.Data.Agility() > mobJ.Data.Agility()
 	})
 

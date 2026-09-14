@@ -15,6 +15,9 @@ const (
 type SpellData struct {
 	name string
 	description string
+
+	castsToLearn int32
+
 	manaCost int32
 	castTime int32
 
@@ -25,6 +28,9 @@ var SPELL_DATA = map[Spell]*SpellData {
 	SPELL_FIREBOLT: {
 		name: "Firebolt",
 		description: "Casts a bolt of fire toward the target",
+
+		castsToLearn: 50,
+
 		manaCost: 5,
 		castTime: 1,
 
@@ -44,6 +50,9 @@ var SPELL_DATA = map[Spell]*SpellData {
 	SPELL_CURE: {
 		name: "Cure",
 		description: "Heals the target with holy magic",
+
+		castsToLearn: 50,
+
 		manaCost: 5,
 		castTime: SPELL_CAST_TIME_INSTANT,
 

@@ -38,11 +38,20 @@ type CharacterRaceData struct {
 	Stats MobBaseStats
 }
 
+type CharacterEquippedSpell struct {
+	EquipCount int32
+	Casts int32
+	IsKnown bool
+}
+
 type Character struct {
 	PlayerId int
 
 	Class CharacterClass
 	Race CharacterRace
+
+	SpellsEquipped map[Spell]*CharacterEquippedSpell
+	SpellsKnown []Spell
 
 	Data MobData
 }
@@ -204,6 +213,8 @@ func CharacterNew(playerId int, characterSheet *MenuCharacterSheet) *Character {
 
 	// Init spell list
 	character.Data.Spells = make([]Spell, 0, 1)
+	character.SpellsEquipped = make(map[Spell]*CharacterEquippedSpell)
+	character.SpellsKnown = make([]Spell, 0, 1)
 
 	// Init inventory
 	character.Data.Inventory = ItemList {

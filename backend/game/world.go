@@ -56,6 +56,8 @@ func WorldInitNew() *World {
 			Items: []Item {
 				Item { Id: ITEM_SWORD },
 				Item { Id: ITEM_AXE },
+				Item { Id: ITEM_SPELLBOOK_FIREBOLT },
+				Item { Id: ITEM_SPELLBOOK_CURE },
 			},
 		},
 	})

@@ -22,6 +22,13 @@ const MOB_EVASION_K float32 = 6.0
 // so 50 is roughly the "max agility" a mob can have
 const MOB_CRIT_K float32 = 0.33 / 50.0
 
+// Making Cast K higher increases how effective intelligence is at reducing spell learn-time
+// Spell Casts to learn = Base + (1 - (INT / 50.0) * 0.75)
+// 					    => Base * (1 - INT * (0.75 / 50.0))
+// Where Base is the spell's base casts to learn
+// Higher intelligence therefore reduces the number of casts it takes to learn the spell
+const MOB_CASTS_TO_LEARN_K float32 = 0.75 / 50.0
+
 type MobBaseStats struct {
 	Vitality int32
 	Strength int32
@@ -44,6 +51,7 @@ type MobData struct {
 	Mana int32
 
 	Spells []Spell
+
 	Inventory ItemList
 	EquippedItems Equipment
 }
@@ -75,6 +83,15 @@ func (stats *MobBaseStats) Add(other *MobBaseStats) MobBaseStats {
 	}
 }
 
+// Returns true if stats >= other
+func (stats *MobBaseStats) Meets(other *MobBaseStats) bool {
+	return !(stats.Vitality < other.Vitality ||
+			stats.Strength < other.Strength ||
+			stats.Agility < other.Agility ||
+			stats.Intelligence < other.Intelligence ||
+			stats.Faith < other.Faith)
+}
+
 func MobInitFromCharacter(player *Player, character *Character) Mob {
 	playerMob := Mob {
 		player: player,
@@ -84,7 +101,7 @@ func MobInitFromCharacter(player *Player, character *Character) Mob {
 	}
 
 	// Calculate equipment stat bonuses
-	playerMob.Data.EquippedItems.RecalcStatBonuses()
+	playerMob.Data.EquippedItems.CalculateStatBonuses()
 
 	return playerMob
 }
@@ -121,23 +138,53 @@ func (mobData *MobData) Armor() int32 {
 }
 
 func (mobData *MobData) Vitality() int32 {
-	return mobData.Stats.Vitality + mobData.EquippedItems.GetStatBonuses().Vitality
+	return mobData.Stats.Vitality + mobData.EquippedItems.statBonuses.Vitality
 }
 
 func (mobData *MobData) Strength() int32 {
-	return mobData.Stats.Strength + mobData.EquippedItems.GetStatBonuses().Strength
+	return mobData.Stats.Strength + mobData.EquippedItems.statBonuses.Strength
 }
 
 func (mobData *MobData) Agility() int32 {
-	return mobData.Stats.Agility + mobData.EquippedItems.GetStatBonuses().Agility
+	return mobData.Stats.Agility + mobData.EquippedItems.statBonuses.Agility
 }
 
 func (mobData *MobData) Intelligence() int32 {
-	return mobData.Stats.Intelligence + mobData.EquippedItems.GetStatBonuses().Intelligence
+	return mobData.Stats.Intelligence + mobData.EquippedItems.statBonuses.Intelligence
 }
 
 func (mobData *MobData) Faith() int32 {
-	return mobData.Stats.Faith + mobData.EquippedItems.GetStatBonuses().Faith
+	return mobData.Stats.Faith + mobData.EquippedItems.statBonuses.Faith
+}
+
+func (mobData *MobData) SpellSlots() int32 {
+	// Spell slots is based on base INT, not INT bonus,
+	// otherwise they could equip INT attributes to increase
+	// their spell slots, prepare the spells, and then unequip the items
+	//
+	// There is a case to be made that spell slots should be class determined
+	// and separate from the int stat entirely
+
+	return int32(float32(mobData.Stats.Intelligence) / 3.0)
+}
+
+func (mobData *MobData) CastsToLearn(spell Spell) int32 {
+	spellData := SPELL_DATA[spell]
+	spellCastsToLearn := float32(spellData.castsToLearn)
+	mobInt := float32(mobData.Intelligence())
+
+	return int32(spellCastsToLearn * (1.0 - (mobInt * MOB_CASTS_TO_LEARN_K)))
+}
+
+func (mobData *MobData) RemoveSpell(toRemove Spell) {
+	for index, spell := range mobData.Spells {
+		if spell == toRemove {
+			lastIndex := len(mobData.Spells) - 1
+			mobData.Spells[index] = mobData.Spells[lastIndex]
+			mobData.Spells = mobData.Spells[:lastIndex]
+			return
+		}
+	}
 }
 
 func (mob *Mob) GrantExperience(experience int32) {
@@ -232,6 +279,19 @@ func (mob *Mob) Update(gameState *GameState) {
 			mob.Data.Mana -= spellData.manaCost
 			spellData.onHit(gameState, mob, targetMob)
 
+			// Spell mastery progress
+			if mob.player != nil {
+				equippedSpell, spellIsEquipped := mob.player.character.SpellsEquipped[mob.CastSpell]
+				if spellIsEquipped && !equippedSpell.IsKnown {
+					equippedSpell.Casts++
+					if equippedSpell.Casts >= mob.Data.CastsToLearn(mob.CastSpell) {
+						equippedSpell.IsKnown = true
+						mob.player.character.SpellsKnown = append(mob.player.character.SpellsKnown, mob.CastSpell)
+						*mob.player.inbox <- fmt.Sprintf("You have mastered %s!", spellData.name)
+					}
+				}
+			}
+
 			mob.Mode = MOB_MODE_IDLE
 		default:
 			log.Printf("Mob mode %d not handled.", mob.Mode)
@@ -241,9 +301,17 @@ func (mob *Mob) Update(gameState *GameState) {
 func (mob *Mob) AttackTargetWithWeapon(gameState *GameState, room *Room, targetMob *Mob, slot EquipmentSlot) {
 	// Check for weapon
 	weapon := mob.Data.EquippedItems.Get(slot)
+	var itemData *ItemData = nil
+	heldItemIsWeapon := false
+	if weapon != nil {
+		itemData = ITEM_DATA[weapon.Id]
+		heldItemIsWeapon =
+			itemData.itemType == ITEM_TYPE_EQUIPMENT_ONE_HANDED ||
+			itemData.itemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED
+	}
 
 	// Don't attack with off-hand unless there is a weapon in off-hand
-	if weapon == nil && slot == EQUIPMENT_SLOT_OFF_HAND {
+	if slot == EQUIPMENT_SLOT_OFF_HAND && !heldItemIsWeapon {
 		return
 	}
 
@@ -262,15 +330,9 @@ func (mob *Mob) AttackTargetWithWeapon(gameState *GameState, room *Room, targetM
 	critRoll := rand.Float32()
 	crit := critRoll < critChance
 
-	// Get item data if the player is holding a weapon
-	var itemData *ItemData = nil
-	if weapon != nil {
-		itemData = ITEM_DATA[weapon.Id]
-	}
-
 	// Get weapon damage from the item
 	var damage int32 = 0
-	if itemData != nil && (itemData.itemType == ITEM_TYPE_EQUIPMENT_ONE_HANDED || itemData.itemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED) {
+	if heldItemIsWeapon {
 		weaponData := itemData.data.(*ItemDataWeapon)
 		damage = weaponData.damage
 	}
