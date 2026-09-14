@@ -13,7 +13,7 @@ func MenuLogin() Menu {
 		description: "Show a list of your characters.",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
 			characterList, characterListExists := gameState.world.PlayerCharacters[player.id]
-			if !characterListExists {
+			if !characterListExists || len(characterList) == 0 {
 				*player.inbox <- "You don't have any characters. Type 'create' to make a new one."
 				return true
 			}

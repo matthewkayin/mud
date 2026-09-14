@@ -3,6 +3,7 @@ package game
 import (
 	"log"
 	"fmt"
+	"slices"
 )
 
 type Player struct {
@@ -90,11 +91,6 @@ func (player *Player) exitWorld(gameState *GameState) {
 }
 
 
-func (player *Player) printStatus(gameState *GameState) {
-	playerMob := gameState.world.Mobs.Get(player.mobHandle)
-	*player.inbox <- fmt.Sprintf("Health: %d / %d", playerMob.Data.Health, playerMob.Data.MaxHealth())
-}
-
 func (player *Player) onDeath(gameState *GameState) {
 	*player.inbox <- fmt.Sprintf("Your character %s has died, and death is forever. RIP", player.character.Data.Name)
 
@@ -103,4 +99,32 @@ func (player *Player) onDeath(gameState *GameState) {
 	player.isLoggedIn = false
 
 	player.enterMenu(gameState, &gameState.menuLogin)
+}
+
+func (player *Player) onItemUnequipped(gameState *GameState, item Item) {
+	playerMob := gameState.world.Mobs.Get(player.mobHandle)
+	itemData := ITEM_DATA[item.Id]
+
+	playerMob.Data.Inventory.AddItem(item)
+
+	// Remove any spells that would ahve been given by the spellbook
+	if itemData.itemType == ITEM_TYPE_EQUIPMENT_SPELLBOOK {
+		spellbookData := itemData.data.(*ItemDataSpellbook)
+
+		// Decrement the equip count for this spell
+		player.character.SpellsEquipped[spellbookData.spell].EquipCount--
+
+		// If the equip count is now 0, delete the entry and remove the spell
+		if player.character.SpellsEquipped[spellbookData.spell].EquipCount == 0 {
+			delete(player.character.SpellsEquipped, spellbookData.spell)
+
+			isSpellPrepared := slices.Contains(playerMob.Data.Spells, spellbookData.spell)
+			isSpellKnown := slices.Contains(player.character.SpellsKnown, spellbookData.spell)
+			if isSpellPrepared && !isSpellKnown {
+				playerMob.Data.RemoveSpell(spellbookData.spell)
+				spellData := SPELL_DATA[spellbookData.spell]
+				*player.inbox <- fmt.Sprintf("You lost the spell %s.", spellData.name)
+			}
+		}
+	}
 }

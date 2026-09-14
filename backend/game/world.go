@@ -7,21 +7,6 @@ import (
 	"encoding/json"
 )
 
-const ROOM_NONE int = -1
-
-type Room struct {
-	Name string
-	Description string
-
-	ExitNorth int
-	ExitSouth int
-	ExitEast int
-	ExitWest int
-
-	occupants []MobHandle
-	Inventory ItemList
-}
-
 type World struct {
 	Characters map[string]*Character
 	PlayerCharacters map[int][]string
@@ -71,6 +56,8 @@ func WorldInitNew() *World {
 			Items: []Item {
 				Item { Id: ITEM_SWORD },
 				Item { Id: ITEM_AXE },
+				Item { Id: ITEM_SPELLBOOK_FIREBOLT },
+				Item { Id: ITEM_SPELLBOOK_CURE },
 			},
 		},
 	})
@@ -100,7 +87,10 @@ func WorldInitNew() *World {
 }
 
 func (world *World) Save(path string) {
-	fileOpenFlags := os.O_CREATE | os.O_WRONLY
+	// O_CREATE - Creating a file
+	// O_WRONLY - We are writing only
+	// O_TRUNC - Truncate (means that we overwrite any existing file completely)
+	fileOpenFlags := os.O_CREATE | os.O_WRONLY | os.O_TRUNC
 	saveFile, err := os.OpenFile(path, fileOpenFlags, 0644)
 	if err != nil {
 		log.Printf("Failed to open world JSON for saving: %s", err.Error())
@@ -172,60 +162,4 @@ func (world *World) RemoveCharacter(character *Character) {
 	}
 
 	delete(world.Characters, character.Data.Name)
-}
-
-func (room *Room) AddOccupant(handle MobHandle) {
-	room.occupants = append(room.occupants, handle)
-}
-
-func (room *Room) RemoveOccupant(handle MobHandle) {
-	occupantIndex := -1
-	for index, occupant := range room.occupants {
-		if occupant.Equals(handle) {
-			occupantIndex = index
-			break
-		}
-	}
-	if occupantIndex == -1 {
-		log.Printf("Warning: Tried to remove occupant with handle %d:%d from room %s, but no such occupant was found.",
-			handle.id, handle.generation, room.Name)
-	}
-
-	room.RemoveOccupantByIndex(occupantIndex)
-}
-
-func (room *Room) RemoveOccupantByIndex(index int) {
-	lastIndex := len(room.occupants) - 1
-	room.occupants[index] = room.occupants[lastIndex]
-	room.occupants = room.occupants[:lastIndex]
-}
-
-func (room *Room) Update(gameState *GameState) {
-	occupantIndex := 0
-	for occupantIndex < len(room.occupants) {
-		occupantHandle := room.occupants[occupantIndex]
-		occupantMob := gameState.world.Mobs.Get(occupantHandle)
-		if occupantMob.IsDead() {
-			room.RemoveOccupantByIndex(occupantIndex)
-			if occupantMob.player != nil {
-				occupantMob.player.onDeath(gameState)
-			}
-			gameState.world.Mobs.Remove(occupantHandle)
-			continue
-		}
-
-		occupantMob.Update(gameState)
-		occupantIndex += 1
-	}
-}
-
-func (room *Room) broadcast(gameState *GameState, message string) {
-	for _, occupantHandle := range room.occupants {
-		occupantMob := gameState.world.Mobs.Get(occupantHandle)
-		if occupantMob.player == nil {
-			continue
-		}
-
-		*occupantMob.player.inbox <- message
-	}
 }

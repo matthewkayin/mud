@@ -3,7 +3,6 @@ package game
 import (
 	"fmt"
 	"strings"
-	"log"
 )
 
 type EquipmentSlot int
@@ -26,12 +25,11 @@ type Equipment struct {
 	IsSlotInUse []bool
 	SlotItem []Item
 
-	// These two fields are private so they will not be saved in world json
+	// This field is private it will not be saved in world json
 	// Instead, stat bonuses are recalculated when a character logins
 	// This way if an item gets a balance patch, players will get the patch applied
 	// to them when they login
 	statBonuses MobBaseStats
-	isDirty bool
 }
 
 func EquipmentInitEmpty() Equipment {
@@ -40,13 +38,11 @@ func EquipmentInitEmpty() Equipment {
 		SlotItem: make([]Item, EQUIPMENT_SLOT_COUNT),
 
 		statBonuses: MobBaseStats {},
-		isDirty: false,
 	}
 	for index := range EQUIPMENT_SLOT_COUNT {
 		equipment.IsSlotInUse[index] = false
 	}
 
-	log.Printf("Returned equipment")
 	return equipment
 }
 
@@ -69,6 +65,8 @@ func (equipment *Equipment) Unequip(slot EquipmentSlot) (Item, bool) {
 	} else {
 		equipment.IsSlotInUse[slot] = false
 	}
+
+	equipment.CalculateStatBonuses()
 
 	return item, true
 }
@@ -116,12 +114,15 @@ func (equipment *Equipment) Equip(slot EquipmentSlot, item Item) ([]Item, bool) 
 	// Add the item to the slot
 	equipment.SlotItem[slot] = item
 
+	// Update stat bonuses
+	equipment.CalculateStatBonuses()
+
 	return unequippedItems, true
 }
 
 func itemTypeMatchesEquipmentSlot(itemType ItemType, slot EquipmentSlot) bool {
 	switch itemType {
-		case ITEM_TYPE_EQUIPMENT_ONE_HANDED:
+		case ITEM_TYPE_EQUIPMENT_ONE_HANDED, ITEM_TYPE_EQUIPMENT_SPELLBOOK:
 			return slot == EQUIPMENT_SLOT_MAIN_HAND || slot == EQUIPMENT_SLOT_OFF_HAND
 		case ITEM_TYPE_EQUIPMENT_TWO_HANDED:
 			return slot == EQUIPMENT_SLOT_MAIN_HAND
@@ -176,16 +177,7 @@ func EquipmentSlotFromCommandString(slotString string) (EquipmentSlot, bool) {
 	}
 }
 
-func (equipment *Equipment) GetStatBonuses() *MobBaseStats {
-	// If equipment has changed, re-calc stat bonuses
-	if equipment.isDirty {
-		equipment.RecalcStatBonuses()
-	}
-
-	return &equipment.statBonuses
-}
-
-func (equipment *Equipment) RecalcStatBonuses() {
+func (equipment *Equipment) CalculateStatBonuses() {
 	equipment.statBonuses = MobBaseStats {}
 
 	for slotIndex := range EQUIPMENT_SLOT_COUNT {
@@ -200,12 +192,32 @@ func (equipment *Equipment) RecalcStatBonuses() {
 		// Get item stat bonusees
 		itemStatBonuses := ItemGetStatusBonuses(item)
 		if itemStatBonuses == nil {
-			log.Printf("Warn: Equipment should not return nil stat bonuses")
 			continue
 		}
 
 		equipment.statBonuses = equipment.statBonuses.Add(itemStatBonuses)
 	}
+}
 
-	equipment.isDirty = false
+func (equipment *Equipment) IsHoldingSpellbookOf(spell Spell) bool {
+	heldItems := []*Item{
+		equipment.Get(EQUIPMENT_SLOT_MAIN_HAND),
+		equipment.Get(EQUIPMENT_SLOT_OFF_HAND),
+	}
+	for _, heldItem := range heldItems {
+		if heldItem == nil {
+			continue
+		}
+		heldItemData := ITEM_DATA[heldItem.Id]
+		if heldItemData.itemType != ITEM_TYPE_EQUIPMENT_SPELLBOOK {
+			continue
+		}
+
+		heldSpellbookData := heldItemData.data.(*ItemDataSpellbook)
+		if heldSpellbookData.spell == spell {
+			return true
+		}
+	}
+
+	return false
 }
