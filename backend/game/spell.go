@@ -36,12 +36,12 @@ var SPELL_DATA = map[Spell]*SpellData {
 
 		onHit: func(gameState *GameState, caster *Mob, target *Mob) {
 			damage := caster.CalculateMagicDamage(10, target)
-			target.Data.Health -= damage
+			target.data.Health -= damage
 
-			room := gameState.world.Rooms[target.Data.Room]
-			room.broadcast(gameState, fmt.Sprintf("%s took %d damage from the firebolt.", target.Data.Name, damage))
+			room := gameState.world.Rooms[target.data.Room]
+			room.broadcast(gameState, fmt.Sprintf("%s took %d damage from the firebolt.", target.data.Name, damage))
 			if target.IsDead() {
-				room.broadcast(gameState, fmt.Sprintf("%s has burnt to a crisp.", target.Data.Name))
+				room.broadcast(gameState, fmt.Sprintf("%s has burnt to a crisp.", target.data.Name))
 			} else {
 				target.RollForConcentration(gameState, damage)
 			}
@@ -58,11 +58,11 @@ var SPELL_DATA = map[Spell]*SpellData {
 
 		onHit: func(gameState *GameState, caster *Mob, target *Mob) {
 			healing := caster.CalculateMagicDamage(15, target)
-			healingReceived := min(healing, target.Data.MaxHealth() - healing)
-			target.Data.Health += healingReceived
+			healingReceived := min(healing, target.data.MaxHealth() - healing)
+			target.data.Health += healingReceived
 
-			room := gameState.world.Rooms[target.Data.Room]
-			room.broadcast(gameState, fmt.Sprintf("%s regained %d HP.", target.Data.Name, healingReceived))
+			room := gameState.world.Rooms[target.data.Room]
+			room.broadcast(gameState, fmt.Sprintf("%s regained %d HP.", target.data.Name, healingReceived))
 		},
 	},
 }

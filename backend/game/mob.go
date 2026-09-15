@@ -65,12 +65,12 @@ const (
 
 type Mob struct {
 	player *Player
-	Data MobData
+	data MobData
 
-	Mode MobMode
-	Target MobHandle
-	CastSpell Spell
-	CastTimer int32
+	mode MobMode
+	target MobHandle
+	castSpell Spell
+	castTimer int32
 }
 
 func (stats *MobBaseStats) Add(other *MobBaseStats) MobBaseStats {
@@ -92,22 +92,29 @@ func (stats *MobBaseStats) Meets(other *MobBaseStats) bool {
 			stats.Faith < other.Faith)
 }
 
-func MobInitFromCharacter(player *Player, character *Character) Mob {
-	playerMob := Mob {
-		player: player,
-		Data: character.Data,
+func MobInit(data *MobData) Mob {
+	mob := Mob {
+		player: nil,
+		data: *data,
 
-		Mode: MOB_MODE_IDLE,
+		mode: MOB_MODE_IDLE,
 	}
 
 	// Calculate equipment stat bonuses
-	playerMob.Data.EquippedItems.CalculateStatBonuses()
+	mob.data.EquippedItems.CalculateStatBonuses()
+
+	return mob
+}
+
+func MobInitPlayer(player *Player, character *Character) Mob {
+	playerMob := MobInit(&character.Data)
+	playerMob.player = player
 
 	return playerMob
 }
 
 func (mob *Mob) IsDead() bool {
-	return mob.Data.Health <= 0
+	return mob.data.Health <= 0
 }
 
 func (mobData *MobData) GetExpToNextLevel() int32 {
@@ -193,114 +200,114 @@ func (mob *Mob) GrantExperience(experience int32) {
 		return
 	}
 
-	for experience > 0 && mob.Data.Level < MOB_MAX_LEVEL {
-		if mob.Data.Experience + experience >= mob.Data.ExperienceToNextLevel {
-			experience -= mob.Data.ExperienceToNextLevel
+	for experience > 0 && mob.data.Level < MOB_MAX_LEVEL {
+		if mob.data.Experience + experience >= mob.data.ExperienceToNextLevel {
+			experience -= mob.data.ExperienceToNextLevel
 
 			// Increase level
-			mob.Data.Experience = 0
-			mob.Data.ExperienceToNextLevel = mob.Data.GetExpToNextLevel()
-			mob.Data.Level++
+			mob.data.Experience = 0
+			mob.data.ExperienceToNextLevel = mob.data.GetExpToNextLevel()
+			mob.data.Level++
 
 			// Increase stats
 			classData := CLASS_DATA[mob.player.character.Class]
 			raceData := RACE_DATA[mob.player.character.Race]
 			baseStats := classData.Stats.Add(&raceData.Stats)
 
-			mob.Data.Stats.Vitality = CharacterStatAtLevel(baseStats.Vitality, classData.Stats.Vitality, mob.Data.Level)
-			mob.Data.Stats.Strength = CharacterStatAtLevel(baseStats.Strength, classData.Stats.Strength, mob.Data.Level)
-			mob.Data.Stats.Agility = CharacterStatAtLevel(baseStats.Agility, classData.Stats.Agility, mob.Data.Level)
-			mob.Data.Stats.Intelligence = CharacterStatAtLevel(baseStats.Intelligence, classData.Stats.Intelligence, mob.Data.Level)
-			mob.Data.Stats.Faith = CharacterStatAtLevel(baseStats.Faith, classData.Stats.Faith, mob.Data.Level)
+			mob.data.Stats.Vitality = CharacterStatAtLevel(baseStats.Vitality, classData.Stats.Vitality, mob.data.Level)
+			mob.data.Stats.Strength = CharacterStatAtLevel(baseStats.Strength, classData.Stats.Strength, mob.data.Level)
+			mob.data.Stats.Agility = CharacterStatAtLevel(baseStats.Agility, classData.Stats.Agility, mob.data.Level)
+			mob.data.Stats.Intelligence = CharacterStatAtLevel(baseStats.Intelligence, classData.Stats.Intelligence, mob.data.Level)
+			mob.data.Stats.Faith = CharacterStatAtLevel(baseStats.Faith, classData.Stats.Faith, mob.data.Level)
 
 			// Announce level up message
-			*mob.player.inbox <- fmt.Sprintf("Level up! %s is now level %d", mob.Data.Name, mob.Data.Level)
+			*mob.player.inbox <- fmt.Sprintf("Level up! %s is now level %d", mob.data.Name, mob.data.Level)
 
 			continue
 		}
 
-		mob.Data.Experience += experience
+		mob.data.Experience += experience
 		experience = 0
 	}
 }
 
 func (mob *Mob) SetModeAttack(targetHandle MobHandle) {
-	mob.Mode = MOB_MODE_ATTACK
-	mob.Target = targetHandle
+	mob.mode = MOB_MODE_ATTACK
+	mob.target = targetHandle
 }
 
 func (mob *Mob) SetModeCast(spell Spell, targetHandle MobHandle) {
-	mob.Mode = MOB_MODE_CAST
-	mob.Target = targetHandle
-	mob.CastSpell = spell
-	mob.CastTimer = SPELL_DATA[spell].castTime
+	mob.mode = MOB_MODE_CAST
+	mob.target = targetHandle
+	mob.castSpell = spell
+	mob.castTimer = SPELL_DATA[spell].castTime
 }
 
 func (mob *Mob) Update(gameState *GameState) {
-	switch mob.Mode {
+	switch mob.mode {
 		case MOB_MODE_IDLE:
 		case MOB_MODE_ATTACK:
 			// Check if target exists
-			targetMob, targetExists := gameState.world.Mobs.GetIfExists(mob.Target)
-			if !targetExists || targetMob.IsDead() || targetMob.Data.Room != mob.Data.Room {
-				mob.Mode = MOB_MODE_IDLE
+			targetMob, targetExists := gameState.world.Mobs.GetIfExists(mob.target)
+			if !targetExists || targetMob.IsDead() || targetMob.data.Room != mob.data.Room {
+				mob.mode = MOB_MODE_IDLE
 				break
 			}
 
-			room := &gameState.world.Rooms[mob.Data.Room]
+			room := &gameState.world.Rooms[mob.data.Room]
 			mob.AttackTargetWithWeapon(gameState, room, targetMob, EQUIPMENT_SLOT_MAIN_HAND)
 			mob.AttackTargetWithWeapon(gameState, room, targetMob, EQUIPMENT_SLOT_OFF_HAND)
 		case MOB_MODE_CAST:
 			// Check if target exists
-			targetMob, targetExists := gameState.world.Mobs.GetIfExists(mob.Target)
-			if !targetExists || targetMob.Data.Health == 0 || targetMob.Data.Room != mob.Data.Room {
-				mob.Mode = MOB_MODE_IDLE
+			targetMob, targetExists := gameState.world.Mobs.GetIfExists(mob.target)
+			if !targetExists || targetMob.data.Health == 0 || targetMob.data.Room != mob.data.Room {
+				mob.mode = MOB_MODE_IDLE
 				break
 			}
 
 			// Check if caster has enough mana
-			spellData := SPELL_DATA[mob.CastSpell]
-			room := gameState.world.Rooms[mob.Data.Room]
-			if mob.Data.Mana < spellData.manaCost {
-				mob.Mode = MOB_MODE_IDLE
-				room.broadcast(gameState, fmt.Sprintf("%s tried to cast %s, but they don't have enough mana.", mob.Data.Name, spellData.name))
+			spellData := SPELL_DATA[mob.castSpell]
+			room := gameState.world.Rooms[mob.data.Room]
+			if mob.data.Mana < spellData.manaCost {
+				mob.mode = MOB_MODE_IDLE
+				room.broadcast(gameState, fmt.Sprintf("%s tried to cast %s, but they don't have enough mana.", mob.data.Name, spellData.name))
 				break
 			}
 
 			// Check spell timer
-			if mob.CastTimer > 0 {
-				mob.CastTimer--
-				room.broadcast(gameState, fmt.Sprintf("%s is charging a spell...", mob.Data.Name))
+			if mob.castTimer > 0 {
+				mob.castTimer--
+				room.broadcast(gameState, fmt.Sprintf("%s is charging a spell...", mob.data.Name))
 				break
 			}
 
 			// Cast spell
-			room.broadcast(gameState, fmt.Sprintf("%s cast %s!", mob.Data.Name, spellData.name))
-			mob.Data.Mana -= spellData.manaCost
+			room.broadcast(gameState, fmt.Sprintf("%s cast %s!", mob.data.Name, spellData.name))
+			mob.data.Mana -= spellData.manaCost
 			spellData.onHit(gameState, mob, targetMob)
 
 			// Spell mastery progress
 			if mob.player != nil {
-				equippedSpell, spellIsEquipped := mob.player.character.SpellsEquipped[mob.CastSpell]
+				equippedSpell, spellIsEquipped := mob.player.character.SpellsEquipped[mob.castSpell]
 				if spellIsEquipped && !equippedSpell.IsKnown {
 					equippedSpell.Casts++
-					if equippedSpell.Casts >= mob.Data.CastsToLearn(mob.CastSpell) {
+					if equippedSpell.Casts >= mob.data.CastsToLearn(mob.castSpell) {
 						equippedSpell.IsKnown = true
-						mob.player.character.SpellsKnown = append(mob.player.character.SpellsKnown, mob.CastSpell)
+						mob.player.character.SpellsKnown = append(mob.player.character.SpellsKnown, mob.castSpell)
 						*mob.player.inbox <- fmt.Sprintf("You have mastered %s!", spellData.name)
 					}
 				}
 			}
 
-			mob.Mode = MOB_MODE_IDLE
+			mob.mode = MOB_MODE_IDLE
 		default:
-			log.Printf("Mob mode %d not handled.", mob.Mode)
+			log.Printf("mob.mode %d not handled.", mob.mode)
 	}
 }
 
 func (mob *Mob) AttackTargetWithWeapon(gameState *GameState, room *Room, targetMob *Mob, slot EquipmentSlot) {
 	// Check for weapon
-	weapon := mob.Data.EquippedItems.Get(slot)
+	weapon := mob.data.EquippedItems.Get(slot)
 	var itemData *ItemData = nil
 	heldItemIsWeapon := false
 	if weapon != nil {
@@ -316,12 +323,12 @@ func (mob *Mob) AttackTargetWithWeapon(gameState *GameState, room *Room, targetM
 	}
 
 	// Check for evasion
-	targetAgility := float32(targetMob.Data.Agility())
-	mobAgility := float32(mob.Data.Agility())
+	targetAgility := float32(targetMob.data.Agility())
+	mobAgility := float32(mob.data.Agility())
 	evasionChance := targetAgility / (targetAgility + (mobAgility * MOB_EVASION_K))
 	evasionRoll := rand.Float32()
 	if evasionRoll < evasionChance {
-		room.broadcast(gameState, fmt.Sprintf("%s dodged %s's attack!", targetMob.Data.Name, mob.Data.Name))
+		room.broadcast(gameState, fmt.Sprintf("%s dodged %s's attack!", targetMob.data.Name, mob.data.Name))
 		return
 	}
 
@@ -339,55 +346,55 @@ func (mob *Mob) AttackTargetWithWeapon(gameState *GameState, room *Room, targetM
 
 	// Add strength to the damage
 	if (slot == EQUIPMENT_SLOT_MAIN_HAND) {
-		damage += mob.Data.Strength() / 2
+		damage += mob.data.Strength() / 2
 	} else {
-		damage += mob.Data.Strength() / 4
+		damage += mob.data.Strength() / 4
 	}
 
 	// Subtract target armor from damage
 	// Crits ignore half armor
 	if crit {
-		damage -= mob.Data.Armor() / 2.0
+		damage -= mob.data.Armor() / 2.0
 	} else {
-		damage -= mob.Data.Armor()
+		damage -= mob.data.Armor()
 	}
 
 	// Calculate final damage
-	attackerMinDamage := max(1, mob.Data.Level / 2)
+	attackerMinDamage := max(1, mob.data.Level / 2)
 	damage = max(damage, attackerMinDamage)
 
 	// Deal damage
-	targetMob.Data.Health -= damage
+	targetMob.data.Health -= damage
 
 	// Broadcast result to room
 	critStr := ""
 	if crit {
 		critStr = "Critical hit! "
 	}
-	room.broadcast(gameState, fmt.Sprintf("%s%s struck %s for %d damage.", critStr, mob.Data.Name, targetMob.Data.Name, damage))
+	room.broadcast(gameState, fmt.Sprintf("%s%s struck %s for %d damage.", critStr, mob.data.Name, targetMob.data.Name, damage))
 	if targetMob.IsDead() {
-		room.broadcast(gameState, fmt.Sprintf("%s has slain %s.", mob.Data.Name, targetMob.Data.Name))
+		room.broadcast(gameState, fmt.Sprintf("%s has slain %s.", mob.data.Name, targetMob.data.Name))
 	} else {
 		targetMob.RollForConcentration(gameState, damage)
 	}
 }
 
 func (mob *Mob) CalculateMagicDamage(baseDamage int32, target *Mob) int32 {
-	return baseDamage + (mob.Data.Faith() / 2) + (target.Data.Faith() / 4)
+	return baseDamage + (mob.data.Faith() / 2) + (target.data.Faith() / 4)
 }
 
 func (mob *Mob) RollForConcentration(gameState *GameState, damage int32) {
 	// Not concentrating
-	if mob.Mode != MOB_MODE_CAST {
+	if mob.mode != MOB_MODE_CAST {
 		return
 	}
 
 	// Don't break concentration for instants or spells that have already been charged
-	if mob.CastTimer == 0 {
+	if mob.castTimer == 0 {
 		return
 	}
 
-	mobFaith := float32(mob.Data.Faith())
+	mobFaith := float32(mob.data.Faith())
 	attackDamage := float32(damage)
 
 	concentrationChance := mobFaith / (mobFaith + (attackDamage / 2))
@@ -398,7 +405,7 @@ func (mob *Mob) RollForConcentration(gameState *GameState, damage int32) {
 	}
 
 	// Concentration broken!
-	mob.Mode = MOB_MODE_IDLE
-	mobRoom := &gameState.world.Rooms[mob.Data.Room]
-	mobRoom.broadcast(gameState, fmt.Sprintf("%s lost concentration on their spell!", mob.Data.Name))
+	mob.mode = MOB_MODE_IDLE
+	mobRoom := &gameState.world.Rooms[mob.data.Room]
+	mobRoom.broadcast(gameState, fmt.Sprintf("%s lost concentration on their spell!", mob.data.Name))
 }

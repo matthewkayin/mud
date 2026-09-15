@@ -26,7 +26,7 @@ func MenuWorld() Menu {
 		description: "Describe the current room.",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			room := &gameState.world.Rooms[playerMob.Data.Room]
+			room := &gameState.world.Rooms[playerMob.data.Room]
 
 			describeRoomToPlayer(gameState, player, room)
 			return true
@@ -39,7 +39,7 @@ func MenuWorld() Menu {
 		description: "Describe the exits of the current room.",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			room := &gameState.world.Rooms[playerMob.Data.Room]
+			room := &gameState.world.Rooms[playerMob.data.Room]
 
 			printRoomExits(gameState, player, room)
 			return true
@@ -57,7 +57,7 @@ func MenuWorld() Menu {
 			}
 
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			playerRoom := &gameState.world.Rooms[playerMob.Data.Room]
+			playerRoom := &gameState.world.Rooms[playerMob.data.Room]
 			playerRoom.broadcast(gameState, fmt.Sprintf("%s said '%s'", player.character.Data.Name, strings.Join(args, " ")))
 			return true
 		},
@@ -74,7 +74,7 @@ func MenuWorld() Menu {
 
 			// Get the player mob and room
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			playerRoom := &gameState.world.Rooms[playerMob.Data.Room]
+			playerRoom := &gameState.world.Rooms[playerMob.data.Room]
 
 			// Determine the index of the target room
 			newRoomIndex := ROOM_NONE
@@ -104,7 +104,7 @@ func MenuWorld() Menu {
 			// Move the player
 			playerRoom.RemoveOccupant(player.mobHandle)
 			newRoom.AddOccupant(player.mobHandle)
-			playerMob.Data.Room = uint(newRoomIndex)
+			playerMob.data.Room = uint(newRoomIndex)
 
 			*player.inbox <- fmt.Sprintf("You moved into %s.", newRoom.Name)
 			describeRoomToPlayer(gameState, player, newRoom)
@@ -118,8 +118,8 @@ func MenuWorld() Menu {
 		description: "Show your combat status including HP, MP, and conditions.",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			*player.inbox <- fmt.Sprintf("HP: %d / %d", playerMob.Data.Health, playerMob.Data.MaxHealth())
-			*player.inbox <- fmt.Sprintf("MP: %d / %d", playerMob.Data.Mana, playerMob.Data.MaxMana())
+			*player.inbox <- fmt.Sprintf("HP: %d / %d", playerMob.data.Health, playerMob.data.MaxHealth())
+			*player.inbox <- fmt.Sprintf("MP: %d / %d", playerMob.data.Mana, playerMob.data.MaxMana())
 			return true
 		},
 	}
@@ -134,18 +134,18 @@ func MenuWorld() Menu {
 			raceData := RACE_DATA[player.character.Race]
 
 			*player.inbox <- fmt.Sprintf("%s - Level %d %s %s",
-				playerMob.Data.Name, playerMob.Data.Level, raceData.Name, classData.Name)
-			*player.inbox <- fmt.Sprintf("Experience: %d / %d", playerMob.Data.Experience, playerMob.Data.ExperienceToNextLevel)
+				playerMob.data.Name, playerMob.data.Level, raceData.Name, classData.Name)
+			*player.inbox <- fmt.Sprintf("Experience: %d / %d", playerMob.data.Experience, playerMob.data.ExperienceToNextLevel)
 
-			*player.inbox <- fmt.Sprintf("\nHP: %d / %d", playerMob.Data.Health, playerMob.Data.MaxHealth())
-			*player.inbox <- fmt.Sprintf("MP: %d / %d", playerMob.Data.Mana, playerMob.Data.MaxMana())
+			*player.inbox <- fmt.Sprintf("\nHP: %d / %d", playerMob.data.Health, playerMob.data.MaxHealth())
+			*player.inbox <- fmt.Sprintf("MP: %d / %d", playerMob.data.Mana, playerMob.data.MaxMana())
 
-			statBonuses := &playerMob.Data.EquippedItems.statBonuses
-			*player.inbox <- fmt.Sprintf("\nVitality: %d (+%d)", playerMob.Data.Stats.Vitality, statBonuses.Vitality)
-			*player.inbox <- fmt.Sprintf("Strength: %d (+%d)", playerMob.Data.Stats.Strength, statBonuses.Strength)
-			*player.inbox <- fmt.Sprintf("Agility: %d (+%d)", playerMob.Data.Stats.Agility, statBonuses.Agility)
-			*player.inbox <- fmt.Sprintf("Intelligence: %d (+%d)", playerMob.Data.Stats.Intelligence, statBonuses.Intelligence)
-			*player.inbox <- fmt.Sprintf("Faith: %d (+%d)", playerMob.Data.Stats.Faith, statBonuses.Faith)
+			statBonuses := &playerMob.data.EquippedItems.statBonuses
+			*player.inbox <- fmt.Sprintf("\nVitality: %d (+%d)", playerMob.data.Stats.Vitality, statBonuses.Vitality)
+			*player.inbox <- fmt.Sprintf("Strength: %d (+%d)", playerMob.data.Stats.Strength, statBonuses.Strength)
+			*player.inbox <- fmt.Sprintf("Agility: %d (+%d)", playerMob.data.Stats.Agility, statBonuses.Agility)
+			*player.inbox <- fmt.Sprintf("Intelligence: %d (+%d)", playerMob.data.Stats.Intelligence, statBonuses.Intelligence)
+			*player.inbox <- fmt.Sprintf("Faith: %d (+%d)", playerMob.data.Stats.Faith, statBonuses.Faith)
 
 			return true
 		},
@@ -157,20 +157,20 @@ func MenuWorld() Menu {
 		description: "Stop attacking or cancel your current spell",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			playerRoom := &gameState.world.Rooms[playerMob.Data.Room]
+			playerRoom := &gameState.world.Rooms[playerMob.data.Room]
 
-			switch playerMob.Mode {
+			switch playerMob.mode {
 				case MOB_MODE_IDLE:
 				case MOB_MODE_ATTACK:
-					targetMob, targetExists := gameState.world.Mobs.GetIfExists(playerMob.Target)
+					targetMob, targetExists := gameState.world.Mobs.GetIfExists(playerMob.target)
 					if targetExists {
-						playerRoom.broadcast(gameState, fmt.Sprintf("%s stopped attacking %s", playerMob.Data.Name, targetMob.Data.Name))
+						playerRoom.broadcast(gameState, fmt.Sprintf("%s stopped attacking %s", playerMob.data.Name, targetMob.data.Name))
 					}
 				case MOB_MODE_CAST:
-					playerRoom.broadcast(gameState, fmt.Sprintf("%s canceled their spell.", playerMob.Data.Name))
+					playerRoom.broadcast(gameState, fmt.Sprintf("%s canceled their spell.", playerMob.data.Name))
 			}
 
-			playerMob.Mode = MOB_MODE_IDLE
+			playerMob.mode = MOB_MODE_IDLE
 			player.nextAction = Action {
 				actionType: ACTION_TYPE_NONE,
 				data: nil,
@@ -213,7 +213,7 @@ func MenuWorld() Menu {
 		description: "List the items in your inventory",
 		handler: func(gameState *GameState, player *Player, args []string) bool {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			inventorySize := len(playerMob.Data.Inventory.Items)
+			inventorySize := len(playerMob.data.Inventory.Items)
 
 			if inventorySize == 0 {
 				*player.inbox <- "There is nothing in your inventory."
@@ -221,7 +221,7 @@ func MenuWorld() Menu {
 			}
 
 			itemNames := make([]string, 0, inventorySize)
-			for _, item := range playerMob.Data.Inventory.Items {
+			for _, item := range playerMob.data.Inventory.Items {
 				itemNames = append(itemNames, ITEM_DATA[item.Id].name)
 			}
 			*player.inbox <- fmt.Sprintf("You are carrying the following items: %s", combineNames(itemNames))
@@ -241,7 +241,7 @@ func MenuWorld() Menu {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 
 			// Find item
-			itemIndex, findResult := playerMob.Data.Inventory.FuzzyFindItem(args)
+			itemIndex, findResult := playerMob.data.Inventory.FuzzyFindItem(args)
 			if findResult == INVENTORY_FIND_RESULT_NOT_FOUND {
 				*player.inbox <- "That item is not in your inventory."
 				return true
@@ -252,10 +252,10 @@ func MenuWorld() Menu {
 			}
 
 			// Remove item from inventory
-			droppedItem := playerMob.Data.Inventory.RemoveItem(itemIndex)
+			droppedItem := playerMob.data.Inventory.RemoveItem(itemIndex)
 
 			// Add item to room
-			playerRoom := &gameState.world.Rooms[playerMob.Data.Room]
+			playerRoom := &gameState.world.Rooms[playerMob.data.Room]
 			playerRoom.Inventory.AddItem(droppedItem)
 
 			*player.inbox <- fmt.Sprintf("You dropped %s.", ITEM_DATA[droppedItem.Id].name)
@@ -274,7 +274,7 @@ func MenuWorld() Menu {
 
 			// Get pointer to room
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			playerRoom := &gameState.world.Rooms[playerMob.Data.Room]
+			playerRoom := &gameState.world.Rooms[playerMob.data.Room]
 
 			// Find item in room
 			itemIndex, findResult := playerRoom.Inventory.FuzzyFindItem(args)
@@ -289,7 +289,7 @@ func MenuWorld() Menu {
 
 			// Move item from room to player
 			grabbedItem := playerRoom.Inventory.RemoveItem(itemIndex)
-			playerMob.Data.Inventory.AddItem(grabbedItem)
+			playerMob.data.Inventory.AddItem(grabbedItem)
 
 			*player.inbox <- fmt.Sprintf("You picked up %s.", ITEM_DATA[grabbedItem.Id].name)
 			return true
@@ -305,14 +305,14 @@ func MenuWorld() Menu {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 
 			// Determine if we should skip the offhand item slot
-			mainHandItem := playerMob.Data.EquippedItems.Get(EQUIPMENT_SLOT_MAIN_HAND)
+			mainHandItem := playerMob.data.EquippedItems.Get(EQUIPMENT_SLOT_MAIN_HAND)
 			shouldSkipOffhand := mainHandItem != nil && ITEM_DATA[mainHandItem.Id].itemType == EQUIPMENT_SLOT_MAIN_HAND
 
 			*player.inbox <- "Your equipment is:"
 
 			for index := range EQUIPMENT_SLOT_COUNT {
 				slot := EquipmentSlot(index)
-				item := playerMob.Data.EquippedItems.Get(slot)
+				item := playerMob.data.EquippedItems.Get(slot)
 				var itemData *ItemData = nil
 
 				// If two handed equipped, skip off hand
@@ -367,7 +367,7 @@ func MenuWorld() Menu {
 
 			// Determine the item
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			itemIndex, findResult := playerMob.Data.Inventory.FuzzyFindItem(args)
+			itemIndex, findResult := playerMob.data.Inventory.FuzzyFindItem(args)
 			if findResult == INVENTORY_FIND_RESULT_NOT_FOUND {
 				*player.inbox <- fmt.Sprintf("You have no item called '%s'.", strings.Join(args, " "))
 				return true
@@ -376,12 +376,12 @@ func MenuWorld() Menu {
 				*player.inbox <- "Could not equip item. The item name is ambigous."
 			}
 
-			itemPtr := &playerMob.Data.Inventory.Items[itemIndex]
+			itemPtr := &playerMob.data.Inventory.Items[itemIndex]
 			itemData := ITEM_DATA[itemPtr.Id]
 
 			// Check stat requirements
 			itemStatRequires := ItemGetStatRequirements(itemPtr)
-			if !playerMob.Data.Stats.Meets(itemStatRequires) {
+			if !playerMob.data.Stats.Meets(itemStatRequires) {
 				*player.inbox <- fmt.Sprintf("You do not meet the stat requirements to equip %s.", itemData.name)
 				return true
 			}
@@ -411,7 +411,7 @@ func MenuWorld() Menu {
 			}
 
 			// Try to equip item
-			unequippedItems, success := playerMob.Data.EquippedItems.Equip(slot, *itemPtr)
+			unequippedItems, success := playerMob.data.EquippedItems.Equip(slot, *itemPtr)
 			if !success {
 				*player.inbox <- fmt.Sprintf("%s cannot be equipped to slot %s.", itemData.name, EquipmentSlotToString(slot))
 				return true
@@ -419,7 +419,7 @@ func MenuWorld() Menu {
 			*player.inbox <- fmt.Sprintf("You equipped %s.", itemData.name)
 
 			// Remove item from player inventory
-			playerMob.Data.Inventory.RemoveItem(itemIndex)
+			playerMob.data.Inventory.RemoveItem(itemIndex)
 
 			// Add unequipped items to inventory
 			for _, item := range unequippedItems {
@@ -484,7 +484,7 @@ func MenuWorld() Menu {
 					return true
 				}
 
-				itemPtr := playerMob.Data.EquippedItems.Get(slot)
+				itemPtr := playerMob.data.EquippedItems.Get(slot)
 				if itemPtr == nil {
 					*player.inbox <- fmt.Sprintf("You have nothing equipped in %s.", EquipmentSlotToString(slot))
 					return true
@@ -496,7 +496,7 @@ func MenuWorld() Menu {
 				bestSlotScore := 0
 				for slotIndex := range EQUIPMENT_SLOT_COUNT {
 					loopSlot := EquipmentSlot(slotIndex)
-					itemPtr := playerMob.Data.EquippedItems.Get(loopSlot)
+					itemPtr := playerMob.data.EquippedItems.Get(loopSlot)
 					if itemPtr == nil {
 						continue
 					}
@@ -528,7 +528,7 @@ func MenuWorld() Menu {
 			}
 
 			// Unequip the item
-			item, _ := playerMob.Data.EquippedItems.Unequip(slot)
+			item, _ := playerMob.data.EquippedItems.Unequip(slot)
 			player.onItemUnequipped(gameState, item)
 			*player.inbox <- fmt.Sprintf("You unequipped %s.", ITEM_DATA[item.Id].name)
 
@@ -543,14 +543,14 @@ func MenuWorld() Menu {
 		handler: func (gameState *GameState, player *Player, args []string) bool {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 
-			*player.inbox <- fmt.Sprintf("Spells Prepared (%d / %d):", len(playerMob.Data.Spells), playerMob.Data.SpellSlots())
+			*player.inbox <- fmt.Sprintf("Spells Prepared (%d / %d):", len(playerMob.data.Spells), playerMob.data.SpellSlots())
 
-			if len(playerMob.Data.Spells) == 0 {
+			if len(playerMob.data.Spells) == 0 {
 				*player.inbox <- "You haven't prepared any spells."
 				return true
 			}
 
-			for _, spell := range playerMob.Data.Spells {
+			for _, spell := range playerMob.data.Spells {
 				spellData := SPELL_DATA[spell]
 
 				masteryStr := "Known"
@@ -558,7 +558,7 @@ func MenuWorld() Menu {
 				equippedSpell, spellIsEquipped := player.character.SpellsEquipped[spell]
 				if spellIsEquipped && !equippedSpell.IsKnown {
 					casts := float32(equippedSpell.Casts)
-					castsToLearn := float32(playerMob.Data.CastsToLearn(spell))
+					castsToLearn := float32(playerMob.data.CastsToLearn(spell))
 					mastery := int32((casts / castsToLearn) * 100.0)
 					masteryStr = fmt.Sprintf("Mastery: %d", mastery)
 				}
@@ -601,7 +601,7 @@ func MenuWorld() Menu {
 
 			// Check if the spell is already prepared
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			for _, spell := range playerMob.Data.Spells {
+			for _, spell := range playerMob.data.Spells {
 				spellData := SPELL_DATA[spell]
 				if strings.EqualFold(spellData.name, args[0]) {
 					*player.inbox <- fmt.Sprintf("You have already prepared %s.", spellData.name)
@@ -643,10 +643,10 @@ func MenuWorld() Menu {
 
 			// Find a spell that matches their input and remove it
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			for _, spell := range playerMob.Data.Spells {
+			for _, spell := range playerMob.data.Spells {
 				spellData := SPELL_DATA[spell]
 				if strings.EqualFold(spellData.name, args[0]) {
-					playerMob.Data.RemoveSpell(spell)
+					playerMob.data.RemoveSpell(spell)
 					*player.inbox <- fmt.Sprintf("You forgot %s.", spellData.name)
 					return true
 				}
@@ -672,7 +672,7 @@ func MenuWorld() Menu {
 			// Find the spell in their spell list
 			var spellToCast Spell
 			spellFound := false
-			for _, spell := range playerMob.Data.Spells {
+			for _, spell := range playerMob.data.Spells {
 				spellData := SPELL_DATA[spell]
 				if strings.EqualFold(spellData.name, args[0]) {
 					spellToCast = spell
@@ -708,7 +708,7 @@ func MenuWorld() Menu {
 		entries: entries,
 		getDescription: func (gameState *GameState, player *Player) string {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			room := &gameState.world.Rooms[playerMob.Data.Room]
+			room := &gameState.world.Rooms[playerMob.data.Room]
 			return fmt.Sprintf("You are in %s.", room.Name)
 		},
 	}
@@ -744,7 +744,7 @@ func describeRoomToPlayer(gameState *GameState, player *Player, room *Room) {
 			// Get a pointer to the mob
 			mob := gameState.world.Mobs.Get(mobHandle)
 			// Add their name to the list
-			otherPlayerNames = append(otherPlayerNames, mob.Data.Name)
+			otherPlayerNames = append(otherPlayerNames, mob.data.Name)
 		}
 
 		otherPlayersStr := combineNames(otherPlayerNames)
@@ -801,11 +801,11 @@ func printRoomExits(gameState *GameState, player *Player, room *Room) {
 }
 
 func getTargetHandle(gameState *GameState, playerMob *Mob, targetName string) (MobHandle, bool) {
-	playerRoom := gameState.world.Rooms[playerMob.Data.Room]
+	playerRoom := gameState.world.Rooms[playerMob.data.Room]
 
 	for _, occupantHandle := range playerRoom.occupants {
 		occupant := gameState.world.Mobs.Get(occupantHandle)
-		if strings.EqualFold(occupant.Data.Name, targetName) {
+		if strings.EqualFold(occupant.data.Name, targetName) {
 			return occupantHandle, true
 		}
 	}
@@ -815,6 +815,6 @@ func getTargetHandle(gameState *GameState, playerMob *Mob, targetName string) (M
 
 func playerPrepareSpell(gameState *GameState, player *Player, spell Spell) {
 	playerMob := gameState.world.Mobs.Get(player.mobHandle)
-	playerMob.Data.Spells = append(playerMob.Data.Spells, spell)
+	playerMob.data.Spells = append(playerMob.data.Spells, spell)
 	*player.inbox <- fmt.Sprintf("You prepared %s.", SPELL_DATA[spell].name)
 }

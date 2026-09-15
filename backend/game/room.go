@@ -54,11 +54,11 @@ func (room *Room) Update(gameState *GameState) {
 		mobJ := gameState.world.Mobs.Get(room.occupants[j])
 
 		// If they have the same agility, choose a random one to go first
-		if mobI.Data.Agility() == mobJ.Data.Agility() {
+		if mobI.data.Agility() == mobJ.data.Agility() {
 			return rand.Intn(2) == 0
 		}
 
-		return mobI.Data.Agility() > mobJ.Data.Agility()
+		return mobI.data.Agility() > mobJ.data.Agility()
 	})
 
 	// Occupant update and combat

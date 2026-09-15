@@ -13,6 +13,7 @@ type World struct {
 
 	Mobs MobArray
 	Rooms []Room
+	Npcs []Npc
 }
 
 func WorldInitFromFile(path string) *World {
@@ -41,41 +42,75 @@ func WorldInitFromFile(path string) *World {
 func WorldInitNew() *World {
 	log.Printf("Generating new world...")
 
-	rooms := make([]Room, 0, 1)
-	rooms = append(rooms, Room {
-		Name: "Presentation Space",
-		Description: "You're in an open room with white walls and tan-wood flooring. Various pairing tables are strewn about the space, and a makeshift blue octopus floats overhead.",
+	rooms := []Room {
+		Room {
+			Name: "Presentation Space",
+			Description: "You're in an open room with white walls and tan-wood flooring. Various pairing tables are strewn about the space, and a makeshift blue octopus floats overhead.",
 
-		ExitNorth: ROOM_NONE,
-		ExitSouth: 1,
-		ExitEast: ROOM_NONE,
-		ExitWest: ROOM_NONE,
+			ExitNorth: ROOM_NONE,
+			ExitSouth: 1,
+			ExitEast: ROOM_NONE,
+			ExitWest: ROOM_NONE,
 
-		occupants: make([]MobHandle, 0, 1),
-		Inventory: ItemList {
-			Items: []Item {
-				Item { Id: ITEM_SWORD },
-				Item { Id: ITEM_AXE },
-				Item { Id: ITEM_SPELLBOOK_FIREBOLT },
-				Item { Id: ITEM_SPELLBOOK_CURE },
+			occupants: make([]MobHandle, 0, 1),
+			Inventory: ItemList {
+				Items: []Item {
+					Item { Id: ITEM_SWORD },
+					Item { Id: ITEM_AXE },
+					Item { Id: ITEM_SPELLBOOK_FIREBOLT },
+					Item { Id: ITEM_SPELLBOOK_CURE },
+				},
 			},
 		},
-	})
+		Room {
+			Name: "The Kitchen",
+			Description: "Bursts of red, blue, and yellow tape paint the far wall. In front of this sits a long, oak dining table with chairs. A kitchenette hugs the far-left corner, complete with three different kinds of coffee makers and more in the cubboards.",
 
-	rooms = append(rooms, Room {
-		Name: "The Kitchen",
-		Description: "Bursts of red, blue, and yellow tape paint the far wall. In front of this sits a long, oak dining table with chairs. A kitchenette hugs the far-left corner, complete with three different kinds of coffee makers and more in the cubboards.",
+			ExitNorth: 0,
+			ExitSouth: ROOM_NONE,
+			ExitEast: ROOM_NONE,
+			ExitWest: ROOM_NONE,
 
-		ExitNorth: 0,
-		ExitSouth: ROOM_NONE,
-		ExitEast: ROOM_NONE,
-		ExitWest: ROOM_NONE,
-
-		occupants: make([]MobHandle, 0, 1),
-		Inventory: ItemList {
-			Items: []Item {},
+			occupants: make([]MobHandle, 0, 1),
+			Inventory: ItemList {
+				Items: []Item {},
+			},
 		},
-	})
+	}
+
+	npcs := []Npc {
+		Npc {
+			Behavior: NPC_BEHAVIOR_AGGRO,
+			Data: MobData {
+				Name: "Goblin",
+				Room: 1,
+
+				Level: 1,
+				Experience: 0,
+
+				Stats: MobBaseStats {
+					Vitality: 4,
+					Strength: 4,
+					Agility: 6,
+					Intelligence: 2,
+					Faith: 4,
+				},
+
+				// TODO
+				Health: 4 * 5,
+				Mana: 2 * 5,
+
+				Spells: []Spell {},
+				Inventory: ItemList {
+					Items: []Item {},
+				},
+				EquippedItems: EquipmentInitEmpty(),
+			},
+
+			// a bit hacky, but this triggers the NPC to spawn shortly after world start
+			respawnTimer: 1,
+		},
+	}
 
 	return &World {
 		Characters: make(map[string]*Character),
@@ -83,6 +118,7 @@ func WorldInitNew() *World {
 
 		Mobs: MobArrayInit(),
 		Rooms: rooms,
+		Npcs: npcs,
 	}
 }
 
