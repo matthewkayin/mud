@@ -22,6 +22,12 @@ var CHARACTER_SHEET_PROPERTY_REGISTRY = map[string]MenuCharacterSheetProperty {
 			*player.inbox <- "'name' is your character's name. It cannot contain spaces."
 		},
 		set: func (gameState *GameState, player *Player, sheet *MenuCharacterSheet, value string) {
+			// Check that name is not self
+			if strings.EqualFold(value, "self") {
+				*player.inbox <- "You cannot name yourself 'self'. It is a reserved keyword."
+				return
+			}
+
 			// Check if the name already exists
 			_, nameIsTaken := gameState.world.GetCharacterIfExists(value)
 			if nameIsTaken {

@@ -2,7 +2,6 @@ package game
 
 import (
 	"fmt"
-	"strings"
 )
 
 type EquipmentSlot int
@@ -13,13 +12,6 @@ const (
 	EQUIPMENT_SLOT_ACCESSORY
 	EQUIPMENT_SLOT_COUNT
 )
-
-var EQUIPMENT_SLOT_TO_STRING = map[EquipmentSlot]string {
-	EQUIPMENT_SLOT_MAIN_HAND: "Main Hand",
-	EQUIPMENT_SLOT_OFF_HAND: "Off Hand",
-	EQUIPMENT_SLOT_OUTFIT: "Outfit",
-	EQUIPMENT_SLOT_ACCESSORY: "Accessory",
-}
 
 type Equipment struct {
 	IsSlotInUse []bool
@@ -46,6 +38,7 @@ func EquipmentInitEmpty() Equipment {
 	return equipment
 }
 
+// Returns nil if the user has no item in this slot
 func (equipment *Equipment) Get(slot EquipmentSlot) *Item {
 	if !equipment.IsSlotInUse[slot] {
 		return nil
@@ -159,21 +152,6 @@ func EquipmentSlotToString(slot EquipmentSlot) string {
 			return "Accessory"
 		default:
 			panic(fmt.Sprintf("No equipment slot string for slot %d", slot))
-	}
-}
-
-func EquipmentSlotFromCommandString(slotString string) (EquipmentSlot, bool) {
-	switch strings.ToLower(slotString) {
-		case "mainhand":
-			return EQUIPMENT_SLOT_MAIN_HAND, true
-		case "offhand":
-			return EQUIPMENT_SLOT_OFF_HAND, true
-		case "outfit":
-			return EQUIPMENT_SLOT_OUTFIT, true
-		case "accessory":
-			return EQUIPMENT_SLOT_ACCESSORY, true
-		default:
-			return EQUIPMENT_SLOT_COUNT, false
 	}
 }
 

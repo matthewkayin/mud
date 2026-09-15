@@ -43,7 +43,7 @@ func WorldInitNew() *World {
 	log.Printf("Generating new world...")
 
 	rooms := []Room {
-		Room {
+		{
 			Name: "Presentation Space",
 			Description: "You're in an open room with white walls and tan-wood flooring. Various pairing tables are strewn about the space, and a makeshift blue octopus floats overhead.",
 
@@ -52,17 +52,18 @@ func WorldInitNew() *World {
 			ExitEast: ROOM_NONE,
 			ExitWest: ROOM_NONE,
 
-			occupants: make([]MobHandle, 0, 1),
+			occupants: []MobHandle {},
 			Inventory: ItemList {
 				Items: []Item {
-					Item { Id: ITEM_SWORD },
-					Item { Id: ITEM_AXE },
-					Item { Id: ITEM_SPELLBOOK_FIREBOLT },
-					Item { Id: ITEM_SPELLBOOK_CURE },
+					{ Id: ITEM_SWORD },
+					{ Id: ITEM_AXE },
+					{ Id: ITEM_SPELLBOOK_FIREBOLT },
+					{ Id: ITEM_SPELLBOOK_CURE },
+					{ Id: ITEM_POTION_HEALTH },
 				},
 			},
 		},
-		Room {
+		{
 			Name: "The Kitchen",
 			Description: "Bursts of red, blue, and yellow tape paint the far wall. In front of this sits a long, oak dining table with chairs. A kitchenette hugs the far-left corner, complete with three different kinds of coffee makers and more in the cubboards.",
 
@@ -71,7 +72,7 @@ func WorldInitNew() *World {
 			ExitEast: ROOM_NONE,
 			ExitWest: ROOM_NONE,
 
-			occupants: make([]MobHandle, 0, 1),
+			occupants: []MobHandle {},
 			Inventory: ItemList {
 				Items: []Item {},
 			},
@@ -79,7 +80,7 @@ func WorldInitNew() *World {
 	}
 
 	npcs := []Npc {
-		Npc {
+		{
 			Behavior: NPC_BEHAVIOR_AGGRO,
 			Data: MobData {
 				Name: "Goblin",
