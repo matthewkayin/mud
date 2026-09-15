@@ -1,5 +1,9 @@
 package game
 
+import (
+	"mud/bitset"
+)
+
 type CharacterClass int
 const (
 	CHARACTER_CLASS_WARRIOR = iota
@@ -30,6 +34,8 @@ type CharacterRaceData struct {
 	Stats MobBaseStats
 }
 
+const CHARACTER_ROOMS_DISCOVERED_BYTE_SIZE int = WORLD_MAX_ROOMS / 8
+
 type CharacterEquippedSpell struct {
 	EquipCount int32
 	Casts int32
@@ -44,6 +50,8 @@ type Character struct {
 
 	SpellsEquipped map[Spell]*CharacterEquippedSpell
 	SpellsKnown []Spell
+
+	RoomsDiscovered []byte
 
 	Data MobData
 }
@@ -215,6 +223,10 @@ func CharacterNew(playerId int, characterSheet *MenuCharacterSheet) *Character {
 
 	// Init Equipment
 	character.Data.EquippedItems = EquipmentInitEmpty()
+
+	// Rooms discovered
+	character.RoomsDiscovered = bitset.New(CHARACTER_ROOMS_DISCOVERED_BYTE_SIZE)
+	bitset.Set(character.RoomsDiscovered, character.Data.Room, true)
 
 	return character
 }

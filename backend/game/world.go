@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 )
 
+const WORLD_MAX_ROOMS int = 1024
+
 type World struct {
 	Characters map[string]*Character
 	PlayerCharacters map[int][]string
@@ -47,12 +49,19 @@ func WorldInitNew() *World {
 			Name: "Presentation Space",
 			Description: "You're in an open room with white walls and tan-wood flooring. Various pairing tables are strewn about the space, and a makeshift blue octopus floats overhead.",
 
-			ExitNorth: ROOM_NONE,
-			ExitSouth: 1,
-			ExitEast: ROOM_NONE,
-			ExitWest: ROOM_NONE,
+			Exits: [DIRECTION_COUNT]int {
+				ROOM_NONE,
+				1,
+				ROOM_NONE,
+				ROOM_NONE,
+			},
+			ExitIsLocked: [DIRECTION_COUNT]bool {
+				false,
+				true,
+				false,
+				false,
+			},
 
-			occupants: []MobHandle {},
 			Inventory: ItemList {
 				Items: []Item {
 					{ Id: ITEM_SWORD },
@@ -62,20 +71,31 @@ func WorldInitNew() *World {
 					{ Id: ITEM_POTION_HEALTH },
 				},
 			},
+
+			occupants: []MobHandle {},
 		},
 		{
 			Name: "The Kitchen",
 			Description: "Bursts of red, blue, and yellow tape paint the far wall. In front of this sits a long, oak dining table with chairs. A kitchenette hugs the far-left corner, complete with three different kinds of coffee makers and more in the cubboards.",
 
-			ExitNorth: 0,
-			ExitSouth: ROOM_NONE,
-			ExitEast: ROOM_NONE,
-			ExitWest: ROOM_NONE,
+			Exits: [DIRECTION_COUNT]int {
+				0,
+				ROOM_NONE,
+				ROOM_NONE,
+				ROOM_NONE,
+			},
+			ExitIsLocked: [DIRECTION_COUNT]bool {
+				false,
+				false,
+				false,
+				false,
+			},
 
-			occupants: []MobHandle {},
 			Inventory: ItemList {
 				Items: []Item {},
 			},
+
+			occupants: []MobHandle {},
 		},
 	}
 

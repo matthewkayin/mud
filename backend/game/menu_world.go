@@ -5,6 +5,7 @@ import (
 	"log"
 	"slices"
 	"strings"
+	"mud/bitset"
 )
 
 func MenuWorld() Menu {
@@ -41,7 +42,27 @@ func MenuWorld() Menu {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 			room := &gameState.world.Rooms[playerMob.data.Room]
 
-			printRoomExits(gameState, player, room)
+			exitFound := false
+			for directionIndex := range DIRECTION_COUNT {
+				direction := Direction(directionIndex)
+
+				if room.Exits[direction] == ROOM_NONE {
+					continue
+				}
+
+				roomName := "an undiscovered room"
+				if bitset.Check(player.character.RoomsDiscovered, room.Exits[direction]) {
+					roomName = gameState.world.Rooms[room.Exits[direction]].Name
+				}
+
+				*player.inbox <- fmt.Sprintf("To the %s is %s.", DirectionToString(direction), roomName)
+				exitFound = true
+			}
+
+			if !exitFound {
+				*player.inbox <- "This room has no exits!"
+			}
+
 			return true
 		},
 	}
@@ -77,24 +98,23 @@ func MenuWorld() Menu {
 			playerRoom := &gameState.world.Rooms[playerMob.data.Room]
 
 			// Determine the index of the target room
-			newRoomIndex := ROOM_NONE
-			switch strings.ToLower(args[0]) {
-				case "north":
-					newRoomIndex = playerRoom.ExitNorth
-				case "south":
-					newRoomIndex = playerRoom.ExitSouth
-				case "east":
-					newRoomIndex = playerRoom.ExitEast
-				case "west":
-					newRoomIndex = playerRoom.ExitWest
-				default:
-					*player.inbox <- fmt.Sprintf("'%s' is not a direction. The directions are 'north', 'south', 'east', and 'west'.", args[0])
-					return false
+			direction, directionFound := DirectionFromString(args[0])
+			if !directionFound {
+				*player.inbox <- fmt.Sprintf("'%s' is not a direction. The directions are 'north', 'south', 'east', and 'west'.", args[0])
+				return false
 			}
+
+			newRoomIndex := playerRoom.Exits[direction]
 
 			// Check to make sure there is an exit
 			if newRoomIndex == ROOM_NONE {
 				*player.inbox <- "There is not exit in that direction."
+				return true
+			}
+
+			// Check to make sure the door is not locked
+			if playerRoom.ExitIsLocked[direction] {
+				*player.inbox <- fmt.Sprintf("The %s exit is locked!", DirectionToString(direction))
 				return true
 			}
 
@@ -104,7 +124,8 @@ func MenuWorld() Menu {
 			// Move the player
 			playerRoom.RemoveOccupant(player.mobHandle)
 			newRoom.AddOccupant(player.mobHandle)
-			playerMob.data.Room = uint(newRoomIndex)
+			playerMob.data.Room = newRoomIndex
+			bitset.Set(player.character.RoomsDiscovered, newRoomIndex, true)
 
 			*player.inbox <- fmt.Sprintf("You moved into %s.", newRoom.Name)
 			describeRoomToPlayer(gameState, player, newRoom)
@@ -777,39 +798,5 @@ func describeRoomToPlayer(gameState *GameState, player *Player, room *Room) {
 			isString = "item is"
 		}
 		*player.inbox <- fmt.Sprintf("The following %s in this room: %s.", isString, combineNames(itemNames))
-	}
-}
-
-// MENU BEHAVIOR HELPERS
-
-func printRoomExits(gameState *GameState, player *Player, room *Room) {
-	exitFound := false
-
-	if room.ExitNorth != ROOM_NONE {
-		exitRoom := &gameState.world.Rooms[room.ExitNorth]
-		*player.inbox <- fmt.Sprintf("To the north is %s", exitRoom.Name)
-		exitFound = true
-	}
-
-	if room.ExitSouth != ROOM_NONE {
-		exitRoom := &gameState.world.Rooms[room.ExitSouth]
-		*player.inbox <- fmt.Sprintf("To the south is %s", exitRoom.Name)
-		exitFound = true
-	}
-
-	if room.ExitEast != ROOM_NONE {
-		exitRoom := &gameState.world.Rooms[room.ExitEast]
-		*player.inbox <- fmt.Sprintf("To the east is %s", exitRoom.Name)
-		exitFound = true
-	}
-
-	if room.ExitWest != ROOM_NONE {
-		exitRoom := &gameState.world.Rooms[room.ExitWest]
-		*player.inbox <- fmt.Sprintf("To the west is %s", exitRoom.Name)
-		exitFound = true
-	}
-
-	if !exitFound {
-		*player.inbox <- "This room has no exits!"
 	}
 }
