@@ -58,7 +58,7 @@ var SPELL_DATA = map[Spell]*SpellData {
 
 		onHit: func(gameState *GameState, caster *Mob, target *Mob) {
 			healing := caster.CalculateMagicDamage(15, target)
-			healingReceived := min(healing, target.data.MaxHealth() - healing)
+			healingReceived := min(healing, target.data.MaxHealth() - target.data.Health)
 			target.data.Health += healingReceived
 
 			room := gameState.world.Rooms[target.data.Room]

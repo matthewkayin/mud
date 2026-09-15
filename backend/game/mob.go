@@ -61,6 +61,7 @@ const (
 	MOB_MODE_IDLE MobMode = iota
 	MOB_MODE_ATTACK
 	MOB_MODE_CAST
+	MOB_MODE_USE_ITEM
 )
 
 type Mob struct {
@@ -69,8 +70,10 @@ type Mob struct {
 
 	mode MobMode
 	target MobHandle
+
 	castSpell Spell
 	castTimer int32
+	useItemId ItemId
 }
 
 func (stats *MobBaseStats) Add(other *MobBaseStats) MobBaseStats {
@@ -300,6 +303,37 @@ func (mob *Mob) Update(gameState *GameState) {
 			}
 
 			mob.mode = MOB_MODE_IDLE
+		case MOB_MODE_USE_ITEM:
+			// Check if target exists
+			targetMob, targetExists := gameState.world.Mobs.GetIfExists(mob.target)
+			if !targetExists || targetMob.data.Health == 0 || targetMob.data.Room != mob.data.Room {
+				mob.mode = MOB_MODE_IDLE
+				break
+			}
+
+			// Find item in mob inventory
+			var itemIndex int = -1
+			for index := range len(mob.data.Inventory.Items) {
+				if mob.data.Inventory.Items[index].Id == mob.useItemId {
+					itemIndex = index
+					break
+				}
+			}
+
+			// Check if the item still exists
+			// This is a legit edge case - player might drop the item from their inventory before their turn happens
+			if itemIndex == -1 {
+				mob.mode = MOB_MODE_IDLE
+				break
+			}
+
+			// Remove item from their inventory
+			item := mob.data.Inventory.RemoveItem(itemIndex)
+
+			// Use item
+			itemData := ITEM_DATA[item.Id]
+			consumableData := itemData.data.(*ItemDataConsumable)
+			consumableData.onUse(gameState, targetMob)
 		default:
 			log.Printf("mob.mode %d not handled.", mob.mode)
 	}

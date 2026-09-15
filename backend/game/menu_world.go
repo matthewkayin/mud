@@ -2,9 +2,9 @@ package game
 
 import (
 	"fmt"
-	"strings"
-	"slices"
 	"log"
+	"slices"
+	"strings"
 )
 
 func MenuWorld() Menu {
@@ -185,14 +185,12 @@ func MenuWorld() Menu {
 		usage: "attack <target>",
 		description: "Attack the target.",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
-			if len(args) != 1 {
+			if len(args) < 1 {
 				return false
 			}
 
-			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			targetHandle, targetFound := getTargetHandle(gameState, playerMob, args[0])
+			targetHandle, targetFound := fuzzyFindTarget(gameState, player, args)
 			if !targetFound {
-				*player.inbox <- fmt.Sprintf("No target named '%s' is in this room.", args[0])
 				return true
 			}
 
@@ -220,6 +218,37 @@ func MenuWorld() Menu {
 				return true
 			}
 
+			*player.inbox <- "Item  | Type | Description "
+			for index := range len(playerMob.data.Inventory.Items) {
+				item := &playerMob.data.Inventory.Items[index]
+				itemData := ITEM_DATA[item.Id]
+				itemStatRequirements := ItemGetStatRequirements(item)
+
+				typeStr := ItemTypeToString(itemData.itemType)
+				if itemStatRequirements != nil {
+					statStrings := make([]string, 0, 5)
+					if itemStatRequirements.Vitality != 0 {
+						statStrings = append(statStrings, fmt.Sprintf("VIT %d", itemStatRequirements.Vitality))
+					}
+					if itemStatRequirements.Strength != 0 {
+						statStrings = append(statStrings, fmt.Sprintf("STR %d", itemStatRequirements.Strength))
+					}
+					if itemStatRequirements.Agility != 0 {
+						statStrings = append(statStrings, fmt.Sprintf("AGI %d", itemStatRequirements.Agility))
+					}
+					if itemStatRequirements.Intelligence != 0 {
+						statStrings = append(statStrings, fmt.Sprintf("INT %d", itemStatRequirements.Intelligence))
+					}
+					if itemStatRequirements.Faith != 0 {
+						statStrings = append(statStrings, fmt.Sprintf("FTH %d", itemStatRequirements.Faith))
+					}
+					if len(statStrings) != 0 {
+						typeStr += fmt.Sprintf(" (Requires %s)", strings.Join(statStrings, ", "))
+					}
+				}
+
+				*player.inbox <- fmt.Sprintf("%s | %s | %s", itemData.name, typeStr, itemData.description)
+			}
 			itemNames := make([]string, 0, inventorySize)
 			for _, item := range playerMob.data.Inventory.Items {
 				itemNames = append(itemNames, ITEM_DATA[item.Id].name)
@@ -241,13 +270,17 @@ func MenuWorld() Menu {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 
 			// Find item
-			itemIndex, findResult := playerMob.data.Inventory.FuzzyFindItem(args)
-			if findResult == INVENTORY_FIND_RESULT_NOT_FOUND {
-				*player.inbox <- "That item is not in your inventory."
+			itemIndex := fuzzyFindInventoryItemIndex(&playerMob.data.Inventory, args)
+
+			// Handle edge cases
+			if itemIndex == FUZZY_FIND_RESULT_NOT_FOUND {
+				*player.inbox <- fmt.Sprintf("No item called '%s' is in your inventory.",
+					strings.Join(args, " "))
 				return true
 			}
-			if findResult == INVENTORY_FIND_RESULT_AMBIGUOUS {
-				*player.inbox <- "Could not drop item. Item name is ambiguous."
+			if itemIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
+				*player.inbox <- fmt.Sprintf("The item name '%s' is ambiguous.",
+					strings.Join(args, " "))
 				return true
 			}
 
@@ -277,13 +310,15 @@ func MenuWorld() Menu {
 			playerRoom := &gameState.world.Rooms[playerMob.data.Room]
 
 			// Find item in room
-			itemIndex, findResult := playerRoom.Inventory.FuzzyFindItem(args)
-			if findResult == INVENTORY_FIND_RESULT_NOT_FOUND {
-				*player.inbox <- "That item is not in this room."
+			itemIndex := fuzzyFindInventoryItemIndex(&playerRoom.Inventory, args)
+			if itemIndex == FUZZY_FIND_RESULT_NOT_FOUND {
+				*player.inbox <- fmt.Sprintf("No item called '%s' is in this room.",
+					strings.Join(args, " "))
 				return true
 			}
-			if findResult == INVENTORY_FIND_RESULT_AMBIGUOUS {
-				*player.inbox <- "Could not take item. Item name is ambiguous."
+			if itemIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
+				*player.inbox <- fmt.Sprintf("The item name '%s' is ambiguous.",
+					strings.Join(args, " "))
 				return true
 			}
 
@@ -353,47 +388,44 @@ func MenuWorld() Menu {
 				return false
 			}
 
-			// Check for slot
-			inIndex := slices.Index(args, "in")
-			slotStr := ""
-			if inIndex != -1 && inIndex == len(args) - 1 {
-				*player.inbox <- "When specifying 'in' you must also specify a slot."
-				return false
-			}
-			if inIndex != -1 {
-				slotStr = args[inIndex + 1]
-				args = args[:inIndex]
-			}
+			itemWords, slotWords, userSpecifiedSlot := splitArgsBy(args, "in")
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 
 			// Determine the item
-			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			itemIndex, findResult := playerMob.data.Inventory.FuzzyFindItem(args)
-			if findResult == INVENTORY_FIND_RESULT_NOT_FOUND {
-				*player.inbox <- fmt.Sprintf("You have no item called '%s'.", strings.Join(args, " "))
+			itemIndex := fuzzyFindInventoryItemIndex(&playerMob.data.Inventory, itemWords)
+
+			// Handle edge cases
+			if itemIndex == FUZZY_FIND_RESULT_NOT_FOUND {
+				*player.inbox <- fmt.Sprintf("No item called '%s' is in your inventory.",
+					strings.Join(itemWords, " "))
 				return true
 			}
-			if findResult == INVENTORY_FIND_RESULT_AMBIGUOUS {
-				*player.inbox <- "Could not equip item. The item name is ambigous."
+			if itemIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
+				*player.inbox <- fmt.Sprintf("The item name '%s' is ambiguous.",
+					strings.Join(itemWords, " "))
+				return true
 			}
 
-			itemPtr := &playerMob.data.Inventory.Items[itemIndex]
-			itemData := ITEM_DATA[itemPtr.Id]
-
 			// Check stat requirements
-			itemStatRequires := ItemGetStatRequirements(itemPtr)
+			item := &playerMob.data.Inventory.Items[itemIndex]
+			itemData := ITEM_DATA[item.Id]
+			itemStatRequires := ItemGetStatRequirements(item)
 			if !playerMob.data.Stats.Meets(itemStatRequires) {
 				*player.inbox <- fmt.Sprintf("You do not meet the stat requirements to equip %s.", itemData.name)
 				return true
 			}
 
-			// Determine slot
+			// Determine the equipment slot
 			var slot EquipmentSlot
-			if slotStr != "" {
-				var success bool
-				slot, success = EquipmentSlotFromCommandString(slotStr)
-				if !success {
-					*player.inbox <- fmt.Sprintf("'%s' is not a valid equipment slot.", slotStr)
-					*player.inbox <- "Valid equipment slots are: 'mainhand', 'offhand', 'outfit', and 'accessory'."
+			var slotFound bool
+			if userSpecifiedSlot {
+				if len(slotWords) == 0 {
+					*player.inbox <- "When specifying 'in' you must also specify a slot."
+					return false
+				}
+
+				slot, slotFound = fuzzyFindEquipmentSlot(player, slotWords)
+				if !slotFound {
 					return true
 				}
 			} else {
@@ -402,16 +434,15 @@ func MenuWorld() Menu {
 					return false
 				}
 
-				var success bool
-				slot, success = EquipmentSlotForItemType(itemData.itemType)
-				if !success {
+				slot, slotFound = EquipmentSlotForItemType(itemData.itemType)
+				if !slotFound {
 					*player.inbox <- fmt.Sprintf("%s cannot be equipped.", itemData.name)
 					return true
 				}
 			}
 
 			// Try to equip item
-			unequippedItems, success := playerMob.data.EquippedItems.Equip(slot, *itemPtr)
+			unequippedItems, success := playerMob.data.EquippedItems.Equip(slot, *item)
 			if !success {
 				*player.inbox <- fmt.Sprintf("%s cannot be equipped to slot %s.", itemData.name, EquipmentSlotToString(slot))
 				return true
@@ -462,69 +493,36 @@ func MenuWorld() Menu {
 				return false
 			}
 
+			// The way this works is that the user can specify a slot OR an item,
+			// but there's no reason for them to specify both so I'm not going to
+			// bother writing the code for it
+
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			itemWords, slotWords, userSpecifiedSlot := splitArgsBy(args, "from")
 
-			// Check for "from"
-			fromIndex := slices.Index(args, "from")
-			var slot EquipmentSlot = EQUIPMENT_SLOT_COUNT
-			slotStr := ""
-			if fromIndex != -1 && fromIndex == len(args) - 1 {
-				*player.inbox <- "When specifying 'from' you must also specify a slot."
-				return false
-			}
+			var slot EquipmentSlot
+			var slotFound bool
+			if userSpecifiedSlot {
+				if len(itemWords) != 0 {
+					*player.inbox <- "When specifying 'from', you should not specify an item."
+					return false
+				}
+				if len(slotWords) == 0 {
+					*player.inbox <- "When specifying 'from', you must also specify a slot."
+					return false
+				}
 
-			// Remove by slot
-			if fromIndex != -1 {
-				slotStr = args[fromIndex + 1]
-
-				slot, slotFound := EquipmentSlotFromCommandString(slotStr)
+				// Find slot
+				slot, slotFound = fuzzyFindEquipmentSlot(player, slotWords)
 				if !slotFound {
-					*player.inbox <- fmt.Sprintf("'%s' is not a valid equipment slot.", slotStr)
-					*player.inbox <- "Valid equipment slots are: 'mainhand', 'offhand', 'outfit', and 'accessory'."
 					return true
 				}
-
-				itemPtr := playerMob.data.EquippedItems.Get(slot)
-				if itemPtr == nil {
-					*player.inbox <- fmt.Sprintf("You have nothing equipped in %s.", EquipmentSlotToString(slot))
+			} else {
+				// Find slot
+				slot, slotFound = fuzzyFindEquipmentSlotByItem(player, &playerMob.data.EquippedItems, itemWords)
+				if !slotFound {
 					return true
 				}
-			}
-
-			// Remove by item name
-			if slot == EQUIPMENT_SLOT_COUNT {
-				bestSlotScore := 0
-				for slotIndex := range EQUIPMENT_SLOT_COUNT {
-					loopSlot := EquipmentSlot(slotIndex)
-					itemPtr := playerMob.data.EquippedItems.Get(loopSlot)
-					if itemPtr == nil {
-						continue
-					}
-
-					score := ItemFuzzyFindScore(*itemPtr, args)
-					if score == 0 {
-						continue
-					}
-
-					if bestSlotScore != 0 && score == bestSlotScore {
-						*player.inbox <- "Cannot remove item. The item name provided is too ambiguous."
-						return true
-					}
-
-					if score > bestSlotScore {
-						bestSlotScore = score
-						slot = loopSlot
-					}
-				}
-
-				if bestSlotScore == 0 {
-					*player.inbox <- fmt.Sprintf("You have no equipped items matching the name '%s'.", strings.Join(args, " "))
-					return true
-				}
-			}
-
-			if slot == EQUIPMENT_SLOT_COUNT {
-				panic("The equipment slot should totally be populated by now")
 			}
 
 			// Unequip the item
@@ -572,8 +570,8 @@ func MenuWorld() Menu {
 	}
 
 	// Spells known
-	entries["spellbook"] = MenuEntry {
-		usage: "spellbook",
+	entries["library"] = MenuEntry {
+		usage: "library",
 		description: "Show a list of all the spells you know",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
 			if len(player.character.SpellsKnown) == 0 {
@@ -595,39 +593,23 @@ func MenuWorld() Menu {
 		usage: "prepare <spell>",
 		description: "Prepare a spell from the list of spells you know",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
-			if len(args) != 1 {
+			// Check if the spell is already prepared
+			spell, isPrepared := fuzzyFindPreparedSpell(gameState, player, args)
+			if isPrepared {
+				spellData := SPELL_DATA[spell]
+				*player.inbox <- fmt.Sprintf("You have already prepared %s.", spellData.name)
+				return true
+			}
+
+			// Search for spell
+			spell, spellFound := fuzzyFindKnownOrEquippedSpell(player, args)
+			if !spellFound {
 				return false
 			}
 
-			// Check if the spell is already prepared
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			for _, spell := range playerMob.data.Spells {
-				spellData := SPELL_DATA[spell]
-				if strings.EqualFold(spellData.name, args[0]) {
-					*player.inbox <- fmt.Sprintf("You have already prepared %s.", spellData.name)
-					return true
-				}
-			}
-
-			// Check if spell is in spells known
-			for _, spell := range player.character.SpellsKnown {
-				spellData := SPELL_DATA[spell]
-				if strings.EqualFold(spellData.name, args[0]) {
-					playerPrepareSpell(gameState, player, spell)
-					return true
-				}
-			}
-
-			// Check if spell is in spells equipped
-			for spell, _ := range player.character.SpellsEquipped {
-				spellData := SPELL_DATA[spell]
-				if strings.EqualFold(spellData.name, args[0]) {
-					playerPrepareSpell(gameState, player, spell)
-					return true
-				}
-			}
-
-			*player.inbox <- fmt.Sprintf("You don't know any spells called '%s'.", args[0])
+			playerMob.data.Spells = append(playerMob.data.Spells, spell)
+			*player.inbox <- fmt.Sprintf("You prepared %s.", SPELL_DATA[spell].name)
 			return true
 		},
 	}
@@ -635,59 +617,47 @@ func MenuWorld() Menu {
 	// Forget
 	entries["forget"] = MenuEntry {
 		usage: "forget <spell>",
-		description: "Removes a spell from your prepared spells list. If you have mastered the spell, it will remain in your known spells list.",
+		description: "Removes a spell from your prepared spells list. If you have mastered the spell, it will remain in your library.",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
 			if len(args) != 1 {
 				return false
 			}
 
 			// Find a spell that matches their input and remove it
-			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			for _, spell := range playerMob.data.Spells {
-				spellData := SPELL_DATA[spell]
-				if strings.EqualFold(spellData.name, args[0]) {
-					playerMob.data.RemoveSpell(spell)
-					*player.inbox <- fmt.Sprintf("You forgot %s.", spellData.name)
-					return true
-				}
+			spell, isPrepared := fuzzyFindPreparedSpell(gameState, player, args)
+			if !isPrepared {
+				*player.inbox <- fmt.Sprintf("You haven't prepared any spells called '%s'.",
+					strings.Join(args, " "))
+				return true
 			}
 
-			*player.inbox <- fmt.Sprintf("You haven't prepared any spells called '%s'.", args[0])
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			playerMob.data.RemoveSpell(spell)
+			*player.inbox <- fmt.Sprintf("You forgot %s.", SPELL_DATA[spell].name)
 			return true
 		},
 	}
 
-
 	// Cast
 	entries["cast"] = MenuEntry {
-		usage: "cast <spell> <target>",
+		usage: "cast <spell> at <target>",
 		description: "Cast a spell",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
-			if len(args) != 2 {
+			spellWords, targetWords, userSpecifiedTarget := splitArgsBy(args, "at")
+
+			if len(spellWords) == 0 || len(targetWords) == 0 || !userSpecifiedTarget {
 				return false
 			}
 
-			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-
 			// Find the spell in their spell list
-			var spellToCast Spell
-			spellFound := false
-			for _, spell := range playerMob.data.Spells {
-				spellData := SPELL_DATA[spell]
-				if strings.EqualFold(spellData.name, args[0]) {
-					spellToCast = spell
-					spellFound = true
-				}
-			}
+			spell, spellFound := fuzzyFindPreparedSpell(gameState, player, spellWords)
 			if !spellFound {
-				*player.inbox <- fmt.Sprintf("You don't know of any spells called '%s'.", args[0])
 				return true
 			}
 
 			// Find the target in the room
-			targetHandle, targetFound := getTargetHandle(gameState, playerMob, args[1])
+			targetHandle, targetFound := fuzzyFindTarget(gameState, player, targetWords)
 			if !targetFound {
-				*player.inbox <- fmt.Sprintf("No target named '%s' is in this room.", args[1])
 				return true
 			}
 
@@ -695,7 +665,62 @@ func MenuWorld() Menu {
 			player.nextAction = Action {
 				actionType: ACTION_TYPE_CAST,
 				data: ActionCast {
-					spell: spellToCast,
+					spell: spell,
+					target: targetHandle,
+				},
+			}
+
+			return true
+		},
+	}
+
+	// Use
+	entries["use"] = MenuEntry {
+		usage: "use <item> [on <target>]",
+		description: "Use an item. If you don't specify a target, the target is assumed to be yourself.",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			itemWords, targetWords, userSpecifiedTarget := splitArgsBy(args, "on")
+
+			if len(itemWords) == 0 {
+				return false
+			}
+			if userSpecifiedTarget && len(targetWords) == 0 {
+				*player.inbox <- "When specifying 'on' you must specify a target."
+				return false
+			}
+
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			itemIndex := fuzzyFindInventoryItemIndex(&playerMob.data.Inventory, itemWords)
+
+			// Handle edge cases
+			if itemIndex == FUZZY_FIND_RESULT_NOT_FOUND {
+				*player.inbox <- fmt.Sprintf("No item called '%s' is in your inventory.",
+					strings.Join(args, " "))
+				return true
+			}
+			if itemIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
+				*player.inbox <- fmt.Sprintf("The item name '%s' is ambiguous.",
+					strings.Join(args, " "))
+				return true
+			}
+
+			// Determine target
+			var targetHandle MobHandle
+			var targetFound bool
+			if userSpecifiedTarget {
+				targetHandle, targetFound = fuzzyFindTarget(gameState, player, targetWords)
+				if !targetFound {
+					return true
+				}
+			} else {
+				targetHandle = player.mobHandle
+			}
+
+			item := &playerMob.data.Inventory.Items[itemIndex]
+			player.nextAction = Action {
+				actionType: ACTION_TYPE_USE_ITEM,
+				data: ActionUseItem {
+					itemId: item.Id,
 					target: targetHandle,
 				},
 			}
@@ -711,19 +736,6 @@ func MenuWorld() Menu {
 			room := &gameState.world.Rooms[playerMob.data.Room]
 			return fmt.Sprintf("You are in %s.", room.Name)
 		},
-	}
-}
-
-func combineNames(names []string) string {
-	switch len(names) {
-		case 0:
-			return ""
-		case 1:
-			return names[0]
-		case 2:
-			return names[0] + " and " + names[1]
-		default:
-			return strings.Join(names[:len(names) - 1], ", ") + ", and " + names[len(names) - 1]
 	}
 }
 
@@ -768,6 +780,8 @@ func describeRoomToPlayer(gameState *GameState, player *Player, room *Room) {
 	}
 }
 
+// MENU BEHAVIOR HELPERS
+
 func printRoomExits(gameState *GameState, player *Player, room *Room) {
 	exitFound := false
 
@@ -798,23 +812,4 @@ func printRoomExits(gameState *GameState, player *Player, room *Room) {
 	if !exitFound {
 		*player.inbox <- "This room has no exits!"
 	}
-}
-
-func getTargetHandle(gameState *GameState, playerMob *Mob, targetName string) (MobHandle, bool) {
-	playerRoom := gameState.world.Rooms[playerMob.data.Room]
-
-	for _, occupantHandle := range playerRoom.occupants {
-		occupant := gameState.world.Mobs.Get(occupantHandle)
-		if strings.EqualFold(occupant.data.Name, targetName) {
-			return occupantHandle, true
-		}
-	}
-
-	return MobHandle{}, false
-}
-
-func playerPrepareSpell(gameState *GameState, player *Player, spell Spell) {
-	playerMob := gameState.world.Mobs.Get(player.mobHandle)
-	playerMob.data.Spells = append(playerMob.data.Spells, spell)
-	*player.inbox <- fmt.Sprintf("You prepared %s.", SPELL_DATA[spell].name)
 }
