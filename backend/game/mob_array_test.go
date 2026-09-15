@@ -7,12 +7,12 @@ import (
 func TestRemoval(t *testing.T) {
 	mobArray := MobArrayInit()
 	a := mobArray.Push(Mob {
-		Data: MobData {
+		data: MobData {
 			Name: "A",
 		},
 	})
 	b := mobArray.Push(Mob {
-		Data: MobData {
+		data: MobData {
 			Name: "B",
 		},
 	})
@@ -37,7 +37,7 @@ func TestRemoval(t *testing.T) {
 	}
 
 	c := mobArray.Push(Mob {
-		Data: MobData {
+		data: MobData {
 			Name: "C",
 		},
 	})

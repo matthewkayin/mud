@@ -67,9 +67,9 @@ func (player *Player) enterWorld(gameState *GameState, asCharacter *Character) {
 	}
 
 	// Create a mob for the player
-	playerMob := MobInitFromCharacter(player, player.character)
+	playerMob := MobInitPlayer(player, player.character)
 	player.mobHandle = gameState.world.Mobs.Push(playerMob)
-	playerRoom := &gameState.world.Rooms[playerMob.Data.Room]
+	playerRoom := &gameState.world.Rooms[playerMob.data.Room]
 	playerRoom.AddOccupant(player.mobHandle)
 
 	// Enter world menu
@@ -80,11 +80,11 @@ func (player *Player) enterWorld(gameState *GameState, asCharacter *Character) {
 func (player *Player) exitWorld(gameState *GameState) {
 	// Remove player from current room
 	playerMob := gameState.world.Mobs.Get(player.mobHandle)
-	playerRoom := &gameState.world.Rooms[playerMob.Data.Room]
+	playerRoom := &gameState.world.Rooms[playerMob.data.Room]
 	playerRoom.RemoveOccupant(player.mobHandle)
 
 	// Save player mob data back to their character
-	player.character.Data = playerMob.Data
+	player.character.Data = playerMob.data
 
 	player.isLoggedIn = false
 	player.enterMenu(gameState, &gameState.menuLogin)
@@ -105,7 +105,7 @@ func (player *Player) onItemUnequipped(gameState *GameState, item Item) {
 	playerMob := gameState.world.Mobs.Get(player.mobHandle)
 	itemData := ITEM_DATA[item.Id]
 
-	playerMob.Data.Inventory.AddItem(item)
+	playerMob.data.Inventory.AddItem(item)
 
 	// Remove any spells that would ahve been given by the spellbook
 	if itemData.itemType == ITEM_TYPE_EQUIPMENT_SPELLBOOK {
@@ -118,10 +118,10 @@ func (player *Player) onItemUnequipped(gameState *GameState, item Item) {
 		if player.character.SpellsEquipped[spellbookData.spell].EquipCount == 0 {
 			delete(player.character.SpellsEquipped, spellbookData.spell)
 
-			isSpellPrepared := slices.Contains(playerMob.Data.Spells, spellbookData.spell)
+			isSpellPrepared := slices.Contains(playerMob.data.Spells, spellbookData.spell)
 			isSpellKnown := slices.Contains(player.character.SpellsKnown, spellbookData.spell)
 			if isSpellPrepared && !isSpellKnown {
-				playerMob.Data.RemoveSpell(spellbookData.spell)
+				playerMob.data.RemoveSpell(spellbookData.spell)
 				spellData := SPELL_DATA[spellbookData.spell]
 				*player.inbox <- fmt.Sprintf("You lost the spell %s.", spellData.name)
 			}

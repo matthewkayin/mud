@@ -156,6 +156,11 @@ func (gameState *GameState) update() {
 		gameState.players[index].doAction(gameState)
 	}
 
+	// NPC updates
+	for index := 0; index < len(gameState.world.Npcs); index++ {
+		gameState.world.Npcs[index].update(gameState.world)
+	}
+
 	// Room updates
 	for index := 0; index < len(gameState.world.Rooms); index++ {
 		gameState.world.Rooms[index].Update(gameState)
