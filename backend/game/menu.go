@@ -41,7 +41,7 @@ func (menu *Menu) createInstance() *MenuInstance {
 
 func (menuInstance *MenuInstance) HandleCommand(gameState *GameState, player *Player, command string) {
 	// Get verb and arguments
-	words := strings.Split(command, " ")
+	words := strings.Fields(command)
 	verb := strings.ToLower(words[0])
 	args := words[1:]
 
