@@ -313,3 +313,36 @@ func fuzzyFindEquipmentSlot(searchWords []string) (EquipmentSlot, error) {
 
 	return EquipmentSlot(slotIndex), nil
 }
+
+func fuzzyFindChestInventory(room *Room, searchWords []string) (*ItemList, string, error) {
+	if len(searchWords) == 0 {
+		return nil, "", errors.New("You must specify a container.")
+	}
+
+	// Check for "room"
+	searchString := strings.Join(searchWords, " ")
+	if strings.EqualFold(searchString, "room") {
+		return &room.Inventory, "room", nil
+	}
+
+	// Chest names
+	chestNames := make([]string, 0, len(room.Chests))
+	for index := range len(room.Chests) {
+		chest := &room.Chests[index]
+		chestNames = append(chestNames, chest.Name)
+	}
+
+	chestIndex := fuzzyFind(chestNames, searchWords)
+
+	// Handle edge cases
+	if chestIndex == FUZZY_FIND_RESULT_NOT_FOUND {
+		return nil, "", fmt.Errorf("There are no chests called '%s' in the room.",
+			strings.Join(searchWords, " "))
+	}
+	if chestIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
+		return nil, "", fmt.Errorf("The chest name '%s' is ambiguous.",
+			strings.Join(searchWords, " "))
+	}
+
+	return &room.Chests[chestIndex].Inventory, room.Chests[chestIndex].Name, nil
+}

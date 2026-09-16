@@ -1,9 +1,8 @@
 package game
 
-// Since each update is 3 seconds, this means it respawns in 30 seconds
 // TODO: change this to a longer duration
 // TODO: make this customizable per NPC?
-const NPC_RESPAWN_DURATION int = 10
+const NPC_RESPAWN_DURATION int = 60 / GAME_SECONDS_PER_UPDATE
 
 type NpcBehavior int
 const (

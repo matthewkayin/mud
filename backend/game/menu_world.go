@@ -2,10 +2,9 @@ package game
 
 import (
 	"fmt"
-	"log"
+	"mud/bitset"
 	"slices"
 	"strings"
-	"mud/bitset"
 )
 
 func MenuWorld() Menu {
@@ -30,6 +29,45 @@ func MenuWorld() Menu {
 			room := &gameState.world.Rooms[playerMob.data.Room]
 
 			describeRoomToPlayer(gameState, player, room)
+			return true
+		},
+	}
+
+	// Search
+	entries["search"] = MenuEntry {
+		usage: "search [container]",
+		description: "Search the room or a container for items.",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			room := &gameState.world.Rooms[playerMob.data.Room]
+
+			targetInventory := &room.Inventory
+
+			// Check for container
+			if len(args) != 0 {
+				chestInventory, _, err := fuzzyFindChestInventory(room, args)
+				if err != nil {
+					*player.inbox <- err.Error()
+					return true
+				}
+
+				targetInventory = chestInventory
+			}
+
+			itemNames := make([]string, 0, len(targetInventory.Items))
+			for index := range len(targetInventory.Items) {
+				item := &targetInventory.Items[index]
+				itemNames = append(itemNames, ITEM_DATA[item.Id].name)
+			}
+
+			var itemsString string
+			if len(itemNames) == 0 {
+				itemsString = "nothing"
+			} else {
+				itemsString = combineNames(itemNames)
+			}
+
+			*player.inbox <- fmt.Sprintf("You see %s.", itemsString)
 			return true
 		},
 	}
@@ -287,7 +325,7 @@ func MenuWorld() Menu {
 	}
 
 	// Drop an item
-	entries["drop"] = MenuEntry{
+	entries["drop"] = MenuEntry {
 		usage: "drop <item>",
 		description: "Drop an item from your inventory",
 		handler: func(gameState *GameState, player *Player, args []string) bool {
@@ -312,9 +350,43 @@ func MenuWorld() Menu {
 		},
 	}
 
+	// Put an item into a container
+	entries["put"] = MenuEntry {
+		usage: "put <item> into <container>",
+		description: "Puts an item from your inventory into the specified container",
+		handler: func(gameState *GameState, player *Player, args []string) bool {
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			room := &gameState.world.Rooms[playerMob.data.Room]
+
+			itemWords, chestWords, userSpecifiedInto := splitArgsBy(args, "into")
+			if !userSpecifiedInto || len(itemWords) == 0 || len(chestWords) == 0 {
+				return false
+			}
+
+			targetInventory, chestName, err := fuzzyFindChestInventory(room, chestWords)
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
+			}
+
+			itemIndex, err := fuzzyFindInventoryItemIndex(&playerMob.data.Inventory, itemWords)
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
+			}
+
+			// Put item into container
+			droppedItem := playerMob.data.Inventory.RemoveItem(itemIndex)
+			targetInventory.AddItem(droppedItem)
+
+			*player.inbox <- fmt.Sprintf("You put %s into %s.", ITEM_DATA[droppedItem.Id].name, chestName)
+			return true
+		},
+	}
+
 	// Grab an item
 	entries["take"] = MenuEntry {
-		usage: "take <item>",
+		usage: "take <item> [from <container>]",
 		description: "Pick up an item in your current room",
 		handler: func(gameState *GameState, player *Player, args []string) bool {
 			if len(args) < 1 {
@@ -325,18 +397,70 @@ func MenuWorld() Menu {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 			playerRoom := &gameState.world.Rooms[playerMob.data.Room]
 
+			targetInventory := &playerRoom.Inventory
+			itemWords, chestWords, userSpecifiedChest := splitArgsBy(args, "from")
+
+			if len(itemWords) == 0 {
+				*player.inbox <- "You must specify an item to take."
+				return true
+			}
+
+			if userSpecifiedChest {
+				chestInventory, _, err := fuzzyFindChestInventory(playerRoom, chestWords)
+				if err != nil {
+					*player.inbox <- err.Error()
+					return true
+				}
+
+				targetInventory = chestInventory
+			}
+
 			// Find item in room
-			itemIndex, err := fuzzyFindInventoryItemIndex(&playerRoom.Inventory, args)
+			itemIndex, err := fuzzyFindInventoryItemIndex(targetInventory, itemWords)
 			if err !=  nil {
 				*player.inbox <- err.Error()
 				return true
 			}
 
 			// Move item from room to player
-			grabbedItem := playerRoom.Inventory.RemoveItem(itemIndex)
+			grabbedItem := targetInventory.RemoveItem(itemIndex)
 			playerMob.data.Inventory.AddItem(grabbedItem)
 
 			*player.inbox <- fmt.Sprintf("You picked up %s.", ITEM_DATA[grabbedItem.Id].name)
+			return true
+		},
+	}
+
+	// Loot items
+	entries["loot"] = MenuEntry {
+		usage: "loot <container>",
+		description: "Take all items from the container in this room. If you specify 'room' as the container, you will take all items from the floor in this room.",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			// Get pointer to room
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			playerRoom := &gameState.world.Rooms[playerMob.data.Room]
+
+			targetInventory, chestName, err := fuzzyFindChestInventory(playerRoom, args)
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
+			}
+
+			if len(targetInventory.Items) == 0 {
+				*player.inbox <- fmt.Sprintf("%s is empty.", chestName)
+				return true
+			}
+
+			itemNames := make([]string, 0, len(targetInventory.Items))
+			for len(targetInventory.Items) > 0 {
+				item := targetInventory.RemoveItem(len(targetInventory.Items) - 1)
+				itemData := ITEM_DATA[item.Id]
+
+				playerMob.data.Inventory.AddItem(item)
+				itemNames = append(itemNames, itemData.name)
+			}
+			*player.inbox <- fmt.Sprintf("You got %s.", combineNames(itemNames))
+
 			return true
 		},
 	}
@@ -346,7 +470,6 @@ func MenuWorld() Menu {
 		usage: "equipment",
 		description: "Show your current equipment",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
-			log.Printf("Handling equipment")
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 
 			// Determine if we should skip the offhand item slot
@@ -810,15 +933,13 @@ func describeRoomToPlayer(gameState *GameState, player *Player, room *Room) {
 		*player.inbox <- fmt.Sprintf("%s %s here.", otherPlayersStr, isString)
 	}
 
-	if len(room.Inventory.Items) > 0 {
-		itemNames := make([]string, 0, len(room.Inventory.Items))
-		for _, item := range room.Inventory.Items {
-			itemNames = append(itemNames, ITEM_DATA[item.Id].name)
+	if len(room.Chests) > 0 {
+		chestNames := make([]string, 0, len(room.Chests))
+		for index := range len(room.Chests) {
+			chest := &room.Chests[index]
+			chestNames = append(chestNames, chest.Name)
 		}
-		isString := "items are"
-		if len(room.Inventory.Items) == 1 {
-			isString = "item is"
-		}
-		*player.inbox <- fmt.Sprintf("The following %s in this room: %s.", isString, combineNames(itemNames))
+
+		*player.inbox <- fmt.Sprintf("In this room is %s", combineNames(chestNames))
 	}
 }

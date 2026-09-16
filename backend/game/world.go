@@ -57,19 +57,28 @@ func WorldInitNew() *World {
 			},
 			ExitIsLocked: [DIRECTION_COUNT]bool {
 				false,
-				true,
+				false,
 				false,
 				false,
 			},
 
-			Inventory: ItemList {
-				Items: []Item {
-					{ Id: ITEM_SWORD },
-					{ Id: ITEM_AXE },
-					{ Id: ITEM_SPELLBOOK_FIREBOLT },
-					{ Id: ITEM_SPELLBOOK_CURE },
-					{ Id: ITEM_POTION_HEALTH },
+			Chests: []Chest {
+				{
+					Name: "Chest of Test",
+					DecayTimer: CHEST_DOES_NOT_DECAY,
+					Inventory: ItemList {
+						Items: []Item {
+							{ Id: ITEM_SWORD },
+							{ Id: ITEM_AXE },
+							{ Id: ITEM_SPELLBOOK_FIREBOLT },
+							{ Id: ITEM_SPELLBOOK_CURE },
+							{ Id: ITEM_POTION_HEALTH },
+						},
+					},
 				},
+			},
+			Inventory: ItemList {
+				Items: []Item {},
 			},
 
 			occupants: []MobHandle {},
@@ -91,6 +100,7 @@ func WorldInitNew() *World {
 				false,
 			},
 
+			Chests: []Chest {},
 			Inventory: ItemList {
 				Items: []Item {},
 			},
@@ -123,7 +133,9 @@ func WorldInitNew() *World {
 
 				Spells: []Spell {},
 				Inventory: ItemList {
-					Items: []Item {},
+					Items: []Item {
+						{ Id: ITEM_POTION_HEALTH },
+					},
 				},
 				EquippedItems: EquipmentInitEmpty(),
 			},
