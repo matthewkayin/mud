@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"strings"
 )
 
 func MenuLogin() Menu {
@@ -19,7 +20,12 @@ func MenuLogin() Menu {
 			}
 
 			for _, characterName := range characterList {
-				*player.inbox <- characterName
+				character := gameState.world.Characters[characterName]
+				*player.inbox <- fmt.Sprintf("%s - Level %d %s %s",
+					characterName,
+					character.Data.Level,
+					RACE_DATA[character.Race].Name,
+					CLASS_DATA[character.Class].Name)
 			}
 
 			return true
@@ -28,11 +34,59 @@ func MenuLogin() Menu {
 
 	// Create
 	entries["create"] = MenuEntry {
-		usage: "create",
-		description: "Create a new character.",
+		usage: "create [<name>, <race> <class>]",
+		description: "Create a new character. You may specify name, race, class as arguments to this command in order to skip the character creation menu.",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
-			// Set player to create character menu
-			player.enterMenu(gameState, &gameState.menuCreateCharacter)
+			if len(args) == 0 {
+				// Set player to create character menu
+				player.enterMenu(gameState, &gameState.menuCreateCharacter)
+				return true
+			}
+
+			argsJoined := strings.Join(args, " ")
+			nameInput, raceClassInput, commaFound := strings.Cut(argsJoined, ",")
+			if !commaFound {
+				*player.inbox <- "Invalid usage. You must include a comma. Example: 'create Bufo the Wise, Gremlin Wizard'"
+				return true
+			}
+
+			// Get name from input and validate name
+			name, err := CharacterNameValidate(gameState, nameInput)
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
+			}
+
+			// Ensure both race and class are specified
+			raceClassArgs := strings.Fields(raceClassInput)
+			if len(raceClassArgs) != 2 {
+				return false
+			}
+
+			// Get race from input
+			race, err := CharacterRaceFromString(raceClassArgs[0])
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
+			}
+
+			// Get class from input
+			class, err := CharacterClassFromString(raceClassArgs[1])
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
+			}
+
+			// Create the character
+			character := CharacterNew(player.id, &MenuCharacterSheet {
+				name: name,
+				race: race,
+				class: class,
+			})
+			gameState.world.CreateCharacter(player.id, character)
+
+			*player.inbox <- fmt.Sprintf("Your character has been created! Type 'login %s' to login to them.", name)
+
 			return true
 		},
 	}
@@ -42,18 +96,20 @@ func MenuLogin() Menu {
 		usage: "login <character>",
 		description: "Login to an existing character.",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
-			if len(args) != 1 {
+			if len(args) < 1 {
 				return false
 			}
 
-			character, characterExists := gameState.world.GetCharacterIfExists(args[0])
+			nameInput := strings.Join(args, " ")
+
+			character, characterExists := gameState.world.GetCharacterIfExists(nameInput)
 			if !characterExists {
-				*player.inbox <- fmt.Sprintf("A character named '%s' does not exist.", args[0])
+				*player.inbox <- fmt.Sprintf("A character named '%s' does not exist.", nameInput)
 				return true
 			}
 
 			if character.PlayerId != player.id {
-				*player.inbox <- fmt.Sprintf("'%s' is not a character that you own.", args[0])
+				*player.inbox <- fmt.Sprintf("'%s' is not a character that you own.", nameInput)
 				return true
 			}
 

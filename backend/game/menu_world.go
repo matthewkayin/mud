@@ -2,10 +2,9 @@ package game
 
 import (
 	"fmt"
-	"log"
+	"mud/bitset"
 	"slices"
 	"strings"
-	"mud/bitset"
 )
 
 func MenuWorld() Menu {
@@ -30,6 +29,45 @@ func MenuWorld() Menu {
 			room := &gameState.world.Rooms[playerMob.data.Room]
 
 			describeRoomToPlayer(gameState, player, room)
+			return true
+		},
+	}
+
+	// Search
+	entries["search"] = MenuEntry {
+		usage: "search [container]",
+		description: "Search the room or a container for items.",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			room := &gameState.world.Rooms[playerMob.data.Room]
+
+			targetInventory := &room.Inventory
+
+			// Check for container
+			if len(args) != 0 {
+				chestInventory, _, err := fuzzyFindChestInventory(room, args)
+				if err != nil {
+					*player.inbox <- err.Error()
+					return true
+				}
+
+				targetInventory = chestInventory
+			}
+
+			itemNames := make([]string, 0, len(targetInventory.Items))
+			for index := range len(targetInventory.Items) {
+				item := &targetInventory.Items[index]
+				itemNames = append(itemNames, ITEM_DATA[item.Id].name)
+			}
+
+			var itemsString string
+			if len(itemNames) == 0 {
+				itemsString = "nothing"
+			} else {
+				itemsString = combineNames(itemNames)
+			}
+
+			*player.inbox <- fmt.Sprintf("You see %s.", itemsString)
 			return true
 		},
 	}
@@ -70,16 +108,98 @@ func MenuWorld() Menu {
 	// Say
 	entries["say"] = MenuEntry {
 		usage: "say <message>",
-		description: "Send a messsage to the current room.",
+		description: "Send a messsage to the current room",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
 			if len(args) < 1 {
-				*player.inbox <- "You must include a message that you want to say."
 				return false
 			}
 
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 			playerRoom := &gameState.world.Rooms[playerMob.data.Room]
-			playerRoom.broadcast(gameState, fmt.Sprintf("%s said '%s'", player.character.Data.Name, strings.Join(args, " ")))
+			playerRoom.broadcast(gameState, fmt.Sprintf("%s said '%s'",
+				player.character.Data.Name,
+				strings.TrimSpace(strings.Join(args, " "))))
+			return true
+		},
+	}
+
+	// Tell
+	entries["tell"] = MenuEntry {
+		usage: "tell <target> <message>",
+		description: "Send a message to a specific person in the current room",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			// Parse input
+			argString := strings.Join(args, " ")
+			targetString, messageString, colonFound := strings.Cut(argString, ":")
+			if !colonFound || len(targetString) == 0 || len(messageString) == 0 {
+				return false
+			}
+
+			// Find target
+			targetHandle, err := fuzzyFindTarget(gameState, player, strings.Fields(targetString))
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
+			}
+
+			// Handle case where they talk to themselves
+			if targetHandle == player.mobHandle {
+				*player.inbox <- fmt.Sprintf("You told yourself: %s", messageString)
+				return true
+			}
+
+			// Handle case where they talk to a player
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			targetMob := gameState.world.Mobs.Get(targetHandle)
+			message := strings.TrimSpace(messageString)
+			if targetMob.player != nil {
+				*player.inbox <- fmt.Sprintf("You told %s: '%s'", playerMob.data.Name, message)
+				*targetMob.player.inbox <- fmt.Sprintf("%s told you: '%s'", playerMob.data.Name, message)
+				return true
+			}
+
+			// TODO: handle case where they talk to an NPC
+
+			return true
+		},
+	}
+
+	// Yell
+	entries["yell"] = MenuEntry {
+		usage: "yell <message>",
+		description: "Send a message to everyone in this and the adjacent rooms",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			if len(args) == 0 {
+				return false
+			}
+
+			// Get a handle to the player room
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			playerRoom := &gameState.world.Rooms[playerMob.data.Room]
+
+			// Collect a list containing all rooms to broadcast to
+			rooms := make([]*Room, 0, 5)
+			rooms = append(rooms, playerRoom)
+
+			// Add room exits to the list
+			for direction := range DIRECTION_COUNT {
+				roomIndex := playerRoom.Exits[direction]
+				if roomIndex == ROOM_NONE {
+					continue
+				}
+
+				adjacentRoom := &gameState.world.Rooms[roomIndex]
+				rooms = append(rooms, adjacentRoom)
+			}
+
+			// Broadcast the message to each room
+			message := fmt.Sprintf("%s: '%s'",
+				playerMob.data.Name,
+				strings.TrimSpace(strings.Join(args, " ")))
+			for _, room := range rooms {
+				room.broadcast(gameState, message)
+			}
+
 			return true
 		},
 	}
@@ -210,8 +330,16 @@ func MenuWorld() Menu {
 				return false
 			}
 
-			targetHandle, targetFound := fuzzyFindTarget(gameState, player, args)
-			if !targetFound {
+			targetHandle, err := fuzzyFindTarget(gameState, player, args)
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
+			}
+
+			// Check for PvP
+			targetMob := gameState.world.Mobs.Get(targetHandle)
+			if targetMob.player != nil {
+				*player.inbox <- "You cannot attack other adventurers!"
 				return true
 			}
 
@@ -274,34 +402,21 @@ func MenuWorld() Menu {
 			for _, item := range playerMob.data.Inventory.Items {
 				itemNames = append(itemNames, ITEM_DATA[item.Id].name)
 			}
-			*player.inbox <- fmt.Sprintf("You are carrying the following items: %s", combineNames(itemNames))
 			return true
 		},
 	}
 
 	// Drop an item
-	entries["drop"] = MenuEntry{
+	entries["drop"] = MenuEntry {
 		usage: "drop <item>",
 		description: "Drop an item from your inventory",
 		handler: func(gameState *GameState, player *Player, args []string) bool {
-			if len(args) != 1 {
-				return false
-			}
-
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 
 			// Find item
-			itemIndex := fuzzyFindInventoryItemIndex(&playerMob.data.Inventory, args)
-
-			// Handle edge cases
-			if itemIndex == FUZZY_FIND_RESULT_NOT_FOUND {
-				*player.inbox <- fmt.Sprintf("No item called '%s' is in your inventory.",
-					strings.Join(args, " "))
-				return true
-			}
-			if itemIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
-				*player.inbox <- fmt.Sprintf("The item name '%s' is ambiguous.",
-					strings.Join(args, " "))
+			itemIndex, err := fuzzyFindInventoryItemIndex(&playerMob.data.Inventory, args)
+			if err != nil {
+				*player.inbox <- err.Error()
 				return true
 			}
 
@@ -317,9 +432,43 @@ func MenuWorld() Menu {
 		},
 	}
 
+	// Put an item into a container
+	entries["put"] = MenuEntry {
+		usage: "put <item> into <container>",
+		description: "Puts an item from your inventory into the specified container",
+		handler: func(gameState *GameState, player *Player, args []string) bool {
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			room := &gameState.world.Rooms[playerMob.data.Room]
+
+			itemWords, chestWords, userSpecifiedInto := splitArgsBy(args, "into")
+			if !userSpecifiedInto || len(itemWords) == 0 || len(chestWords) == 0 {
+				return false
+			}
+
+			targetInventory, chestName, err := fuzzyFindChestInventory(room, chestWords)
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
+			}
+
+			itemIndex, err := fuzzyFindInventoryItemIndex(&playerMob.data.Inventory, itemWords)
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
+			}
+
+			// Put item into container
+			droppedItem := playerMob.data.Inventory.RemoveItem(itemIndex)
+			targetInventory.AddItem(droppedItem)
+
+			*player.inbox <- fmt.Sprintf("You put %s into %s.", ITEM_DATA[droppedItem.Id].name, chestName)
+			return true
+		},
+	}
+
 	// Grab an item
 	entries["take"] = MenuEntry {
-		usage: "take <item>",
+		usage: "take <item> [from <container>]",
 		description: "Pick up an item in your current room",
 		handler: func(gameState *GameState, player *Player, args []string) bool {
 			if len(args) < 1 {
@@ -330,24 +479,70 @@ func MenuWorld() Menu {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 			playerRoom := &gameState.world.Rooms[playerMob.data.Room]
 
-			// Find item in room
-			itemIndex := fuzzyFindInventoryItemIndex(&playerRoom.Inventory, args)
-			if itemIndex == FUZZY_FIND_RESULT_NOT_FOUND {
-				*player.inbox <- fmt.Sprintf("No item called '%s' is in this room.",
-					strings.Join(args, " "))
+			targetInventory := &playerRoom.Inventory
+			itemWords, chestWords, userSpecifiedChest := splitArgsBy(args, "from")
+
+			if len(itemWords) == 0 {
+				*player.inbox <- "You must specify an item to take."
 				return true
 			}
-			if itemIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
-				*player.inbox <- fmt.Sprintf("The item name '%s' is ambiguous.",
-					strings.Join(args, " "))
+
+			if userSpecifiedChest {
+				chestInventory, _, err := fuzzyFindChestInventory(playerRoom, chestWords)
+				if err != nil {
+					*player.inbox <- err.Error()
+					return true
+				}
+
+				targetInventory = chestInventory
+			}
+
+			// Find item in room
+			itemIndex, err := fuzzyFindInventoryItemIndex(targetInventory, itemWords)
+			if err !=  nil {
+				*player.inbox <- err.Error()
 				return true
 			}
 
 			// Move item from room to player
-			grabbedItem := playerRoom.Inventory.RemoveItem(itemIndex)
+			grabbedItem := targetInventory.RemoveItem(itemIndex)
 			playerMob.data.Inventory.AddItem(grabbedItem)
 
 			*player.inbox <- fmt.Sprintf("You picked up %s.", ITEM_DATA[grabbedItem.Id].name)
+			return true
+		},
+	}
+
+	// Loot items
+	entries["loot"] = MenuEntry {
+		usage: "loot <container>",
+		description: "Take all items from the container in this room. If you specify 'room' as the container, you will take all items from the floor in this room.",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			// Get pointer to room
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			playerRoom := &gameState.world.Rooms[playerMob.data.Room]
+
+			targetInventory, chestName, err := fuzzyFindChestInventory(playerRoom, args)
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
+			}
+
+			if len(targetInventory.Items) == 0 {
+				*player.inbox <- fmt.Sprintf("%s is empty.", chestName)
+				return true
+			}
+
+			itemNames := make([]string, 0, len(targetInventory.Items))
+			for len(targetInventory.Items) > 0 {
+				item := targetInventory.RemoveItem(len(targetInventory.Items) - 1)
+				itemData := ITEM_DATA[item.Id]
+
+				playerMob.data.Inventory.AddItem(item)
+				itemNames = append(itemNames, itemData.name)
+			}
+			*player.inbox <- fmt.Sprintf("You got %s.", combineNames(itemNames))
+
 			return true
 		},
 	}
@@ -357,7 +552,6 @@ func MenuWorld() Menu {
 		usage: "equipment",
 		description: "Show your current equipment",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
-			log.Printf("Handling equipment")
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 
 			// Determine if we should skip the offhand item slot
@@ -413,17 +607,9 @@ func MenuWorld() Menu {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 
 			// Determine the item
-			itemIndex := fuzzyFindInventoryItemIndex(&playerMob.data.Inventory, itemWords)
-
-			// Handle edge cases
-			if itemIndex == FUZZY_FIND_RESULT_NOT_FOUND {
-				*player.inbox <- fmt.Sprintf("No item called '%s' is in your inventory.",
-					strings.Join(itemWords, " "))
-				return true
-			}
-			if itemIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
-				*player.inbox <- fmt.Sprintf("The item name '%s' is ambiguous.",
-					strings.Join(itemWords, " "))
+			itemIndex, err := fuzzyFindInventoryItemIndex(&playerMob.data.Inventory, itemWords)
+			if err != nil {
+				*player.inbox <- err.Error()
 				return true
 			}
 
@@ -438,23 +624,25 @@ func MenuWorld() Menu {
 
 			// Determine the equipment slot
 			var slot EquipmentSlot
-			var slotFound bool
 			if userSpecifiedSlot {
 				if len(slotWords) == 0 {
 					*player.inbox <- "When specifying 'in' you must also specify a slot."
 					return false
 				}
 
-				slot, slotFound = fuzzyFindEquipmentSlot(player, slotWords)
-				if !slotFound {
+				var err error
+				slot, err = fuzzyFindEquipmentSlot(slotWords)
+				if err != nil {
+					*player.inbox <- err.Error()
 					return true
 				}
 			} else {
 				if itemData.ItemIsOneHanded() {
-					*player.inbox <- fmt.Sprintf("%s is a one-handed item. You must specify whether to equip it to 'mainhand' hand or 'offhand'.", itemData.name)
+					*player.inbox <- fmt.Sprintf("%s is a one-handed item. You must specify whether to equip it to 'main hand' hand or 'off hand'.", itemData.name)
 					return false
 				}
 
+				var slotFound bool
 				slot, slotFound = EquipmentSlotForItemType(itemData.itemType)
 				if !slotFound {
 					*player.inbox <- fmt.Sprintf("%s cannot be equipped.", itemData.name)
@@ -522,7 +710,6 @@ func MenuWorld() Menu {
 			itemWords, slotWords, userSpecifiedSlot := splitArgsBy(args, "from")
 
 			var slot EquipmentSlot
-			var slotFound bool
 			if userSpecifiedSlot {
 				if len(itemWords) != 0 {
 					*player.inbox <- "When specifying 'from', you should not specify an item."
@@ -534,14 +721,17 @@ func MenuWorld() Menu {
 				}
 
 				// Find slot
-				slot, slotFound = fuzzyFindEquipmentSlot(player, slotWords)
-				if !slotFound {
+				var err error
+				slot, err = fuzzyFindEquipmentSlot(slotWords)
+				if err != nil {
+					*player.inbox <- err.Error()
 					return true
 				}
 			} else {
 				// Find slot
-				slot, slotFound = fuzzyFindEquipmentSlotByItem(player, &playerMob.data.EquippedItems, itemWords)
-				if !slotFound {
+				var err error
+				slot, err = fuzzyFindEquipmentSlotByItem(&playerMob.data.EquippedItems, itemWords)
+				if err != nil {
 					return true
 				}
 			}
@@ -614,8 +804,17 @@ func MenuWorld() Menu {
 		usage: "prepare <spell>",
 		description: "Prepare a spell from the list of spells you know",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
+			// Check if there is an empty spell slot
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			if len(playerMob.data.Spells) >= int(playerMob.data.SpellSlots()) {
+				*player.inbox <- "You don't have any available spell slots."
+				*player.inbox <- "Type 'forget <spell>' to free up a spell slot."
+				return true
+			}
+
 			// Check if the spell is already prepared
-			spell, isPrepared := fuzzyFindPreparedSpell(gameState, player, args)
+			spell, err := fuzzyFindPreparedSpell(gameState, player, args)
+			isPrepared := err == nil
 			if isPrepared {
 				spellData := SPELL_DATA[spell]
 				*player.inbox <- fmt.Sprintf("You have already prepared %s.", spellData.name)
@@ -623,12 +822,12 @@ func MenuWorld() Menu {
 			}
 
 			// Search for spell
-			spell, spellFound := fuzzyFindKnownOrEquippedSpell(player, args)
-			if !spellFound {
-				return false
+			spell, err = fuzzyFindKnownOrEquippedSpell(player, args)
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
 			}
 
-			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 			playerMob.data.Spells = append(playerMob.data.Spells, spell)
 			*player.inbox <- fmt.Sprintf("You prepared %s.", SPELL_DATA[spell].name)
 			return true
@@ -645,10 +844,9 @@ func MenuWorld() Menu {
 			}
 
 			// Find a spell that matches their input and remove it
-			spell, isPrepared := fuzzyFindPreparedSpell(gameState, player, args)
-			if !isPrepared {
-				*player.inbox <- fmt.Sprintf("You haven't prepared any spells called '%s'.",
-					strings.Join(args, " "))
+			spell, err := fuzzyFindPreparedSpell(gameState, player, args)
+			if err != nil {
+				*player.inbox <- err.Error()
 				return true
 			}
 
@@ -671,14 +869,24 @@ func MenuWorld() Menu {
 			}
 
 			// Find the spell in their spell list
-			spell, spellFound := fuzzyFindPreparedSpell(gameState, player, spellWords)
-			if !spellFound {
+			spell, err := fuzzyFindPreparedSpell(gameState, player, spellWords)
+			if err != nil {
+				*player.inbox <- err.Error()
 				return true
 			}
 
 			// Find the target in the room
-			targetHandle, targetFound := fuzzyFindTarget(gameState, player, targetWords)
-			if !targetFound {
+			targetHandle, err := fuzzyFindTarget(gameState, player, targetWords)
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
+			}
+
+			// Check against PvP
+			spellData := SPELL_DATA[spell]
+			targetMob := gameState.world.Mobs.Get(targetHandle)
+			if targetMob.player != nil && !spellData.canTargetPlayers {
+				*player.inbox <- "You cannot cast that spell against players."
 				return true
 			}
 
@@ -702,6 +910,9 @@ func MenuWorld() Menu {
 		handler: func (gameState *GameState, player *Player, args []string) bool {
 			itemWords, targetWords, userSpecifiedTarget := splitArgsBy(args, "on")
 
+			// For now, all consumables can only be used on "self"
+			// Spell scrolls can be used on others based on the spell's targeting rules
+
 			if len(itemWords) == 0 {
 				return false
 			}
@@ -711,33 +922,49 @@ func MenuWorld() Menu {
 			}
 
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			itemIndex := fuzzyFindInventoryItemIndex(&playerMob.data.Inventory, itemWords)
-
-			// Handle edge cases
-			if itemIndex == FUZZY_FIND_RESULT_NOT_FOUND {
-				*player.inbox <- fmt.Sprintf("No item called '%s' is in your inventory.",
-					strings.Join(args, " "))
-				return true
-			}
-			if itemIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
-				*player.inbox <- fmt.Sprintf("The item name '%s' is ambiguous.",
-					strings.Join(args, " "))
+			itemIndex, err := fuzzyFindInventoryItemIndex(&playerMob.data.Inventory, itemWords)
+			if err != nil {
+				*player.inbox <- err.Error()
 				return true
 			}
 
 			// Determine target
 			var targetHandle MobHandle
-			var targetFound bool
 			if userSpecifiedTarget {
-				targetHandle, targetFound = fuzzyFindTarget(gameState, player, targetWords)
-				if !targetFound {
+				var err error
+				targetHandle, err = fuzzyFindTarget(gameState, player, targetWords)
+				if err != nil {
+					*player.inbox <- err.Error()
 					return true
 				}
 			} else {
 				targetHandle = player.mobHandle
 			}
 
+			// Check for item <-> target compatibility
 			item := &playerMob.data.Inventory.Items[itemIndex]
+			itemData := ITEM_DATA[item.Id]
+
+			switch itemData.itemType {
+				case ITEM_TYPE_CONSUMABLE:
+					if !targetHandle.Equals(player.mobHandle) {
+						*player.inbox <- "That item can only be used on yourself."
+						return true
+					}
+				case ITEM_TYPE_SPELL_SCROLL:
+					scrollData := itemData.data.(*ItemDataSpellScroll)
+					spellInfo := SPELL_DATA[scrollData.spell]
+
+					targetMob := gameState.world.Mobs.Get(targetHandle)
+					if targetMob.player != nil && !spellInfo.canTargetPlayers {
+						*player.inbox <- "You cannot cast that spell against players."
+						return true
+					}
+				default:
+					*player.inbox <- "That item is not a consumable."
+					return true
+			}
+
 			player.nextAction = Action {
 				actionType: ACTION_TYPE_USE_ITEM,
 				data: ActionUseItem {
@@ -788,15 +1015,13 @@ func describeRoomToPlayer(gameState *GameState, player *Player, room *Room) {
 		*player.inbox <- fmt.Sprintf("%s %s here.", otherPlayersStr, isString)
 	}
 
-	if len(room.Inventory.Items) > 0 {
-		itemNames := make([]string, 0, len(room.Inventory.Items))
-		for _, item := range room.Inventory.Items {
-			itemNames = append(itemNames, ITEM_DATA[item.Id].name)
+	if len(room.Chests) > 0 {
+		chestNames := make([]string, 0, len(room.Chests))
+		for index := range len(room.Chests) {
+			chest := &room.Chests[index]
+			chestNames = append(chestNames, chest.Name)
 		}
-		isString := "items are"
-		if len(room.Inventory.Items) == 1 {
-			isString = "item is"
-		}
-		*player.inbox <- fmt.Sprintf("The following %s in this room: %s.", isString, combineNames(itemNames))
+
+		*player.inbox <- fmt.Sprintf("In this room is %s", combineNames(chestNames))
 	}
 }

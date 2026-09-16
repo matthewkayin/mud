@@ -8,7 +8,8 @@ import (
 	"os"
 )
 
-const GAME_UPDATE_INTERVAL = 3 * time.Second
+const GAME_SECONDS_PER_UPDATE = 3
+const GAME_UPDATE_INTERVAL = GAME_SECONDS_PER_UPDATE * time.Second
 const GAME_WORLD_JSON_PATH = "./world.json"
 
 type Command struct {
@@ -43,6 +44,7 @@ func InitState() *GameState {
 	if world == nil {
 		world = WorldInitNew()
 	}
+	world.PostInit()
 
 	return &GameState {
 		Commands: make(chan Command, 1024),

@@ -1,6 +1,7 @@
 package game
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -110,16 +111,16 @@ func fuzzyFind(names []string, searchWords []string) int {
 	return bestIndex
 }
 
-func fuzzyFindTarget(gameState *GameState, player *Player, searchWords []string) (MobHandle, bool) {
+func fuzzyFindTarget(gameState *GameState, player *Player, searchWords []string) (MobHandle, error) {
 	// Check that there are any arguments
 	if len(searchWords) == 0 {
 		*player.inbox <- "You must specify a target."
-		return MobHandle{}, false
+		return MobHandle{}, errors.New("You must specify a target")
 	}
 
 	// Handle when user targets "self"
 	if len(searchWords) == 1 && strings.EqualFold(searchWords[0], "self") {
-		return player.mobHandle, true
+		return player.mobHandle, nil
 	}
 
 	// Get handle to player room
@@ -138,22 +139,19 @@ func fuzzyFindTarget(gameState *GameState, player *Player, searchWords []string)
 
 	// Handle edge cases
 	if targetIndex == FUZZY_FIND_RESULT_NOT_FOUND {
-		*player.inbox <- fmt.Sprintf("No target in the room matches the name '%s'.", strings.Join(searchWords, " "))
-		return MobHandle{}, false
+		return MobHandle{}, fmt.Errorf("No target in the room matches the name '%s'.", strings.Join(searchWords, " "))
 	}
 	if targetIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
-		*player.inbox <- fmt.Sprintf("The target string '%s' is ambiguous.", strings.Join(searchWords, " "))
-		return MobHandle{}, false
+		return MobHandle{}, fmt.Errorf("The target string '%s' is ambiguous.", strings.Join(searchWords, " "))
 	}
 
-	return room.occupants[targetIndex], true
+	return room.occupants[targetIndex], nil
 }
 
-func fuzzyFindPreparedSpell(gameState *GameState, player *Player, searchWords []string) (Spell, bool) {
+func fuzzyFindPreparedSpell(gameState *GameState, player *Player, searchWords []string) (Spell, error) {
 	// Check that there are any arguments
 	if len(searchWords) == 0 {
-		*player.inbox <- "You must specify a spell."
-		return 0, false
+		return 0, errors.New("You must specify a spell.")
 	}
 
 	// Get handle to player mob
@@ -171,22 +169,19 @@ func fuzzyFindPreparedSpell(gameState *GameState, player *Player, searchWords []
 
 	// Handle edge cases
 	if spellIndex == FUZZY_FIND_RESULT_NOT_FOUND {
-		*player.inbox <- fmt.Sprintf("You have no prepared spell called '%s'.", strings.Join(searchWords, " "))
-		return 0, false
+		return 0, fmt.Errorf("You have no prepared spell called '%s'.", strings.Join(searchWords, " "))
 	}
 	if spellIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
-		*player.inbox <- fmt.Sprintf("The spell string '%s' is ambiguous.", strings.Join(searchWords, " "))
-		return 0, false
+		return 0, fmt.Errorf("The spell string '%s' is ambiguous.", strings.Join(searchWords, " "))
 	}
 
-	return playerMob.data.Spells[spellIndex], true
+	return playerMob.data.Spells[spellIndex], nil
 }
 
-func fuzzyFindKnownOrEquippedSpell(player *Player, searchWords []string) (Spell, bool) {
+func fuzzyFindKnownOrEquippedSpell(player *Player, searchWords []string) (Spell, error) {
 	// Check that there are any arguments
 	if len(searchWords) == 0 {
-		*player.inbox <- "You must specify a spell."
-		return 0, false
+		return 0, errors.New("You must specify a spell.")
 	}
 
 	// Get equipped spells into a flat array
@@ -196,8 +191,8 @@ func fuzzyFindKnownOrEquippedSpell(player *Player, searchWords []string) (Spell,
 	}
 
 	// Put all spell names into an array
-	spellNames := make([]string, len(player.character.SpellsKnown) + len(player.character.SpellsEquipped))
-	for _, spell := range player.character.SpellsKnown{
+	spellNames := make([]string, 0, len(player.character.SpellsKnown) + len(player.character.SpellsEquipped))
+	for _, spell := range player.character.SpellsKnown {
 		spellData := SPELL_DATA[spell]
 		spellNames = append(spellNames, spellData.name)
 	}
@@ -211,26 +206,24 @@ func fuzzyFindKnownOrEquippedSpell(player *Player, searchWords []string) (Spell,
 
 	// Handle edge cases
 	if spellIndex == FUZZY_FIND_RESULT_NOT_FOUND {
-		*player.inbox <- fmt.Sprintf("You have no known or equipped spell called '%s'", strings.Join(searchWords, " "))
-		return 0, false
+		return 0, fmt.Errorf("You have no known or equipped spell called '%s'", strings.Join(searchWords, " "))
 	}
 	if spellIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
-		*player.inbox <- fmt.Sprintf("The spell string '%s' is ambiguous.", strings.Join(searchWords, " "))
-		return 0, false
+		return 0, fmt.Errorf("The spell string '%s' is ambiguous.", strings.Join(searchWords, " "))
 	}
 
 	// If spell is a known spell
 	if spellIndex < len(player.character.SpellsKnown) {
-		return player.character.SpellsKnown[spellIndex], true
+		return player.character.SpellsKnown[spellIndex], nil
 	}
 
-	// if the spell is an equipped spell
-	return spellsEquipped[spellIndex - len(player.character.SpellsKnown)], true
+	// If the spell is an equipped spell
+	return spellsEquipped[spellIndex - len(player.character.SpellsKnown)], nil
 }
 
-func fuzzyFindInventoryItemIndex(inventory *ItemList, searchWords []string) int {
+func fuzzyFindInventoryItemIndex(inventory *ItemList, searchWords []string) (int, error) {
 	if len(searchWords) == 0 {
-		return FUZZY_FIND_RESULT_NOT_FOUND
+		return 0, errors.New("You must specify an item.")
 	}
 
 	// Put all item names into an array
@@ -241,13 +234,22 @@ func fuzzyFindInventoryItemIndex(inventory *ItemList, searchWords []string) int 
 	}
 
 	// Fuzzy find the item
-	return fuzzyFind(itemNames, searchWords)
+	index := fuzzyFind(itemNames, searchWords)
+
+	// Handle edge cases
+	if index == FUZZY_FIND_RESULT_NOT_FOUND {
+		return 0, fmt.Errorf("No item found called '%s'.", strings.Join(searchWords, " "))
+	}
+	if index == FUZZY_FIND_RESULT_AMBIGUOUS {
+		return 0, fmt.Errorf("The item name '%s' is ambiguous.", strings.Join(searchWords, " "))
+	}
+
+	return index, nil
 }
 
-func fuzzyFindEquipmentSlotByItem(player *Player, equipment *Equipment, searchWords []string) (EquipmentSlot, bool) {
+func fuzzyFindEquipmentSlotByItem(equipment *Equipment, searchWords []string) (EquipmentSlot, error) {
 	if len(searchWords) == 0 {
-		*player.inbox <- "You must specify an item."
-		return 0, false
+		return 0, errors.New("You must specify an item.")
 	}
 
 	// Create parallel arrays of equipped item name and equipment slot
@@ -267,31 +269,27 @@ func fuzzyFindEquipmentSlotByItem(player *Player, equipment *Equipment, searchWo
 
 	// Check if they even have any items
 	if len(itemNames) == 0 {
-		*player.inbox <- "You have no items equipped."
-		return 0, false
+		return 0, errors.New("You have no items equipped.")
 	}
 
 	index := fuzzyFind(itemNames, searchWords)
 
 	// Handle edge cases
 	if index == FUZZY_FIND_RESULT_NOT_FOUND {
-		*player.inbox <- fmt.Sprintf("'%s' is not an item you have equipped.",
+		return 0, fmt.Errorf("'%s' is not an item you have equipped.",
 			strings.Join(searchWords, " "))
-		return 0, false
 	}
 	if index == FUZZY_FIND_RESULT_AMBIGUOUS {
-		*player.inbox <- fmt.Sprintf("The item string '%s' is ambiguous.",
+		return 0, fmt.Errorf("The item string '%s' is ambiguous.",
 			strings.Join(searchWords, " "))
-		return 0, false
 	}
 
-	return equipmentSlots[index], true
+	return equipmentSlots[index], nil
 }
 
-func fuzzyFindEquipmentSlot(player *Player, searchWords []string) (EquipmentSlot, bool) {
+func fuzzyFindEquipmentSlot(searchWords []string) (EquipmentSlot, error) {
 	if len(searchWords) == 0 {
-		*player.inbox <- "You must specify an equipment slot."
-		return 0, false
+		return 0, errors.New("You must specify an equipment slot.")
 	}
 
 	// Equipment slot names
@@ -305,15 +303,46 @@ func fuzzyFindEquipmentSlot(player *Player, searchWords []string) (EquipmentSlot
 
 	// Handle edge cases
 	if slotIndex == FUZZY_FIND_RESULT_NOT_FOUND {
-		*player.inbox <- fmt.Sprintf("'%s' is not an equipment slot. Valid slot names are: %s",
+		return 0, fmt.Errorf("'%s' is not an equipment slot. Valid slot names are: %s",
 			strings.Join(searchWords, " "), combineNames(slotNames))
-		return 0, false
 	}
 	if slotIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
-		*player.inbox <- fmt.Sprintf("The equipment slot string '%s' is ambiguous.",
+		return 0, fmt.Errorf("The equipment slot string '%s' is ambiguous.",
 			strings.Join(searchWords, " "))
-		return 0, false
 	}
 
-	return EquipmentSlot(slotIndex), true
+	return EquipmentSlot(slotIndex), nil
+}
+
+func fuzzyFindChestInventory(room *Room, searchWords []string) (*ItemList, string, error) {
+	if len(searchWords) == 0 {
+		return nil, "", errors.New("You must specify a container.")
+	}
+
+	// Check for "room"
+	searchString := strings.Join(searchWords, " ")
+	if strings.EqualFold(searchString, "room") {
+		return &room.Inventory, "room", nil
+	}
+
+	// Chest names
+	chestNames := make([]string, 0, len(room.Chests))
+	for index := range len(room.Chests) {
+		chest := &room.Chests[index]
+		chestNames = append(chestNames, chest.Name)
+	}
+
+	chestIndex := fuzzyFind(chestNames, searchWords)
+
+	// Handle edge cases
+	if chestIndex == FUZZY_FIND_RESULT_NOT_FOUND {
+		return nil, "", fmt.Errorf("There are no chests called '%s' in the room.",
+			strings.Join(searchWords, " "))
+	}
+	if chestIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
+		return nil, "", fmt.Errorf("The chest name '%s' is ambiguous.",
+			strings.Join(searchWords, " "))
+	}
+
+	return &room.Chests[chestIndex].Inventory, room.Chests[chestIndex].Name, nil
 }

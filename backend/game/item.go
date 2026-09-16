@@ -21,6 +21,7 @@ const (
 	ITEM_TYPE_EQUIPMENT_OUTFIT
 	ITEM_TYPE_EQUIPMENT_ACCESSORY
 	ITEM_TYPE_EQUIPMENT_SPELLBOOK
+	ITEM_TYPE_SPELL_SCROLL
 )
 
 type InventoryFindResult int
@@ -41,16 +42,12 @@ type Item struct {
 	Id ItemId
 }
 
-type ItemConsumableTarget int
-const (
-	ITEM_CONSUMABLE_TARGETS_SELF = iota
-	ITEM_CONSUMABLE_TARGETS_OTHERS
-	ITEM_CONSUMABLE_TARGETS_SELF_OR_OTHERS
-)
-
 type ItemDataConsumable struct {
-	targets ItemConsumableTarget
 	onUse func(gameState *GameState, target *Mob)
+}
+
+type ItemDataSpellScroll struct {
+	spell Spell
 }
 
 type ItemDataWeapon struct {
@@ -104,9 +101,7 @@ var ITEM_DATA = map[ItemId]*ItemData{
 		itemType: ITEM_TYPE_EQUIPMENT_SPELLBOOK,
 		data: &ItemDataSpellbook {
 			spell: SPELL_FIREBOLT,
-			statRequirements: MobBaseStats {
-				Intelligence: 10,
-			},
+			statRequirements: MobBaseStats {},
 		},
 	},
 
@@ -126,7 +121,6 @@ var ITEM_DATA = map[ItemId]*ItemData{
 		description: "A red tonic that gives health to the drinker",
 		itemType: ITEM_TYPE_CONSUMABLE,
 		data: &ItemDataConsumable {
-			targets: ITEM_CONSUMABLE_TARGETS_SELF,
 			onUse: func(gameState *GameState, target *Mob) {
 				var healing int32 = 20
 				healingReceived := min(healing, target.data.MaxHealth() - target.data.Health)

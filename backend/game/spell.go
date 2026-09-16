@@ -15,11 +15,11 @@ const (
 type SpellData struct {
 	name string
 	description string
-
 	castsToLearn int32
 
 	manaCost int32
 	castTime int32
+	canTargetPlayers bool
 
 	onHit func(gameState *GameState, caster *Mob, target *Mob)
 }
@@ -28,11 +28,11 @@ var SPELL_DATA = map[Spell]*SpellData {
 	SPELL_FIREBOLT: {
 		name: "Firebolt",
 		description: "Casts a bolt of fire toward the target",
-
 		castsToLearn: 50,
 
 		manaCost: 5,
 		castTime: 1,
+		canTargetPlayers: false,
 
 		onHit: func(gameState *GameState, caster *Mob, target *Mob) {
 			damage := caster.CalculateMagicDamage(10, target)
@@ -50,11 +50,11 @@ var SPELL_DATA = map[Spell]*SpellData {
 	SPELL_CURE: {
 		name: "Cure",
 		description: "Heals the target with holy magic",
-
 		castsToLearn: 50,
 
 		manaCost: 5,
 		castTime: SPELL_CAST_TIME_INSTANT,
+		canTargetPlayers: true,
 
 		onHit: func(gameState *GameState, caster *Mob, target *Mob) {
 			healing := caster.CalculateMagicDamage(15, target)

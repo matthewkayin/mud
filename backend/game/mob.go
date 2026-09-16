@@ -21,6 +21,7 @@ const MOB_EVASION_K float32 = 6.0
 // A mob with a base AGI of 12 and high crit scaling will have 50 AGI at level 20,
 // so 50 is roughly the "max agility" a mob can have
 const MOB_CRIT_K float32 = 0.33 / 50.0
+const MOB_CRIT_DAMAGE_MULTIPLIER float32 = 1.5
 
 // Making Cast K higher increases how effective intelligence is at reducing spell learn-time
 // Spell Casts to learn = Base + (1 - (INT / 50.0) * 0.75)
@@ -332,8 +333,20 @@ func (mob *Mob) Update(gameState *GameState) {
 
 			// Use item
 			itemData := ITEM_DATA[item.Id]
-			consumableData := itemData.data.(*ItemDataConsumable)
-			consumableData.onUse(gameState, targetMob)
+			room := gameState.world.Rooms[mob.data.Room]
+			room.broadcast(gameState, fmt.Sprintf("%s used %s!", mob.data.Name, itemData.name))
+
+			switch itemData.itemType {
+				case ITEM_TYPE_CONSUMABLE:
+					consumableData := itemData.data.(*ItemDataConsumable)
+					consumableData.onUse(gameState, targetMob)
+				case ITEM_TYPE_SPELL_SCROLL:
+					scrollData := itemData.data.(*ItemDataSpellScroll)
+					spellData := SPELL_DATA[scrollData.spell]
+					spellData.onHit(gameState, mob, targetMob)
+				default:
+					panic(fmt.Sprintf("Unhandled item type %s. This item type should never have been allowed to be used here.", ItemTypeToString(itemData.itemType)))
+			}
 		default:
 			log.Printf("mob.mode %d not handled.", mob.mode)
 	}
@@ -366,11 +379,6 @@ func (mob *Mob) AttackTargetWithWeapon(gameState *GameState, room *Room, targetM
 		return
 	}
 
-	// Check for critical hit
-	critChance := mobAgility * MOB_CRIT_K
-	critRoll := rand.Float32()
-	crit := critRoll < critChance
-
 	// Get weapon damage from the item
 	var damage int32 = 0
 	if heldItemIsWeapon {
@@ -385,13 +393,16 @@ func (mob *Mob) AttackTargetWithWeapon(gameState *GameState, room *Room, targetM
 		damage += mob.data.Strength() / 4
 	}
 
-	// Subtract target armor from damage
-	// Crits ignore half armor
+	// Check for critical hit
+	critChance := mobAgility * MOB_CRIT_K
+	critRoll := rand.Float32()
+	crit := critRoll < critChance
 	if crit {
-		damage -= mob.data.Armor() / 2.0
-	} else {
-		damage -= mob.data.Armor()
+		damage = int32(float32(damage) * MOB_CRIT_DAMAGE_MULTIPLIER)
 	}
+
+	// Subtract armor
+	damage -= mob.data.Armor() / 2.0
 
 	// Calculate final damage
 	attackerMinDamage := max(1, mob.data.Level / 2)

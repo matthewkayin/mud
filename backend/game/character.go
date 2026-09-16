@@ -1,8 +1,23 @@
 package game
 
 import (
+	"fmt"
+	"strings"
+	"unicode"
+	"errors"
 	"mud/bitset"
 )
+
+const CHARACTER_NAME_MAX int = 32
+const CHARACTER_NAME_MIN_LETTERS int = 2
+
+var CHARACTER_NAME_BANNED_KEYWORDS = []string {
+	"self",
+	"in",
+	"at",
+	"on",
+	"from",
+}
 
 type CharacterClass int
 const (
@@ -187,6 +202,68 @@ var RACE_DATA = map[CharacterRace]*CharacterRaceData {
 			Faith: 0,
 		},
 	},
+}
+
+func CharacterNameValidate(gameState *GameState, name string) (string, error) {
+	if len(name) > CHARACTER_NAME_MAX {
+		return "", fmt.Errorf("Character names must be no more than %d characters.", CHARACTER_NAME_MAX)
+	}
+
+	nameTrimmed := strings.TrimSpace(name)
+	nameTrimmedParts := strings.Fields(name)
+	nameTrimmed = strings.Join(nameTrimmedParts, " ")
+
+	// Check keywords
+	for _, keyword := range CHARACTER_NAME_BANNED_KEYWORDS {
+		if strings.EqualFold(nameTrimmed, keyword) {
+			return "", fmt.Errorf("You cannot name yourself '%s'. It is a reserved keyword.", keyword)
+		}
+	}
+
+	// Count letters
+	letterCount := 0
+	for _, c := range nameTrimmed {
+		if c == ' ' {
+			continue
+		}
+
+		if !unicode.IsLetter(c) {
+			return "", errors.New("Your name can only contain letters and spaces.")
+		}
+
+		letterCount++
+	}
+
+	if letterCount < CHARACTER_NAME_MIN_LETTERS {
+		return "", fmt.Errorf("You name must contain at least %d letters.", CHARACTER_NAME_MIN_LETTERS)
+	}
+
+	_, nameIsTaken := gameState.world.GetCharacterIfExists(nameTrimmed)
+	if nameIsTaken {
+		return "", fmt.Errorf("A character named '%s' already exists.", nameTrimmed)
+	}
+
+	return nameTrimmed, nil
+}
+
+func CharacterClassFromString(className string) (CharacterClass, error) {
+	for class, classData := range CLASS_DATA {
+		if strings.EqualFold(className, classData.Name) {
+			return class, nil
+		}
+	}
+
+	return 0, fmt.Errorf("'%s' is not a valid class.", className)
+}
+
+func CharacterRaceFromString(raceName string) (CharacterRace, error) {
+	for race, raceData := range RACE_DATA {
+		if strings.EqualFold(raceName, raceData.Name) {
+			return race, nil
+		}
+	}
+
+	return 0, fmt.Errorf("'%s' is not a valid race.", raceName)
 }
 
 func CharacterNew(playerId int, characterSheet *MenuCharacterSheet) *Character {

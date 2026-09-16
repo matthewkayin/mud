@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"log"
 )
 
 type MobHandle struct {
@@ -35,8 +36,9 @@ func MobArrayInit() MobArray {
 }
 
 func (array *MobArray) GetIfExists(handle MobHandle) (*Mob, bool) {
-	if int(handle.id) > len(array.idToIndex) {
-		panic(fmt.Sprintf("Tried to get Mob with ID %d which is greater than the list of IDs which has length %d", handle.id, len(array.idToIndex)))
+	if int(handle.id) > len(array.idToIndex) - 1 {
+		log.Printf("Warm - Tried to get Mob with ID %d which is greater than the list of IDs which has length %d", handle.id, len(array.idToIndex))
+		return nil, false
 	}
 	if array.idToIndex[handle.id].generation != handle.generation {
 		return nil, false

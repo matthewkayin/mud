@@ -9,6 +9,9 @@ import (
 
 const ROOM_NONE int = -1
 
+const CHEST_DOES_NOT_DECAY = -1
+const CHEST_CORPOSE_DECAY_DURATION = 30 / GAME_SECONDS_PER_UPDATE
+
 type Direction int
 const (
 	DIRECTION_NORTH = iota
@@ -18,12 +21,19 @@ const (
 	DIRECTION_COUNT
 )
 
+type Chest struct {
+	Name string
+	DecayTimer int
+	Inventory ItemList
+}
+
 type Room struct {
 	Name string
 	Description string
 	Exits [DIRECTION_COUNT]int
 	ExitIsLocked [DIRECTION_COUNT]bool
 	Inventory ItemList
+	Chests []Chest
 
 	occupants []MobHandle
 }
@@ -85,6 +95,25 @@ func (room *Room) RemoveOccupantByIndex(index int) {
 }
 
 func (room *Room) Update(gameState *GameState) {
+	// Chest / Corpse decay
+	chestIndex := 0
+	for chestIndex < len(room.Chests) {
+		chest := &room.Chests[chestIndex]
+		if chest.DecayTimer == CHEST_DOES_NOT_DECAY {
+			chestIndex++
+			continue
+		}
+
+		chest.DecayTimer--
+		if chest.DecayTimer == 0 {
+			room.Chests[chestIndex] = room.Chests[len(room.Chests) - 1]
+			room.Chests = room.Chests[:len(room.Chests) - 1]
+			continue
+		}
+
+		chestIndex++
+	}
+
 	// Sort combatants by initiative order
 	sort.Slice(room.occupants, func(i int, j int) bool {
 		mobI := gameState.world.Mobs.Get(room.occupants[i])
@@ -107,10 +136,35 @@ func (room *Room) Update(gameState *GameState) {
 
 		// Check for mob death
 		if occupantMob.IsDead() {
+			// Remove occupant
 			room.RemoveOccupantByIndex(occupantIndex)
+
+			// Trigger player on death
 			if occupantMob.player != nil {
 				occupantMob.player.onDeath(gameState)
 			}
+
+			// If player mob, remove their equipment so that it goes into their corpse
+			if occupantMob.player != nil {
+				for slotIndex := range EQUIPMENT_SLOT_COUNT {
+					slot := EquipmentSlot(slotIndex)
+					item, success := occupantMob.data.EquippedItems.Unequip(slot)
+					if !success {
+						continue
+					}
+
+					occupantMob.data.Inventory.AddItem(item)
+				}
+			}
+
+			// Create corpse in room
+			room.Chests = append(room.Chests, Chest {
+				Name: fmt.Sprintf("%s's Corpse", occupantMob.data.Name),
+				DecayTimer: CHEST_CORPOSE_DECAY_DURATION,
+				Inventory: occupantMob.data.Inventory,
+			})
+
+			// Remove from mob array
 			gameState.world.Mobs.Remove(occupantHandle)
 			continue
 		}
