@@ -21,6 +21,7 @@ const MOB_EVASION_K float32 = 6.0
 // A mob with a base AGI of 12 and high crit scaling will have 50 AGI at level 20,
 // so 50 is roughly the "max agility" a mob can have
 const MOB_CRIT_K float32 = 0.33 / 50.0
+const MOB_CRIT_DAMAGE_MULTIPLIER float32 = 1.5
 
 // Making Cast K higher increases how effective intelligence is at reducing spell learn-time
 // Spell Casts to learn = Base + (1 - (INT / 50.0) * 0.75)
@@ -378,11 +379,6 @@ func (mob *Mob) AttackTargetWithWeapon(gameState *GameState, room *Room, targetM
 		return
 	}
 
-	// Check for critical hit
-	critChance := mobAgility * MOB_CRIT_K
-	critRoll := rand.Float32()
-	crit := critRoll < critChance
-
 	// Get weapon damage from the item
 	var damage int32 = 0
 	if heldItemIsWeapon {
@@ -397,13 +393,16 @@ func (mob *Mob) AttackTargetWithWeapon(gameState *GameState, room *Room, targetM
 		damage += mob.data.Strength() / 4
 	}
 
-	// Subtract target armor from damage
-	// Crits ignore half armor
+	// Check for critical hit
+	critChance := mobAgility * MOB_CRIT_K
+	critRoll := rand.Float32()
+	crit := critRoll < critChance
 	if crit {
-		damage -= mob.data.Armor() / 2.0
-	} else {
-		damage -= mob.data.Armor()
+		damage = int32(float32(damage) * MOB_CRIT_DAMAGE_MULTIPLIER)
 	}
+
+	// Subtract armor
+	damage -= mob.data.Armor() / 2.0
 
 	// Calculate final damage
 	attackerMinDamage := max(1, mob.data.Level / 2)

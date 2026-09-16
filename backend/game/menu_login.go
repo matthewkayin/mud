@@ -44,15 +44,11 @@ func MenuLogin() Menu {
 			}
 
 			argsJoined := strings.Join(args, " ")
-			commaIndex := strings.Index(argsJoined, ",")
-			if commaIndex == -1 {
+			nameInput, raceClassInput, commaFound := strings.Cut(argsJoined, ",")
+			if !commaFound {
 				*player.inbox <- "Invalid usage. You must include a comma. Example: 'create Bufo the Wise, Gremlin Wizard'"
 				return true
 			}
-
-			nameInput := argsJoined[:commaIndex]
-			raceClassInput := argsJoined[commaIndex + 1:]
-			raceClassArgs := strings.Fields(raceClassInput)
 
 			// Get name from input and validate name
 			name, err := CharacterNameValidate(gameState, nameInput)
@@ -62,6 +58,7 @@ func MenuLogin() Menu {
 			}
 
 			// Ensure both race and class are specified
+			raceClassArgs := strings.Fields(raceClassInput)
 			if len(raceClassArgs) != 2 {
 				return false
 			}
