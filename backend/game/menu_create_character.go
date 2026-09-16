@@ -19,24 +19,18 @@ type MenuCharacterSheetProperty struct {
 var CHARACTER_SHEET_PROPERTY_REGISTRY = map[string]MenuCharacterSheetProperty {
 	"name": {
 		describe: func (player *Player) {
-			*player.inbox <- "'name' is your character's name. It cannot contain spaces."
+			*player.inbox <- fmt.Sprintf("'name' is your character's name. It can contain spaces and letters. It must have at least %d letters and must be no more than %d characters.", CHARACTER_NAME_MIN_LETTERS, CHARACTER_NAME_MAX)
 		},
 		set: func (gameState *GameState, player *Player, sheet *MenuCharacterSheet, value string) {
-			// Check that name is not self
-			if strings.EqualFold(value, "self") {
-				*player.inbox <- "You cannot name yourself 'self'. It is a reserved keyword."
+			// Validate name
+			name, err := CharacterNameValidate(gameState, value)
+			if err != nil {
+				*player.inbox <- err.Error()
 				return
 			}
 
-			// Check if the name already exists
-			_, nameIsTaken := gameState.world.GetCharacterIfExists(value)
-			if nameIsTaken {
-				*player.inbox <- fmt.Sprintf("A character named '%s' already exists.", value)
-				return
-			}
-
-			sheet.name = value
-			*player.inbox <- fmt.Sprintf("You set your character's name to '%s'", value)
+			sheet.name = name
+			*player.inbox <- fmt.Sprintf("You set your character's name to '%s'", name)
 		},
 	},
 	"race": {
@@ -48,16 +42,14 @@ var CHARACTER_SHEET_PROPERTY_REGISTRY = map[string]MenuCharacterSheetProperty {
 		},
 		set: func (gameState *GameState, player *Player, sheet *MenuCharacterSheet, value string) {
 			// Search for a race matching the string
-			for race, raceData := range RACE_DATA {
-				if strings.EqualFold(raceData.Name, value) {
-					sheet.race = race
-					*player.inbox <- fmt.Sprintf("You set your character's race to '%s'", raceData.Name)
-					return
-				}
+			race, err := CharacterRaceFromString(value)
+			if err != nil {
+				*player.inbox <- err.Error()
+				return
 			}
 
-			// Def getting cancelled over this
-			*player.inbox <- fmt.Sprintf("'%s' is not a valid race.", value)
+			sheet.race = race
+			*player.inbox <- fmt.Sprintf("You set your character's race to '%s'", RACE_DATA[race].Name)
 		},
 	},
 	"class": {
@@ -69,15 +61,14 @@ var CHARACTER_SHEET_PROPERTY_REGISTRY = map[string]MenuCharacterSheetProperty {
 		},
 		set: func (gameState *GameState, player *Player, sheet *MenuCharacterSheet, value string) {
 			// Search for a class matching the string
-			for class, classData := range CLASS_DATA {
-				if strings.EqualFold(classData.Name, value) {
-					sheet.class = class
-					*player.inbox <- fmt.Sprintf("You set your character's class to '%s'", classData.Name)
-					return
-				}
+			class, err := CharacterClassFromString(value)
+			if err != nil {
+				*player.inbox <- err.Error()
+				return
 			}
 
-			*player.inbox <- fmt.Sprintf("'%s' is not a valid class.", value)
+			sheet.class = class
+			*player.inbox <- fmt.Sprintf("You set your character's class to '%s'", CLASS_DATA[class].Name)
 		},
 	},
 }
@@ -124,13 +115,13 @@ func MenuCreateCharacter() Menu {
 		description: "Set a property of your character equal to a value.",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
 			// Note: this automatically prevents spaces in names since each arg is separated by spaces
-			if len(args) != 2 {
+			if len(args) < 2 {
 				return false
 			}
 
 			characterSheet := player.menuInstance.data.(*MenuCharacterSheet)
 			property := strings.ToLower(args[0])
-			value := args[1]
+			value := strings.Join(args[1:], " ")
 
 			entry, entryExists := CHARACTER_SHEET_PROPERTY_REGISTRY[property]
 
