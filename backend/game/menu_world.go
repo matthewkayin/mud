@@ -108,16 +108,98 @@ func MenuWorld() Menu {
 	// Say
 	entries["say"] = MenuEntry {
 		usage: "say <message>",
-		description: "Send a messsage to the current room.",
+		description: "Send a messsage to the current room",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
 			if len(args) < 1 {
-				*player.inbox <- "You must include a message that you want to say."
 				return false
 			}
 
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 			playerRoom := &gameState.world.Rooms[playerMob.data.Room]
-			playerRoom.broadcast(gameState, fmt.Sprintf("%s said '%s'", player.character.Data.Name, strings.Join(args, " ")))
+			playerRoom.broadcast(gameState, fmt.Sprintf("%s said '%s'",
+				player.character.Data.Name,
+				strings.TrimSpace(strings.Join(args, " "))))
+			return true
+		},
+	}
+
+	// Tell
+	entries["tell"] = MenuEntry {
+		usage: "tell <target> <message>",
+		description: "Send a message to a specific person in the current room",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			// Parse input
+			argString := strings.Join(args, " ")
+			targetString, messageString, colonFound := strings.Cut(argString, ":")
+			if !colonFound || len(targetString) == 0 || len(messageString) == 0 {
+				return false
+			}
+
+			// Find target
+			targetHandle, err := fuzzyFindTarget(gameState, player, strings.Fields(targetString))
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
+			}
+
+			// Handle case where they talk to themselves
+			if targetHandle == player.mobHandle {
+				*player.inbox <- fmt.Sprintf("You told yourself: %s", messageString)
+				return true
+			}
+
+			// Handle case where they talk to a player
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			targetMob := gameState.world.Mobs.Get(targetHandle)
+			message := strings.TrimSpace(messageString)
+			if targetMob.player != nil {
+				*player.inbox <- fmt.Sprintf("You told %s: '%s'", playerMob.data.Name, message)
+				*targetMob.player.inbox <- fmt.Sprintf("%s told you: '%s'", playerMob.data.Name, message)
+				return true
+			}
+
+			// TODO: handle case where they talk to an NPC
+
+			return true
+		},
+	}
+
+	// Yell
+	entries["yell"] = MenuEntry {
+		usage: "yell <message>",
+		description: "Send a message to everyone in this and the adjacent rooms",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			if len(args) == 0 {
+				return false
+			}
+
+			// Get a handle to the player room
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			playerRoom := &gameState.world.Rooms[playerMob.data.Room]
+
+			// Collect a list containing all rooms to broadcast to
+			rooms := make([]*Room, 0, 5)
+			rooms = append(rooms, playerRoom)
+
+			// Add room exits to the list
+			for direction := range DIRECTION_COUNT {
+				roomIndex := playerRoom.Exits[direction]
+				if roomIndex == ROOM_NONE {
+					continue
+				}
+
+				adjacentRoom := &gameState.world.Rooms[roomIndex]
+				rooms = append(rooms, adjacentRoom)
+			}
+
+			// Broadcast the message to each room
+			message := fmt.Sprintf("%s: '%s'",
+				playerMob.data.Name,
+				strings.TrimSpace(strings.Join(args, " ")))
+			for _, room := range rooms {
+				room.broadcast(gameState, message)
+			}
+
 			return true
 		},
 	}
