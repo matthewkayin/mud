@@ -43,6 +43,7 @@ func InitState() *GameState {
 	if world == nil {
 		world = WorldInitNew()
 	}
+	world.PostInit()
 
 	return &GameState {
 		Commands: make(chan Command, 1024),

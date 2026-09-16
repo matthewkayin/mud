@@ -18,6 +18,10 @@ type Npc struct {
 	respawnTimer int
 }
 
+func (npc *Npc) init(world *World) {
+	npc.spawnMob(world)
+}
+
 func (npc *Npc) spawnMob(world *World) {
 	npcMob := MobInit(&npc.Data)
 	npc.mobHandle = world.Mobs.Push(npcMob)

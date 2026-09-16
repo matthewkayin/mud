@@ -210,8 +210,16 @@ func MenuWorld() Menu {
 				return false
 			}
 
-			targetHandle, targetFound := fuzzyFindTarget(gameState, player, args)
-			if !targetFound {
+			targetHandle, err := fuzzyFindTarget(gameState, player, args)
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
+			}
+
+			// Check for PvP
+			targetMob := gameState.world.Mobs.Get(targetHandle)
+			if targetMob.player != nil {
+				*player.inbox <- "You cannot attack other adventurers!"
 				return true
 			}
 
@@ -274,7 +282,6 @@ func MenuWorld() Menu {
 			for _, item := range playerMob.data.Inventory.Items {
 				itemNames = append(itemNames, ITEM_DATA[item.Id].name)
 			}
-			*player.inbox <- fmt.Sprintf("You are carrying the following items: %s", combineNames(itemNames))
 			return true
 		},
 	}
@@ -284,24 +291,12 @@ func MenuWorld() Menu {
 		usage: "drop <item>",
 		description: "Drop an item from your inventory",
 		handler: func(gameState *GameState, player *Player, args []string) bool {
-			if len(args) != 1 {
-				return false
-			}
-
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 
 			// Find item
-			itemIndex := fuzzyFindInventoryItemIndex(&playerMob.data.Inventory, args)
-
-			// Handle edge cases
-			if itemIndex == FUZZY_FIND_RESULT_NOT_FOUND {
-				*player.inbox <- fmt.Sprintf("No item called '%s' is in your inventory.",
-					strings.Join(args, " "))
-				return true
-			}
-			if itemIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
-				*player.inbox <- fmt.Sprintf("The item name '%s' is ambiguous.",
-					strings.Join(args, " "))
+			itemIndex, err := fuzzyFindInventoryItemIndex(&playerMob.data.Inventory, args)
+			if err != nil {
+				*player.inbox <- err.Error()
 				return true
 			}
 
@@ -331,15 +326,9 @@ func MenuWorld() Menu {
 			playerRoom := &gameState.world.Rooms[playerMob.data.Room]
 
 			// Find item in room
-			itemIndex := fuzzyFindInventoryItemIndex(&playerRoom.Inventory, args)
-			if itemIndex == FUZZY_FIND_RESULT_NOT_FOUND {
-				*player.inbox <- fmt.Sprintf("No item called '%s' is in this room.",
-					strings.Join(args, " "))
-				return true
-			}
-			if itemIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
-				*player.inbox <- fmt.Sprintf("The item name '%s' is ambiguous.",
-					strings.Join(args, " "))
+			itemIndex, err := fuzzyFindInventoryItemIndex(&playerRoom.Inventory, args)
+			if err !=  nil {
+				*player.inbox <- err.Error()
 				return true
 			}
 
@@ -413,17 +402,9 @@ func MenuWorld() Menu {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 
 			// Determine the item
-			itemIndex := fuzzyFindInventoryItemIndex(&playerMob.data.Inventory, itemWords)
-
-			// Handle edge cases
-			if itemIndex == FUZZY_FIND_RESULT_NOT_FOUND {
-				*player.inbox <- fmt.Sprintf("No item called '%s' is in your inventory.",
-					strings.Join(itemWords, " "))
-				return true
-			}
-			if itemIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
-				*player.inbox <- fmt.Sprintf("The item name '%s' is ambiguous.",
-					strings.Join(itemWords, " "))
+			itemIndex, err := fuzzyFindInventoryItemIndex(&playerMob.data.Inventory, itemWords)
+			if err != nil {
+				*player.inbox <- err.Error()
 				return true
 			}
 
@@ -438,23 +419,25 @@ func MenuWorld() Menu {
 
 			// Determine the equipment slot
 			var slot EquipmentSlot
-			var slotFound bool
 			if userSpecifiedSlot {
 				if len(slotWords) == 0 {
 					*player.inbox <- "When specifying 'in' you must also specify a slot."
 					return false
 				}
 
-				slot, slotFound = fuzzyFindEquipmentSlot(player, slotWords)
-				if !slotFound {
+				var err error
+				slot, err = fuzzyFindEquipmentSlot(slotWords)
+				if err != nil {
+					*player.inbox <- err.Error()
 					return true
 				}
 			} else {
 				if itemData.ItemIsOneHanded() {
-					*player.inbox <- fmt.Sprintf("%s is a one-handed item. You must specify whether to equip it to 'mainhand' hand or 'offhand'.", itemData.name)
+					*player.inbox <- fmt.Sprintf("%s is a one-handed item. You must specify whether to equip it to 'main hand' hand or 'off hand'.", itemData.name)
 					return false
 				}
 
+				var slotFound bool
 				slot, slotFound = EquipmentSlotForItemType(itemData.itemType)
 				if !slotFound {
 					*player.inbox <- fmt.Sprintf("%s cannot be equipped.", itemData.name)
@@ -522,7 +505,6 @@ func MenuWorld() Menu {
 			itemWords, slotWords, userSpecifiedSlot := splitArgsBy(args, "from")
 
 			var slot EquipmentSlot
-			var slotFound bool
 			if userSpecifiedSlot {
 				if len(itemWords) != 0 {
 					*player.inbox <- "When specifying 'from', you should not specify an item."
@@ -534,14 +516,17 @@ func MenuWorld() Menu {
 				}
 
 				// Find slot
-				slot, slotFound = fuzzyFindEquipmentSlot(player, slotWords)
-				if !slotFound {
+				var err error
+				slot, err = fuzzyFindEquipmentSlot(slotWords)
+				if err != nil {
+					*player.inbox <- err.Error()
 					return true
 				}
 			} else {
 				// Find slot
-				slot, slotFound = fuzzyFindEquipmentSlotByItem(player, &playerMob.data.EquippedItems, itemWords)
-				if !slotFound {
+				var err error
+				slot, err = fuzzyFindEquipmentSlotByItem(&playerMob.data.EquippedItems, itemWords)
+				if err != nil {
 					return true
 				}
 			}
@@ -614,8 +599,17 @@ func MenuWorld() Menu {
 		usage: "prepare <spell>",
 		description: "Prepare a spell from the list of spells you know",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
+			// Check if there is an empty spell slot
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			if len(playerMob.data.Spells) >= int(playerMob.data.SpellSlots()) {
+				*player.inbox <- "You don't have any available spell slots."
+				*player.inbox <- "Type 'forget <spell>' to free up a spell slot."
+				return true
+			}
+
 			// Check if the spell is already prepared
-			spell, isPrepared := fuzzyFindPreparedSpell(gameState, player, args)
+			spell, err := fuzzyFindPreparedSpell(gameState, player, args)
+			isPrepared := err == nil
 			if isPrepared {
 				spellData := SPELL_DATA[spell]
 				*player.inbox <- fmt.Sprintf("You have already prepared %s.", spellData.name)
@@ -623,12 +617,12 @@ func MenuWorld() Menu {
 			}
 
 			// Search for spell
-			spell, spellFound := fuzzyFindKnownOrEquippedSpell(player, args)
-			if !spellFound {
-				return false
+			spell, err = fuzzyFindKnownOrEquippedSpell(player, args)
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
 			}
 
-			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 			playerMob.data.Spells = append(playerMob.data.Spells, spell)
 			*player.inbox <- fmt.Sprintf("You prepared %s.", SPELL_DATA[spell].name)
 			return true
@@ -645,10 +639,9 @@ func MenuWorld() Menu {
 			}
 
 			// Find a spell that matches their input and remove it
-			spell, isPrepared := fuzzyFindPreparedSpell(gameState, player, args)
-			if !isPrepared {
-				*player.inbox <- fmt.Sprintf("You haven't prepared any spells called '%s'.",
-					strings.Join(args, " "))
+			spell, err := fuzzyFindPreparedSpell(gameState, player, args)
+			if err != nil {
+				*player.inbox <- err.Error()
 				return true
 			}
 
@@ -671,14 +664,24 @@ func MenuWorld() Menu {
 			}
 
 			// Find the spell in their spell list
-			spell, spellFound := fuzzyFindPreparedSpell(gameState, player, spellWords)
-			if !spellFound {
+			spell, err := fuzzyFindPreparedSpell(gameState, player, spellWords)
+			if err != nil {
+				*player.inbox <- err.Error()
 				return true
 			}
 
 			// Find the target in the room
-			targetHandle, targetFound := fuzzyFindTarget(gameState, player, targetWords)
-			if !targetFound {
+			targetHandle, err := fuzzyFindTarget(gameState, player, targetWords)
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
+			}
+
+			// Check against PvP
+			spellData := SPELL_DATA[spell]
+			targetMob := gameState.world.Mobs.Get(targetHandle)
+			if targetMob.player != nil && !spellData.canTargetPlayers {
+				*player.inbox <- "You cannot cast that spell against players."
 				return true
 			}
 
@@ -702,6 +705,9 @@ func MenuWorld() Menu {
 		handler: func (gameState *GameState, player *Player, args []string) bool {
 			itemWords, targetWords, userSpecifiedTarget := splitArgsBy(args, "on")
 
+			// For now, all consumables can only be used on "self"
+			// Spell scrolls can be used on others based on the spell's targeting rules
+
 			if len(itemWords) == 0 {
 				return false
 			}
@@ -711,33 +717,49 @@ func MenuWorld() Menu {
 			}
 
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			itemIndex := fuzzyFindInventoryItemIndex(&playerMob.data.Inventory, itemWords)
-
-			// Handle edge cases
-			if itemIndex == FUZZY_FIND_RESULT_NOT_FOUND {
-				*player.inbox <- fmt.Sprintf("No item called '%s' is in your inventory.",
-					strings.Join(args, " "))
-				return true
-			}
-			if itemIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
-				*player.inbox <- fmt.Sprintf("The item name '%s' is ambiguous.",
-					strings.Join(args, " "))
+			itemIndex, err := fuzzyFindInventoryItemIndex(&playerMob.data.Inventory, itemWords)
+			if err != nil {
+				*player.inbox <- err.Error()
 				return true
 			}
 
 			// Determine target
 			var targetHandle MobHandle
-			var targetFound bool
 			if userSpecifiedTarget {
-				targetHandle, targetFound = fuzzyFindTarget(gameState, player, targetWords)
-				if !targetFound {
+				var err error
+				targetHandle, err = fuzzyFindTarget(gameState, player, targetWords)
+				if err != nil {
+					*player.inbox <- err.Error()
 					return true
 				}
 			} else {
 				targetHandle = player.mobHandle
 			}
 
+			// Check for item <-> target compatibility
 			item := &playerMob.data.Inventory.Items[itemIndex]
+			itemData := ITEM_DATA[item.Id]
+
+			switch itemData.itemType {
+				case ITEM_TYPE_CONSUMABLE:
+					if !targetHandle.Equals(player.mobHandle) {
+						*player.inbox <- "That item can only be used on yourself."
+						return true
+					}
+				case ITEM_TYPE_SPELL_SCROLL:
+					scrollData := itemData.data.(*ItemDataSpellScroll)
+					spellInfo := SPELL_DATA[scrollData.spell]
+
+					targetMob := gameState.world.Mobs.Get(targetHandle)
+					if targetMob.player != nil && !spellInfo.canTargetPlayers {
+						*player.inbox <- "You cannot cast that spell against players."
+						return true
+					}
+				default:
+					*player.inbox <- "That item is not a consumable."
+					return true
+			}
+
 			player.nextAction = Action {
 				actionType: ACTION_TYPE_USE_ITEM,
 				data: ActionUseItem {

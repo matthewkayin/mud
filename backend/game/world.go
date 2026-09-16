@@ -127,9 +127,6 @@ func WorldInitNew() *World {
 				},
 				EquippedItems: EquipmentInitEmpty(),
 			},
-
-			// a bit hacky, but this triggers the NPC to spawn shortly after world start
-			respawnTimer: 1,
 		},
 	}
 
@@ -140,6 +137,12 @@ func WorldInitNew() *World {
 		Mobs: MobArrayInit(),
 		Rooms: rooms,
 		Npcs: npcs,
+	}
+}
+
+func (world *World) PostInit() {
+	for index := range len(world.Npcs) {
+		world.Npcs[index].init(world)
 	}
 }
 

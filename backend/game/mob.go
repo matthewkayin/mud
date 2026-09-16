@@ -332,8 +332,20 @@ func (mob *Mob) Update(gameState *GameState) {
 
 			// Use item
 			itemData := ITEM_DATA[item.Id]
-			consumableData := itemData.data.(*ItemDataConsumable)
-			consumableData.onUse(gameState, targetMob)
+			room := gameState.world.Rooms[mob.data.Room]
+			room.broadcast(gameState, fmt.Sprintf("%s used %s!", mob.data.Name, itemData.name))
+
+			switch itemData.itemType {
+				case ITEM_TYPE_CONSUMABLE:
+					consumableData := itemData.data.(*ItemDataConsumable)
+					consumableData.onUse(gameState, targetMob)
+				case ITEM_TYPE_SPELL_SCROLL:
+					scrollData := itemData.data.(*ItemDataSpellScroll)
+					spellData := SPELL_DATA[scrollData.spell]
+					spellData.onHit(gameState, mob, targetMob)
+				default:
+					panic(fmt.Sprintf("Unhandled item type %s. This item type should never have been allowed to be used here.", ItemTypeToString(itemData.itemType)))
+			}
 		default:
 			log.Printf("mob.mode %d not handled.", mob.mode)
 	}
