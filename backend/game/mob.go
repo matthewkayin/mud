@@ -39,7 +39,7 @@ type MobBaseStats struct {
 
 type MobData struct {
 	Name string
-	Room uint
+	Room int
 
 	Level int32
 	Experience int32
