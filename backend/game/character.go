@@ -215,8 +215,10 @@ func CharacterNameValidate(gameState *GameState, name string) (string, error) {
 
 	// Check keywords
 	for _, keyword := range CHARACTER_NAME_BANNED_KEYWORDS {
-		if strings.EqualFold(nameTrimmed, keyword) {
-			return "", fmt.Errorf("You cannot name yourself '%s'. It is a reserved keyword.", keyword)
+		for _, part := range nameTrimmedParts {
+			if strings.EqualFold(keyword, part) {
+				return "", fmt.Errorf("Your name cannot contain the word '%s'. It is a reserved keyword.", keyword)
+			}
 		}
 	}
 

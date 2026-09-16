@@ -131,7 +131,8 @@ func MenuWorld() Menu {
 			// Parse input
 			argString := strings.Join(args, " ")
 			targetString, messageString, colonFound := strings.Cut(argString, ":")
-			if !colonFound || len(targetString) == 0 || len(messageString) == 0 {
+			message := strings.TrimSpace(messageString)
+			if !colonFound || len(targetString) == 0 || len(message) == 0 {
 				return false
 			}
 
@@ -144,14 +145,13 @@ func MenuWorld() Menu {
 
 			// Handle case where they talk to themselves
 			if targetHandle == player.mobHandle {
-				*player.inbox <- fmt.Sprintf("You told yourself: %s", messageString)
+				*player.inbox <- fmt.Sprintf("You told yourself: '%s'", message)
 				return true
 			}
 
 			// Handle case where they talk to a player
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 			targetMob := gameState.world.Mobs.Get(targetHandle)
-			message := strings.TrimSpace(messageString)
 			if targetMob.player != nil {
 				*player.inbox <- fmt.Sprintf("You told %s: '%s'", playerMob.data.Name, message)
 				*targetMob.player.inbox <- fmt.Sprintf("%s told you: '%s'", playerMob.data.Name, message)
