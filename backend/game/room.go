@@ -25,7 +25,7 @@ const (
 type Chest struct {
 	Name string
 	DecayTimer int
-	Inventory ItemList
+	Inventory Inventory
 }
 
 type Room struct {
@@ -33,7 +33,7 @@ type Room struct {
 	Description string
 	Exits [DIRECTION_COUNT]int
 	ExitIsLocked [DIRECTION_COUNT]bool
-	Inventory ItemList
+	Inventory Inventory
 	Chests []Chest
 
 	occupants []MobHandle

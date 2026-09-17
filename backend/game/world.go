@@ -66,18 +66,20 @@ func WorldInitNew() *World {
 				{
 					Name: "Chest of Test",
 					DecayTimer: CHEST_DOES_NOT_DECAY,
-					Inventory: ItemList {
+					Inventory: Inventory {
 						Items: []Item {
-							{ Id: ITEM_SWORD },
-							{ Id: ITEM_AXE },
-							{ Id: ITEM_SPELLBOOK_FIREBOLT },
-							{ Id: ITEM_SPELLBOOK_CURE },
-							{ Id: ITEM_POTION_HEALTH },
+							{ Id: ITEM_SWORD, Amount: 1 },
+							{ Id: ITEM_SWORD, Amount: 1 },
+							{ Id: ITEM_GOLD, Amount: 100 },
+							{ Id: ITEM_AXE, Amount: 1 },
+							{ Id: ITEM_SPELLBOOK_FIREBOLT, Amount: 1 },
+							{ Id: ITEM_SPELLBOOK_CURE, Amount: 1 },
+							{ Id: ITEM_POTION_HEALTH, Amount: 2 },
 						},
 					},
 				},
 			},
-			Inventory: ItemList {
+			Inventory: Inventory {
 				Items: []Item {},
 			},
 
@@ -101,7 +103,7 @@ func WorldInitNew() *World {
 			},
 
 			Chests: []Chest {},
-			Inventory: ItemList {
+			Inventory: Inventory {
 				Items: []Item {},
 			},
 
@@ -132,7 +134,7 @@ func WorldInitNew() *World {
 				Mana: 2 * 5,
 
 				Spells: []Spell {},
-				Inventory: ItemList {
+				Inventory: Inventory {
 					Items: []Item {
 						{ Id: ITEM_POTION_HEALTH },
 					},

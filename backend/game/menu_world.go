@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"mud/bitset"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -55,9 +56,17 @@ func MenuWorld() Menu {
 			}
 
 			itemNames := make([]string, 0, len(targetInventory.Items))
-			for index := range len(targetInventory.Items) {
+			for index := range targetInventory.Length() {
 				item := &targetInventory.Items[index]
-				itemNames = append(itemNames, ITEM_DATA[item.Id].name)
+
+				var itemName string
+				if item.Amount > 1 {
+					itemName = fmt.Sprintf("%d %s", item.Amount, ITEM_DATA[item.Id].name)
+				} else {
+					itemName = ITEM_DATA[item.Id].name
+				}
+
+				itemNames = append(itemNames, itemName)
 			}
 
 			var itemsString string
@@ -347,13 +356,12 @@ func MenuWorld() Menu {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 			inventorySize := len(playerMob.data.Inventory.Items)
 
-			if inventorySize == 0 {
+			if playerMob.data.Inventory.Length() == 0 {
 				*player.inbox <- "There is nothing in your inventory."
 				return true
 			}
 
-			*player.inbox <- "Item  | Type | Description "
-			for index := range len(playerMob.data.Inventory.Items) {
+			for index := range inventorySize {
 				item := &playerMob.data.Inventory.Items[index]
 				itemData := ITEM_DATA[item.Id]
 				itemStatRequirements := ItemGetStatRequirements(item)
@@ -381,7 +389,13 @@ func MenuWorld() Menu {
 					}
 				}
 
-				*player.inbox <- fmt.Sprintf("%s | %s | %s", itemData.name, typeStr, itemData.description)
+				var itemName string
+				if item.Amount > 1 {
+					itemName = fmt.Sprintf("%s (x%d)", itemData.name, item.Amount)
+				} else {
+					itemName = itemData.name
+				}
+				*player.inbox <- fmt.Sprintf("%s | Type: %s | Description: %s", itemName, typeStr, itemData.description)
 			}
 			itemNames := make([]string, 0, inventorySize)
 			for _, item := range playerMob.data.Inventory.Items {
@@ -397,22 +411,27 @@ func MenuWorld() Menu {
 		description: "Drop an item from your inventory",
 		handler: func(gameState *GameState, player *Player, args []string) bool {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			playerRoom := &gameState.world.Rooms[playerMob.data.Room]
 
-			// Find item
-			itemIndex, err := fuzzyFindInventoryItemIndex(&playerMob.data.Inventory, args)
-			if err != nil {
-				*player.inbox <- err.Error()
-				return true
+			result := inventoryTransfer(&playerMob.data.Inventory, &playerRoom.Inventory, args)
+			switch result.status {
+				case INVENTORY_TRANSFER_STATUS_PARTIAL:
+					*player.inbox <- fmt.Sprintf("You only have %d %s in your inventory.", result.amount, result.itemName)
+					fallthrough
+				case INVENTORY_TRANSFER_STATUS_OK:
+					*player.inbox <- fmt.Sprintf("You dropped %s.", itemNameWithAmount(result.itemName, result.amount))
+				case INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED:
+					*player.inbox <- "You must specify an item to drop."
+				case INVENTORY_TRANSFER_STATUS_ITEM_NOT_FOUND:
+					*player.inbox <- fmt.Sprintf("You have no item named '%s' in your inventory.", result.itemName)
+				case INVENTORY_TRANSFER_STATUS_ITEM_NAME_AMBIGUOUS:
+					*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' in your inventory.", result.itemName)
+				case INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK:
+					*player.inbox <- fmt.Sprintf("You can only drop 1 %s at once.", result.itemName)
+				default:
+					panic(fmt.Sprintf("Transfer result status %d not handled.", result.status))
 			}
 
-			// Remove item from inventory
-			droppedItem := playerMob.data.Inventory.RemoveItem(itemIndex)
-
-			// Add item to room
-			playerRoom := &gameState.world.Rooms[playerMob.data.Room]
-			playerRoom.Inventory.AddItem(droppedItem)
-
-			*player.inbox <- fmt.Sprintf("You dropped %s.", ITEM_DATA[droppedItem.Id].name)
 			return true
 		},
 	}
@@ -425,28 +444,39 @@ func MenuWorld() Menu {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 			room := &gameState.world.Rooms[playerMob.data.Room]
 
+			// Split args
 			itemWords, chestWords, userSpecifiedInto := splitArgsBy(args, "into")
 			if !userSpecifiedInto || len(itemWords) == 0 || len(chestWords) == 0 {
 				return false
 			}
 
+			// Find target inventory
 			targetInventory, chestName, err := fuzzyFindChestInventory(room, chestWords)
 			if err != nil {
 				*player.inbox <- err.Error()
 				return true
 			}
 
-			itemIndex, err := fuzzyFindInventoryItemIndex(&playerMob.data.Inventory, itemWords)
-			if err != nil {
-				*player.inbox <- err.Error()
-				return true
+			// Transfer
+			result := inventoryTransfer(&playerMob.data.Inventory, targetInventory, itemWords)
+			switch result.status {
+				case INVENTORY_TRANSFER_STATUS_PARTIAL:
+					*player.inbox <- fmt.Sprintf("You only have %d %s in your inventory.", result.amount, result.itemName)
+					fallthrough
+				case INVENTORY_TRANSFER_STATUS_OK:
+					*player.inbox <- fmt.Sprintf("You put %s into %s.", itemNameWithAmount(result.itemName, result.amount), chestName)
+				case INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED:
+					*player.inbox <- "You must specify an item to put."
+				case INVENTORY_TRANSFER_STATUS_ITEM_NOT_FOUND:
+					*player.inbox <- fmt.Sprintf("You have no item named '%s' in your inventory.", result.itemName)
+				case INVENTORY_TRANSFER_STATUS_ITEM_NAME_AMBIGUOUS:
+					*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' in your inventory.", result.itemName)
+				case INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK:
+					*player.inbox <- fmt.Sprintf("You can only put 1 %s at once.", result.itemName)
+				default:
+					panic(fmt.Sprintf("Transfer result status %d not handled.", result.status))
 			}
 
-			// Put item into container
-			droppedItem := playerMob.data.Inventory.RemoveItem(itemIndex)
-			targetInventory.AddItem(droppedItem)
-
-			*player.inbox <- fmt.Sprintf("You put %s into %s.", ITEM_DATA[droppedItem.Id].name, chestName)
 			return true
 		},
 	}
@@ -456,7 +486,8 @@ func MenuWorld() Menu {
 		usage: "take <item> [from <container>]",
 		description: "Pick up an item in your current room",
 		handler: func(gameState *GameState, player *Player, args []string) bool {
-			if len(args) < 1 {
+			itemWords, chestWords, userSpecifiedChest := splitArgsBy(args, "from")
+			if userSpecifiedChest && len(chestWords) == 0 {
 				return false
 			}
 
@@ -464,36 +495,38 @@ func MenuWorld() Menu {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 			playerRoom := &gameState.world.Rooms[playerMob.data.Room]
 
+			// Determine target inventory
 			targetInventory := &playerRoom.Inventory
-			itemWords, chestWords, userSpecifiedChest := splitArgsBy(args, "from")
-
-			if len(itemWords) == 0 {
-				*player.inbox <- "You must specify an item to take."
-				return true
-			}
-
+			chestName := "the room"
 			if userSpecifiedChest {
-				chestInventory, _, err := fuzzyFindChestInventory(playerRoom, chestWords)
+				var err error
+				targetInventory, chestName, err = fuzzyFindChestInventory(playerRoom, chestWords)
 				if err != nil {
 					*player.inbox <- err.Error()
 					return true
 				}
-
-				targetInventory = chestInventory
 			}
 
-			// Find item in room
-			itemIndex, err := fuzzyFindInventoryItemIndex(targetInventory, itemWords)
-			if err !=  nil {
-				*player.inbox <- err.Error()
-				return true
+			// Inventory transfer
+			result := inventoryTransfer(targetInventory, &playerMob.data.Inventory, itemWords)
+			switch result.status {
+				case INVENTORY_TRANSFER_STATUS_PARTIAL:
+					*player.inbox <- fmt.Sprintf("There is only %d %s in %s", result.amount, result.itemName, chestName)
+					fallthrough
+				case INVENTORY_TRANSFER_STATUS_OK:
+					*player.inbox <- fmt.Sprintf("You took %s from %s.", itemNameWithAmount(result.itemName, result.amount), chestName)
+				case INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED:
+					*player.inbox <- "You must specify an item to take."
+				case INVENTORY_TRANSFER_STATUS_ITEM_NOT_FOUND:
+					*player.inbox <- fmt.Sprintf("There is no item called '%s' in %s.", result.itemName, chestName)
+				case INVENTORY_TRANSFER_STATUS_ITEM_NAME_AMBIGUOUS:
+					*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' in %s.", result.itemName, chestName)
+				case INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK:
+					*player.inbox <- fmt.Sprintf("You can only take 1 %s at once.", result.itemName)
+				default:
+					panic(fmt.Sprintf("Transfer result status %d not handled.", result.status))
 			}
 
-			// Move item from room to player
-			grabbedItem := targetInventory.RemoveItem(itemIndex)
-			playerMob.data.Inventory.AddItem(grabbedItem)
-
-			*player.inbox <- fmt.Sprintf("You picked up %s.", ITEM_DATA[grabbedItem.Id].name)
 			return true
 		},
 	}
@@ -524,7 +557,7 @@ func MenuWorld() Menu {
 				itemData := ITEM_DATA[item.Id]
 
 				playerMob.data.Inventory.AddItem(item)
-				itemNames = append(itemNames, itemData.name)
+				itemNames = append(itemNames, itemNameWithAmount(itemData.name, item.Amount))
 			}
 			*player.inbox <- fmt.Sprintf("You got %s.", combineNames(itemNames))
 
@@ -592,9 +625,21 @@ func MenuWorld() Menu {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 
 			// Determine the item
-			itemIndex, err := fuzzyFindInventoryItemIndex(&playerMob.data.Inventory, itemWords)
-			if err != nil {
-				*player.inbox <- err.Error()
+			itemIndex := fuzzyFindInventoryItemIndex(&playerMob.data.Inventory, itemWords)
+
+			// Handle edge cases
+			if itemIndex == FUZZY_FIND_RESULT_ITEM_NOT_SPECIFIED {
+				*player.inbox <- "You must specify an item to equip."
+				return true
+			}
+			if itemIndex == FUZZY_FIND_RESULT_NOT_FOUND {
+				*player.inbox <- fmt.Sprintf("You have no item called '%s' in your inventory.",
+					strings.Join(itemWords, " "))
+				return true
+			}
+			if itemIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
+				*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' in your inventory.",
+					strings.Join(itemWords, " "))
 				return true
 			}
 
@@ -907,9 +952,21 @@ func MenuWorld() Menu {
 			}
 
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			itemIndex, err := fuzzyFindInventoryItemIndex(&playerMob.data.Inventory, itemWords)
-			if err != nil {
-				*player.inbox <- err.Error()
+			itemIndex := fuzzyFindInventoryItemIndex(&playerMob.data.Inventory, itemWords)
+
+			// Handle edge cases
+			if itemIndex == FUZZY_FIND_RESULT_ITEM_NOT_SPECIFIED {
+				*player.inbox <- "You must specify an item to use."
+				return true
+			}
+			if itemIndex == FUZZY_FIND_RESULT_NOT_FOUND {
+				*player.inbox <- fmt.Sprintf("You have no item called '%s' in your inventory.",
+					strings.Join(itemWords, " "))
+				return true
+			}
+			if itemIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
+				*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' in your inventory.",
+					strings.Join(itemWords, " "))
 				return true
 			}
 
@@ -1009,4 +1066,92 @@ func describeRoomToPlayer(gameState *GameState, player *Player, room *Room) {
 
 		*player.inbox <- fmt.Sprintf("In this room is %s", combineNames(chestNames))
 	}
+}
+
+func inventoryTransfer(fromInventory *Inventory, toInventory *Inventory, itemWords []string) InventoryTransferResult {
+	// Check for 0 item words
+	if len(itemWords) == 0 {
+		return InventoryTransferResult {
+			status: INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED,
+		}
+	}
+
+	// Get amount from args
+	amount := 1
+	if itemWords[0] == "all" {
+		amount = INVENTORY_TRANSFER_AMOUNT_ALL
+		itemWords = itemWords[1:]
+	} else {
+		parsedAmount, err := strconv.Atoi(itemWords[0])
+		if err == nil {
+			amount = parsedAmount
+			itemWords = itemWords[1:]
+		}
+	}
+
+	// Check for 0 item words once again
+	if len(itemWords) == 0 {
+		return InventoryTransferResult {
+			status: INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED,
+		}
+	}
+
+	// Find item
+	itemIndex := fuzzyFindInventoryItemIndex(fromInventory, itemWords)
+
+	// Handle edge cases on item index
+	if itemIndex == FUZZY_FIND_RESULT_ITEM_NOT_SPECIFIED {
+		return InventoryTransferResult {
+			status: INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED,
+		}
+	}
+	if itemIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
+		return InventoryTransferResult {
+			status: INVENTORY_TRANSFER_STATUS_ITEM_NAME_AMBIGUOUS,
+			itemName: strings.Join(itemWords, " "),
+		}
+	}
+	if itemIndex == FUZZY_FIND_RESULT_NOT_FOUND {
+		return InventoryTransferResult {
+			status: INVENTORY_TRANSFER_STATUS_ITEM_NOT_FOUND,
+			itemName: strings.Join(itemWords, " "),
+		}
+	}
+
+	// Handle item amount "all"
+	if amount == INVENTORY_TRANSFER_AMOUNT_ALL {
+		amount = fromInventory.Items[itemIndex].Amount
+	}
+
+	// Prevent user from transfering multiple of a non-stacking item
+	itemData := ITEM_DATA[fromInventory.Items[itemIndex].Id]
+	if amount != 1 && !itemData.ItemCanStack() {
+		return InventoryTransferResult {
+			status: INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK,
+			itemName: itemData.name,
+		}
+	}
+
+	// Transfer item
+	removedItem := fromInventory.RemoveItems(itemIndex, amount)
+	toInventory.AddItem(removedItem)
+
+	// Determine result status
+	resultStatus := INVENTORY_TRANSFER_STATUS_OK
+	if removedItem.Amount < amount {
+		resultStatus = INVENTORY_TRANSFER_STATUS_PARTIAL
+	}
+
+	return InventoryTransferResult {
+		status: InventoryTransferStatus(resultStatus),
+		amount: removedItem.Amount,
+		itemName: itemData.name,
+	}
+}
+
+func itemNameWithAmount(itemName string, amount int) string {
+	if amount == 1 {
+		return itemName
+	}
+	return fmt.Sprintf("%d %s", amount, itemName)
 }

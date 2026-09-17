@@ -17,6 +17,7 @@ var CHARACTER_NAME_BANNED_KEYWORDS = []string {
 	"at",
 	"on",
 	"from",
+	"all",
 }
 
 type CharacterClass int
@@ -296,7 +297,7 @@ func CharacterNew(playerId int, characterSheet *MenuCharacterSheet) *Character {
 	character.SpellsKnown = make([]Spell, 0, 1)
 
 	// Init inventory
-	character.Data.Inventory = ItemList {
+	character.Data.Inventory = Inventory {
 		Items: make([]Item, 0, 1),
 	}
 
