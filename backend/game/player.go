@@ -70,6 +70,7 @@ func (player *Player) enterWorld(gameState *GameState, asCharacter *Character) {
 	playerMob := MobInitPlayer(player, player.character)
 	player.mobHandle = gameState.world.Mobs.Push(playerMob)
 	playerRoom := &gameState.world.Rooms[playerMob.data.Room]
+	playerRoom.broadcast(gameState, fmt.Sprintf("%s has joined the room.", player.character.Data.Name))
 	playerRoom.AddOccupant(player.mobHandle)
 
 	// Enter world menu
@@ -82,6 +83,7 @@ func (player *Player) exitWorld(gameState *GameState) {
 	playerMob := gameState.world.Mobs.Get(player.mobHandle)
 	playerRoom := &gameState.world.Rooms[playerMob.data.Room]
 	playerRoom.RemoveOccupant(player.mobHandle)
+	playerRoom.broadcast(gameState, fmt.Sprintf("%s has left the world.", playerMob.data.Name))
 
 	// Save player mob data back to their character
 	player.character.Data = playerMob.data
