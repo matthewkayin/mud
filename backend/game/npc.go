@@ -1,5 +1,9 @@
 package game
 
+import (
+	"fmt"
+)
+
 // TODO: change this to a longer duration
 // TODO: make this customizable per NPC?
 const NPC_RESPAWN_DURATION int = 60 / GAME_SECONDS_PER_UPDATE
@@ -27,32 +31,34 @@ func (npc *Npc) spawnMob(world *World) {
 	npcRoom := &world.Rooms[npcMob.data.Room]
 	npcRoom.AddOccupant(npc.mobHandle)
 
-	// Should we broadcast a spawn message to the room here?
 }
 
 func (npc *Npc) onMobDeath() {
 	npc.respawnTimer = NPC_RESPAWN_DURATION
 }
 
-func (npc *Npc) update(world *World) {
+func (npc *Npc) update(gameState *GameState) {
 	// If respawning, just update timer and don't do anything else
 	if npc.respawnTimer != 0 {
 		npc.respawnTimer--
 		if npc.respawnTimer == 0 {
-			npc.spawnMob(world)
+			npc.spawnMob(gameState.world)
+			npcMob := gameState.world.Mobs.Get(npc.mobHandle)
+			npcRoom := &gameState.world.Rooms[npcMob.data.Room]
+			npcRoom.broadcast(gameState, fmt.Sprintf("%s has spawned into this room.", npcMob.data.Name))
 		}
 
 		return
 	}
 
 	// Check for mob death
-	npcMob, npcMobExists := world.Mobs.GetIfExists(npc.mobHandle)
+	npcMob, npcMobExists := gameState.world.Mobs.GetIfExists(npc.mobHandle)
 	if !npcMobExists {
 		npc.respawnTimer = NPC_RESPAWN_DURATION
 		return
 	}
 
-	npcRoom := &world.Rooms[npcMob.data.Room]
+	npcRoom := &gameState.world.Rooms[npcMob.data.Room]
 
 	// Behavior update
 	switch npc.Behavior {
@@ -66,7 +72,7 @@ func (npc *Npc) update(world *World) {
 					}
 
 					// For now, only attack players
-					targetMob := world.Mobs.Get(targetHandle)
+					targetMob := gameState.world.Mobs.Get(targetHandle)
 					if targetMob.player == nil {
 						continue
 					}

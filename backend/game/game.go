@@ -160,7 +160,7 @@ func (gameState *GameState) update() {
 
 	// NPC updates
 	for index := 0; index < len(gameState.world.Npcs); index++ {
-		gameState.world.Npcs[index].update(gameState.world)
+		gameState.world.Npcs[index].update(gameState)
 	}
 
 	// Room updates

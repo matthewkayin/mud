@@ -7,8 +7,9 @@ import (
 	"strings"
 )
 
-const FUZZY_FIND_RESULT_NOT_FOUND = -1
-const FUZZY_FIND_RESULT_AMBIGUOUS = -2
+const FUZZY_FIND_RESULT_ITEM_NOT_SPECIFIED = -1
+const FUZZY_FIND_RESULT_NOT_FOUND = -2
+const FUZZY_FIND_RESULT_AMBIGUOUS = -3
 
 func splitArgsBy(args []string, word string) ([]string, []string, bool) {
 	index := slices.Index(args, word)
@@ -221,9 +222,9 @@ func fuzzyFindKnownOrEquippedSpell(player *Player, searchWords []string) (Spell,
 	return spellsEquipped[spellIndex - len(player.character.SpellsKnown)], nil
 }
 
-func fuzzyFindInventoryItemIndex(inventory *ItemList, searchWords []string) (int, error) {
+func fuzzyFindInventoryItemIndex(inventory *Inventory, searchWords []string) int {
 	if len(searchWords) == 0 {
-		return 0, errors.New("You must specify an item.")
+		return FUZZY_FIND_RESULT_NOT_FOUND
 	}
 
 	// Put all item names into an array
@@ -234,17 +235,7 @@ func fuzzyFindInventoryItemIndex(inventory *ItemList, searchWords []string) (int
 	}
 
 	// Fuzzy find the item
-	index := fuzzyFind(itemNames, searchWords)
-
-	// Handle edge cases
-	if index == FUZZY_FIND_RESULT_NOT_FOUND {
-		return 0, fmt.Errorf("No item found called '%s'.", strings.Join(searchWords, " "))
-	}
-	if index == FUZZY_FIND_RESULT_AMBIGUOUS {
-		return 0, fmt.Errorf("The item name '%s' is ambiguous.", strings.Join(searchWords, " "))
-	}
-
-	return index, nil
+	return fuzzyFind(itemNames, searchWords)
 }
 
 func fuzzyFindEquipmentSlotByItem(equipment *Equipment, searchWords []string) (EquipmentSlot, error) {
@@ -314,7 +305,7 @@ func fuzzyFindEquipmentSlot(searchWords []string) (EquipmentSlot, error) {
 	return EquipmentSlot(slotIndex), nil
 }
 
-func fuzzyFindChestInventory(room *Room, searchWords []string) (*ItemList, string, error) {
+func fuzzyFindChestInventory(room *Room, searchWords []string) (*Inventory, string, error) {
 	if len(searchWords) == 0 {
 		return nil, "", errors.New("You must specify a container.")
 	}

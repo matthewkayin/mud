@@ -53,7 +53,7 @@ type MobData struct {
 
 	Spells []Spell
 
-	Inventory ItemList
+	Inventory Inventory
 	EquippedItems Equipment
 }
 

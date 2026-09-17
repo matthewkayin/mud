@@ -17,6 +17,7 @@ var CHARACTER_NAME_BANNED_KEYWORDS = []string {
 	"at",
 	"on",
 	"from",
+	"all",
 }
 
 type CharacterClass int
@@ -215,8 +216,10 @@ func CharacterNameValidate(gameState *GameState, name string) (string, error) {
 
 	// Check keywords
 	for _, keyword := range CHARACTER_NAME_BANNED_KEYWORDS {
-		if strings.EqualFold(nameTrimmed, keyword) {
-			return "", fmt.Errorf("You cannot name yourself '%s'. It is a reserved keyword.", keyword)
+		for _, part := range nameTrimmedParts {
+			if strings.EqualFold(keyword, part) {
+				return "", fmt.Errorf("Your name cannot contain the word '%s'. It is a reserved keyword.", keyword)
+			}
 		}
 	}
 
@@ -294,7 +297,7 @@ func CharacterNew(playerId int, characterSheet *MenuCharacterSheet) *Character {
 	character.SpellsKnown = make([]Spell, 0, 1)
 
 	// Init inventory
-	character.Data.Inventory = ItemList {
+	character.Data.Inventory = Inventory {
 		Items: make([]Item, 0, 1),
 	}
 

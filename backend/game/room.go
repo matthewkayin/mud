@@ -4,6 +4,7 @@ import (
 	"log"
 	"sort"
 	"fmt"
+	"errors"
 	"math/rand"
 )
 
@@ -24,7 +25,7 @@ const (
 type Chest struct {
 	Name string
 	DecayTimer int
-	Inventory ItemList
+	Inventory Inventory
 }
 
 type Room struct {
@@ -32,7 +33,7 @@ type Room struct {
 	Description string
 	Exits [DIRECTION_COUNT]int
 	ExitIsLocked [DIRECTION_COUNT]bool
-	Inventory ItemList
+	Inventory Inventory
 	Chests []Chest
 
 	occupants []MobHandle
@@ -66,6 +67,38 @@ func DirectionFromString(directionStr string) (Direction, bool) {
 		default:
 			return 0, false
 	}
+}
+
+func (room *Room) MoveOccupant(gameState *GameState, occupantHandle MobHandle, direction Direction) error {
+	// Check if there is an exit in that direction
+	newRoomIndex := room.Exits[direction]
+	if newRoomIndex == ROOM_NONE {
+		return errors.New("There is no exit in that direction.")
+	}
+
+	// Check if the exit is locked
+	if room.ExitIsLocked[direction] {
+		return fmt.Errorf("The %s exit is locked.", DirectionToString(direction))
+	}
+
+	// Get a pointer to the new room
+	newRoom := &gameState.world.Rooms[newRoomIndex]
+	occupantMob := gameState.world.Mobs.Get(occupantHandle)
+
+	// Move the occupant
+
+	room.RemoveOccupant(occupantHandle)
+
+	// Note that the order matters here, we don't want to send these messages to the moving
+	// player. Since the occupantHandle is in neither room at this point, the broadcast
+	// function will not send the messages into the occupant's inbox
+	room.broadcast(gameState, fmt.Sprintf("%s left the room.", occupantMob.data.Name))
+	newRoom.broadcast(gameState, fmt.Sprintf("%s entered the room.", occupantMob.data.Name))
+
+	newRoom.AddOccupant(occupantHandle)
+	occupantMob.data.Room = newRoomIndex
+
+	return nil
 }
 
 func (room *Room) AddOccupant(handle MobHandle) {
