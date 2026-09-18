@@ -14,6 +14,7 @@ type Player struct {
 	menuInstance *MenuInstance
 	character *Character
 	mobHandle MobHandle
+	tradeSession *TradeSession
 }
 
 func PlayerInit(playerId int, playerInbox *chan string) Player {
@@ -79,6 +80,14 @@ func (player *Player) enterWorld(gameState *GameState, asCharacter *Character) {
 }
 
 func (player *Player) exitWorld(gameState *GameState) {
+	// Fire event
+	gameState.fireEvent(Event {
+		eventType: EVENT_TYPE_PLAYER_LOGOUT,
+		data: EventPlayerLogout {
+			playerId: player.id,
+		},
+	})
+
 	// Remove player from current room
 	playerMob := gameState.world.Mobs.Get(player.mobHandle)
 	playerRoom := &gameState.world.Rooms[playerMob.data.Room]
@@ -89,17 +98,6 @@ func (player *Player) exitWorld(gameState *GameState) {
 	player.character.Data = playerMob.data
 
 	player.isLoggedIn = false
-	player.enterMenu(gameState, &gameState.menuLogin)
-}
-
-
-func (player *Player) onDeath(gameState *GameState) {
-	*player.inbox <- fmt.Sprintf("Your character %s has died, and death is forever. RIP", player.character.Data.Name)
-
-	gameState.world.RemoveCharacter(player.character)
-	player.character = nil
-	player.isLoggedIn = false
-
 	player.enterMenu(gameState, &gameState.menuLogin)
 }
 
@@ -129,4 +127,21 @@ func (player *Player) onItemUnequipped(gameState *GameState, item Item) {
 			}
 		}
 	}
+}
+
+func PlayerOnMobDeath(gameState *GameState, event Event) {
+	eventData := event.data.(EventMobDeath)
+
+	mob := gameState.world.Mobs.Get(eventData.mobHandle)
+	if mob.player == nil {
+		return
+	}
+
+	*mob.player.inbox <- fmt.Sprintf("Your character %s has died, and death is forever. RIP", mob.player.character.Data.Name)
+
+	gameState.world.RemoveCharacter(mob.player.character)
+	mob.player.character = nil
+	mob.player.isLoggedIn = false
+
+	mob.player.enterMenu(gameState, &gameState.menuLogin)
 }

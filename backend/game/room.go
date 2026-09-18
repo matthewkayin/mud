@@ -85,6 +85,7 @@ func (room *Room) MoveOccupant(gameState *GameState, occupantHandle MobHandle, d
 	// Get a pointer to the new room
 	newRoom := &gameState.world.Rooms[newRoomIndex]
 	occupantMob := gameState.world.Mobs.Get(occupantHandle)
+	oldRoomIndex := occupantMob.data.Room
 
 	// Move the occupant
 
@@ -99,6 +100,16 @@ func (room *Room) MoveOccupant(gameState *GameState, occupantHandle MobHandle, d
 	newRoom.AddOccupant(occupantHandle)
 	occupantMob.data.Room = newRoomIndex
 
+	// Fire event
+	gameState.fireEvent(Event {
+		eventType: EVENT_TYPE_MOB_MOVE,
+		data: EventMobMove {
+			mobHandle: occupantHandle,
+			fromRoom: oldRoomIndex,
+			toRoom: newRoomIndex,
+		},
+	})
+
 	return nil
 }
 
@@ -109,7 +120,7 @@ func (room *Room) AddOccupant(handle MobHandle) {
 func (room *Room) RemoveOccupant(handle MobHandle) {
 	occupantIndex := -1
 	for index, occupant := range room.occupants {
-		if occupant.Equals(handle) {
+		if occupant == handle {
 			occupantIndex = index
 			break
 		}
@@ -195,10 +206,13 @@ func (room *Room) Update(gameState *GameState) {
 		// Remove occupant
 		room.RemoveOccupantByIndex(occupantIndex)
 
-		// Trigger player on death
-		if occupantMob.player != nil {
-			occupantMob.player.onDeath(gameState)
-		}
+		// Fire event
+		gameState.fireEvent(Event {
+			eventType: EVENT_TYPE_MOB_DEATH,
+			data: EventMobDeath {
+				mobHandle: occupantHandle,
+			},
+		})
 
 		// If player mob, remove their equipment so that it goes into their corpse
 		if occupantMob.player != nil {

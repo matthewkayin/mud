@@ -235,16 +235,46 @@ func (mob *Mob) GrantExperience(experience int32) {
 	}
 }
 
-func (mob *Mob) SetModeAttack(targetHandle MobHandle) {
+func (mob *Mob) SetModeAttack(gameState *GameState, mobHandle MobHandle, targetHandle MobHandle) {
 	mob.mode = MOB_MODE_ATTACK
 	mob.target = targetHandle
+
+	gameState.fireEvent(Event {
+		eventType: EVENT_TYPE_MOB_SET_TARGET,
+		data: EventMobSetTarget {
+			attacker: mobHandle,
+			defender: targetHandle,
+		},
+	})
 }
 
-func (mob *Mob) SetModeCast(spell Spell, targetHandle MobHandle) {
+func (mob *Mob) SetModeCast(gameState *GameState, mobHandle MobHandle, spell Spell, targetHandle MobHandle) {
 	mob.mode = MOB_MODE_CAST
 	mob.target = targetHandle
 	mob.castSpell = spell
 	mob.castTimer = SPELL_DATA[spell].castTime
+
+	gameState.fireEvent(Event {
+		eventType: EVENT_TYPE_MOB_SET_TARGET,
+		data: EventMobSetTarget {
+			attacker: mobHandle,
+			defender: targetHandle,
+		},
+	})
+}
+
+func (mob *Mob) SetModeUseItem(gameState *GameState, mobHandle MobHandle, itemId ItemId, targetHandle MobHandle) {
+	mob.mode = MOB_MODE_USE_ITEM
+	mob.target = targetHandle
+	mob.useItemId = itemId
+
+	gameState.fireEvent(Event {
+		eventType: EVENT_TYPE_MOB_SET_TARGET,
+		data: EventMobSetTarget {
+			attacker: mobHandle,
+			defender: targetHandle,
+		},
+	})
 }
 
 func (mob *Mob) Update(gameState *GameState) {

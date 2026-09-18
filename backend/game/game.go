@@ -26,6 +26,9 @@ type GameState struct {
 	menuCreateCharacter Menu
 	menuWorld Menu
 
+	// Events
+	eventListeners [][]func (gameState *GameState, event Event)
+
 	// Players
 	players []Player
 	playerIdToIndexMap map[int]int
@@ -46,7 +49,7 @@ func InitState() *GameState {
 	}
 	world.PostInit()
 
-	return &GameState {
+	gameState := &GameState {
 		Commands: make(chan Command, 1024),
 		sigintChannel: make(chan os.Signal, 1),
 
@@ -54,11 +57,30 @@ func InitState() *GameState {
 		menuCreateCharacter: menuCreateCharacter,
 		menuWorld: menuWorld,
 
+		eventListeners: make([][]func (gameState *GameState, event Event), EVENT_TYPE_COUNT),
+
 		players: make([]Player, 0, 64),
 		playerIdToIndexMap: make(map[int]int),
 
 		world: world,
 	}
+
+	// Hook up event listeners
+	gameState.addEventListener(EVENT_TYPE_MOB_MOVE, TradeSessionOnMobMove)
+	gameState.addEventListener(EVENT_TYPE_PLAYER_LOGOUT, TradeSessionOnPlayerLogout)
+	gameState.addEventListener(EVENT_TYPE_MOB_DEATH, TradeSessionOnMobDeath)
+	gameState.addEventListener(EVENT_TYPE_MOB_SET_TARGET, TradeSessionOnMobSetTarget)
+	gameState.addEventListener(EVENT_TYPE_MOB_DEATH, PlayerOnMobDeath)
+
+	return gameState
+}
+
+func (gameState *GameState) getPlayerById(playerId int) *Player {
+	playerIndex, exists := gameState.playerIdToIndexMap[playerId]
+	if !exists {
+		return nil
+	}
+	return &gameState.players[playerIndex]
 }
 
 func (gameState *GameState) Run(ctx context.Context) {

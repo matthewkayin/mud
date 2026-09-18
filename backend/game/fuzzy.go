@@ -6,7 +6,6 @@ import (
 	"slices"
 	"strings"
 	"strconv"
-	"log"
 )
 
 const FUZZY_FIND_NUMBER_NONE = -1
@@ -161,8 +160,7 @@ func fuzzyFind(names []string, searchWords []string, fuzzyNumber int) int {
 func fuzzyFindTarget(gameState *GameState, player *Player, searchWords []string) (MobHandle, error) {
 	// Check that there are any arguments
 	if len(searchWords) == 0 {
-		*player.inbox <- "You must specify a target."
-		return MobHandle{}, errors.New("You must specify a target")
+		return MobHandle{}, errors.New("You must specify a target.")
 	}
 
 	// Get fuzzy number
@@ -180,13 +178,9 @@ func fuzzyFindTarget(gameState *GameState, player *Player, searchWords []string)
 
 	// Put all room occupant names into an array
 	mobNames := make([]string, len(room.occupants))
-	log.Print("-- fuzzy --")
-	// for index, occupantHandle := range room.occupants {
-	for index := range len(room.occupants) {
-		occupantHandle := room.occupants[index]
+	for index, occupantHandle := range room.occupants {
 		occupant := gameState.world.Mobs.Get(occupantHandle)
 		mobNames[index] = occupant.data.Name
-		log.Printf("index %d occupant %s (ID %d handle %d)", index, occupant.data.Name, occupantHandle.id, occupantHandle.generation)
 	}
 
 	// Fuzzy find the target mob

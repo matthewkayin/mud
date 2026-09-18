@@ -390,7 +390,7 @@ func MenuWorld() Menu {
 			for index := range inventorySize {
 				item := &playerMob.data.Inventory.Items[index]
 				itemData := ITEM_DATA[item.Id]
-				itemStatRequirements := ItemGetStatRequirements(item)
+				itemStatRequirements := item.getStatRequirements()
 
 				typeStr := ItemTypeToString(itemData.itemType)
 				if itemStatRequirements != nil {
@@ -503,6 +503,57 @@ func MenuWorld() Menu {
 					*player.inbox <- "There is no item matching that number in your inventory."
 				case INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK:
 					*player.inbox <- fmt.Sprintf("You can only put 1 %s at once.", result.itemName)
+				default:
+					panic(fmt.Sprintf("Transfer result status %d not handled.", result.status))
+			}
+
+			return true
+		},
+	}
+
+	// Give an item
+	entries["give"] = MenuEntry {
+		usage: "give <item> to <target>",
+		description: "Gives an item to a player",
+		handler: func(gameState *GameState, player *Player, args []string) bool {
+			// Split args
+			itemWords, targetWords, userSpecifiedTo := splitArgsBy(args, "to")
+			if !userSpecifiedTo || len(itemWords) == 0 || len(targetWords) == 0 {
+				return false
+			}
+
+			// Find target
+			targetHandle, err := fuzzyFindTarget(gameState, player, targetWords)
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
+			}
+
+			// TODO: allow giving to non-player NPCs for things like RP and encounters?
+			targetMob := gameState.world.Mobs.Get(targetHandle)
+			if targetMob.player == nil {
+				*player.inbox <- "You cannot give an item to someone who isn't a player."
+				return true
+			}
+
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			result := inventoryTransfer(&playerMob.data.Inventory, &targetMob.data.Inventory, itemWords)
+			switch result.status {
+				case INVENTORY_TRANSFER_STATUS_PARTIAL:
+					*player.inbox <- fmt.Sprintf("You only have %d %s in your inventory.", result.amount, result.itemName)
+					fallthrough
+				case INVENTORY_TRANSFER_STATUS_OK:
+					*player.inbox <- fmt.Sprintf("You gave %s to %s.", itemNameWithAmount(result.itemName, result.amount), targetMob.data.Name)
+				case INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED:
+					*player.inbox <- "You must specify an item to give."
+				case INVENTORY_TRANSFER_STATUS_ITEM_NOT_FOUND:
+					*player.inbox <- fmt.Sprintf("You have no item named '%s' in your inventory.", result.itemName)
+				case INVENTORY_TRANSFER_STATUS_ITEM_NAME_AMBIGUOUS:
+					*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' in your inventory.", result.itemName)
+				case INVENTORY_TRANSFER_STATUS_ITEM_NUMBER_OUT_OF_RANGE:
+					*player.inbox <- "There is no item matching that number in your inventory."
+				case INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK:
+					*player.inbox <- fmt.Sprintf("You can only give 1 %s at once.", result.itemName)
 				default:
 					panic(fmt.Sprintf("Transfer result status %d not handled.", result.status))
 			}
@@ -678,8 +729,7 @@ func MenuWorld() Menu {
 			// Check stat requirements
 			item := &playerMob.data.Inventory.Items[itemIndex]
 			itemData := ITEM_DATA[item.Id]
-			itemStatRequires := ItemGetStatRequirements(item)
-			if !playerMob.data.Stats.Meets(itemStatRequires) {
+			if !playerMob.data.Stats.Meets(item.getStatRequirements()) {
 				*player.inbox <- fmt.Sprintf("You do not meet the stat requirements to equip %s.", itemData.name)
 				return true
 			}
@@ -1021,7 +1071,7 @@ func MenuWorld() Menu {
 
 			switch itemData.itemType {
 				case ITEM_TYPE_CONSUMABLE:
-					if !targetHandle.Equals(player.mobHandle) {
+					if targetHandle != player.mobHandle {
 						*player.inbox <- "That item can only be used on yourself."
 						return true
 					}
@@ -1051,6 +1101,56 @@ func MenuWorld() Menu {
 		},
 	}
 
+	// Trade
+	entries["trade"] = MenuEntry {
+		usage: "trade <action>",
+		description: "Trade atomically with another player. Type 'trade help' to see a list of trade actions.",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			if len(args) == 0 {
+				return false
+			}
+
+			action := strings.ToLower(args[0])
+			if action == "help" {
+				// User asked for help about a specific command
+				if len(args) >= 2 {
+					// Lookup the command in the menu
+					entry, entryExists := MENU_TRADE_ENTRIES[strings.ToLower(args[1])]
+					if !entryExists {
+						*player.inbox <- fmt.Sprintf("Cannot provide help because %s is not a known trading command.", args[1])
+						return true
+					}
+
+					// Send the help info to the user
+					*player.inbox <- fmt.Sprintf("%s - %s", entry.usage, entry.description)
+					return true
+				}
+
+				// Provide help info
+				*player.inbox <- "The trade menu lets you trade with another player. You can only trade with one player at a time."
+				*player.inbox <- "Commands:"
+				for _, entry := range MENU_TRADE_ENTRIES {
+					*player.inbox <- fmt.Sprintf("\t%s - %s", entry.usage, entry.description)
+				}
+
+				return true
+			}
+
+			entry, entryExists := MENU_TRADE_ENTRIES[action]
+			if !entryExists {
+				*player.inbox <- fmt.Sprintf("%s is not a trade action. Type 'trade help' to see a list of actions.", action)
+				return true
+			}
+
+			success := entry.handler(gameState, player, args[1:])
+			if !success {
+				*player.inbox <- fmt.Sprintf("Invalid command. Usage: %s", entry.usage)
+			}
+
+			return true
+		},
+	}
+
 	return Menu {
 		entries: entries,
 		getDescription: func (gameState *GameState, player *Player) string {
@@ -1071,7 +1171,7 @@ func describeRoomToPlayer(gameState *GameState, player *Player, room *Room) {
 		otherPlayerNames := make([]string, 0, otherPlayerCount)
 		for _, mobHandle := range room.occupants {
 			// Don't tell the player about themselves being in the room
-			if mobHandle.Equals(player.mobHandle) {
+			if mobHandle == player.mobHandle {
 				continue
 			}
 

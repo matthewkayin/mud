@@ -168,7 +168,7 @@ func ItemTypeToString(itemType ItemType) string {
 	}
 }
 
-func ItemGetStatusBonuses(item *Item) *MobBaseStats {
+func (item *Item) getStatBonuses() *MobBaseStats {
 	itemData := ITEM_DATA[item.Id]
 	switch itemData.itemType {
 		case ITEM_TYPE_EQUIPMENT_ONE_HANDED, ITEM_TYPE_EQUIPMENT_TWO_HANDED:
@@ -185,7 +185,7 @@ func ItemGetStatusBonuses(item *Item) *MobBaseStats {
 	}
 }
 
-func ItemGetStatRequirements(item *Item) *MobBaseStats {
+func (item *Item) getStatRequirements() *MobBaseStats {
 	itemData := ITEM_DATA[item.Id]
 	switch itemData.itemType {
 		case ITEM_TYPE_EQUIPMENT_ONE_HANDED, ITEM_TYPE_EQUIPMENT_TWO_HANDED:
@@ -203,4 +203,12 @@ func ItemGetStatRequirements(item *Item) *MobBaseStats {
 		default:
 			return nil
 	}
+}
+
+func (item *Item) getNameWithAmount() string {
+	itemData := ITEM_DATA[item.Id]
+	if item.Amount == 1 {
+		return itemData.name
+	}
+	return fmt.Sprintf("%d %s", item.Amount, itemData.name)
 }
