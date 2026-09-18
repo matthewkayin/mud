@@ -123,7 +123,7 @@ func WorldInitNew() *World {
 
 				Stats: MobBaseStats {
 					Vitality: 4,
-					Strength: 4,
+					Strength: 2,
 					Agility: 6,
 					Intelligence: 2,
 					Faith: 4,
@@ -131,6 +131,36 @@ func WorldInitNew() *World {
 
 				// TODO
 				Health: 4 * 5,
+				Mana: 2 * 5,
+
+				Spells: []Spell {},
+				Inventory: Inventory {
+					Items: []Item {
+						{ Id: ITEM_POTION_HEALTH },
+					},
+				},
+				EquippedItems: EquipmentInitEmpty(),
+			},
+		},
+		{
+			Behavior: NPC_BEHAVIOR_AGGRO,
+			Data: MobData {
+				Name: "Goblin",
+				Room: 1,
+
+				Level: 1,
+				Experience: 0,
+
+				Stats: MobBaseStats {
+					Vitality: 4,
+					Strength: 2,
+					Agility: 6,
+					Intelligence: 2,
+					Faith: 4,
+				},
+
+				// TODO
+				Health: 3 * 5,
 				Mana: 2 * 5,
 
 				Spells: []Spell {},

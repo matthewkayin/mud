@@ -8,6 +8,32 @@ import (
 	"strings"
 )
 
+type InventoryFindResult int
+const (
+	INVENTORY_FIND_RESULT_NOT_FOUND = iota
+	INVENTORY_FIND_RESULT_AMBIGUOUS
+	INVENTORY_FIND_RESULT_FOUND
+)
+
+const INVENTORY_TRANSFER_AMOUNT_ALL = -1
+
+type InventoryTransferStatus int
+const (
+	INVENTORY_TRANSFER_STATUS_OK = iota
+	INVENTORY_TRANSFER_STATUS_PARTIAL
+	INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED
+	INVENTORY_TRANSFER_STATUS_ITEM_NOT_FOUND
+	INVENTORY_TRANSFER_STATUS_ITEM_NAME_AMBIGUOUS
+	INVENTORY_TRANSFER_STATUS_ITEM_NUMBER_OUT_OF_RANGE
+	INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK
+)
+
+type InventoryTransferResult struct {
+	status InventoryTransferStatus
+	amount int
+	itemName string
+}
+
 func MenuWorld() Menu {
 	entries := make(map[string]MenuEntry)
 
@@ -426,6 +452,8 @@ func MenuWorld() Menu {
 					*player.inbox <- fmt.Sprintf("You have no item named '%s' in your inventory.", result.itemName)
 				case INVENTORY_TRANSFER_STATUS_ITEM_NAME_AMBIGUOUS:
 					*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' in your inventory.", result.itemName)
+				case INVENTORY_TRANSFER_STATUS_ITEM_NUMBER_OUT_OF_RANGE:
+					*player.inbox <- "There is no item matching that number in your inventory."
 				case INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK:
 					*player.inbox <- fmt.Sprintf("You can only drop 1 %s at once.", result.itemName)
 				default:
@@ -471,6 +499,8 @@ func MenuWorld() Menu {
 					*player.inbox <- fmt.Sprintf("You have no item named '%s' in your inventory.", result.itemName)
 				case INVENTORY_TRANSFER_STATUS_ITEM_NAME_AMBIGUOUS:
 					*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' in your inventory.", result.itemName)
+				case INVENTORY_TRANSFER_STATUS_ITEM_NUMBER_OUT_OF_RANGE:
+					*player.inbox <- "There is no item matching that number in your inventory."
 				case INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK:
 					*player.inbox <- fmt.Sprintf("You can only put 1 %s at once.", result.itemName)
 				default:
@@ -521,6 +551,8 @@ func MenuWorld() Menu {
 					*player.inbox <- fmt.Sprintf("There is no item called '%s' in %s.", result.itemName, chestName)
 				case INVENTORY_TRANSFER_STATUS_ITEM_NAME_AMBIGUOUS:
 					*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' in %s.", result.itemName, chestName)
+				case INVENTORY_TRANSFER_STATUS_ITEM_NUMBER_OUT_OF_RANGE:
+					*player.inbox <- fmt.Sprintf("There is no item matching that number in %s.", chestName)
 				case INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK:
 					*player.inbox <- fmt.Sprintf("You can only take 1 %s at once.", result.itemName)
 				default:
@@ -553,7 +585,7 @@ func MenuWorld() Menu {
 
 			itemNames := make([]string, 0, len(targetInventory.Items))
 			for len(targetInventory.Items) > 0 {
-				item := targetInventory.RemoveItem(len(targetInventory.Items) - 1)
+				item := targetInventory.RemoveStack(len(targetInventory.Items) - 1)
 				itemData := ITEM_DATA[item.Id]
 
 				playerMob.data.Inventory.AddItem(item)
@@ -1117,10 +1149,11 @@ func inventoryTransfer(fromInventory *Inventory, toInventory *Inventory, itemWor
 			itemName: strings.Join(itemWords, " "),
 		}
 	}
-
-	// Handle item amount "all"
-	if amount == INVENTORY_TRANSFER_AMOUNT_ALL {
-		amount = fromInventory.Items[itemIndex].Amount
+	if itemIndex == FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE {
+		return InventoryTransferResult {
+			status: INVENTORY_TRANSFER_STATUS_ITEM_NUMBER_OUT_OF_RANGE,
+			itemName: strings.Join(itemWords, " "),
+		}
 	}
 
 	// Prevent user from transfering multiple of a non-stacking item
@@ -1130,6 +1163,11 @@ func inventoryTransfer(fromInventory *Inventory, toInventory *Inventory, itemWor
 			status: INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK,
 			itemName: itemData.name,
 		}
+	}
+
+	// Handle item amount "all"
+	if amount == INVENTORY_TRANSFER_AMOUNT_ALL {
+		amount = fromInventory.Items[itemIndex].Amount
 	}
 
 	// Transfer item

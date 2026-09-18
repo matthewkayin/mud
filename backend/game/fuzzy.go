@@ -5,11 +5,16 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"strconv"
+	"log"
 )
+
+const FUZZY_FIND_NUMBER_NONE = -1
 
 const FUZZY_FIND_RESULT_ITEM_NOT_SPECIFIED = -1
 const FUZZY_FIND_RESULT_NOT_FOUND = -2
 const FUZZY_FIND_RESULT_AMBIGUOUS = -3
+const FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE = -4
 
 func splitArgsBy(args []string, word string) ([]string, []string, bool) {
 	index := slices.Index(args, word)
@@ -18,6 +23,20 @@ func splitArgsBy(args []string, word string) ([]string, []string, bool) {
 	}
 
 	return args[:index], args[index + 1:], true
+}
+
+func getFuzzyNumberFromArgs(args []string) (int, []string) {
+	if len(args) == 0 {
+		return 1, args
+	}
+
+	lastIndex := len(args) - 1
+	number, err := strconv.Atoi(args[lastIndex])
+	if err != nil {
+		return 1, args
+	}
+
+	return number, args[:lastIndex]
 }
 
 func combineNames(names []string) string {
@@ -84,32 +103,59 @@ func scoreFuzzyMatch(name string, searchWords []string) int {
 	return score
 }
 
-func fuzzyFind(names []string, searchWords []string) int {
+func fuzzyFind(names []string, searchWords []string, fuzzyNumber int) int {
 	bestScore := 0
-	bestIndex := 0
-	itemsWithBestScore := 0
+	bestIndices := make([]int, 0, 1)
 
+	// Score all names and keep a list of all indices who are high-scorers
 	for index := range len(names) {
 		score := scoreFuzzyMatch(names[index], searchWords)
 
 		if score > bestScore {
 			bestScore = score
-			bestIndex = index
-			itemsWithBestScore = 0
+			bestIndices = make([]int, 0, 1)
 		}
 		if score == bestScore {
-			itemsWithBestScore++
+			bestIndices = append(bestIndices, index)
 		}
 	}
 
+	// If there's no winners, then no result was found
 	if bestScore == 0 {
 		return FUZZY_FIND_RESULT_NOT_FOUND
 	}
-	if itemsWithBestScore > 1 {
+
+	// If there's only 1 winner, then return that
+	if len(bestIndices) == 1 && (fuzzyNumber == 1 || fuzzyNumber == FUZZY_FIND_NUMBER_NONE) {
+		return bestIndices[0]
+	}
+
+	// If no number provided, don't try to disambiguate
+	if fuzzyNumber == FUZZY_FIND_NUMBER_NONE {
 		return FUZZY_FIND_RESULT_AMBIGUOUS
 	}
 
-	return bestIndex
+	// Check if the best names are all the same
+	bestNamesAreSame := true
+	for index := 1; index < len(bestIndices); index++ {
+		if !strings.EqualFold(names[bestIndices[0]], names[bestIndices[index]]) {
+			bestNamesAreSame = false
+			break
+		}
+	}
+
+	// If they don't have the same name, then the result is ambiguous
+	if !bestNamesAreSame {
+		return FUZZY_FIND_RESULT_AMBIGUOUS
+	}
+
+	// Ensure the fuzzy number is in range
+	if fuzzyNumber < 1 || fuzzyNumber > len(bestIndices) {
+		return FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE
+	}
+
+	// If they do have the same name and a number was provided, use that number to disambiguate
+	return bestIndices[fuzzyNumber - 1]
 }
 
 func fuzzyFindTarget(gameState *GameState, player *Player, searchWords []string) (MobHandle, error) {
@@ -118,6 +164,10 @@ func fuzzyFindTarget(gameState *GameState, player *Player, searchWords []string)
 		*player.inbox <- "You must specify a target."
 		return MobHandle{}, errors.New("You must specify a target")
 	}
+
+	// Get fuzzy number
+	var fuzzyNumber int
+	fuzzyNumber, searchWords = getFuzzyNumberFromArgs(searchWords)
 
 	// Handle when user targets "self"
 	if len(searchWords) == 1 && strings.EqualFold(searchWords[0], "self") {
@@ -130,13 +180,17 @@ func fuzzyFindTarget(gameState *GameState, player *Player, searchWords []string)
 
 	// Put all room occupant names into an array
 	mobNames := make([]string, len(room.occupants))
-	for index, occupantHandle := range room.occupants {
+	log.Print("-- fuzzy --")
+	// for index, occupantHandle := range room.occupants {
+	for index := range len(room.occupants) {
+		occupantHandle := room.occupants[index]
 		occupant := gameState.world.Mobs.Get(occupantHandle)
 		mobNames[index] = occupant.data.Name
+		log.Printf("index %d occupant %s (ID %d handle %d)", index, occupant.data.Name, occupantHandle.id, occupantHandle.generation)
 	}
 
 	// Fuzzy find the target mob
-	targetIndex := fuzzyFind(mobNames, searchWords)
+	targetIndex := fuzzyFind(mobNames, searchWords, fuzzyNumber)
 
 	// Handle edge cases
 	if targetIndex == FUZZY_FIND_RESULT_NOT_FOUND {
@@ -144,6 +198,9 @@ func fuzzyFindTarget(gameState *GameState, player *Player, searchWords []string)
 	}
 	if targetIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
 		return MobHandle{}, fmt.Errorf("The target string '%s' is ambiguous.", strings.Join(searchWords, " "))
+	}
+	if targetIndex == FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE {
+		return MobHandle{}, fmt.Errorf("No target in the room matches the number %d.", fuzzyNumber)
 	}
 
 	return room.occupants[targetIndex], nil
@@ -166,7 +223,7 @@ func fuzzyFindPreparedSpell(gameState *GameState, player *Player, searchWords []
 	}
 
 	// Fuzzy find the target spell
-	spellIndex := fuzzyFind(spellNames, searchWords)
+	spellIndex := fuzzyFind(spellNames, searchWords, FUZZY_FIND_NUMBER_NONE)
 
 	// Handle edge cases
 	if spellIndex == FUZZY_FIND_RESULT_NOT_FOUND {
@@ -174,6 +231,9 @@ func fuzzyFindPreparedSpell(gameState *GameState, player *Player, searchWords []
 	}
 	if spellIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
 		return 0, fmt.Errorf("The spell string '%s' is ambiguous.", strings.Join(searchWords, " "))
+	}
+	if spellIndex == FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE {
+		panic("Received fuzzy number out of range when no fuzzy number was provided.")
 	}
 
 	return playerMob.data.Spells[spellIndex], nil
@@ -203,7 +263,7 @@ func fuzzyFindKnownOrEquippedSpell(player *Player, searchWords []string) (Spell,
 	}
 
 	// Fuzzy find the target spell
-	spellIndex := fuzzyFind(spellNames, searchWords)
+	spellIndex := fuzzyFind(spellNames, searchWords, FUZZY_FIND_NUMBER_NONE)
 
 	// Handle edge cases
 	if spellIndex == FUZZY_FIND_RESULT_NOT_FOUND {
@@ -211,6 +271,9 @@ func fuzzyFindKnownOrEquippedSpell(player *Player, searchWords []string) (Spell,
 	}
 	if spellIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
 		return 0, fmt.Errorf("The spell string '%s' is ambiguous.", strings.Join(searchWords, " "))
+	}
+	if spellIndex == FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE {
+		panic("Received fuzzy number out of range when no fuzzy number was provided.")
 	}
 
 	// If spell is a known spell
@@ -227,6 +290,10 @@ func fuzzyFindInventoryItemIndex(inventory *Inventory, searchWords []string) int
 		return FUZZY_FIND_RESULT_NOT_FOUND
 	}
 
+	// Get fuzzy number
+	var fuzzyNumber int
+	fuzzyNumber, searchWords = getFuzzyNumberFromArgs(searchWords)
+
 	// Put all item names into an array
 	itemNames := make([]string, len(inventory.Items))
 	for index := range len(inventory.Items) {
@@ -235,7 +302,7 @@ func fuzzyFindInventoryItemIndex(inventory *Inventory, searchWords []string) int
 	}
 
 	// Fuzzy find the item
-	return fuzzyFind(itemNames, searchWords)
+	return fuzzyFind(itemNames, searchWords, fuzzyNumber)
 }
 
 func fuzzyFindEquipmentSlotByItem(equipment *Equipment, searchWords []string) (EquipmentSlot, error) {
@@ -263,7 +330,7 @@ func fuzzyFindEquipmentSlotByItem(equipment *Equipment, searchWords []string) (E
 		return 0, errors.New("You have no items equipped.")
 	}
 
-	index := fuzzyFind(itemNames, searchWords)
+	index := fuzzyFind(itemNames, searchWords, FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE)
 
 	// Handle edge cases
 	if index == FUZZY_FIND_RESULT_NOT_FOUND {
@@ -273,6 +340,9 @@ func fuzzyFindEquipmentSlotByItem(equipment *Equipment, searchWords []string) (E
 	if index == FUZZY_FIND_RESULT_AMBIGUOUS {
 		return 0, fmt.Errorf("The item string '%s' is ambiguous.",
 			strings.Join(searchWords, " "))
+	}
+	if index == FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE {
+		panic("Received fuzzy number out of range when no fuzzy number was provided.")
 	}
 
 	return equipmentSlots[index], nil
@@ -290,7 +360,7 @@ func fuzzyFindEquipmentSlot(searchWords []string) (EquipmentSlot, error) {
 		slotNames[index] = EquipmentSlotToString(slot)
 	}
 
-	slotIndex := fuzzyFind(slotNames, searchWords)
+	slotIndex := fuzzyFind(slotNames, searchWords, FUZZY_FIND_NUMBER_NONE)
 
 	// Handle edge cases
 	if slotIndex == FUZZY_FIND_RESULT_NOT_FOUND {
@@ -300,6 +370,9 @@ func fuzzyFindEquipmentSlot(searchWords []string) (EquipmentSlot, error) {
 	if slotIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
 		return 0, fmt.Errorf("The equipment slot string '%s' is ambiguous.",
 			strings.Join(searchWords, " "))
+	}
+	if slotIndex == FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE {
+		panic("Received fuzzy number out of range when no fuzzy number was provided.")
 	}
 
 	return EquipmentSlot(slotIndex), nil
@@ -316,6 +389,10 @@ func fuzzyFindChestInventory(room *Room, searchWords []string) (*Inventory, stri
 		return &room.Inventory, "room", nil
 	}
 
+	// Get fuzzy number
+	var fuzzyNumber int
+	fuzzyNumber, searchWords = getFuzzyNumberFromArgs(searchWords)
+
 	// Chest names
 	chestNames := make([]string, 0, len(room.Chests))
 	for index := range len(room.Chests) {
@@ -323,7 +400,7 @@ func fuzzyFindChestInventory(room *Room, searchWords []string) (*Inventory, stri
 		chestNames = append(chestNames, chest.Name)
 	}
 
-	chestIndex := fuzzyFind(chestNames, searchWords)
+	chestIndex := fuzzyFind(chestNames, searchWords, fuzzyNumber)
 
 	// Handle edge cases
 	if chestIndex == FUZZY_FIND_RESULT_NOT_FOUND {

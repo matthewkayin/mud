@@ -5,6 +5,7 @@ import (
 	"sort"
 	"fmt"
 	"errors"
+	"slices"
 	"math/rand"
 )
 
@@ -148,7 +149,11 @@ func (room *Room) Update(gameState *GameState) {
 	}
 
 	// Sort combatants by initiative order
-	sort.Slice(room.occupants, func(i int, j int) bool {
+	// Combatants are a clone of the room occupant handles because otherwise
+	// the sorting will mess up multi-target identifiers i.e. Goblin #2 might
+	// not be Goblin #2 anymore after the initiative sort
+	combatants := slices.Clone(room.occupants)
+	sort.Slice(combatants, func(i int, j int) bool {
 		mobI := gameState.world.Mobs.Get(room.occupants[i])
 		mobJ := gameState.world.Mobs.Get(room.occupants[j])
 
@@ -161,6 +166,20 @@ func (room *Room) Update(gameState *GameState) {
 	})
 
 	// Occupant update and combat
+	for _, occupantHandle := range combatants {
+		// Get occupant mob
+		occupantMob := gameState.world.Mobs.Get(occupantHandle)
+
+		// Skip if dead
+		if occupantMob.IsDead() {
+			continue
+		}
+
+		// Update mob
+		occupantMob.Update(gameState)
+	}
+
+	// Remove dead occupants
 	occupantIndex := 0
 	for occupantIndex < len(room.occupants) {
 		// Get occupant mob
@@ -168,43 +187,41 @@ func (room *Room) Update(gameState *GameState) {
 		occupantMob := gameState.world.Mobs.Get(occupantHandle)
 
 		// Check for mob death
-		if occupantMob.IsDead() {
-			// Remove occupant
-			room.RemoveOccupantByIndex(occupantIndex)
-
-			// Trigger player on death
-			if occupantMob.player != nil {
-				occupantMob.player.onDeath(gameState)
-			}
-
-			// If player mob, remove their equipment so that it goes into their corpse
-			if occupantMob.player != nil {
-				for slotIndex := range EQUIPMENT_SLOT_COUNT {
-					slot := EquipmentSlot(slotIndex)
-					item, success := occupantMob.data.EquippedItems.Unequip(slot)
-					if !success {
-						continue
-					}
-
-					occupantMob.data.Inventory.AddItem(item)
-				}
-			}
-
-			// Create corpse in room
-			room.Chests = append(room.Chests, Chest {
-				Name: fmt.Sprintf("%s's Corpse", occupantMob.data.Name),
-				DecayTimer: CHEST_CORPOSE_DECAY_DURATION,
-				Inventory: occupantMob.data.Inventory,
-			})
-
-			// Remove from mob array
-			gameState.world.Mobs.Remove(occupantHandle)
+		if !occupantMob.IsDead() {
+			occupantIndex++
 			continue
 		}
 
-		// Update mob
-		occupantMob.Update(gameState)
-		occupantIndex += 1
+		// Remove occupant
+		room.RemoveOccupantByIndex(occupantIndex)
+
+		// Trigger player on death
+		if occupantMob.player != nil {
+			occupantMob.player.onDeath(gameState)
+		}
+
+		// If player mob, remove their equipment so that it goes into their corpse
+		if occupantMob.player != nil {
+			for slotIndex := range EQUIPMENT_SLOT_COUNT {
+				slot := EquipmentSlot(slotIndex)
+				item, success := occupantMob.data.EquippedItems.Unequip(slot)
+				if !success {
+					continue
+				}
+
+				occupantMob.data.Inventory.AddItem(item)
+			}
+		}
+
+		// Create corpse in room
+		room.Chests = append(room.Chests, Chest {
+			Name: fmt.Sprintf("%s's Corpse", occupantMob.data.Name),
+			DecayTimer: CHEST_CORPOSE_DECAY_DURATION,
+			Inventory: occupantMob.data.Inventory,
+		})
+
+		// Remove from mob array
+		gameState.world.Mobs.Remove(occupantHandle)
 	}
 }
 
