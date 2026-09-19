@@ -22,10 +22,6 @@ type MobArray struct {
 	data []Mob // Dense set, data
 }
 
-func (handle *MobHandle) Equals(other MobHandle) bool {
-	return handle.id == other.id && handle.generation == other.generation
-}
-
 func MobArrayInit() MobArray {
 	return MobArray {
 		freeHandles: make([]MobHandle, 0, 1),

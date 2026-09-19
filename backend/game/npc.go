@@ -67,7 +67,7 @@ func (npc *Npc) update(gameState *GameState) {
 			if npcMob.mode == MOB_MODE_IDLE {
 				for _, targetHandle := range npcRoom.occupants {
 					// Don't attack yourself
-					if targetHandle.Equals(npc.mobHandle) {
+					if targetHandle == npc.mobHandle {
 						continue
 					}
 
@@ -78,7 +78,7 @@ func (npc *Npc) update(gameState *GameState) {
 					}
 
 					// Found target, set to attack
-					npcMob.SetModeAttack(targetHandle)
+					npcMob.SetModeAttack(gameState, npc.mobHandle, targetHandle)
 					break
 				}
 			}

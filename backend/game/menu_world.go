@@ -8,6 +8,32 @@ import (
 	"strings"
 )
 
+type InventoryFindResult int
+const (
+	INVENTORY_FIND_RESULT_NOT_FOUND = iota
+	INVENTORY_FIND_RESULT_AMBIGUOUS
+	INVENTORY_FIND_RESULT_FOUND
+)
+
+const INVENTORY_TRANSFER_AMOUNT_ALL = -1
+
+type InventoryTransferStatus int
+const (
+	INVENTORY_TRANSFER_STATUS_OK = iota
+	INVENTORY_TRANSFER_STATUS_PARTIAL
+	INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED
+	INVENTORY_TRANSFER_STATUS_ITEM_NOT_FOUND
+	INVENTORY_TRANSFER_STATUS_ITEM_NAME_AMBIGUOUS
+	INVENTORY_TRANSFER_STATUS_ITEM_NUMBER_OUT_OF_RANGE
+	INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK
+)
+
+type InventoryTransferResult struct {
+	status InventoryTransferStatus
+	amount int32
+	itemName string
+}
+
 func MenuWorld() Menu {
 	entries := make(map[string]MenuEntry)
 
@@ -57,16 +83,7 @@ func MenuWorld() Menu {
 
 			itemNames := make([]string, 0, len(targetInventory.Items))
 			for index := range targetInventory.Length() {
-				item := &targetInventory.Items[index]
-
-				var itemName string
-				if item.Amount > 1 {
-					itemName = fmt.Sprintf("%d %s", item.Amount, ITEM_DATA[item.Id].name)
-				} else {
-					itemName = ITEM_DATA[item.Id].name
-				}
-
-				itemNames = append(itemNames, itemName)
+				itemNames = append(itemNames, targetInventory.Items[index].getNameWithAmount())
 			}
 
 			var itemsString string
@@ -364,7 +381,7 @@ func MenuWorld() Menu {
 			for index := range inventorySize {
 				item := &playerMob.data.Inventory.Items[index]
 				itemData := ITEM_DATA[item.Id]
-				itemStatRequirements := ItemGetStatRequirements(item)
+				itemStatRequirements := item.getStatRequirements()
 
 				typeStr := ItemTypeToString(itemData.itemType)
 				if itemStatRequirements != nil {
@@ -389,11 +406,9 @@ func MenuWorld() Menu {
 					}
 				}
 
-				var itemName string
+				itemName := item.getNameWithCondition()
 				if item.Amount > 1 {
-					itemName = fmt.Sprintf("%s (x%d)", itemData.name, item.Amount)
-				} else {
-					itemName = itemData.name
+					itemName = fmt.Sprintf("%s (x%d)", itemName, item.Amount)
 				}
 				*player.inbox <- fmt.Sprintf("%s | Type: %s | Description: %s", itemName, typeStr, itemData.description)
 			}
@@ -426,6 +441,8 @@ func MenuWorld() Menu {
 					*player.inbox <- fmt.Sprintf("You have no item named '%s' in your inventory.", result.itemName)
 				case INVENTORY_TRANSFER_STATUS_ITEM_NAME_AMBIGUOUS:
 					*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' in your inventory.", result.itemName)
+				case INVENTORY_TRANSFER_STATUS_ITEM_NUMBER_OUT_OF_RANGE:
+					*player.inbox <- "There is no item matching that number in your inventory."
 				case INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK:
 					*player.inbox <- fmt.Sprintf("You can only drop 1 %s at once.", result.itemName)
 				default:
@@ -471,8 +488,61 @@ func MenuWorld() Menu {
 					*player.inbox <- fmt.Sprintf("You have no item named '%s' in your inventory.", result.itemName)
 				case INVENTORY_TRANSFER_STATUS_ITEM_NAME_AMBIGUOUS:
 					*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' in your inventory.", result.itemName)
+				case INVENTORY_TRANSFER_STATUS_ITEM_NUMBER_OUT_OF_RANGE:
+					*player.inbox <- "There is no item matching that number in your inventory."
 				case INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK:
 					*player.inbox <- fmt.Sprintf("You can only put 1 %s at once.", result.itemName)
+				default:
+					panic(fmt.Sprintf("Transfer result status %d not handled.", result.status))
+			}
+
+			return true
+		},
+	}
+
+	// Give an item
+	entries["give"] = MenuEntry {
+		usage: "give <item> to <target>",
+		description: "Gives an item to a player",
+		handler: func(gameState *GameState, player *Player, args []string) bool {
+			// Split args
+			itemWords, targetWords, userSpecifiedTo := splitArgsBy(args, "to")
+			if !userSpecifiedTo || len(itemWords) == 0 || len(targetWords) == 0 {
+				return false
+			}
+
+			// Find target
+			targetHandle, err := fuzzyFindTarget(gameState, player, targetWords)
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
+			}
+
+			// TODO: allow giving to non-player NPCs for things like RP and encounters?
+			targetMob := gameState.world.Mobs.Get(targetHandle)
+			if targetMob.player == nil {
+				*player.inbox <- "You cannot give an item to someone who isn't a player."
+				return true
+			}
+
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			result := inventoryTransfer(&playerMob.data.Inventory, &targetMob.data.Inventory, itemWords)
+			switch result.status {
+				case INVENTORY_TRANSFER_STATUS_PARTIAL:
+					*player.inbox <- fmt.Sprintf("You only have %d %s in your inventory.", result.amount, result.itemName)
+					fallthrough
+				case INVENTORY_TRANSFER_STATUS_OK:
+					*player.inbox <- fmt.Sprintf("You gave %s to %s.", itemNameWithAmount(result.itemName, result.amount), targetMob.data.Name)
+				case INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED:
+					*player.inbox <- "You must specify an item to give."
+				case INVENTORY_TRANSFER_STATUS_ITEM_NOT_FOUND:
+					*player.inbox <- fmt.Sprintf("You have no item named '%s' in your inventory.", result.itemName)
+				case INVENTORY_TRANSFER_STATUS_ITEM_NAME_AMBIGUOUS:
+					*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' in your inventory.", result.itemName)
+				case INVENTORY_TRANSFER_STATUS_ITEM_NUMBER_OUT_OF_RANGE:
+					*player.inbox <- "There is no item matching that number in your inventory."
+				case INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK:
+					*player.inbox <- fmt.Sprintf("You can only give 1 %s at once.", result.itemName)
 				default:
 					panic(fmt.Sprintf("Transfer result status %d not handled.", result.status))
 			}
@@ -521,6 +591,8 @@ func MenuWorld() Menu {
 					*player.inbox <- fmt.Sprintf("There is no item called '%s' in %s.", result.itemName, chestName)
 				case INVENTORY_TRANSFER_STATUS_ITEM_NAME_AMBIGUOUS:
 					*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' in %s.", result.itemName, chestName)
+				case INVENTORY_TRANSFER_STATUS_ITEM_NUMBER_OUT_OF_RANGE:
+					*player.inbox <- fmt.Sprintf("There is no item matching that number in %s.", chestName)
 				case INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK:
 					*player.inbox <- fmt.Sprintf("You can only take 1 %s at once.", result.itemName)
 				default:
@@ -553,11 +625,10 @@ func MenuWorld() Menu {
 
 			itemNames := make([]string, 0, len(targetInventory.Items))
 			for len(targetInventory.Items) > 0 {
-				item := targetInventory.RemoveItem(len(targetInventory.Items) - 1)
-				itemData := ITEM_DATA[item.Id]
+				item := targetInventory.RemoveStack(len(targetInventory.Items) - 1)
 
 				playerMob.data.Inventory.AddItem(item)
-				itemNames = append(itemNames, itemNameWithAmount(itemData.name, item.Amount))
+				itemNames = append(itemNames, item.getNameWithAmount())
 			}
 			*player.inbox <- fmt.Sprintf("You got %s.", combineNames(itemNames))
 
@@ -592,7 +663,7 @@ func MenuWorld() Menu {
 				var itemName string
 				if item != nil {
 					itemData = ITEM_DATA[item.Id]
-					itemName = itemData.name
+					itemName = item.getNameWithCondition()
 				} else {
 					itemName = "<Nothing Equipped>"
 				}
@@ -646,9 +717,8 @@ func MenuWorld() Menu {
 			// Check stat requirements
 			item := &playerMob.data.Inventory.Items[itemIndex]
 			itemData := ITEM_DATA[item.Id]
-			itemStatRequires := ItemGetStatRequirements(item)
-			if !playerMob.data.Stats.Meets(itemStatRequires) {
-				*player.inbox <- fmt.Sprintf("You do not meet the stat requirements to equip %s.", itemData.name)
+			if !playerMob.data.Stats.Meets(item.getStatRequirements()) {
+				*player.inbox <- fmt.Sprintf("You do not meet the stat requirements to equip %s.", item.getNameWithCondition())
 				return true
 			}
 
@@ -668,14 +738,14 @@ func MenuWorld() Menu {
 				}
 			} else {
 				if itemData.ItemIsOneHanded() {
-					*player.inbox <- fmt.Sprintf("%s is a one-handed item. You must specify whether to equip it to 'main hand' hand or 'off hand'.", itemData.name)
+					*player.inbox <- fmt.Sprintf("%s is a one-handed item. You must specify whether to equip it to 'main hand' hand or 'off hand'.", item.getNameWithCondition())
 					return false
 				}
 
 				var slotFound bool
 				slot, slotFound = EquipmentSlotForItemType(itemData.itemType)
 				if !slotFound {
-					*player.inbox <- fmt.Sprintf("%s cannot be equipped.", itemData.name)
+					*player.inbox <- fmt.Sprintf("%s cannot be equipped.", item.getNameWithCondition())
 					return true
 				}
 			}
@@ -683,18 +753,18 @@ func MenuWorld() Menu {
 			// Try to equip item
 			unequippedItems, success := playerMob.data.EquippedItems.Equip(slot, *item)
 			if !success {
-				*player.inbox <- fmt.Sprintf("%s cannot be equipped to slot %s.", itemData.name, EquipmentSlotToString(slot))
+				*player.inbox <- fmt.Sprintf("%s cannot be equipped to slot %s.", item.getNameWithCondition(), EquipmentSlotToString(slot))
 				return true
 			}
-			*player.inbox <- fmt.Sprintf("You equipped %s.", itemData.name)
+			*player.inbox <- fmt.Sprintf("You equipped %s.", item.getNameWithCondition())
 
 			// Remove item from player inventory
 			playerMob.data.Inventory.RemoveItem(itemIndex)
 
 			// Add unequipped items to inventory
-			for _, item := range unequippedItems {
-				player.onItemUnequipped(gameState, item)
-				*player.inbox <- fmt.Sprintf("%s was unequipped and added to your inventory", itemData.name)
+			for _, unequippedItem := range unequippedItems {
+				player.onItemUnequipped(gameState, unequippedItem)
+				*player.inbox <- fmt.Sprintf("%s was unequipped and added to your inventory", unequippedItem.getNameWithCondition())
 			}
 
 			// If the equipped item is a spellbook, add the spell to their spells equipped
@@ -769,7 +839,7 @@ func MenuWorld() Menu {
 			// Unequip the item
 			item, _ := playerMob.data.EquippedItems.Unequip(slot)
 			player.onItemUnequipped(gameState, item)
-			*player.inbox <- fmt.Sprintf("You unequipped %s.", ITEM_DATA[item.Id].name)
+			*player.inbox <- fmt.Sprintf("You unequipped %s.", item.getNameWithCondition())
 
 			return true
 		},
@@ -989,7 +1059,7 @@ func MenuWorld() Menu {
 
 			switch itemData.itemType {
 				case ITEM_TYPE_CONSUMABLE:
-					if !targetHandle.Equals(player.mobHandle) {
+					if targetHandle != player.mobHandle {
 						*player.inbox <- "That item can only be used on yourself."
 						return true
 					}
@@ -1019,6 +1089,56 @@ func MenuWorld() Menu {
 		},
 	}
 
+	// Trade
+	entries["trade"] = MenuEntry {
+		usage: "trade <action>",
+		description: "Trade atomically with another player. Type 'trade help' to see a list of trade actions.",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			if len(args) == 0 {
+				return false
+			}
+
+			action := strings.ToLower(args[0])
+			if action == "help" {
+				// User asked for help about a specific command
+				if len(args) >= 2 {
+					// Lookup the command in the menu
+					entry, entryExists := MENU_TRADE_ENTRIES[strings.ToLower(args[1])]
+					if !entryExists {
+						*player.inbox <- fmt.Sprintf("Cannot provide help because %s is not a known trading command.", args[1])
+						return true
+					}
+
+					// Send the help info to the user
+					*player.inbox <- fmt.Sprintf("%s - %s", entry.usage, entry.description)
+					return true
+				}
+
+				// Provide help info
+				*player.inbox <- "The trade menu lets you trade with another player. You can only trade with one player at a time."
+				*player.inbox <- "Commands:"
+				for _, entry := range MENU_TRADE_ENTRIES {
+					*player.inbox <- fmt.Sprintf("\t%s - %s", entry.usage, entry.description)
+				}
+
+				return true
+			}
+
+			entry, entryExists := MENU_TRADE_ENTRIES[action]
+			if !entryExists {
+				*player.inbox <- fmt.Sprintf("%s is not a trade action. Type 'trade help' to see a list of actions.", action)
+				return true
+			}
+
+			success := entry.handler(gameState, player, args[1:])
+			if !success {
+				*player.inbox <- fmt.Sprintf("Invalid command. Usage: %s", entry.usage)
+			}
+
+			return true
+		},
+	}
+
 	return Menu {
 		entries: entries,
 		getDescription: func (gameState *GameState, player *Player) string {
@@ -1039,7 +1159,7 @@ func describeRoomToPlayer(gameState *GameState, player *Player, room *Room) {
 		otherPlayerNames := make([]string, 0, otherPlayerCount)
 		for _, mobHandle := range room.occupants {
 			// Don't tell the player about themselves being in the room
-			if mobHandle.Equals(player.mobHandle) {
+			if mobHandle == player.mobHandle {
 				continue
 			}
 
@@ -1077,14 +1197,14 @@ func inventoryTransfer(fromInventory *Inventory, toInventory *Inventory, itemWor
 	}
 
 	// Get amount from args
-	amount := 1
+	var amount int32 = 1
 	if itemWords[0] == "all" {
 		amount = INVENTORY_TRANSFER_AMOUNT_ALL
 		itemWords = itemWords[1:]
 	} else {
 		parsedAmount, err := strconv.Atoi(itemWords[0])
 		if err == nil {
-			amount = parsedAmount
+			amount = int32(parsedAmount)
 			itemWords = itemWords[1:]
 		}
 	}
@@ -1117,10 +1237,11 @@ func inventoryTransfer(fromInventory *Inventory, toInventory *Inventory, itemWor
 			itemName: strings.Join(itemWords, " "),
 		}
 	}
-
-	// Handle item amount "all"
-	if amount == INVENTORY_TRANSFER_AMOUNT_ALL {
-		amount = fromInventory.Items[itemIndex].Amount
+	if itemIndex == FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE {
+		return InventoryTransferResult {
+			status: INVENTORY_TRANSFER_STATUS_ITEM_NUMBER_OUT_OF_RANGE,
+			itemName: strings.Join(itemWords, " "),
+		}
 	}
 
 	// Prevent user from transfering multiple of a non-stacking item
@@ -1128,8 +1249,13 @@ func inventoryTransfer(fromInventory *Inventory, toInventory *Inventory, itemWor
 	if amount != 1 && !itemData.ItemCanStack() {
 		return InventoryTransferResult {
 			status: INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK,
-			itemName: itemData.name,
+			itemName: fromInventory.Items[itemIndex].getNameWithCondition(),
 		}
+	}
+
+	// Handle item amount "all"
+	if amount == INVENTORY_TRANSFER_AMOUNT_ALL {
+		amount = fromInventory.Items[itemIndex].Amount
 	}
 
 	// Transfer item
@@ -1145,11 +1271,11 @@ func inventoryTransfer(fromInventory *Inventory, toInventory *Inventory, itemWor
 	return InventoryTransferResult {
 		status: InventoryTransferStatus(resultStatus),
 		amount: removedItem.Amount,
-		itemName: itemData.name,
+		itemName: removedItem.getNameWithCondition(),
 	}
 }
 
-func itemNameWithAmount(itemName string, amount int) string {
+func itemNameWithAmount(itemName string, amount int32) string {
 	if amount == 1 {
 		return itemName
 	}

@@ -168,7 +168,7 @@ func (equipment *Equipment) CalculateStatBonuses() {
 		}
 
 		// Get item stat bonusees
-		itemStatBonuses := ItemGetStatusBonuses(item)
+		itemStatBonuses := item.getStatBonuses()
 		if itemStatBonuses == nil {
 			continue
 		}

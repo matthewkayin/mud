@@ -68,12 +68,13 @@ func WorldInitNew() *World {
 					DecayTimer: CHEST_DOES_NOT_DECAY,
 					Inventory: Inventory {
 						Items: []Item {
-							{ Id: ITEM_SWORD, Amount: 1 },
-							{ Id: ITEM_SWORD, Amount: 1 },
+							{ Id: ITEM_SWORD, Amount: 1, Durability: 1 },
+							{ Id: ITEM_SWORD, Amount: 1, Durability: 80 },
+							{ Id: ITEM_SWORD, Amount: 1, Durability: 120 },
 							{ Id: ITEM_GOLD, Amount: 100 },
-							{ Id: ITEM_AXE, Amount: 1 },
-							{ Id: ITEM_SPELLBOOK_FIREBOLT, Amount: 1 },
-							{ Id: ITEM_SPELLBOOK_CURE, Amount: 1 },
+							{ Id: ITEM_AXE, Amount: 1, Durability: 100 },
+							{ Id: ITEM_SPELLBOOK_FIREBOLT, Amount: 1, Durability: 1 },
+							{ Id: ITEM_SPELLBOOK_CURE, Amount: 1, Durability: 1 },
 							{ Id: ITEM_POTION_HEALTH, Amount: 2 },
 						},
 					},
@@ -123,7 +124,7 @@ func WorldInitNew() *World {
 
 				Stats: MobBaseStats {
 					Vitality: 4,
-					Strength: 4,
+					Strength: 2,
 					Agility: 6,
 					Intelligence: 2,
 					Faith: 4,
@@ -131,6 +132,36 @@ func WorldInitNew() *World {
 
 				// TODO
 				Health: 4 * 5,
+				Mana: 2 * 5,
+
+				Spells: []Spell {},
+				Inventory: Inventory {
+					Items: []Item {
+						{ Id: ITEM_POTION_HEALTH },
+					},
+				},
+				EquippedItems: EquipmentInitEmpty(),
+			},
+		},
+		{
+			Behavior: NPC_BEHAVIOR_AGGRO,
+			Data: MobData {
+				Name: "Goblin",
+				Room: 1,
+
+				Level: 1,
+				Experience: 0,
+
+				Stats: MobBaseStats {
+					Vitality: 4,
+					Strength: 2,
+					Agility: 6,
+					Intelligence: 2,
+					Faith: 4,
+				},
+
+				// TODO
+				Health: 3 * 5,
 				Mana: 2 * 5,
 
 				Spells: []Spell {},

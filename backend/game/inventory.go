@@ -1,30 +1,5 @@
 package game
 
-type InventoryFindResult int
-const (
-	INVENTORY_FIND_RESULT_NOT_FOUND = iota
-	INVENTORY_FIND_RESULT_AMBIGUOUS
-	INVENTORY_FIND_RESULT_FOUND
-)
-
-const INVENTORY_TRANSFER_AMOUNT_ALL = -1
-
-type InventoryTransferStatus int
-const (
-	INVENTORY_TRANSFER_STATUS_OK = iota
-	INVENTORY_TRANSFER_STATUS_PARTIAL
-	INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED
-	INVENTORY_TRANSFER_STATUS_ITEM_NOT_FOUND
-	INVENTORY_TRANSFER_STATUS_ITEM_NAME_AMBIGUOUS
-	INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK
-)
-
-type InventoryTransferResult struct {
-	status InventoryTransferStatus
-	amount int
-	itemName string
-}
-
 type Inventory struct {
 	Items []Item
 }
@@ -60,7 +35,12 @@ func (inventory *Inventory) RemoveItem(index int) Item {
 	return inventory.RemoveItems(index, 1)
 }
 
-func (inventory *Inventory) RemoveItems(index int, amount int) Item {
+func (inventory *Inventory) RemoveStack(index int) Item {
+	amount := inventory.Items[index].Amount
+	return inventory.RemoveItems(index, amount)
+}
+
+func (inventory *Inventory) RemoveItems(index int, amount int32) Item {
 	// Determine the amount of items to remove
 	amountRemoved := min(inventory.Items[index].Amount, amount)
 
@@ -68,6 +48,7 @@ func (inventory *Inventory) RemoveItems(index int, amount int) Item {
 	removedItem := Item {
 		Id: inventory.Items[index].Id,
 		Amount: amountRemoved,
+		Durability: inventory.Items[index].Durability,
 	}
 
 	// Remove stacks from the item
