@@ -68,12 +68,13 @@ func WorldInitNew() *World {
 					DecayTimer: CHEST_DOES_NOT_DECAY,
 					Inventory: Inventory {
 						Items: []Item {
-							{ Id: ITEM_SWORD, Amount: 1 },
-							{ Id: ITEM_SWORD, Amount: 1 },
+							{ Id: ITEM_SWORD, Amount: 1, Durability: 1 },
+							{ Id: ITEM_SWORD, Amount: 1, Durability: 80 },
+							{ Id: ITEM_SWORD, Amount: 1, Durability: 120 },
 							{ Id: ITEM_GOLD, Amount: 100 },
-							{ Id: ITEM_AXE, Amount: 1 },
-							{ Id: ITEM_SPELLBOOK_FIREBOLT, Amount: 1 },
-							{ Id: ITEM_SPELLBOOK_CURE, Amount: 1 },
+							{ Id: ITEM_AXE, Amount: 1, Durability: 100 },
+							{ Id: ITEM_SPELLBOOK_FIREBOLT, Amount: 1, Durability: 1 },
+							{ Id: ITEM_SPELLBOOK_CURE, Amount: 1, Durability: 1 },
 							{ Id: ITEM_POTION_HEALTH, Amount: 2 },
 						},
 					},

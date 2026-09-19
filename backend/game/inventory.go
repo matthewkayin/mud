@@ -40,7 +40,7 @@ func (inventory *Inventory) RemoveStack(index int) Item {
 	return inventory.RemoveItems(index, amount)
 }
 
-func (inventory *Inventory) RemoveItems(index int, amount int) Item {
+func (inventory *Inventory) RemoveItems(index int, amount int32) Item {
 	// Determine the amount of items to remove
 	amountRemoved := min(inventory.Items[index].Amount, amount)
 
@@ -48,6 +48,7 @@ func (inventory *Inventory) RemoveItems(index int, amount int) Item {
 	removedItem := Item {
 		Id: inventory.Items[index].Id,
 		Amount: amountRemoved,
+		Durability: inventory.Items[index].Durability,
 	}
 
 	// Remove stacks from the item

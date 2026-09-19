@@ -30,7 +30,7 @@ const (
 
 type InventoryTransferResult struct {
 	status InventoryTransferStatus
-	amount int
+	amount int32
 	itemName string
 }
 
@@ -83,16 +83,7 @@ func MenuWorld() Menu {
 
 			itemNames := make([]string, 0, len(targetInventory.Items))
 			for index := range targetInventory.Length() {
-				item := &targetInventory.Items[index]
-
-				var itemName string
-				if item.Amount > 1 {
-					itemName = fmt.Sprintf("%d %s", item.Amount, ITEM_DATA[item.Id].name)
-				} else {
-					itemName = ITEM_DATA[item.Id].name
-				}
-
-				itemNames = append(itemNames, itemName)
+				itemNames = append(itemNames, targetInventory.Items[index].getNameWithAmount())
 			}
 
 			var itemsString string
@@ -415,11 +406,9 @@ func MenuWorld() Menu {
 					}
 				}
 
-				var itemName string
+				itemName := item.getNameWithCondition()
 				if item.Amount > 1 {
-					itemName = fmt.Sprintf("%s (x%d)", itemData.name, item.Amount)
-				} else {
-					itemName = itemData.name
+					itemName = fmt.Sprintf("%s (x%d)", itemName, item.Amount)
 				}
 				*player.inbox <- fmt.Sprintf("%s | Type: %s | Description: %s", itemName, typeStr, itemData.description)
 			}
@@ -637,10 +626,9 @@ func MenuWorld() Menu {
 			itemNames := make([]string, 0, len(targetInventory.Items))
 			for len(targetInventory.Items) > 0 {
 				item := targetInventory.RemoveStack(len(targetInventory.Items) - 1)
-				itemData := ITEM_DATA[item.Id]
 
 				playerMob.data.Inventory.AddItem(item)
-				itemNames = append(itemNames, itemNameWithAmount(itemData.name, item.Amount))
+				itemNames = append(itemNames, item.getNameWithAmount())
 			}
 			*player.inbox <- fmt.Sprintf("You got %s.", combineNames(itemNames))
 
@@ -675,7 +663,7 @@ func MenuWorld() Menu {
 				var itemName string
 				if item != nil {
 					itemData = ITEM_DATA[item.Id]
-					itemName = itemData.name
+					itemName = item.getNameWithCondition()
 				} else {
 					itemName = "<Nothing Equipped>"
 				}
@@ -730,7 +718,7 @@ func MenuWorld() Menu {
 			item := &playerMob.data.Inventory.Items[itemIndex]
 			itemData := ITEM_DATA[item.Id]
 			if !playerMob.data.Stats.Meets(item.getStatRequirements()) {
-				*player.inbox <- fmt.Sprintf("You do not meet the stat requirements to equip %s.", itemData.name)
+				*player.inbox <- fmt.Sprintf("You do not meet the stat requirements to equip %s.", item.getNameWithCondition())
 				return true
 			}
 
@@ -750,14 +738,14 @@ func MenuWorld() Menu {
 				}
 			} else {
 				if itemData.ItemIsOneHanded() {
-					*player.inbox <- fmt.Sprintf("%s is a one-handed item. You must specify whether to equip it to 'main hand' hand or 'off hand'.", itemData.name)
+					*player.inbox <- fmt.Sprintf("%s is a one-handed item. You must specify whether to equip it to 'main hand' hand or 'off hand'.", item.getNameWithCondition())
 					return false
 				}
 
 				var slotFound bool
 				slot, slotFound = EquipmentSlotForItemType(itemData.itemType)
 				if !slotFound {
-					*player.inbox <- fmt.Sprintf("%s cannot be equipped.", itemData.name)
+					*player.inbox <- fmt.Sprintf("%s cannot be equipped.", item.getNameWithCondition())
 					return true
 				}
 			}
@@ -765,18 +753,18 @@ func MenuWorld() Menu {
 			// Try to equip item
 			unequippedItems, success := playerMob.data.EquippedItems.Equip(slot, *item)
 			if !success {
-				*player.inbox <- fmt.Sprintf("%s cannot be equipped to slot %s.", itemData.name, EquipmentSlotToString(slot))
+				*player.inbox <- fmt.Sprintf("%s cannot be equipped to slot %s.", item.getNameWithCondition(), EquipmentSlotToString(slot))
 				return true
 			}
-			*player.inbox <- fmt.Sprintf("You equipped %s.", itemData.name)
+			*player.inbox <- fmt.Sprintf("You equipped %s.", item.getNameWithCondition())
 
 			// Remove item from player inventory
 			playerMob.data.Inventory.RemoveItem(itemIndex)
 
 			// Add unequipped items to inventory
-			for _, item := range unequippedItems {
-				player.onItemUnequipped(gameState, item)
-				*player.inbox <- fmt.Sprintf("%s was unequipped and added to your inventory", itemData.name)
+			for _, unequippedItem := range unequippedItems {
+				player.onItemUnequipped(gameState, unequippedItem)
+				*player.inbox <- fmt.Sprintf("%s was unequipped and added to your inventory", unequippedItem.getNameWithCondition())
 			}
 
 			// If the equipped item is a spellbook, add the spell to their spells equipped
@@ -851,7 +839,7 @@ func MenuWorld() Menu {
 			// Unequip the item
 			item, _ := playerMob.data.EquippedItems.Unequip(slot)
 			player.onItemUnequipped(gameState, item)
-			*player.inbox <- fmt.Sprintf("You unequipped %s.", ITEM_DATA[item.Id].name)
+			*player.inbox <- fmt.Sprintf("You unequipped %s.", item.getNameWithCondition())
 
 			return true
 		},
@@ -1209,14 +1197,14 @@ func inventoryTransfer(fromInventory *Inventory, toInventory *Inventory, itemWor
 	}
 
 	// Get amount from args
-	amount := 1
+	var amount int32 = 1
 	if itemWords[0] == "all" {
 		amount = INVENTORY_TRANSFER_AMOUNT_ALL
 		itemWords = itemWords[1:]
 	} else {
 		parsedAmount, err := strconv.Atoi(itemWords[0])
 		if err == nil {
-			amount = parsedAmount
+			amount = int32(parsedAmount)
 			itemWords = itemWords[1:]
 		}
 	}
@@ -1261,7 +1249,7 @@ func inventoryTransfer(fromInventory *Inventory, toInventory *Inventory, itemWor
 	if amount != 1 && !itemData.ItemCanStack() {
 		return InventoryTransferResult {
 			status: INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK,
-			itemName: itemData.name,
+			itemName: fromInventory.Items[itemIndex].getNameWithCondition(),
 		}
 	}
 
@@ -1283,11 +1271,11 @@ func inventoryTransfer(fromInventory *Inventory, toInventory *Inventory, itemWor
 	return InventoryTransferResult {
 		status: InventoryTransferStatus(resultStatus),
 		amount: removedItem.Amount,
-		itemName: itemData.name,
+		itemName: removedItem.getNameWithCondition(),
 	}
 }
 
-func itemNameWithAmount(itemName string, amount int) string {
+func itemNameWithAmount(itemName string, amount int32) string {
 	if amount == 1 {
 		return itemName
 	}

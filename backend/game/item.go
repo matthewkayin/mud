@@ -35,7 +35,8 @@ type ItemData struct {
 
 type Item struct {
 	Id ItemId
-	Amount int
+	Amount int32
+	Durability int32
 }
 
 type ItemDataConsumable struct {
@@ -48,12 +49,14 @@ type ItemDataSpellScroll struct {
 
 type ItemDataWeapon struct {
 	damage int32
+	maxDurability int32
 	statBonuses MobBaseStats
 	statRequirements MobBaseStats
 }
 
 type ItemDataOutfit struct {
 	armor int32
+	maxDurability int32
 	statBonuses MobBaseStats
 	statRequirements MobBaseStats
 }
@@ -82,6 +85,7 @@ var ITEM_DATA = map[ItemId]*ItemData{
 		itemType: ITEM_TYPE_EQUIPMENT_ONE_HANDED,
 		data: &ItemDataWeapon {
 			damage: 5,
+			maxDurability: 100,
 			statBonuses: MobBaseStats {
 				Strength: 2,
 			},
@@ -94,6 +98,7 @@ var ITEM_DATA = map[ItemId]*ItemData{
 		itemType: ITEM_TYPE_EQUIPMENT_ONE_HANDED,
 		data: &ItemDataWeapon {
 			damage: 6,
+			maxDurability: 100,
 			statBonuses: MobBaseStats {},
 		},
 	},
@@ -205,10 +210,49 @@ func (item *Item) getStatRequirements() *MobBaseStats {
 	}
 }
 
-func (item *Item) getNameWithAmount() string {
+func (item *Item) getNameWithCondition() string {
 	itemData := ITEM_DATA[item.Id]
-	if item.Amount == 1 {
+
+	maxDurability := item.getMaxDurability()
+	if maxDurability == 0 {
 		return itemData.name
 	}
-	return fmt.Sprintf("%d %s", item.Amount, itemData.name)
+
+	itemIsWeapon := itemData.itemType == ITEM_TYPE_EQUIPMENT_ONE_HANDED || itemData.itemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED
+	if item.Durability < maxDurability / 2 {
+		return "Damaged " + itemData.name
+	} else if item.Durability > maxDurability && itemIsWeapon {
+		return "Sharpened " + itemData.name
+	} else if item.Durability > maxDurability && !itemIsWeapon {
+		return "Fortified " + itemData.name
+	} else {
+		return itemData.name
+	}
+}
+
+func (item *Item) getNameWithAmount() string {
+	itemName := item.getNameWithCondition()
+
+	if item.Amount == 1 {
+		return itemName
+	}
+	return fmt.Sprintf("%d %s", item.Amount, itemName)
+}
+
+func (item *Item) getMaxDurability() int32 {
+	itemData := ITEM_DATA[item.Id]
+	switch itemData.itemType {
+		case ITEM_TYPE_EQUIPMENT_ONE_HANDED, ITEM_TYPE_EQUIPMENT_TWO_HANDED:
+			weaponData := itemData.data.(*ItemDataWeapon)
+			return weaponData.maxDurability
+		case ITEM_TYPE_EQUIPMENT_OUTFIT:
+			outfitData := itemData.data.(*ItemDataOutfit)
+			return outfitData.maxDurability
+		case ITEM_TYPE_EQUIPMENT_SPELLBOOK:
+			spellbookData := itemData.data.(*ItemDataSpellbook)
+			spellData := SPELL_DATA[spellbookData.spell]
+			return spellData.castsToLearn
+		default:
+			return 0
+	}
 }

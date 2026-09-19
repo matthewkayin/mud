@@ -291,8 +291,7 @@ func fuzzyFindInventoryItemIndex(inventory *Inventory, searchWords []string) int
 	// Put all item names into an array
 	itemNames := make([]string, len(inventory.Items))
 	for index := range len(inventory.Items) {
-		itemData := ITEM_DATA[inventory.Items[index].Id]
-		itemNames[index] = itemData.name
+		itemNames[index] = inventory.Items[index].getNameWithCondition()
 	}
 
 	// Fuzzy find the item

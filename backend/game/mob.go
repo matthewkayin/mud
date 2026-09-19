@@ -301,7 +301,7 @@ func (mob *Mob) Update(gameState *GameState) {
 
 			// Check if caster has enough mana
 			spellData := SPELL_DATA[mob.castSpell]
-			room := gameState.world.Rooms[mob.data.Room]
+			room := &gameState.world.Rooms[mob.data.Room]
 			if mob.data.Mana < spellData.manaCost {
 				mob.mode = MOB_MODE_IDLE
 				room.broadcast(gameState, fmt.Sprintf("%s tried to cast %s, but they don't have enough mana.", mob.data.Name, spellData.name))
@@ -320,16 +320,21 @@ func (mob *Mob) Update(gameState *GameState) {
 			mob.data.Mana -= spellData.manaCost
 			spellData.onHit(gameState, mob, targetMob)
 
-			// Spell mastery progress
 			if mob.player != nil {
 				equippedSpell, spellIsEquipped := mob.player.character.SpellsEquipped[mob.castSpell]
 				if spellIsEquipped && !equippedSpell.IsKnown {
+
+					// Spell mastery progress
 					equippedSpell.Casts++
 					if equippedSpell.Casts >= mob.data.CastsToLearn(mob.castSpell) {
 						equippedSpell.IsKnown = true
 						mob.player.character.SpellsKnown = append(mob.player.character.SpellsKnown, mob.castSpell)
 						*mob.player.inbox <- fmt.Sprintf("You have mastered %s!", spellData.name)
 					}
+
+					// Spellbook durability
+					slot, _ := mob.getEquipmentWhichProvidesSpell(mob.castSpell)
+					mob.SubtractDurabilityFromEquipment(gameState, room, slot)
 				}
 			}
 
@@ -452,6 +457,13 @@ func (mob *Mob) AttackTargetWithWeapon(gameState *GameState, room *Room, targetM
 	} else {
 		targetMob.RollForConcentration(gameState, damage)
 	}
+
+	// Reduce weapon durability
+	mob.SubtractDurabilityFromEquipment(gameState, room, slot)
+	if !targetMob.IsDead() {
+		targetMob.SubtractDurabilityFromEquipment(gameState, room, EQUIPMENT_SLOT_OUTFIT)
+		// TODO: shield durability gets subtracted here as well
+	}
 }
 
 func (mob *Mob) CalculateMagicDamage(baseDamage int32, target *Mob) int32 {
@@ -483,4 +495,77 @@ func (mob *Mob) RollForConcentration(gameState *GameState, damage int32) {
 	mob.mode = MOB_MODE_IDLE
 	mobRoom := &gameState.world.Rooms[mob.data.Room]
 	mobRoom.broadcast(gameState, fmt.Sprintf("%s lost concentration on their spell!", mob.data.Name))
+}
+
+func (mob *Mob) SubtractDurabilityFromEquipment(gameState *GameState, room *Room, slot EquipmentSlot) {
+	item := mob.data.EquippedItems.Get(slot)
+	if item == nil {
+		return
+	}
+
+	itemData := ITEM_DATA[item.Id]
+
+	item.Durability--
+	if item.Durability == 0 {
+		room.broadcast(gameState, fmt.Sprintf("%s's %s broke!", mob.data.Name, itemData.name))
+		item, _ := mob.data.EquippedItems.Unequip(slot)
+		mob.player.onItemUnequipped(gameState, item)
+
+		return
+	}
+
+	// The rest of these messages are only sent to players holding the item
+	if mob.player == nil {
+		return
+	}
+
+	// If item has become damaged, tell the user
+	maxDurability := item.getMaxDurability()
+	itemWasDamaged := (item.Durability + 1) < maxDurability / 2
+	itemIsDamaged := item.Durability < maxDurability / 2
+	if itemIsDamaged && !itemWasDamaged {
+		*mob.player.inbox <- fmt.Sprintf("Your %s is now damaged.", itemData.name)
+		return
+	}
+
+	// If an item has lost its sharpness, tell the user
+	itemWasSharp := (item.Durability + 1) > maxDurability
+	itemIsSharp := item.Durability > maxDurability
+	if itemWasSharp && !itemIsSharp {
+		itemIsWeapon :=
+			itemData.itemType == ITEM_TYPE_EQUIPMENT_ONE_HANDED ||
+			itemData.itemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED
+		if itemIsWeapon {
+			*mob.player.inbox <- fmt.Sprintf("Your %s has lost its sharpness.", itemData.name)
+		} else {
+			*mob.player.inbox <- fmt.Sprintf("Your %s has lost its fortification.", itemData.name)
+		}
+	}
+}
+
+func (mob *Mob) getEquipmentWhichProvidesSpell(spell Spell) (EquipmentSlot, bool) {
+	slots := []EquipmentSlot { EQUIPMENT_SLOT_MAIN_HAND, EQUIPMENT_SLOT_OFF_HAND }
+	for _, slot := range slots {
+		slotSpell, slotProvidesSpell := mob.getSpellProvidedBySlot(slot)
+		if slotProvidesSpell && slotSpell == spell {
+			return slot, true
+		}
+	}
+
+	return 0, false
+}
+
+func (mob *Mob) getSpellProvidedBySlot(slot EquipmentSlot) (Spell, bool) {
+	item := mob.data.EquippedItems.Get(slot)
+	if item == nil {
+		return 0, false
+	}
+
+	itemData := ITEM_DATA[item.Id]
+	if itemData.itemType != ITEM_TYPE_EQUIPMENT_SPELLBOOK {
+		return 0, false
+	}
+
+	spellbookData := itemData.data.(*ItemDataSpellbook)
+	return spellbookData.spell, true
 }
