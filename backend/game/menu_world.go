@@ -656,6 +656,78 @@ func MenuWorld() Menu {
 		},
 	}
 
+	//craft an time
+	entries["craft"] = MenuEntry{
+		usage: "craft <item>",
+		description: "Craft an item for which you know the recipe",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+
+			attemptedRecipe, err := fuzzyFindKnownRecipe(player.character, args)
+
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
+			}
+
+			itemName := ITEM_DATA[RECIPE_DATA[attemptedRecipe].output.Id].name
+
+			result := attemptedRecipe.Craft(&player.character.Data.Inventory)
+			if !result {
+				*player.inbox <- fmt.Sprintf("You lack the ingredients to craft %s.", itemName)
+				return true
+			}
+
+			*player.inbox <- fmt.Sprintf("You have crafted %s.", itemName)
+			return true
+		},
+	}
+
+	//learn a recipe from a schematic
+	entries["learn"] = MenuEntry {
+		usage: "learn <recipe>",
+		description: "Learn a recipe that you have in your inventory.",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+
+			schematicIndex := fuzzyFindInventoryItemIndex(&player.character.Data.Inventory, args)
+
+			//check for bad inputes
+			if schematicIndex == FUZZY_FIND_RESULT_ITEM_NOT_SPECIFIED {
+				*player.inbox <- "You must specify a recipe to use."
+				return true
+			}
+			if schematicIndex == FUZZY_FIND_RESULT_NOT_FOUND {
+				*player.inbox <- fmt.Sprintf("'%s' is not a schematic in your inventory.",
+				strings.Join(args, " "))
+				return true
+			}
+			if schematicIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
+				*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' in your inventory.",
+				strings.Join(args, " "))
+				return true
+			}
+
+			//make sure it is a recipe
+			itemId := player.character.Data.Inventory.Items[schematicIndex].Id
+			item := ITEM_DATA[itemId]
+			if item.itemType != ITEM_TYPE_SCHEMATIC {
+				*player.inbox <- "That item is not a recipe."
+				return true
+			}
+
+			var recipe Recipe = item.data.(*ItemDataSchematic).recipe
+			msg, success := recipe.LearnRecipe(player.character)
+			if success {
+				player.character.Data.Inventory.RemoveItem(schematicIndex)
+			}
+			*player.inbox <- msg
+			return true
+		},
+	}
+
+	//list all known recipes
+
+	//list all ingredients necessary for a known recipe
+
 	// Show equipment
 	entries["equipment"] = MenuEntry {
 		usage: "equipment",

@@ -9,6 +9,7 @@ type MenuCharacterSheet struct {
 	name string
 	race CharacterRace
 	class CharacterClass
+	job CharacterJob
 }
 
 type MenuCharacterSheetProperty struct {
@@ -71,6 +72,25 @@ var CHARACTER_SHEET_PROPERTY_REGISTRY = map[string]MenuCharacterSheetProperty {
 			*player.inbox <- fmt.Sprintf("You set your character's class to '%s'", CLASS_DATA[class].Name)
 		},
 	},
+	"job": {
+		describe: func (player *Player) {
+			*player.inbox <- "'job' is your character's job. The jobs are:"
+			for _, jobData := range JOB_DATA {
+				*player.inbox <- fmt.Sprintf("\t%s", jobData.Name)
+			}
+		},
+		set: func (gameState *GameState, player *Player, sheet *MenuCharacterSheet, value string) {
+			// Search for a job matching the string
+			job, err := CharacterJobFromString(value)
+			if err != nil {
+				*player.inbox <- err.Error()
+				return
+			}
+
+			sheet.job = job
+			*player.inbox <- fmt.Sprintf("You set your character's job to '%s'", JOB_DATA[job].Name)
+		},
+	},
 }
 
 func MenuCreateCharacterDataInit() *MenuCharacterSheet {
@@ -93,6 +113,7 @@ func (characterSheet *MenuCharacterSheet) print(player *Player) {
 
 	*player.inbox <- fmt.Sprintf("Race: %s", RACE_DATA[characterSheet.race].Name)
 	*player.inbox <- fmt.Sprintf("Class: %s", CLASS_DATA[characterSheet.class].Name)
+	*player.inbox <- fmt.Sprintf("Job: %s", JOB_DATA[characterSheet.job].Name)
 }
 
 func MenuCreateCharacter() Menu {

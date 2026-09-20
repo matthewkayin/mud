@@ -9,6 +9,7 @@ const (
 	ACTION_TYPE_ATTACK
 	ACTION_TYPE_CAST
 	ACTION_TYPE_USE_ITEM
+	ACTION_TYPE_CRAFT
 )
 
 type Action struct {
@@ -28,6 +29,11 @@ type ActionCast struct {
 type ActionUseItem struct {
 	itemId ItemId
 	target MobHandle
+}
+
+type ActionCraft struct {
+	itemId ItemId
+	target Recipe
 }
 
 func (player *Player) doAction(gameState *GameState) {

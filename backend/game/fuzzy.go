@@ -407,3 +407,29 @@ func fuzzyFindChestInventory(room *Room, searchWords []string) (*Inventory, stri
 
 	return &room.Chests[chestIndex].Inventory, room.Chests[chestIndex].Name, nil
 }
+
+func fuzzyFindKnownRecipe(character *Character, searchWords []string) (Recipe, error) {
+
+	if len(searchWords) == 0 {
+		return 0, errors.New("You must specify a recipe.")
+	}
+
+	recipeNames := make([]string, len(character.RecipesKnown))
+	for index, recipe := range character.RecipesKnown {
+		recipeNames[index] = ITEM_DATA[RECIPE_DATA[recipe].output.Id].name
+	}
+
+	fuzzyNumber, searchWords := getFuzzyNumberFromArgs(searchWords)
+	target := fuzzyFind(recipeNames, searchWords, fuzzyNumber)
+
+	if target == FUZZY_FIND_RESULT_NOT_FOUND {
+		return 0, fmt.Errorf("You do not know a recipe named '%s'.",
+			strings.Join(searchWords, " "))
+	}
+	if target == FUZZY_FIND_RESULT_AMBIGUOUS {
+		return 0, fmt.Errorf("The recipe string '%s' is ambiguous.",
+			strings.Join(searchWords, " "))
+	}
+
+	return character.RecipesKnown[target], nil
+}
