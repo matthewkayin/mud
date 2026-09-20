@@ -34,6 +34,7 @@ type Room struct {
 	Description string
 	Exits [DIRECTION_COUNT]int
 	ExitIsLocked [DIRECTION_COUNT]bool
+	IsSafeZone bool
 	Inventory Inventory
 	Chests []Chest
 
@@ -220,6 +221,14 @@ func (room *Room) Update(gameState *GameState) {
 				slot := EquipmentSlot(slotIndex)
 				item, success := occupantMob.data.EquippedItems.Unequip(slot)
 				if !success {
+					continue
+				}
+
+				// Perform random durability damage to the player's equipped items on death
+				halfMaxDurability := item.getMaxDurability() / 2
+				durabilityDamage := halfMaxDurability + int32(rand.Intn(int(halfMaxDurability)))
+				item.Durability -= durabilityDamage
+				if item.Durability <= 0 {
 					continue
 				}
 
