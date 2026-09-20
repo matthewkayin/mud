@@ -315,7 +315,6 @@ func CharacterNew(playerId int, characterSheet *MenuCharacterSheet) *Character {
 
 	classData := CLASS_DATA[characterSheet.class]
 	raceData := RACE_DATA[characterSheet.race]
-	//jobData := JOB_DATA[characterSheet.job]
 
 	character.Data.Name = characterSheet.name
 	character.Data.Room = 0

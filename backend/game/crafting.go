@@ -15,14 +15,14 @@ const (
 )
 
 type Material struct {
-	Id ItemId
-	Amount int32
+	id ItemId
+	amount int32
 }
 
 type RecipeData struct {
 	name string
 	job CharacterJob
-	level int
+	level int32
 	materials []Material
 	output Item
 }
@@ -35,7 +35,7 @@ var RECIPE_DATA = map[Recipe]*RecipeData {
 		job: CHARACTER_JOB_ALCHEMIST,
 		level: 1,
 		materials: []Material {
-			{Id: ITEM_DUMMY_MATERIAL, Amount: 10},
+			{id: ITEM_DUMMY_MATERIAL, amount: 10},
 		},
 		output: Item {
 			Id: ITEM_POTION_HEALTH,
@@ -48,7 +48,7 @@ var RECIPE_DATA = map[Recipe]*RecipeData {
 		job: CHARACTER_JOB_ALCHEMIST,
 		level: 2,
 		materials: []Material {
-			{Id: ITEM_DUMMY_MATERIAL, Amount: 10},
+			{id: ITEM_DUMMY_MATERIAL, amount: 10},
 		},
 		output: Item {
 			Id: ITEM_POTION_MANA,
@@ -61,8 +61,8 @@ var RECIPE_DATA = map[Recipe]*RecipeData {
 		job: CHARACTER_JOB_BLACKSMITH,
 		level: 1,
 		materials: []Material {
-			{Id: ITEM_AXE, Amount: 2},
-			{Id: ITEM_DUMMY_MATERIAL, Amount: 5},
+			{id: ITEM_AXE, amount: 2},
+			{id: ITEM_DUMMY_MATERIAL, amount: 5},
 		},
 		output: Item {
 			Id: ITEM_SWORD,
@@ -75,8 +75,8 @@ var RECIPE_DATA = map[Recipe]*RecipeData {
 		job: CHARACTER_JOB_BLACKSMITH,
 		level: 1,
 		materials: []Material {
-			{Id: ITEM_SWORD, Amount: 2},
-			{Id: ITEM_DUMMY_MATERIAL, Amount: 5},
+			{id: ITEM_SWORD, amount: 2},
+			{id: ITEM_DUMMY_MATERIAL, amount: 5},
 		},
 		output: Item {
 			Id: ITEM_SWORD,
@@ -85,49 +85,33 @@ var RECIPE_DATA = map[Recipe]*RecipeData {
 	},
 }
 
-//check for legality of recipe and then add to character recipes list
-func (recipe Recipe) LearnRecipe (character *Character) (string, bool) {
+//add recipe to character recipes list
+func (recipe Recipe) LearnRecipe (player *Player) {
 	recipeData := RECIPE_DATA[recipe]
-
-	if recipeData.job != character.Job {
-		return fmt.Sprintf("You must be a %s to learn that recipe.", JOB_DATA[recipeData.job].Name), false
-	}
-
-	if recipeData.level > int(character.Data.Level) {
-		return "Your level is not high enough to learn this recipe.", false
-	}
-
-	character.RecipesKnown = append(character.RecipesKnown, recipe)
-	return fmt.Sprintf("You have learned the recipe for: %s.", ITEM_DATA[recipeData.output.Id].name), true
+	player.character.RecipesKnown = append(player.character.RecipesKnown, recipe)
+	*player.inbox <- fmt.Sprintf("You have learned the recipe for: %s.", recipeData.name)
 }
 
 //craft an item from a recipe
 func (recipe Recipe) Craft (inventory *Inventory) (bool) {
-recipeData := RECIPE_DATA[recipe]
+
+	recipeData := RECIPE_DATA[recipe]
 
 	//first check that the materials are there
 	for _, ingredient := range recipeData.materials {
-		_, hasIngredients := inventory.CheckForItem(ingredient.Id, ingredient.Amount)
-		if !hasIngredients {
+		amountOfIngredient := inventory.AmountOf(ingredient.id)
+		if amountOfIngredient < ingredient.amount {
 			return false
 		}
 	}
 
-	//then remove the ingredients
-	var groceryList []Material = recipeData.materials
 	//check every item in inventory against the grocery list
-	for index, item := range inventory.Items {
-		for _, ingredient := range groceryList {
-			if item.Id == ingredient.Id && ingredient.Amount > 0 {
-				//remove the item from the inventory while also clearing it from the grocery list
-				removed := min(item.Amount, ingredient.Amount)
-				inventory.Items[index].Amount = max(item.Amount - ingredient.Amount, 0)
-				ingredient.Amount -= removed
-				if inventory.Items[index].Amount == 0 {
-					inventory.RemoveItem(index)
-				}
-				continue
-			}
+	for _, ingredient := range recipeData.materials {
+		amountToRemove := ingredient.amount
+		for amountToRemove > 0 {
+    		index, _ := inventory.FindItem(ingredient.id)
+      		item := inventory.RemoveItems(index, amountToRemove)
+       		amountToRemove -= item.Amount
 		}
 	}
 
@@ -135,5 +119,3 @@ recipeData := RECIPE_DATA[recipe]
 	inventory.AddItem(recipeData.output)
 	return true
 }
-
-//TO DO: SPELL BOOK CRAFTING BUT WITH ITS RECIPE BEING YOU KNOWLEDGE OF THE SPELL!!

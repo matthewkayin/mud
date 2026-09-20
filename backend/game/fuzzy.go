@@ -419,17 +419,16 @@ func fuzzyFindKnownRecipe(character *Character, searchWords []string) (Recipe, e
 		recipeNames[index] = RECIPE_DATA[recipe].name
 	}
 
-	fuzzyNumber, searchWords := getFuzzyNumberFromArgs(searchWords)
-	target := fuzzyFind(recipeNames, searchWords, fuzzyNumber)
+	index := fuzzyFind(recipeNames, searchWords, FUZZY_FIND_NUMBER_NONE)
 
-	if target == FUZZY_FIND_RESULT_NOT_FOUND {
+	if index == FUZZY_FIND_RESULT_NOT_FOUND {
 		return 0, fmt.Errorf("You do not know a recipe named '%s'.",
 			strings.Join(searchWords, " "))
 	}
-	if target == FUZZY_FIND_RESULT_AMBIGUOUS {
+	if index == FUZZY_FIND_RESULT_AMBIGUOUS {
 		return 0, fmt.Errorf("The recipe string '%s' is ambiguous.",
 			strings.Join(searchWords, " "))
 	}
 
-	return character.RecipesKnown[target], nil
+	return character.RecipesKnown[index], nil
 }

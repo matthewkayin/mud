@@ -14,10 +14,10 @@ const (
 	ITEM_SPELLBOOK_CURE
 	ITEM_POTION_HEALTH
 	ITEM_POTION_MANA
-	ITEM_SCHEMATIC_HEALTH_POT
-	ITEM_SCHEMATIC_MANA_POT
-	ITEM_SCHEMATIC_SWORD
-	ITEM_SCHEMATIC_AXE
+	ITEM_RECIPE_HEALTH_POT
+	ITEM_RECIPE_MANA_POT
+	ITEM_RECIPE_SWORD
+	ITEM_RECIPE_AXE
 )
 
 type ItemType int
@@ -29,7 +29,7 @@ const (
 	ITEM_TYPE_EQUIPMENT_ACCESSORY
 	ITEM_TYPE_EQUIPMENT_SPELLBOOK
 	ITEM_TYPE_SPELL_SCROLL
-	ITEM_TYPE_SCHEMATIC
+	ITEM_TYPE_RECIPE
 	ITEM_TYPE_MISC // Indicates an item which has no special properties, like gold or a material
 )
 
@@ -78,7 +78,7 @@ type ItemDataSpellbook struct {
 	statRequirements MobBaseStats
 }
 
-type ItemDataSchematic struct {
+type ItemDataRecipe struct {
 	recipe Recipe
 }
 
@@ -161,7 +161,7 @@ var ITEM_DATA = map[ItemId]*ItemData{
 
 	ITEM_POTION_MANA: {
 		name: "Potion of Mana",
-		description: "A blue tonic that gives mana to the drink",
+		description: "A blue tonic that gives mana to the drinker.",
 		itemType: ITEM_TYPE_CONSUMABLE,
 		data: &ItemDataConsumable {
 			onUse: func(gameState *GameState, target *Mob) {
@@ -176,32 +176,32 @@ var ITEM_DATA = map[ItemId]*ItemData{
 		},
 	},
 
-	ITEM_SCHEMATIC_HEALTH_POT: {
+	ITEM_RECIPE_HEALTH_POT: {
 		name: "Potion of Health Recipe",
 		description: "The recipe for a Potion of Health. Useable by Alchemists of level 1 or higher.",
-		itemType: ITEM_TYPE_SCHEMATIC,
-		data: &ItemDataSchematic { recipe: RECIPE_HEALTH_POTION },
+		itemType: ITEM_TYPE_RECIPE,
+		data: &ItemDataRecipe { recipe: RECIPE_HEALTH_POTION },
 	},
 
-	ITEM_SCHEMATIC_MANA_POT: {
+	ITEM_RECIPE_MANA_POT: {
 		name: "Potion of Mana Recipe",
 		description: "The recipe for a Poition of Mana. Useable by Alchemists of level 2 or higher.",
-		itemType: ITEM_TYPE_SCHEMATIC,
-		data: &ItemDataSchematic { recipe: RECIPE_MANA_POTION },
+		itemType: ITEM_TYPE_RECIPE,
+		data: &ItemDataRecipe { recipe: RECIPE_MANA_POTION },
 	},
 
-	ITEM_SCHEMATIC_SWORD: {
+	ITEM_RECIPE_SWORD: {
 		name: "Sword Schematic",
-		description: "The blueprint for a sword. Useable by Blacksmiths of level 1 or higher.",
-		itemType: ITEM_TYPE_SCHEMATIC,
-		data: &ItemDataSchematic { recipe: RECIPE_SWORD },
+		description: "The schematic for a sword. Useable by Blacksmiths of level 1 or higher.",
+		itemType: ITEM_TYPE_RECIPE,
+		data: &ItemDataRecipe { recipe: RECIPE_SWORD },
 	},
 
-	ITEM_SCHEMATIC_AXE: {
+	ITEM_RECIPE_AXE: {
 			name: "Axe Schematic",
-			description: "The blueprint for an axe. Useable by Blacksmiths of level 1 or higher.",
-			itemType: ITEM_TYPE_SCHEMATIC,
-			data: &ItemDataSchematic { recipe: RECIPE_AXE },
+			description: "The schematic for an axe. Useable by Blacksmiths of level 1 or higher.",
+			itemType: ITEM_TYPE_RECIPE,
+			data: &ItemDataRecipe { recipe: RECIPE_AXE },
 		},
 }
 
@@ -230,8 +230,8 @@ func ItemTypeToString(itemType ItemType) string {
 			return "Spellbook"
 		case ITEM_TYPE_SPELL_SCROLL:
 			return "Spell Scroll"
-		case ITEM_TYPE_SCHEMATIC:
-			return "Schematic"
+		case ITEM_TYPE_RECIPE:
+			return "Recipe"
 		case ITEM_TYPE_MISC:
 			// TODO: better name?
 			return "Misc"

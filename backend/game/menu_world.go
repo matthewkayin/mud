@@ -656,7 +656,7 @@ func MenuWorld() Menu {
 		},
 	}
 
-	//craft an time
+	//craft an item
 	entries["craft"] = MenuEntry{
 		usage: "craft <item>",
 		description: "Craft an item for which you know the recipe",
@@ -671,8 +671,8 @@ func MenuWorld() Menu {
 
 			itemName := RECIPE_DATA[attemptedRecipe].name
 
-			playerInventory := &player.character.Data.Inventory
-			result := attemptedRecipe.Craft(playerInventory)
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			result := attemptedRecipe.Craft(&playerMob.data.Inventory)
 			if !result {
 				*player.inbox <- fmt.Sprintf("You lack the ingredients to craft %s.", itemName)
 				return true
@@ -683,88 +683,49 @@ func MenuWorld() Menu {
 		},
 	}
 
-	//learn a recipe from a schematic
-	entries["learn"] = MenuEntry {
-		usage: "learn <recipe>",
-		description: "Learn a recipe that you have in your inventory.",
+	//query about your known recipes
+	entries["recipe"] = MenuEntry {
+		usage: "recipe [list] [info <recipe>]",
+		description: "Get information about your known recipes.",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
-
-			playerInventory := &player.character.Data.Inventory
-			schematicIndex := fuzzyFindInventoryItemIndex(playerInventory, args)
-
-			//check for bad inputes
-			if schematicIndex == FUZZY_FIND_RESULT_ITEM_NOT_SPECIFIED {
-				*player.inbox <- "You must specify a recipe to use."
-				return true
+			if len(args) == 0 {
+				return false
 			}
-			if schematicIndex == FUZZY_FIND_RESULT_NOT_FOUND {
-				*player.inbox <- fmt.Sprintf("'%s' is not a schematic in your inventory.",
-				strings.Join(args, " "))
-				return true
-			}
-			if schematicIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
-				*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' in your inventory.",
-				strings.Join(args, " "))
+
+			if args[0] == "list" {
+				if len(player.character.RecipesKnown) == 0 {
+					*player.inbox <- "You do not know any crafting recipes."
+					return true
+				}
+				recipeList := "You know the following recipes:\n"
+				for _, name := range player.character.RecipesKnown {
+					recipeList = (recipeList + RECIPE_DATA[name].name + "\n")
+				}
+				*player.inbox <- recipeList
 				return true
 			}
 
-			//make sure it is a recipe
-			itemId := player.character.Data.Inventory.Items[schematicIndex].Id
-			item := ITEM_DATA[itemId]
-			if item.itemType != ITEM_TYPE_SCHEMATIC {
-				*player.inbox <- "That item is not a recipe."
+			if args[0] == "info" {
+				query, err := fuzzyFindKnownRecipe(player.character, args[1:])
+
+				if err != nil {
+					*player.inbox <- err.Error()
+					return true
+				}
+
+				recipeData := RECIPE_DATA[query]
+				*player.inbox <- "The following recipe requires the following ingredients:"
+				for _, ingredient := range recipeData.materials {
+					material := ITEM_DATA[ingredient.id].name
+					possessed := player.character.Data.Inventory.AmountOf(ingredient.id)
+					needed := ingredient.amount
+					*player.inbox <- fmt.Sprintf("%s: %d / %d", material, possessed, needed)
+				}
+
 				return true
 			}
 
-			var recipe Recipe = item.data.(*ItemDataSchematic).recipe
-			msg, success := recipe.LearnRecipe(player.character)
-			if success {
-				player.character.Data.Inventory.RemoveItem(schematicIndex)
-			}
-			*player.inbox <- msg
-			return true
-		},
-	}
-
-	entries["recipes"] = MenuEntry {
-		usage: "recipes",
-		description: "Show your current equipment",
-		handler: func (gameState *GameState, player *Player, args []string) bool {
-			if player.character.RecipesKnown == nil {
-				*player.inbox <- "You do not know any crafting recipes."
-				return true
-			}
-			recipeList := "You know the following recipes:\n"
-			for _, name := range player.character.RecipesKnown {
-				recipeList = (recipeList + RECIPE_DATA[name].name + "\n")
-			}
-			*player.inbox <- recipeList
-			return true
-		},
-	}
-
-	entries["ingredients"] = MenuEntry {
-		usage: "ingredients <recipe>",
-		description: "Lists the ingredients necessary for a known recipe as well as your current supply in inventory.",
-		handler: func (gameState *GameState, player *Player, args []string) bool {
-			query, err := fuzzyFindKnownRecipe(player.character, args)
-
-			if err != nil {
-				*player.inbox <- err.Error()
-				return true
-			}
-
-			recipeData := RECIPE_DATA[query]
-			groceryList := "The following recipe requires the following ingredients:\n"
-			for _, ingredient := range recipeData.materials {
-				material := ITEM_DATA[ingredient.Id].name
-				possessed, _ := player.character.Data.Inventory.CheckForItem(ingredient.Id, ingredient.Amount)
-				needed := ingredient.Amount
-				groceryList += fmt.Sprintf("%s: %d / %d \n", material, possessed, needed)
-			}
-
-			*player.inbox <- groceryList
-			return true
+			return false
 		},
 	}
 
@@ -1220,6 +1181,28 @@ func MenuWorld() Menu {
 						*player.inbox <- "You cannot cast that spell against players."
 						return true
 					}
+				case ITEM_TYPE_RECIPE:
+					var recipe Recipe = itemData.data.(*ItemDataRecipe).recipe
+					recipeData := RECIPE_DATA[recipe]
+
+					if recipeData.job != player.character.Job {
+						*player.inbox <- fmt.Sprintf("You must be a %s to learn that recipe.", JOB_DATA[recipeData.job].Name)
+						return true
+					}
+
+					if playerMob.data.Level < recipeData.level {
+						*player.inbox <- "Your level is not high enough to learn this recipe."
+						return true
+					}
+
+					if slices.Contains(player.character.RecipesKnown, recipe) {
+						*player.inbox <- "You already know this recipe."
+						return true
+					}
+
+					recipe.LearnRecipe(player)
+					player.character.Data.Inventory.RemoveItem(itemIndex)
+					return true
 				default:
 					*player.inbox <- "That item is not a consumable."
 					return true
