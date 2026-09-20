@@ -40,9 +40,29 @@ func MenuWorld() Menu {
 	// Logout
 	entries["logout"] = MenuEntry {
 		usage: "logout",
-		description: "Logout of the world.",
+		description: "Logout of the world",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
 			player.exitWorld(gameState)
+			return true
+		},
+	}
+
+	// Who
+	entries["who"] = MenuEntry {
+		usage: "who",
+		description: "Get a list of everyone who is online",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			names := make([]string, 0, len(gameState.players))
+			for index := range len(gameState.players) {
+				if !gameState.players[index].isLoggedIn {
+					continue
+				}
+
+				names = append(names, gameState.players[index].character.Data.Name)
+			}
+
+			*player.inbox <- fmt.Sprintf("The players in the world are: %s.", combineNames(names))
+
 			return true
 		},
 	}
@@ -50,7 +70,7 @@ func MenuWorld() Menu {
 	// Look
 	entries["look"] = MenuEntry {
 		usage: "look",
-		description: "Describe the current room.",
+		description: "Describe the current room",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 			room := &gameState.world.Rooms[playerMob.data.Room]
