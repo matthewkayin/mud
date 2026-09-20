@@ -223,6 +223,14 @@ func (room *Room) Update(gameState *GameState) {
 					continue
 				}
 
+				// Perform random durability damage to the player's equipped items on death
+				halfMaxDurability := item.getMaxDurability() / 2
+				durabilityDamage := halfMaxDurability + int32(rand.Intn(int(halfMaxDurability)))
+				item.Durability -= durabilityDamage
+				if item.Durability <= 0 {
+					continue
+				}
+
 				occupantMob.data.Inventory.AddItem(item)
 			}
 		}
