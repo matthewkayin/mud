@@ -20,12 +20,13 @@ func MenuLogin() Menu {
 			}
 
 			for _, characterName := range characterList {
-				character := gameState.world.Characters[characterName]
-				*player.inbox <- fmt.Sprintf("%s - Level %d %s %s",
+				character, _ := gameState.world.GetCharacterIfExists(characterName)
+				*player.inbox <- fmt.Sprintf("%s - Level %d %s %s %s",
 					characterName,
 					character.Data.Level,
 					RACE_DATA[character.Race].Name,
-					CLASS_DATA[character.Class].Name)
+					CLASS_DATA[character.Class].Name,
+					JOB_DATA[character.Job].Name)
 			}
 
 			return true
@@ -34,7 +35,7 @@ func MenuLogin() Menu {
 
 	// Create
 	entries["create"] = MenuEntry {
-		usage: "create [<name>, <race> <class>]",
+		usage: "create [<name>, <race> <class> <job>]",
 		description: "Create a new character. You may specify name, race, class as arguments to this command in order to skip the character creation menu.",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
 			if len(args) == 0 {
@@ -46,7 +47,7 @@ func MenuLogin() Menu {
 			argsJoined := strings.Join(args, " ")
 			nameInput, raceClassInput, commaFound := strings.Cut(argsJoined, ",")
 			if !commaFound {
-				*player.inbox <- "Invalid usage. You must include a comma. Example: 'create Bufo the Wise, Gremlin Wizard'"
+				*player.inbox <- "Invalid usage. You must include a comma. Example: 'create Bufo the Wise, Gremlin Wizard Alchemist'"
 				return true
 			}
 
@@ -57,21 +58,28 @@ func MenuLogin() Menu {
 				return true
 			}
 
-			// Ensure both race and class are specified
-			raceClassArgs := strings.Fields(raceClassInput)
-			if len(raceClassArgs) != 2 {
+			// Ensure both race, class and job are specified
+			raceClassJobArgs := strings.Fields(raceClassInput)
+			if len(raceClassJobArgs) != 3 {
 				return false
 			}
 
 			// Get race from input
-			race, err := CharacterRaceFromString(raceClassArgs[0])
+			race, err := CharacterRaceFromString(raceClassJobArgs[0])
 			if err != nil {
 				*player.inbox <- err.Error()
 				return true
 			}
 
 			// Get class from input
-			class, err := CharacterClassFromString(raceClassArgs[1])
+			class, err := CharacterClassFromString(raceClassJobArgs[1])
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
+			}
+
+			//get job from input
+			job, err := CharacterJobFromString(raceClassJobArgs[2])
 			if err != nil {
 				*player.inbox <- err.Error()
 				return true
@@ -82,6 +90,7 @@ func MenuLogin() Menu {
 				name: name,
 				race: race,
 				class: class,
+				job: job,
 			})
 			gameState.world.CreateCharacter(player.id, character)
 

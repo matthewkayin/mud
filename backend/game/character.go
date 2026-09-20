@@ -50,6 +50,17 @@ type CharacterRaceData struct {
 	Stats MobBaseStats
 }
 
+type CharacterJob int
+const (
+	CHARACTER_JOB_ALCHEMIST = iota
+	CHARACTER_JOB_BLACKSMITH
+	CHARACTER_JOB_ENCHANTER
+)
+
+type CharacterJobData struct {
+	Name string
+}
+
 const CHARACTER_ROOMS_DISCOVERED_BYTE_SIZE int = WORLD_MAX_ROOMS / 8
 
 type CharacterEquippedSpell struct {
@@ -63,9 +74,12 @@ type Character struct {
 
 	Class CharacterClass
 	Race CharacterRace
+	Job CharacterJob
 
 	SpellsEquipped map[Spell]*CharacterEquippedSpell
 	SpellsKnown []Spell
+
+	RecipesKnown []Recipe
 
 	RoomsDiscovered []byte
 
@@ -205,6 +219,18 @@ var RACE_DATA = map[CharacterRace]*CharacterRaceData {
 	},
 }
 
+var JOB_DATA = map[CharacterJob]*CharacterJobData {
+	CHARACTER_JOB_ALCHEMIST: {
+		Name: "Alchemist",
+	},
+	CHARACTER_JOB_BLACKSMITH: {
+		Name: "Blacksmith",
+	},
+	CHARACTER_JOB_ENCHANTER: {
+		Name: "Enchanter",
+	},
+}
+
 func CharacterNameValidate(gameState *GameState, name string) (string, error) {
 	if len(name) > CHARACTER_NAME_MAX {
 		return "", fmt.Errorf("Character names must be no more than %d characters.", CHARACTER_NAME_MAX)
@@ -269,12 +295,23 @@ func CharacterRaceFromString(raceName string) (CharacterRace, error) {
 	return 0, fmt.Errorf("'%s' is not a valid race.", raceName)
 }
 
+func CharacterJobFromString(jobName string) (CharacterJob, error) {
+	for job, jobData := range JOB_DATA {
+		if strings.EqualFold(jobName, jobData.Name) {
+			return job, nil
+		}
+	}
+
+	return 0, fmt.Errorf("'%s' is not a valid job.", jobName)
+}
+
 func CharacterNew(playerId int, characterSheet *MenuCharacterSheet) *Character {
 	var character *Character = &Character{}
 
 	character.PlayerId = playerId
 	character.Race = characterSheet.race
 	character.Class = characterSheet.class
+	character.Job = characterSheet.job
 
 	classData := CLASS_DATA[characterSheet.class]
 	raceData := RACE_DATA[characterSheet.race]

@@ -7,11 +7,17 @@ import (
 type ItemId int
 const (
 	ITEM_GOLD = iota
+	ITEM_DUMMY_MATERIAL
 	ITEM_SWORD
 	ITEM_AXE
 	ITEM_SPELLBOOK_FIREBOLT
 	ITEM_SPELLBOOK_CURE
 	ITEM_POTION_HEALTH
+	ITEM_POTION_MANA
+	ITEM_RECIPE_HEALTH_POT
+	ITEM_RECIPE_MANA_POT
+	ITEM_RECIPE_SWORD
+	ITEM_RECIPE_AXE
 )
 
 type ItemType int
@@ -23,6 +29,7 @@ const (
 	ITEM_TYPE_EQUIPMENT_ACCESSORY
 	ITEM_TYPE_EQUIPMENT_SPELLBOOK
 	ITEM_TYPE_SPELL_SCROLL
+	ITEM_TYPE_RECIPE
 	ITEM_TYPE_MISC // Indicates an item which has no special properties, like gold or a material
 )
 
@@ -71,10 +78,21 @@ type ItemDataSpellbook struct {
 	statRequirements MobBaseStats
 }
 
+type ItemDataRecipe struct {
+	recipe Recipe
+}
+
 var ITEM_DATA = map[ItemId]*ItemData{
 	ITEM_GOLD: {
 		name: "Gold",
 		description: "Gold coins, currency of the land",
+		itemType: ITEM_TYPE_MISC,
+		data: nil,
+	},
+
+	ITEM_DUMMY_MATERIAL: {
+		name: "Dummy Material",
+		description: "Generic resource used to make all things",
 		itemType: ITEM_TYPE_MISC,
 		data: nil,
 	},
@@ -132,12 +150,59 @@ var ITEM_DATA = map[ItemId]*ItemData{
 			onUse: func(gameState *GameState, target *Mob) {
 				var healing int32 = 20
 				healingReceived := min(healing, target.data.MaxHealth() - target.data.Health)
+				target.data.Health += healingReceived
+
 
 				room := gameState.world.Rooms[target.data.Room]
 				room.broadcast(gameState, fmt.Sprintf("%s drank a health potion and regained %d HP.", target.data.Name, healingReceived))
 			},
 		},
 	},
+
+	ITEM_POTION_MANA: {
+		name: "Potion of Mana",
+		description: "A blue tonic that gives mana to the drinker.",
+		itemType: ITEM_TYPE_CONSUMABLE,
+		data: &ItemDataConsumable {
+			onUse: func(gameState *GameState, target *Mob) {
+				var mana int32 = 20
+				manaReceived := min(mana, target.data.MaxMana() - target.data.Mana)
+				target.data.Mana += manaReceived
+
+
+				room := gameState.world.Rooms[target.data.Room]
+				room.broadcast(gameState, fmt.Sprintf("%s drank a mana potion and regained %d MP.", target.data.Name, manaReceived))
+			},
+		},
+	},
+
+	ITEM_RECIPE_HEALTH_POT: {
+		name: "Potion of Health Recipe",
+		description: "The recipe for a Potion of Health. Useable by Alchemists of level 1 or higher.",
+		itemType: ITEM_TYPE_RECIPE,
+		data: &ItemDataRecipe { recipe: RECIPE_HEALTH_POTION },
+	},
+
+	ITEM_RECIPE_MANA_POT: {
+		name: "Potion of Mana Recipe",
+		description: "The recipe for a Poition of Mana. Useable by Alchemists of level 2 or higher.",
+		itemType: ITEM_TYPE_RECIPE,
+		data: &ItemDataRecipe { recipe: RECIPE_MANA_POTION },
+	},
+
+	ITEM_RECIPE_SWORD: {
+		name: "Sword Schematic",
+		description: "The schematic for a sword. Useable by Blacksmiths of level 1 or higher.",
+		itemType: ITEM_TYPE_RECIPE,
+		data: &ItemDataRecipe { recipe: RECIPE_SWORD },
+	},
+
+	ITEM_RECIPE_AXE: {
+			name: "Axe Schematic",
+			description: "The schematic for an axe. Useable by Blacksmiths of level 1 or higher.",
+			itemType: ITEM_TYPE_RECIPE,
+			data: &ItemDataRecipe { recipe: RECIPE_AXE },
+		},
 }
 
 func (itemData *ItemData) ItemIsOneHanded() bool {
@@ -165,6 +230,8 @@ func ItemTypeToString(itemType ItemType) string {
 			return "Spellbook"
 		case ITEM_TYPE_SPELL_SCROLL:
 			return "Spell Scroll"
+		case ITEM_TYPE_RECIPE:
+			return "Recipe"
 		case ITEM_TYPE_MISC:
 			// TODO: better name?
 			return "Misc"

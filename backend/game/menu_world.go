@@ -656,6 +656,81 @@ func MenuWorld() Menu {
 		},
 	}
 
+	//craft an item
+	entries["craft"] = MenuEntry{
+		usage: "craft <item>",
+		description: "Craft an item for which you know the recipe",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+
+			attemptedRecipe, err := fuzzyFindKnownRecipe(player.character, args)
+
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
+			}
+
+			itemName := RECIPE_DATA[attemptedRecipe].name
+
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			result := attemptedRecipe.Craft(&playerMob.data.Inventory)
+			if !result {
+				*player.inbox <- fmt.Sprintf("You lack the ingredients to craft %s.", itemName)
+				return true
+			}
+
+			*player.inbox <- fmt.Sprintf("You have crafted %s.", itemName)
+			return true
+		},
+	}
+
+	//query about your known recipes
+	entries["recipe"] = MenuEntry {
+		usage: "recipe [list] [info <recipe>]",
+		description: "Get information about your known recipes.",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			if len(args) == 0 {
+				return false
+			}
+
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+
+			if args[0] == "list" {
+				if len(player.character.RecipesKnown) == 0 {
+					*player.inbox <- "You do not know any crafting recipes."
+					return true
+				}
+				recipeList := "You know the following recipes:\n"
+				for _, name := range player.character.RecipesKnown {
+					recipeList = (recipeList + RECIPE_DATA[name].name + "\n")
+				}
+				*player.inbox <- recipeList
+				return true
+			}
+
+			if args[0] == "info" {
+				query, err := fuzzyFindKnownRecipe(player.character, args[1:])
+
+				if err != nil {
+					*player.inbox <- err.Error()
+					return true
+				}
+
+				recipeData := RECIPE_DATA[query]
+				*player.inbox <- "The following recipe requires the following ingredients:"
+				for _, ingredient := range recipeData.materials {
+					material := ITEM_DATA[ingredient.id].name
+					possessed := playerMob.data.Inventory.AmountOf(ingredient.id)
+					needed := ingredient.amount
+					*player.inbox <- fmt.Sprintf("%s: %d / %d", material, possessed, needed)
+				}
+
+				return true
+			}
+
+			return false
+		},
+	}
+
 	// Show equipment
 	entries["equipment"] = MenuEntry {
 		usage: "equipment",
@@ -1108,6 +1183,28 @@ func MenuWorld() Menu {
 						*player.inbox <- "You cannot cast that spell against players."
 						return true
 					}
+				case ITEM_TYPE_RECIPE:
+					var recipe Recipe = itemData.data.(*ItemDataRecipe).recipe
+					recipeData := RECIPE_DATA[recipe]
+
+					if recipeData.job != player.character.Job {
+						*player.inbox <- fmt.Sprintf("You must be a %s to learn that recipe.", JOB_DATA[recipeData.job].Name)
+						return true
+					}
+
+					if playerMob.data.Level < recipeData.level {
+						*player.inbox <- "Your level is not high enough to learn this recipe."
+						return true
+					}
+
+					if slices.Contains(player.character.RecipesKnown, recipe) {
+						*player.inbox <- "You already know this recipe."
+						return true
+					}
+
+					recipe.LearnRecipe(player)
+					playerMob.data.Inventory.RemoveItem(itemIndex)
+					return true
 				default:
 					*player.inbox <- "That item is not a consumable."
 					return true
