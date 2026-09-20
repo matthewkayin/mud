@@ -61,6 +61,7 @@ func WorldInitNew() *World {
 				false,
 				false,
 			},
+			IsSafeZone: true,
 
 			Chests: []Chest {
 				{
@@ -102,6 +103,7 @@ func WorldInitNew() *World {
 				false,
 				false,
 			},
+			IsSafeZone: false,
 
 			Chests: []Chest {},
 			Inventory: Inventory {

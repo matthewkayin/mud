@@ -924,8 +924,16 @@ func MenuWorld() Menu {
 		usage: "prepare <spell>",
 		description: "Prepare a spell from the list of spells you know",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
-			// Check if there is an empty spell slot
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			playerRoom := &gameState.world.Rooms[playerMob.data.Room]
+
+			// Make sure the player is in a safe zone
+			if !playerRoom.IsSafeZone {
+				*player.inbox <- "You can only prepare spells from within a safe room."
+				return true
+			}
+
+			// Check if there is an empty spell slot
 			if len(playerMob.data.Spells) >= int(playerMob.data.SpellSlots()) {
 				*player.inbox <- "You don't have any available spell slots."
 				*player.inbox <- "Type 'forget <spell>' to free up a spell slot."
@@ -963,6 +971,15 @@ func MenuWorld() Menu {
 				return false
 			}
 
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			playerRoom := &gameState.world.Rooms[playerMob.data.Room]
+
+			// Make sure the player is in a safe zone
+			if !playerRoom.IsSafeZone {
+				*player.inbox <- "You can only forget spells from within a safe room."
+				return true
+			}
+
 			// Find a spell that matches their input and remove it
 			spell, err := fuzzyFindPreparedSpell(gameState, player, args)
 			if err != nil {
@@ -970,7 +987,6 @@ func MenuWorld() Menu {
 				return true
 			}
 
-			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 			playerMob.data.RemoveSpell(spell)
 			*player.inbox <- fmt.Sprintf("You forgot %s.", SPELL_DATA[spell].name)
 			return true
@@ -1154,6 +1170,30 @@ func MenuWorld() Menu {
 			if !success {
 				*player.inbox <- fmt.Sprintf("Invalid command. Usage: %s", entry.usage)
 			}
+
+			return true
+		},
+	}
+
+	// Rest
+	entries["rest"] = MenuEntry {
+		usage: "rest",
+		description: "Take a rest to regain your health and mana",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+			playerRoom := &gameState.world.Rooms[playerMob.data.Room]
+
+			// Make sure the player is in a safe zone
+			if !playerRoom.IsSafeZone {
+				*player.inbox <- "You can only rest from within a safe room."
+				return true
+			}
+
+			playerRoom.broadcast(gameState, fmt.Sprintf("%s took a nap.", playerMob.data.Name))
+			*player.inbox <- "Your HP and MP have been restored!"
+
+			playerMob.data.Health = playerMob.data.MaxHealth()
+			playerMob.data.Mana = playerMob.data.MaxMana()
 
 			return true
 		},

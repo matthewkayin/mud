@@ -34,6 +34,7 @@ type Room struct {
 	Description string
 	Exits [DIRECTION_COUNT]int
 	ExitIsLocked [DIRECTION_COUNT]bool
+	IsSafeZone bool
 	Inventory Inventory
 	Chests []Chest
 
