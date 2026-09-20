@@ -692,6 +692,8 @@ func MenuWorld() Menu {
 				return false
 			}
 
+			playerMob := gameState.world.Mobs.Get(player.mobHandle)
+
 			if args[0] == "list" {
 				if len(player.character.RecipesKnown) == 0 {
 					*player.inbox <- "You do not know any crafting recipes."
@@ -717,7 +719,7 @@ func MenuWorld() Menu {
 				*player.inbox <- "The following recipe requires the following ingredients:"
 				for _, ingredient := range recipeData.materials {
 					material := ITEM_DATA[ingredient.id].name
-					possessed := player.character.Data.Inventory.AmountOf(ingredient.id)
+					possessed := playerMob.data.Inventory.AmountOf(ingredient.id)
 					needed := ingredient.amount
 					*player.inbox <- fmt.Sprintf("%s: %d / %d", material, possessed, needed)
 				}

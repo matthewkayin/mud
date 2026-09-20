@@ -79,7 +79,7 @@ var RECIPE_DATA = map[Recipe]*RecipeData {
 			{id: ITEM_DUMMY_MATERIAL, amount: 5},
 		},
 		output: Item {
-			Id: ITEM_SWORD,
+			Id: ITEM_AXE,
 			Amount: 1,
 		},
 	},
@@ -94,7 +94,6 @@ func (recipe Recipe) LearnRecipe (player *Player) {
 
 //craft an item from a recipe
 func (recipe Recipe) Craft (inventory *Inventory) (bool) {
-
 	recipeData := RECIPE_DATA[recipe]
 
 	//first check that the materials are there
