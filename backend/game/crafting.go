@@ -89,7 +89,10 @@ recipeData := RECIPE_DATA[recipe]
 	for index, item := range inventory.Items {
 		for _, ingredient := range groceryList {
 			if item.Id == ingredient.Id && ingredient.Amount > 0 {
-				inventory.Items[index].Amount = max(item.Amount - ingredient.Amount, 0)
+				inventory.Items[index].Amount = max(item.Amount - ingredient.Amount)
+				if inventory.Items[index].Amount < 0 {
+					panic("You somehow got negative reagents in inventory during crafting!")
+				}
 			}
 		}
 	}
@@ -99,4 +102,5 @@ recipeData := RECIPE_DATA[recipe]
 	return true
 }
 
-//TO DO: (2) MENU OPTIONS INCLUDING QUERYING ABOUT KNOWN RECIPES (4)CRAFTING ITEMS TO CHEST IN MAIN ROOM
+//TO DO: (2) MENU OPTIONS FOR QUERYING ABOUT KNOWN RECIPES (4)CRAFTING ITEMS TO CHEST IN MAIN ROOM
+//BONUS PROBLEM: WE CAN END UP WITH 0 DUMMY MATERIAL THROUGH CRAFTING

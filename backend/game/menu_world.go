@@ -671,7 +671,8 @@ func MenuWorld() Menu {
 
 			itemName := ITEM_DATA[RECIPE_DATA[attemptedRecipe].output.Id].name
 
-			result := attemptedRecipe.Craft(&player.character.Data.Inventory)
+			playerInventory := &player.character.Data.Inventory
+			result := attemptedRecipe.Craft(playerInventory)
 			if !result {
 				*player.inbox <- fmt.Sprintf("You lack the ingredients to craft %s.", itemName)
 				return true
