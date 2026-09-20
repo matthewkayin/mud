@@ -1201,7 +1201,7 @@ func MenuWorld() Menu {
 					}
 
 					recipe.LearnRecipe(player)
-					player.character.Data.Inventory.RemoveItem(itemIndex)
+					playerMob.data.Inventory.RemoveItem(itemIndex)
 					return true
 				default:
 					*player.inbox <- "That item is not a consumable."

@@ -20,7 +20,7 @@ func MenuLogin() Menu {
 			}
 
 			for _, characterName := range characterList {
-				character := gameState.world.Characters[characterName]
+				character, _ := gameState.world.GetCharacterIfExists(characterName)
 				*player.inbox <- fmt.Sprintf("%s - Level %d %s %s %s",
 					characterName,
 					character.Data.Level,
