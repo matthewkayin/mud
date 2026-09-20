@@ -16,6 +16,8 @@ const (
 	ITEM_POTION_MANA
 	ITEM_SCHEMATIC_HEALTH_POT
 	ITEM_SCHEMATIC_MANA_POT
+	ITEM_SCHEMATIC_SWORD
+	ITEM_SCHEMATIC_AXE
 )
 
 type ItemType int
@@ -175,18 +177,32 @@ var ITEM_DATA = map[ItemId]*ItemData{
 	},
 
 	ITEM_SCHEMATIC_HEALTH_POT: {
-		name: "Recipe: Potion of Health",
+		name: "Potion of Health Recipe",
 		description: "The recipe for a Potion of Health. Useable by Alchemists of level 1 or higher.",
 		itemType: ITEM_TYPE_SCHEMATIC,
 		data: &ItemDataSchematic { recipe: RECIPE_HEALTH_POTION },
 	},
 
 	ITEM_SCHEMATIC_MANA_POT: {
-		name: "Recipe: Potion of Mana",
-		description: "The recipe for a Poition of Mana. Useable by Alchemists of level 1 or higher.",
+		name: "Potion of Mana Recipe",
+		description: "The recipe for a Poition of Mana. Useable by Alchemists of level 2 or higher.",
 		itemType: ITEM_TYPE_SCHEMATIC,
 		data: &ItemDataSchematic { recipe: RECIPE_MANA_POTION },
 	},
+
+	ITEM_SCHEMATIC_SWORD: {
+		name: "Sword Schematic",
+		description: "The blueprint for a sword. Useable by Blacksmiths of level 1 or higher.",
+		itemType: ITEM_TYPE_SCHEMATIC,
+		data: &ItemDataSchematic { recipe: RECIPE_SWORD },
+	},
+
+	ITEM_SCHEMATIC_AXE: {
+			name: "Axe Schematic",
+			description: "The blueprint for an axe. Useable by Blacksmiths of level 1 or higher.",
+			itemType: ITEM_TYPE_SCHEMATIC,
+			data: &ItemDataSchematic { recipe: RECIPE_AXE },
+		},
 }
 
 func (itemData *ItemData) ItemIsOneHanded() bool {

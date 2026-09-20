@@ -669,7 +669,7 @@ func MenuWorld() Menu {
 				return true
 			}
 
-			itemName := ITEM_DATA[RECIPE_DATA[attemptedRecipe].output.Id].name
+			itemName := RECIPE_DATA[attemptedRecipe].name
 
 			playerInventory := &player.character.Data.Inventory
 			result := attemptedRecipe.Craft(playerInventory)
@@ -689,7 +689,8 @@ func MenuWorld() Menu {
 		description: "Learn a recipe that you have in your inventory.",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
 
-			schematicIndex := fuzzyFindInventoryItemIndex(&player.character.Data.Inventory, args)
+			playerInventory := &player.character.Data.Inventory
+			schematicIndex := fuzzyFindInventoryItemIndex(playerInventory, args)
 
 			//check for bad inputes
 			if schematicIndex == FUZZY_FIND_RESULT_ITEM_NOT_SPECIFIED {
@@ -725,9 +726,47 @@ func MenuWorld() Menu {
 		},
 	}
 
-	//list all known recipes
+	entries["recipes"] = MenuEntry {
+		usage: "recipes",
+		description: "Show your current equipment",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			if player.character.RecipesKnown == nil {
+				*player.inbox <- "You do not know any crafting recipes."
+				return true
+			}
+			recipeList := "You know the following recipes:\n"
+			for _, name := range player.character.RecipesKnown {
+				recipeList = (recipeList + RECIPE_DATA[name].name + "\n")
+			}
+			*player.inbox <- recipeList
+			return true
+		},
+	}
 
-	//list all ingredients necessary for a known recipe
+	entries["ingredients"] = MenuEntry {
+		usage: "ingredients <recipe>",
+		description: "Lists the ingredients necessary for a known recipe as well as your current supply in inventory.",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+			query, err := fuzzyFindKnownRecipe(player.character, args)
+
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
+			}
+
+			recipeData := RECIPE_DATA[query]
+			groceryList := "The following recipe requires the following ingredients:\n"
+			for _, ingredient := range recipeData.materials {
+				material := ITEM_DATA[ingredient.Id].name
+				possessed, _ := player.character.Data.Inventory.CheckForItem(ingredient.Id, ingredient.Amount)
+				needed := ingredient.Amount
+				groceryList += fmt.Sprintf("%s: %d / %d \n", material, possessed, needed)
+			}
+
+			*player.inbox <- groceryList
+			return true
+		},
+	}
 
 	// Show equipment
 	entries["equipment"] = MenuEntry {

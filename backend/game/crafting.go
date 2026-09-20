@@ -31,7 +31,7 @@ type RecipeData struct {
 var RECIPE_DATA = map[Recipe]*RecipeData {
 
 	RECIPE_HEALTH_POTION: {
-		name: "Health Potion",
+		name: "Potion of Health",
 		job: CHARACTER_JOB_ALCHEMIST,
 		level: 1,
 		materials: []Material {
@@ -44,14 +44,42 @@ var RECIPE_DATA = map[Recipe]*RecipeData {
 	},
 
 	RECIPE_MANA_POTION: {
-		name: "Mana Potion",
+		name: "Potion of Mana",
 		job: CHARACTER_JOB_ALCHEMIST,
-		level: 1,
+		level: 2,
 		materials: []Material {
 			{Id: ITEM_DUMMY_MATERIAL, Amount: 10},
 		},
 		output: Item {
 			Id: ITEM_POTION_MANA,
+			Amount: 1,
+		},
+	},
+
+	RECIPE_SWORD: {
+		name: "Sword",
+		job: CHARACTER_JOB_BLACKSMITH,
+		level: 1,
+		materials: []Material {
+			{Id: ITEM_AXE, Amount: 2},
+			{Id: ITEM_DUMMY_MATERIAL, Amount: 5},
+		},
+		output: Item {
+			Id: ITEM_SWORD,
+			Amount: 1,
+		},
+	},
+
+	RECIPE_AXE: {
+		name: "Axe",
+		job: CHARACTER_JOB_BLACKSMITH,
+		level: 1,
+		materials: []Material {
+			{Id: ITEM_SWORD, Amount: 2},
+			{Id: ITEM_DUMMY_MATERIAL, Amount: 5},
+		},
+		output: Item {
+			Id: ITEM_SWORD,
 			Amount: 1,
 		},
 	},
@@ -79,20 +107,26 @@ recipeData := RECIPE_DATA[recipe]
 
 	//first check that the materials are there
 	for _, ingredient := range recipeData.materials {
-		if !inventory.CheckForItem(ingredient.Id, ingredient.Amount) {
+		_, hasIngredients := inventory.CheckForItem(ingredient.Id, ingredient.Amount)
+		if !hasIngredients {
 			return false
 		}
 	}
 
 	//then remove the ingredients
 	var groceryList []Material = recipeData.materials
+	//check every item in inventory against the grocery list
 	for index, item := range inventory.Items {
 		for _, ingredient := range groceryList {
 			if item.Id == ingredient.Id && ingredient.Amount > 0 {
-				inventory.Items[index].Amount = max(item.Amount - ingredient.Amount)
-				if inventory.Items[index].Amount < 0 {
-					panic("You somehow got negative reagents in inventory during crafting!")
+				//remove the item from the inventory while also clearing it from the grocery list
+				removed := min(item.Amount, ingredient.Amount)
+				inventory.Items[index].Amount = max(item.Amount - ingredient.Amount, 0)
+				ingredient.Amount -= removed
+				if inventory.Items[index].Amount == 0 {
+					inventory.RemoveItem(index)
 				}
+				continue
 			}
 		}
 	}
@@ -102,5 +136,4 @@ recipeData := RECIPE_DATA[recipe]
 	return true
 }
 
-//TO DO: (2) MENU OPTIONS FOR QUERYING ABOUT KNOWN RECIPES (4)CRAFTING ITEMS TO CHEST IN MAIN ROOM
-//BONUS PROBLEM: WE CAN END UP WITH 0 DUMMY MATERIAL THROUGH CRAFTING
+//TO DO: SPELL BOOK CRAFTING BUT WITH ITS RECIPE BEING YOU KNOWLEDGE OF THE SPELL!!

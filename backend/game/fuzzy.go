@@ -416,7 +416,7 @@ func fuzzyFindKnownRecipe(character *Character, searchWords []string) (Recipe, e
 
 	recipeNames := make([]string, len(character.RecipesKnown))
 	for index, recipe := range character.RecipesKnown {
-		recipeNames[index] = ITEM_DATA[RECIPE_DATA[recipe].output.Id].name
+		recipeNames[index] = RECIPE_DATA[recipe].name
 	}
 
 	fuzzyNumber, searchWords := getFuzzyNumberFromArgs(searchWords)

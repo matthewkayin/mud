@@ -64,16 +64,18 @@ func (inventory *Inventory) RemoveItems(index int, amount int32) Item {
 	return removedItem
 }
 
-func (inventory *Inventory) CheckForItem(id ItemId, amount int32) bool {
+func (inventory *Inventory) CheckForItem(id ItemId, amount int32) (int32, bool) {
 
+	var inInventory int32 = 0
 	for _, inventoryItem := range inventory.Items {
 		if inventoryItem.Id == id {
+			inInventory += inventoryItem.Amount
 			amount = max(amount - inventoryItem.Amount , 0)
 		}
 	}
 	if amount != 0 {
-		return false
+		return inInventory, false
 	}
 
-	return true
+	return inInventory, true
 }

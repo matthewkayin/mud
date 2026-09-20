@@ -98,6 +98,7 @@ func MenuCreateCharacterDataInit() *MenuCharacterSheet {
 		name: "",
 		race: CHARACTER_RACE_HUMAN,
 		class: CHARACTER_CLASS_WARRIOR,
+		job: CHARACTER_JOB_BLACKSMITH,
 	}
 }
 
