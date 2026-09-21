@@ -45,7 +45,6 @@ type MobData struct {
 	Level int32
 	Experience int32
 	ExperienceToNextLevel int32
-	ExperienceOnDeath int32
 
 	Stats MobBaseStats
 

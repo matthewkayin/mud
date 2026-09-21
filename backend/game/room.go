@@ -228,7 +228,7 @@ func (room *Room) Update(gameState *GameState) {
 				continue
 			} else {
 				for _, player := range playersInRoom {
-					dispursedExp := occupantMob.data.ExperienceOnDeath / int32(len(playersInRoom))
+					dispursedExp := occupantMob.data.Experience / int32(len(playersInRoom))
 					player.GrantExperience(dispursedExp)
 					//i did this in the simpliest way possible
 					//we should probably tax exp from things too far off level between player and monster
