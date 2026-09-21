@@ -18,10 +18,10 @@ type Player struct {
 	inbox *chan string
 	menu PlayerMenu
 
-	// nextAction Action
 	characterSheet *world.CharacterSheet
 	character *world.Character
-	// mobHandle MobHandle
+	nextAction Action
+	mobHandle world.MobHandle
 	// tradeSession *TradeSession
 }
 

@@ -8,8 +8,7 @@ import (
 	"mud/world"
 )
 
-const GAME_SECONDS_PER_UPDATE = 3
-const GAME_UPDATE_INTERVAL = GAME_SECONDS_PER_UPDATE * time.Second
+const GAME_UPDATE_INTERVAL = world.WORLD_SECONDS_PER_UPDATE * time.Second
 
 type Command struct {
 	PlayerId int
@@ -129,4 +128,22 @@ func (gamestate *GameState) broadcast(message string) {
 
 // This function is the update that is called on a 3-second interval
 func (gamestate *GameState) update() {
+	gamestate.world.Update()
+
+	// Pass messages from the world update to the players
+	for index := range len(gamestate.world.Messages) {
+		message := &gamestate.world.Messages[index]
+		for _, playerId := range message.ToPlayers {
+			playerIndex, exists := gamestate.playerIdToIndexMap[playerId]
+			if !exists {
+				continue
+			}
+
+			player := &gamestate.players[playerIndex]
+			*player.inbox <- message.Message
+		}
+	}
+
+	// Clear the messages
+	clear(gamestate.world.Messages)
 }
