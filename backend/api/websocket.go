@@ -9,7 +9,6 @@ import (
 	"github.com/coder/websocket"
 )
 
-
 func (apiState* ApiState) HandleGetWebSocket(writer http.ResponseWriter, request *http.Request) {
 	log.Printf("Invoked /api/websocket")
 

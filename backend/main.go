@@ -2,18 +2,19 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
-	"time"
-	"io"
-	"context"
 	"os/signal"
 	"syscall"
+	"context"
+	"time"
 	"net/http"
-	"mud/core"
 	"mud/api"
 	"mud/game"
 )
+
+const MUD_LOG_FOLDER = "./logs"
 
 func main() {
 	// Init logger
@@ -21,15 +22,15 @@ func main() {
 	defer logfile.Close()
 
 	// Load env
-	core.LoadEnv("env.json")
-	env := core.GetEnv()
+	api.LoadEnv()
+	env := api.GetEnv()
 
-	// Init gamestate
-	gameState := game.InitState()
+	// Init gameState
 	gameContext, gameCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	defer gameCancel()
 
 	// Set server endpoint handlers
+	gameState := game.GameStateInit()
 	apiState := api.InitState(gameState)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/auth/login", apiState.HandleAuthLogin)
@@ -64,26 +65,25 @@ func main() {
 }
 
 func initLogger() *os.File {
-	// Create log directory
-	logFolder := "./logs"
-	mkdirError := os.MkdirAll(logFolder, 0755)
-	if mkdirError != nil {
-		log.Fatalf("Failed to create log directory: %s", mkdirError.Error())
+	// Create log folder
+	err := os.MkdirAll(MUD_LOG_FOLDER, 0755)
+	if err != nil {
+		log.Fatalf("Failed to create log folder: %s", err.Error())
 	}
 
 	// Determine logfile path
 	// (I don't know why that's the correct format string to use, but it is)
 	timestamp := time.Now().Format("2006-01-02T15:04:05")
-	logfilePath := fmt.Sprintf("%s/%s.log", logFolder, timestamp)
+	logfilePath := fmt.Sprintf("%s/%s.log", MUD_LOG_FOLDER, timestamp)
 
 	// Open logfile
 	fileOpenFlags := os.O_CREATE | os.O_WRONLY | os.O_APPEND
-	logfile, fileOpenError := os.OpenFile(logfilePath, fileOpenFlags, 0644)
-	if fileOpenError != nil {
-		log.Fatalf("Failed to open log file: %s", fileOpenError.Error())
+	logfile, err := os.OpenFile(logfilePath, fileOpenFlags, 0644)
+	if err != nil {
+		log.Fatalf("Failed to open log file: %s", err.Error())
 	}
 
-	// Set logger to write to both stdout and file
+	// Set logger to write both to stdout and file
 	multiwriter := io.MultiWriter(os.Stdout, logfile)
 	log.SetOutput(multiwriter)
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)

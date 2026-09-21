@@ -5,12 +5,17 @@ import (
 	"context"
 	"time"
 	"log"
-	"os"
 )
 
 const GAME_SECONDS_PER_UPDATE = 3
 const GAME_UPDATE_INTERVAL = GAME_SECONDS_PER_UPDATE * time.Second
-const GAME_WORLD_JSON_PATH = "./world.json"
+
+// Each entry in this array corresponds to a player mode
+var MENUS []*Menu = []*Menu {
+	&MENU_LOGIN,
+	&MENU_CHARACTER_CREATOR,
+	&MENU_WORLD,
+}
 
 type Command struct {
 	PlayerId int
@@ -19,79 +24,31 @@ type Command struct {
 
 type GameState struct {
 	Commands chan Command
-	sigintChannel chan os.Signal
 
-	// Menus
-	menuLogin Menu
-	menuCreateCharacter Menu
-	menuWorld Menu
-
-	// Events
-	eventListeners [][]func (gameState *GameState, event Event)
-
-	// Players
 	players []Player
 	playerIdToIndexMap map[int]int
-
-	world *World
 }
 
-func InitState() *GameState {
-	// Create menus
-	menuLogin := MenuLogin()
-	menuCreateCharacter := MenuCreateCharacter()
-	menuWorld := MenuWorld()
-
-	// Create world
-	world := WorldInitFromFile(GAME_WORLD_JSON_PATH)
-	if world == nil {
-		world = WorldInitNew()
-	}
-	world.PostInit()
-
+func GameStateInit() *GameState {
 	gameState := &GameState {
 		Commands: make(chan Command, 1024),
-		sigintChannel: make(chan os.Signal, 1),
-
-		menuLogin: menuLogin,
-		menuCreateCharacter: menuCreateCharacter,
-		menuWorld: menuWorld,
-
-		eventListeners: make([][]func (gameState *GameState, event Event), EVENT_TYPE_COUNT),
 
 		players: make([]Player, 0, 64),
 		playerIdToIndexMap: make(map[int]int),
-
-		world: world,
 	}
-
-	// Hook up event listeners
-	gameState.addEventListener(EVENT_TYPE_MOB_MOVE, TradeSessionOnMobMove)
-	gameState.addEventListener(EVENT_TYPE_PLAYER_LOGOUT, TradeSessionOnPlayerLogout)
-	gameState.addEventListener(EVENT_TYPE_MOB_DEATH, TradeSessionOnMobDeath)
-	gameState.addEventListener(EVENT_TYPE_MOB_SET_TARGET, TradeSessionOnMobSetTarget)
-	gameState.addEventListener(EVENT_TYPE_MOB_DEATH, PlayerOnMobDeath)
 
 	return gameState
-}
-
-func (gameState *GameState) getPlayerById(playerId int) *Player {
-	playerIndex, exists := gameState.playerIdToIndexMap[playerId]
-	if !exists {
-		return nil
-	}
-	return &gameState.players[playerIndex]
 }
 
 func (gameState *GameState) Run(ctx context.Context) {
 	ticker := time.NewTicker(GAME_UPDATE_INTERVAL)
 	defer ticker.Stop()
 
-	gameLoop:
+	gameloop:
 	for {
 		select {
 			case <- ctx.Done():
-				break gameLoop
+				break gameloop
 			case command := <- gameState.Commands:
 				gameState.handleCommand(command)
 			case <- ticker.C:
@@ -100,17 +57,18 @@ func (gameState *GameState) Run(ctx context.Context) {
 	}
 
 	log.Printf("Shutdown signal received. Shutting down server...")
-	gameState.world.Save("./world.json")
+	// gameState.world.Save("./world.json")
 }
 
 func (gameState *GameState) RegisterPlayer(playerId int, playerInbox *chan string) {
-	gameState.players = append(gameState.players, PlayerInit(playerId, playerInbox))
+	player := playerInit(playerId, playerInbox)
+	gameState.players = append(gameState.players, player)
 	newPlayerIndex := len(gameState.players) - 1
 	gameState.playerIdToIndexMap[playerId] = newPlayerIndex
 
 	newPlayer := &gameState.players[newPlayerIndex]
 	*newPlayer.inbox <- "Welcome to the RC Disco MUD!"
-	newPlayer.enterMenu(gameState, &gameState.menuLogin)
+	// newPlayer.enterMenu(gameState, &gameState.menuLogin)
 }
 
 func (gameState *GameState) RemovePlayer(playerId int) {
@@ -122,10 +80,10 @@ func (gameState *GameState) RemovePlayer(playerId int) {
 	}
 
 	// Check if they are logged in
-	player := &gameState.players[playerIndex]
-	if player.isLoggedIn {
-		player.exitWorld(gameState)
-	}
+	// player := &gameState.players[playerIndex]
+	// if player.isLoggedIn {
+		// player.exitWorld(gameState)
+		// }
 
 	// Swap and pop them from the array
 	lastIndex := len(gameState.players) - 1
@@ -139,6 +97,15 @@ func (gameState *GameState) RemovePlayer(playerId int) {
 	gameState.broadcast(fmt.Sprintf("Player %d has left the game.", playerId))
 }
 
+func (gameState *GameState) getPlayerById(playerId int) *Player {
+	playerIndex, exists := gameState.playerIdToIndexMap[playerId]
+	if !exists {
+		return nil
+	}
+
+	return &gameState.players[playerIndex]
+}
+
 // Handles a player command
 func (gameState *GameState) handleCommand(command Command) {
 	// Lookup player index
@@ -148,18 +115,9 @@ func (gameState *GameState) handleCommand(command Command) {
 		return
 	}
 
-	// Handle command using the player's current menu
 	player := &gameState.players[playerIndex]
-	if player.menuInstance == nil {
-		log.Printf("Received command from player %d but they don't have a menu instance.", command.PlayerId)
-
-		// Remove the player because they are in an unrecoverable state
-		// TODO: We should also develop a way to kick them / i.e. trigger a close in their web socket connection
-		gameState.RemovePlayer(command.PlayerId)
-		return
-	}
-
-	player.menuInstance.HandleCommand(gameState, player, command.Payload)
+	menu := MENUS[player.mode]
+	menu.handleCommand(gameState, player, command.Payload)
 }
 
 // Sends a message to all player inboxes
@@ -171,22 +129,4 @@ func (gameState *GameState) broadcast(message string) {
 
 // This function is the update that is called on a 3-second interval
 func (gameState *GameState) update() {
-	// Apply player actions
-	for index := 0; index < len(gameState.players); index++ {
-		if !gameState.players[index].isLoggedIn {
-			continue
-		}
-
-		gameState.players[index].doAction(gameState)
-	}
-
-	// NPC updates
-	for index := 0; index < len(gameState.world.Npcs); index++ {
-		gameState.world.Npcs[index].update(gameState)
-	}
-
-	// Room updates
-	for index := 0; index < len(gameState.world.Rooms); index++ {
-		gameState.world.Rooms[index].Update(gameState)
-	}
 }
