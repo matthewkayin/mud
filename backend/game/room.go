@@ -215,6 +215,28 @@ func (room *Room) Update(gameState *GameState) {
 			},
 		})
 
+		// If NPC mob, distribute experience to players in room
+		if occupantMob.player == nil {
+			playersInRoom := []*Mob{}
+			for _, handle := range room.occupants {
+				mob := gameState.world.Mobs.Get(handle)
+				if mob.player != nil {
+					playersInRoom = append(playersInRoom, mob)
+				}
+			}
+			if len(playersInRoom) == 0 {
+				continue
+			} else {
+				for _, player := range playersInRoom {
+					dispursedExp := occupantMob.data.ExperienceOnDeath / int32(len(playersInRoom))
+					player.GrantExperience(dispursedExp)
+					//i did this in the simpliest way possible
+					//we should probably tax exp from things too far off level between player and monster
+					//and probably in a way that handles decimal rounding better
+				}
+			}
+		}
+
 		// If player mob, remove their equipment so that it goes into their corpse
 		if occupantMob.player != nil {
 			for slotIndex := range EQUIPMENT_SLOT_COUNT {
