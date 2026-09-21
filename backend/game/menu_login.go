@@ -11,6 +11,8 @@ var MENU_LOGIN = Menu {
 		*player.inbox <- "You are in the login screen."
 		*player.inbox <- "Type 'help' to see a list of options."
 	},
+	onExit: func(gamestate *GameState, player *Player) {
+	},
 	entries: map[string]MenuEntry {
 		"list": {
 			usage: "list",
@@ -42,7 +44,7 @@ var MENU_LOGIN = Menu {
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
 				// If no arguments provided, send them to the character create menu
 				if len(args) == 0 {
-					player.setMenu(gamestate, &MENU_CREATE)
+					player.setMenu(gamestate, PLAYER_MENU_CREATE)
 					return true
 				}
 
@@ -124,7 +126,7 @@ var MENU_LOGIN = Menu {
 				}
 
 				player.character = character
-				player.setMenu(gamestate, &MENU_WORLD)
+				player.setMenu(gamestate, PLAYER_MENU_WORLD)
 
 				return true
 			},

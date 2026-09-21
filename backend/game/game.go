@@ -26,6 +26,7 @@ type GameState struct {
 }
 
 func GameStateInit() *GameState {
+	playerMenusInit()
 	world := world.WorldInitNew()
 
 	gamestate := &GameState {
@@ -116,7 +117,7 @@ func (gamestate *GameState) handleCommand(command Command) {
 	}
 
 	player := &gamestate.players[playerIndex]
-	player.menu.handleCommand(gamestate, player, command.Payload)
+	player.getMenu().handleCommand(gamestate, player, command.Payload)
 }
 
 // Sends a message to all player inboxes

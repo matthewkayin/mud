@@ -13,6 +13,7 @@ type MenuEntry struct {
 
 type Menu struct {
 	onEnter func(gamestate* GameState, player *Player)
+	onExit func(gamestate* GameState, player *Player)
 	entries map[string]MenuEntry
 }
 

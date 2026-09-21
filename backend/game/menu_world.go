@@ -24,6 +24,37 @@ var MENU_WORLD = Menu {
 		// TODO: use the actual room name, and say who is here
 		*player.inbox <- "You are in the Presentation Space."
 	},
+	onExit: func(gamestate *GameState, player *Player) {
+		// Remove player mob and such
+		// Fire event
+		/*
+		gameState.fireEvent(Event {
+			eventType: EVENT_TYPE_PLAYER_LOGOUT,
+			data: EventPlayerLogout {
+				playerId: player.id,
+			},
+		})
+
+		// Remove player from current room
+		playerMob := gameState.world.Mobs.Get(player.mobHandle)
+		playerRoom := &gameState.world.Rooms[playerMob.data.Room]
+		playerRoom.RemoveOccupant(player.mobHandle)
+		playerRoom.broadcast(gameState, fmt.Sprintf("%s has left the world.", playerMob.data.Name))
+
+		// Save player mob data back to their character
+		player.character.Data = playerMob.data
+		*/
+		player.character = nil
+	},
+
 	entries: map[string]MenuEntry {
+		"logout": {
+			usage: "logout",
+			description: "Logout of the world",
+			handler: func (gamestate *GameState, player *Player, args []string) bool {
+				player.setMenu(gamestate, PLAYER_MENU_LOGIN)
+				return true
+			},
+		},
 	},
 }
