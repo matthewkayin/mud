@@ -128,7 +128,7 @@ func WorldInitNew() *World {
 				Room: 1,
 
 				Level: 1,
-				Experience: 0,
+				Experience: 100,
 
 				Stats: MobBaseStats {
 					Vitality: 4,
