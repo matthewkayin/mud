@@ -8,15 +8,15 @@ import (
 type MenuEntry struct {
 	usage string
 	description string
-	handler func(gameState* GameState, player *Player, args []string) bool
+	handler func(gamestate* GameState, player *Player, args []string) bool
 }
 
 type Menu struct {
-	onEnter func(gameState* GameState, player *Player)
+	onEnter func(gamestate* GameState, player *Player)
 	entries map[string]MenuEntry
 }
 
-func (menu *Menu) handleCommand(gameState *GameState, player *Player, command string) {
+func (menu *Menu) handleCommand(gamestate *GameState, player *Player, command string) {
 	// Get verb and arguments
 	words := strings.Fields(command)
 	verb := strings.ToLower(words[0])
@@ -24,7 +24,7 @@ func (menu *Menu) handleCommand(gameState *GameState, player *Player, command st
 
 	// Handle help
 	if verb == "help" {
-		menu.handleHelpCommand(gameState, player, args)
+		menu.handleHelpCommand(player, args)
 		return
 	}
 
@@ -38,7 +38,7 @@ func (menu *Menu) handleCommand(gameState *GameState, player *Player, command st
 	}
 
 	// Execute command
-	executedSuccessfully := entry.handler(gameState, player, args)
+	executedSuccessfully := entry.handler(gamestate, player, args)
 
 	// If not executed successfully, print usage back to user
 	if !executedSuccessfully {
@@ -47,7 +47,7 @@ func (menu *Menu) handleCommand(gameState *GameState, player *Player, command st
 	}
 }
 
-func (menu *Menu) handleHelpCommand(gameState *GameState, player *Player, args []string) {
+func (menu *Menu) handleHelpCommand(player *Player, args []string) {
 	// User asked for help about a specific command
 	if len(args) >= 1 {
 		// Lookup the command in the registry

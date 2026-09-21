@@ -6,15 +6,15 @@ import (
 )
 
 type ApiState struct {
-	gameState *game.GameState
+	gamestate *game.GameState
 
 	tokenToIdMutex sync.RWMutex
 	tokenToIdMap map[string]int
 }
 
-func InitState(gameState *game.GameState) *ApiState {
+func InitState(gamestate *game.GameState) *ApiState {
 	return &ApiState {
-		gameState: gameState,
+		gamestate: gamestate,
 		tokenToIdMutex: sync.RWMutex{},
 		tokenToIdMap: make(map[string]int),
 	}

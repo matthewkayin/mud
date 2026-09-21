@@ -25,13 +25,13 @@ func main() {
 	api.LoadEnv()
 	env := api.GetEnv()
 
-	// Init gameState
+	// Init gamestate
 	gameContext, gameCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	defer gameCancel()
 
 	// Set server endpoint handlers
-	gameState := game.GameStateInit()
-	apiState := api.InitState(gameState)
+	gamestate := game.GameStateInit()
+	apiState := api.InitState(gamestate)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/auth/login", apiState.HandleAuthLogin)
 	mux.HandleFunc("/api/auth/callback", apiState.HandleAuthCallback)
@@ -50,7 +50,7 @@ func main() {
 	go runHttpServer(server)
 
 	// Kick off game loop on main thread
-	gameState.Run(gameContext)
+	gamestate.Run(gameContext)
 
 	// Tell the HTTP server to shutdown gracefully
 	shutdownContext, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
