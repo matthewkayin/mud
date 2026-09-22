@@ -126,6 +126,28 @@ func (gamestate *GameState) broadcast(message string) {
 	}
 }
 
+func (gamestate *GameState) messageRoom(roomIndex int, message string) {
+	room := &gamestate.world.Rooms[roomIndex]
+
+	for _, mobHandle := range room.Occupants {
+		mob := gamestate.world.Mobs.Get(mobHandle)
+		if mob.PlayerCharacter == nil {
+			continue
+		}
+
+		playerId := mob.PlayerCharacter.PlayerId
+		playerIndex, exists := gamestate.playerIdToIndexMap[playerId]
+		if !exists {
+			log.Printf("Warn - Mob %d:%d in room %d has player ID %d but that player does not exist.",
+				mobHandle.Id, mobHandle.Generation, roomIndex, playerId)
+			continue
+		}
+
+		player := &gamestate.players[playerIndex]
+		*player.inbox <- message
+	}
+}
+
 // This function is the update that is called on a 3-second interval
 func (gamestate *GameState) update() {
 	gamestate.world.Update()

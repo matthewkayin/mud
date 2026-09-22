@@ -2,48 +2,37 @@ package game
 
 import (
 	"fmt"
+	"mud/world"
 )
 
 var MENU_WORLD = Menu {
 	onEnter: func(gamestate *GameState, player *Player) {
 		// Clear the player's action in case they had any leftover from a previous login session
-		// player.nextAction = Action {
-			// actionType: ACTION_TYPE_NONE,
-			// data: nil,
-		// }
+		player.nextAction = Action {
+			actionType: ACTION_TYPE_NONE,
+			data: nil,
+		}
 
 		// Create a mob for the player
-		// playerMob := MobInitPlayer(player, player.character)
-		// player.mobHandle = gameState.world.Mobs.Push(playerMob)
-		// playerRoom := &gameState.world.Rooms[playerMob.data.Room]
-		// playerRoom.broadcast(gameState, fmt.Sprintf("%s has joined the room.", player.character.Data.Name))
-		// playerRoom.AddOccupant(player.mobHandle)
+		playerMob := world.MobInitFromCharacter(player.character)
+		player.mobHandle = gamestate.world.Mobs.Push(playerMob)
+		playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
+		gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("%s has joined the room.", player.character.Data.Name))
+		playerRoom.AddOccupant(player.mobHandle)
 
 		// Enter world menu
 		*player.inbox <- fmt.Sprintf("You have logged in. Welcome, %s.", player.character.Data.Name)
-		// TODO: use the actual room name, and say who is here
-		*player.inbox <- "You are in the Presentation Space."
+		*player.inbox <- fmt.Sprintf("You are in %s.", playerRoom.Name)
 	},
 	onExit: func(gamestate *GameState, player *Player) {
-		// Remove player mob and such
-		// Fire event
-		/*
-		gameState.fireEvent(Event {
-			eventType: EVENT_TYPE_PLAYER_LOGOUT,
-			data: EventPlayerLogout {
-				playerId: player.id,
-			},
-		})
-
 		// Remove player from current room
-		playerMob := gameState.world.Mobs.Get(player.mobHandle)
-		playerRoom := &gameState.world.Rooms[playerMob.data.Room]
+		playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+		playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
 		playerRoom.RemoveOccupant(player.mobHandle)
-		playerRoom.broadcast(gameState, fmt.Sprintf("%s has left the world.", playerMob.data.Name))
+		gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("%s has left the world.", playerMob.Data.Name))
 
 		// Save player mob data back to their character
-		player.character.Data = playerMob.data
-		*/
+		player.character.Data = playerMob.Data
 		player.character = nil
 	},
 

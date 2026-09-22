@@ -3,7 +3,10 @@ package world
 import (
 	"log"
 	"strings"
+	"mud/bitset"
 )
+
+const CHARACTER_ROOMS_DISCOVERED_BYTE_SIZE int = WORLD_MAX_ROOMS / 8
 
 type CharacterSheet struct {
 	Name string
@@ -12,16 +15,22 @@ type CharacterSheet struct {
 	Job JobId
 }
 
+type CharacterEquippedSpell struct {
+	EquipCount int32
+	Casts int32
+	IsKnown bool
+}
+
 type Character struct {
 	PlayerId int
 	Race RaceId
 	Class ClassId
 	Job JobId
 
-	// SpellsEquipped map[Spell]*CharacterEquippedSpell
-	// SpellsKnown []Spell
-	// RecipesKnown []Recipe
-	// RoomsDiscovered []byte
+	SpellsEquipped map[Spell]*CharacterEquippedSpell
+	SpellsKnown []Spell
+	RecipesKnown []Recipe
+	RoomsDiscovered []byte
 	Data MobData
 }
 
@@ -38,7 +47,7 @@ func CharacterInitEmpty(playerId int, characterSheet *CharacterSheet) *Character
 
 	character.Data.Level = 1
 	character.Data.Experience = 0
-	// character.Data.ExperienceToNextLevel = character.Data.GetExpToNextLevel()
+	character.Data.ExperienceToNextLevel = character.Data.GetExpToNextLevel()
 
 	// Get handles to race/class/job data
 	raceData := RACE_DATA[character.Race]
@@ -51,16 +60,26 @@ func CharacterInitEmpty(playerId int, characterSheet *CharacterSheet) *Character
 	character.Data.Stats = character.Data.Stats.Add(&jobData.Stats)
 
 	// Determine derived stats
-	// character.Data.Health = character.Data.MaxHealth()
-	// character.Data.Mana = character.Data.MaxMana()
+	character.Data.Health = character.Data.MaxHealth()
+	character.Data.Mana = character.Data.MaxMana()
 
 	// Init spell list
+	character.Data.Spells = make([]Spell, 0, 1)
+	character.SpellsEquipped = make(map[Spell]*CharacterEquippedSpell)
+	character.SpellsKnown = make([]Spell, 0, 1)
+	character.RecipesKnown = make([]Recipe, 0, 1)
 
 	// Init inventory
+	character.Data.Inventory = Inventory {
+		Items: make([]Item, 0, 1),
+	}
 
 	// Init equipment
+	character.Data.Equipment = EquipmentInitEmpty()
 
 	// Init rooms discovered
+	character.RoomsDiscovered = bitset.New(CHARACTER_ROOMS_DISCOVERED_BYTE_SIZE)
+	bitset.Set(character.RoomsDiscovered, character.Data.Room, true)
 
 	return character
 }

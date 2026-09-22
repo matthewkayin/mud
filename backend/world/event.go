@@ -50,8 +50,8 @@ func (world *World) messagePlayer(playerId int, message string) {
 func (world *World) messageRoom(roomIndex int, message string) {
 	room := &world.Rooms[roomIndex]
 
-	toPlayers := make([]int, 0, len(room.occupants))
-	for _, mobHandle := range room.occupants {
+	toPlayers := make([]int, 0, len(room.Occupants))
+	for _, mobHandle := range room.Occupants {
 		mob := world.Mobs.Get(mobHandle)
 		if mob.PlayerCharacter == nil {
 			continue
