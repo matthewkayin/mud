@@ -75,7 +75,6 @@ func (inventory *Inventory) RemoveItems(index int, amount int32) Item {
 }
 
 func (inventory *Inventory) AmountOf(id ItemId) (int32) {
-
 	var inInventory int32 = 0
 	for _, inventoryItem := range inventory.Items {
 		if inventoryItem.Id == id {

@@ -51,28 +51,28 @@ func (mobData *MobData) Armor() int32 {
 	}
 
 	itemData := ITEM_DATA[outfit.Id]
-	outfitData := itemData.data.(*ItemDataOutfit)
-	return outfitData.armor
+	outfitData := itemData.Data.(*ItemDataOutfit)
+	return outfitData.Armor
 }
 
 func (mobData *MobData) Vitality() int32 {
-	return mobData.Stats.Vitality + mobData.Equipment.statBonuses.Vitality
+	return mobData.Stats.Vitality + mobData.Equipment.StatBonuses.Vitality
 }
 
 func (mobData *MobData) Strength() int32 {
-	return mobData.Stats.Strength + mobData.Equipment.statBonuses.Strength
+	return mobData.Stats.Strength + mobData.Equipment.StatBonuses.Strength
 }
 
 func (mobData *MobData) Agility() int32 {
-	return mobData.Stats.Agility + mobData.Equipment.statBonuses.Agility
+	return mobData.Stats.Agility + mobData.Equipment.StatBonuses.Agility
 }
 
 func (mobData *MobData) Intelligence() int32 {
-	return mobData.Stats.Intelligence + mobData.Equipment.statBonuses.Intelligence
+	return mobData.Stats.Intelligence + mobData.Equipment.StatBonuses.Intelligence
 }
 
 func (mobData *MobData) Faith() int32 {
-	return mobData.Stats.Faith + mobData.Equipment.statBonuses.Faith
+	return mobData.Stats.Faith + mobData.Equipment.StatBonuses.Faith
 }
 
 func (mobData *MobData) SpellSlots() int32 {
@@ -88,7 +88,7 @@ func (mobData *MobData) SpellSlots() int32 {
 
 func (mobData *MobData) CastsToLearn(spell Spell) int32 {
 	spellData := SPELL_DATA[spell]
-	spellCastsToLearn := float32(spellData.castsToLearn)
+	spellCastsToLearn := float32(spellData.CastsToLearn)
 	mobInt := float32(mobData.Intelligence())
 
 	return int32(spellCastsToLearn * (1.0 - (mobInt * MOB_CASTS_TO_LEARN_K)))

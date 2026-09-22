@@ -21,7 +21,7 @@ type Equipment struct {
 	// Instead, stat bonuses are recalculated when a character logins
 	// This way if an item gets a balance patch, players will get the patch applied
 	// to them when they login
-	statBonuses StatBlock
+	StatBonuses StatBlock
 }
 
 func ItemTypeMatchesEquipmentSlot(itemType ItemType, slot EquipmentSlot) bool {
@@ -72,7 +72,7 @@ func EquipmentInitEmpty() Equipment {
 		IsSlotInUse: make([]bool, EQUIPMENT_SLOT_COUNT),
 		SlotItem: make([]Item, EQUIPMENT_SLOT_COUNT),
 
-		statBonuses: StatBlock {},
+		StatBonuses: StatBlock {},
 	}
 	for index := range EQUIPMENT_SLOT_COUNT {
 		equipment.IsSlotInUse[index] = false
@@ -95,7 +95,7 @@ func (equipment *Equipment) Unequip(slot EquipmentSlot) (Item, bool) {
 	}
 
 	item := equipment.SlotItem[slot]
-	if ITEM_DATA[item.Id].itemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED {
+	if ITEM_DATA[item.Id].ItemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED {
 		equipment.IsSlotInUse[EQUIPMENT_SLOT_MAIN_HAND] = false
 		equipment.IsSlotInUse[EQUIPMENT_SLOT_OFF_HAND] = false
 	} else {
@@ -112,7 +112,7 @@ func (equipment *Equipment) Equip(slot EquipmentSlot, item Item) ([]Item, bool) 
 	unequippedItems := make([]Item, 0, 2)
 
 	// Check item type against equipment slot
-	itemType := ITEM_DATA[item.Id].itemType
+	itemType := ITEM_DATA[item.Id].ItemType
 	if !ItemTypeMatchesEquipmentSlot(itemType, slot) {
 		return unequippedItems, false
 	}
@@ -157,7 +157,7 @@ func (equipment *Equipment) Equip(slot EquipmentSlot, item Item) ([]Item, bool) 
 }
 
 func (equipment *Equipment) CalculateStatBonuses() {
-	equipment.statBonuses = StatBlock {}
+	equipment.StatBonuses = StatBlock {}
 
 	for slotIndex := range EQUIPMENT_SLOT_COUNT {
 		slot := EquipmentSlot(slotIndex)
@@ -169,12 +169,12 @@ func (equipment *Equipment) CalculateStatBonuses() {
 		}
 
 		// Get item stat bonusees
-		itemStatBonuses := item.getStatBonuses()
+		itemStatBonuses := item.GetStatBonuses()
 		if itemStatBonuses == nil {
 			continue
 		}
 
-		equipment.statBonuses = equipment.statBonuses.Add(itemStatBonuses)
+		equipment.StatBonuses = equipment.StatBonuses.Add(itemStatBonuses)
 	}
 }
 
@@ -188,12 +188,12 @@ func (equipment *Equipment) IsHoldingSpellbookOf(spell Spell) bool {
 			continue
 		}
 		heldItemData := ITEM_DATA[heldItem.Id]
-		if heldItemData.itemType != ITEM_TYPE_EQUIPMENT_SPELLBOOK {
+		if heldItemData.ItemType != ITEM_TYPE_EQUIPMENT_SPELLBOOK {
 			continue
 		}
 
-		heldSpellbookData := heldItemData.data.(*ItemDataSpellbook)
-		if heldSpellbookData.spell == spell {
+		heldSpellbookData := heldItemData.Data.(*ItemDataSpellbook)
+		if heldSpellbookData.Spell == spell {
 			return true
 		}
 	}

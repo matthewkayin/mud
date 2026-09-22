@@ -42,60 +42,60 @@ const (
 )
 
 type ItemDataConsumable struct {
-	onUse func(world *World, target *Mob)
+	OnUse func(world *World, target *Mob)
 }
 
 type ItemDataSpellScroll struct {
-	spell Spell
+	Spell Spell
 }
 
 type ItemDataWeapon struct {
-	damage int32
-	maxDurability int32
-	statBonuses StatBlock
-	statRequirements StatBlock
+	Damage int32
+	MaxDurability int32
+	StatBonuses StatBlock
+	StatRequirements StatBlock
 }
 
 type ItemDataOutfit struct {
-	armor int32
-	maxDurability int32
-	statBonuses StatBlock
-	statRequirements StatBlock
+	Armor int32
+	MaxDurability int32
+	StatBonuses StatBlock
+	StatRequirements StatBlock
 }
 
 type ItemDataAccessory struct {
-	statBonuses StatBlock
-	statRequirements StatBlock
+	StatBonuses StatBlock
+	StatRequirements StatBlock
 }
 
 type ItemDataSpellbook struct {
-	spell Spell
-	statRequirements StatBlock
+	Spell Spell
+	StatRequirements StatBlock
 }
 
 type ItemDataRecipe struct {
-	recipe Recipe
+	Recipe Recipe
 }
 
 
 type ItemData struct {
-	name string
-	description string
-	itemType ItemType
-	data any
+	Name string
+	Description string
+	ItemType ItemType
+	Data any
 }
 
 // HELPERS
 
 func (itemData *ItemData) ItemIsOneHanded() bool {
-	return itemData.itemType == ITEM_TYPE_EQUIPMENT_ONE_HANDED ||
-		itemData.itemType == ITEM_TYPE_EQUIPMENT_SPELLBOOK
+	return itemData.ItemType == ITEM_TYPE_EQUIPMENT_ONE_HANDED ||
+		itemData.ItemType == ITEM_TYPE_EQUIPMENT_SPELLBOOK
 }
 
 func (itemData *ItemData) ItemCanStack() bool {
-	return itemData.itemType == ITEM_TYPE_CONSUMABLE ||
-		itemData.itemType == ITEM_TYPE_SPELL_SCROLL ||
-		itemData.itemType == ITEM_TYPE_MISC
+	return itemData.ItemType == ITEM_TYPE_CONSUMABLE ||
+		itemData.ItemType == ITEM_TYPE_SPELL_SCROLL ||
+		itemData.ItemType == ITEM_TYPE_MISC
 }
 
 func ItemTypeToString(itemType ItemType) string {
@@ -122,65 +122,65 @@ func ItemTypeToString(itemType ItemType) string {
 	}
 }
 
-func (item *Item) getStatBonuses() *StatBlock {
+func (item *Item) GetStatBonuses() *StatBlock {
 	itemData := ITEM_DATA[item.Id]
-	switch itemData.itemType {
+	switch itemData.ItemType {
 		case ITEM_TYPE_EQUIPMENT_ONE_HANDED, ITEM_TYPE_EQUIPMENT_TWO_HANDED:
-			weaponData := itemData.data.(*ItemDataWeapon)
-			return &weaponData.statBonuses
+			weaponData := itemData.Data.(*ItemDataWeapon)
+			return &weaponData.StatBonuses
 		case ITEM_TYPE_EQUIPMENT_OUTFIT:
-			outfitData := itemData.data.(*ItemDataOutfit)
-			return &outfitData.statBonuses
+			outfitData := itemData.Data.(*ItemDataOutfit)
+			return &outfitData.StatBonuses
 		case ITEM_TYPE_EQUIPMENT_ACCESSORY:
-			accessoryData := itemData.data.(*ItemDataAccessory)
-			return &accessoryData.statBonuses
+			accessoryData := itemData.Data.(*ItemDataAccessory)
+			return &accessoryData.StatBonuses
 		default:
 			return nil
 	}
 }
 
-func (item *Item) getStatRequirements() *StatBlock {
+func (item *Item) GetStatRequirements() *StatBlock {
 	itemData := ITEM_DATA[item.Id]
-	switch itemData.itemType {
+	switch itemData.ItemType {
 		case ITEM_TYPE_EQUIPMENT_ONE_HANDED, ITEM_TYPE_EQUIPMENT_TWO_HANDED:
-			weaponData := itemData.data.(*ItemDataWeapon)
-			return &weaponData.statRequirements
+			weaponData := itemData.Data.(*ItemDataWeapon)
+			return &weaponData.StatRequirements
 		case ITEM_TYPE_EQUIPMENT_OUTFIT:
-			outfitData := itemData.data.(*ItemDataOutfit)
-			return &outfitData.statRequirements
+			outfitData := itemData.Data.(*ItemDataOutfit)
+			return &outfitData.StatRequirements
 		case ITEM_TYPE_EQUIPMENT_ACCESSORY:
-			accessoryData := itemData.data.(*ItemDataAccessory)
-			return &accessoryData.statRequirements
+			accessoryData := itemData.Data.(*ItemDataAccessory)
+			return &accessoryData.StatRequirements
 		case ITEM_TYPE_EQUIPMENT_SPELLBOOK:
-			spellbookData := itemData.data.(*ItemDataSpellbook)
-			return &spellbookData.statRequirements
+			spellbookData := itemData.Data.(*ItemDataSpellbook)
+			return &spellbookData.StatRequirements
 		default:
 			return nil
 	}
 }
 
-func (item *Item) getNameWithCondition() string {
+func (item *Item) GetNameWithCondition() string {
 	itemData := ITEM_DATA[item.Id]
 
-	maxDurability := item.getMaxDurability()
+	maxDurability := item.GetMaxDurability()
 	if maxDurability == 0 {
-		return itemData.name
+		return itemData.Name
 	}
 
-	itemIsWeapon := itemData.itemType == ITEM_TYPE_EQUIPMENT_ONE_HANDED || itemData.itemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED
+	itemIsWeapon := itemData.ItemType == ITEM_TYPE_EQUIPMENT_ONE_HANDED || itemData.ItemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED
 	if item.Durability < maxDurability / 2 {
-		return "Damaged " + itemData.name
+		return "Damaged " + itemData.Name
 	} else if item.Durability > maxDurability && itemIsWeapon {
-		return "Sharpened " + itemData.name
+		return "Sharpened " + itemData.Name
 	} else if item.Durability > maxDurability && !itemIsWeapon {
-		return "Fortified " + itemData.name
+		return "Fortified " + itemData.Name
 	} else {
-		return itemData.name
+		return itemData.Name
 	}
 }
 
-func (item *Item) getNameWithAmount() string {
-	itemName := item.getNameWithCondition()
+func (item *Item) GetNameWithAmount() string {
+	itemName := item.GetNameWithCondition()
 
 	if item.Amount == 1 {
 		return itemName
@@ -188,19 +188,19 @@ func (item *Item) getNameWithAmount() string {
 	return fmt.Sprintf("%d %s", item.Amount, itemName)
 }
 
-func (item *Item) getMaxDurability() int32 {
+func (item *Item) GetMaxDurability() int32 {
 	itemData := ITEM_DATA[item.Id]
-	switch itemData.itemType {
+	switch itemData.ItemType {
 		case ITEM_TYPE_EQUIPMENT_ONE_HANDED, ITEM_TYPE_EQUIPMENT_TWO_HANDED:
-			weaponData := itemData.data.(*ItemDataWeapon)
-			return weaponData.maxDurability
+			weaponData := itemData.Data.(*ItemDataWeapon)
+			return weaponData.MaxDurability
 		case ITEM_TYPE_EQUIPMENT_OUTFIT:
-			outfitData := itemData.data.(*ItemDataOutfit)
-			return outfitData.maxDurability
+			outfitData := itemData.Data.(*ItemDataOutfit)
+			return outfitData.MaxDurability
 		case ITEM_TYPE_EQUIPMENT_SPELLBOOK:
-			spellbookData := itemData.data.(*ItemDataSpellbook)
-			spellData := SPELL_DATA[spellbookData.spell]
-			return spellData.castsToLearn
+			spellbookData := itemData.Data.(*ItemDataSpellbook)
+			spellData := SPELL_DATA[spellbookData.Spell]
+			return spellData.CastsToLearn
 		default:
 			return 0
 	}

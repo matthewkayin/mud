@@ -22,7 +22,7 @@ type Player struct {
 	character *world.Character
 	nextAction Action
 	mobHandle world.MobHandle
-	// tradeSession *TradeSession
+	tradeSession *TradeSession
 }
 
 func playerMenusInit() {

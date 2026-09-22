@@ -13,26 +13,26 @@ const (
 )
 
 type SpellData struct {
-	name string
-	description string
-	castsToLearn int32
+	Name string
+	Description string
+	CastsToLearn int32
 
-	manaCost int32
-	castTime int32
-	canTargetPlayers bool
+	ManaCost int32
+	CastTime int32
+	CanTargetPlayers bool
 
 	onHit func(world *World, caster *Mob, target *Mob)
 }
 
 var SPELL_DATA = []*SpellData {
 	SPELL_FIREBOLT: {
-		name: "Firebolt",
-		description: "Casts a bolt of fire toward the target",
-		castsToLearn: 50,
+		Name: "Firebolt",
+		Description: "Casts a bolt of fire toward the target",
+		CastsToLearn: 50,
 
-		manaCost: 5,
-		castTime: 1,
-		canTargetPlayers: false,
+		ManaCost: 5,
+		CastTime: 1,
+		CanTargetPlayers: false,
 
 		onHit: func(world *World, caster *Mob, target *Mob) {
 			damage := caster.calculateMagicDamage(10, target)
@@ -47,13 +47,13 @@ var SPELL_DATA = []*SpellData {
 		},
 	},
 	SPELL_CURE: {
-		name: "Cure",
-		description: "Heals the target with holy magic",
-		castsToLearn: 50,
+		Name: "Cure",
+		Description: "Heals the target with holy magic",
+		CastsToLearn: 50,
 
-		manaCost: 5,
-		castTime: SPELL_CAST_TIME_INSTANT,
-		canTargetPlayers: true,
+		ManaCost: 5,
+		CastTime: SPELL_CAST_TIME_INSTANT,
+		CanTargetPlayers: true,
 
 		onHit: func(world *World, caster *Mob, target *Mob) {
 			healing := caster.calculateMagicDamage(15, target)

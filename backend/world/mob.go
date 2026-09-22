@@ -35,8 +35,8 @@ type Mob struct {
 	PlayerCharacter *Character
 	Data MobData
 
-	mode MobMode
-	target MobHandle
+	Mode MobMode
+	Target MobHandle
 
 	castSpell Spell
 	castTimer int32
@@ -47,7 +47,7 @@ func MobInit(data *MobData) Mob {
 	mob := Mob {
 		PlayerCharacter: nil,
 		Data: *data,
-		mode: MOB_MODE_IDLE,
+		Mode: MOB_MODE_IDLE,
 	}
 
 	mob.Data.Equipment.CalculateStatBonuses()
@@ -95,8 +95,8 @@ func (mob *Mob) GrantExperience(world *World, experience int32) {
 }
 
 func (mob *Mob) SetModeAttack(world *World, mobHandle MobHandle, targetHandle MobHandle) {
-	mob.mode = MOB_MODE_ATTACK
-	mob.target = targetHandle
+	mob.Mode = MOB_MODE_ATTACK
+	mob.Target = targetHandle
 
 	world.pushEvent(Event {
 		EventType: EVENT_TYPE_MOB_SET_TARGET,
@@ -108,10 +108,10 @@ func (mob *Mob) SetModeAttack(world *World, mobHandle MobHandle, targetHandle Mo
 }
 
 func (mob *Mob) SetModeCast(world *World, mobHandle MobHandle, spell Spell, targetHandle MobHandle) {
-	mob.mode = MOB_MODE_CAST
-	mob.target = targetHandle
+	mob.Mode = MOB_MODE_CAST
+	mob.Target = targetHandle
 	mob.castSpell = spell
-	mob.castTimer = SPELL_DATA[spell].castTime
+	mob.castTimer = SPELL_DATA[spell].CastTime
 
 	world.pushEvent(Event {
 		EventType: EVENT_TYPE_MOB_SET_TARGET,
@@ -123,8 +123,8 @@ func (mob *Mob) SetModeCast(world *World, mobHandle MobHandle, spell Spell, targ
 }
 
 func (mob *Mob) SetModeUseItem(world *World, mobHandle MobHandle, itemId ItemId, targetHandle MobHandle) {
-	mob.mode = MOB_MODE_USE_ITEM
-	mob.target = targetHandle
+	mob.Mode = MOB_MODE_USE_ITEM
+	mob.Target = targetHandle
 	mob.useItemId = itemId
 
 	world.pushEvent(Event {
@@ -137,7 +137,7 @@ func (mob *Mob) SetModeUseItem(world *World, mobHandle MobHandle, itemId ItemId,
 }
 
 func (mob *Mob) Update(world *World) {
-	switch mob.mode {
+	switch mob.Mode {
 		case MOB_MODE_IDLE:
 		case MOB_MODE_ATTACK:
 			// Check if target exists
@@ -159,7 +159,7 @@ func (mob *Mob) Update(world *World) {
 
 			// Cast spell
 			mob.spellcast(world, targetMob)
-			mob.mode = MOB_MODE_IDLE
+			mob.Mode = MOB_MODE_IDLE
 		case MOB_MODE_USE_ITEM:
 			// Check if target exists
 			targetMob, targetExists := mob.getTargetIfExists(world)
@@ -169,14 +169,14 @@ func (mob *Mob) Update(world *World) {
 
 			// Use item
 			mob.useItem(world, targetMob)
-			mob.mode = MOB_MODE_IDLE
+			mob.Mode = MOB_MODE_IDLE
 	}
 }
 
 func (mob *Mob) getTargetIfExists(world *World) (*Mob, bool) {
-	targetMob, targetExists := world.Mobs.GetIfExists(mob.target)
+	targetMob, targetExists := world.Mobs.GetIfExists(mob.Target)
 	if !targetExists || targetMob.IsDead() || targetMob.Data.Room != mob.Data.Room {
-		mob.mode = MOB_MODE_IDLE
+		mob.Mode = MOB_MODE_IDLE
 		return nil, false
 	}
 
@@ -191,8 +191,8 @@ func (mob *Mob) attackTargetWithWeapon(world *World, room *Room, targetMob *Mob,
 	if weapon != nil {
 		itemData = ITEM_DATA[weapon.Id]
 		heldItemIsWeapon =
-			itemData.itemType == ITEM_TYPE_EQUIPMENT_ONE_HANDED ||
-			itemData.itemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED
+			itemData.ItemType == ITEM_TYPE_EQUIPMENT_ONE_HANDED ||
+			itemData.ItemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED
 	}
 
 	// Don't attack with off-hand unless there is a weapon in off-hand
@@ -213,8 +213,8 @@ func (mob *Mob) attackTargetWithWeapon(world *World, room *Room, targetMob *Mob,
 	// Get weapon damage from the item
 	var damage int32 = 0
 	if heldItemIsWeapon {
-		weaponData := itemData.data.(*ItemDataWeapon)
-		damage = weaponData.damage
+		weaponData := itemData.Data.(*ItemDataWeapon)
+		damage = weaponData.Damage
 	}
 
 	// Add strength to the damage
@@ -264,7 +264,7 @@ func (mob *Mob) attackTargetWithWeapon(world *World, room *Room, targetMob *Mob,
 
 func (mob *Mob) rollForConcentration(world *World, damage int32) {
 	// Not concentrating
-	if mob.mode != MOB_MODE_CAST {
+	if mob.Mode != MOB_MODE_CAST {
 		return
 	}
 
@@ -284,7 +284,7 @@ func (mob *Mob) rollForConcentration(world *World, damage int32) {
 	}
 
 	// Concentration broken!
-	mob.mode = MOB_MODE_IDLE
+	mob.Mode = MOB_MODE_IDLE
 	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s lost concentration on their spell!", mob.Data.Name))
 }
 
@@ -298,9 +298,13 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 
 	item.Durability--
 	if item.Durability == 0 {
-		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s's %s broke!", mob.Data.Name, itemData.name))
+		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s's %s broke!", mob.Data.Name, itemData.Name))
 		item, _ := mob.Data.Equipment.Unequip(slot)
-		mob.onPlayerItemUnequipped(world, item)
+		message := mob.OnPlayerItemUnequipped(item)
+		if message != "" {
+			world.messagePlayer(mob.PlayerCharacter.PlayerId, message)
+		}
+
 		return
 	}
 
@@ -310,11 +314,11 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 	}
 
 	// If item has become damaged, tell the user
-	maxDurability := item.getMaxDurability()
+	maxDurability := item.GetMaxDurability()
 	itemWasDamaged := (item.Durability + 1) < maxDurability / 2
 	itemIsDamaged := item.Durability < maxDurability / 2
 	if itemIsDamaged && !itemWasDamaged {
-		world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("Your %s is now damaged.", itemData.name))
+		world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("Your %s is now damaged.", itemData.Name))
 		return
 	}
 
@@ -323,49 +327,52 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 	itemIsSharp := item.Durability > maxDurability
 	if itemWasSharp && !itemIsSharp {
 		itemIsWeapon :=
-			itemData.itemType == ITEM_TYPE_EQUIPMENT_ONE_HANDED ||
-			itemData.itemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED
+			itemData.ItemType == ITEM_TYPE_EQUIPMENT_ONE_HANDED ||
+			itemData.ItemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED
 		if itemIsWeapon {
-			world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("Your %s has lost its sharpness.", itemData.name))
+			world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("Your %s has lost its sharpness.", itemData.Name))
 		} else {
-			world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("Your %s has lost its fortification.", itemData.name)) }
+			world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("Your %s has lost its fortification.", itemData.Name)) }
 	}
 }
 
-func (mob *Mob) onPlayerItemUnequipped(world *World, item Item) {
+func (mob *Mob) OnPlayerItemUnequipped(item Item) string {
 	if mob.PlayerCharacter == nil {
 		log.Printf("Warn - onPlayerItemUnequipped was called on a non-player mob.")
-		return
+		return ""
 	}
 
 	itemData := ITEM_DATA[item.Id]
-	if itemData.itemType == ITEM_TYPE_EQUIPMENT_SPELLBOOK {
-		spellbookData := itemData.data.(*ItemDataSpellbook)
+	if itemData.ItemType == ITEM_TYPE_EQUIPMENT_SPELLBOOK {
+		spellbookData := itemData.Data.(*ItemDataSpellbook)
 
 		// Decrement the equip count for this spell
-		mob.PlayerCharacter.SpellsEquipped[spellbookData.spell].EquipCount--
+		mob.PlayerCharacter.SpellsEquipped[spellbookData.Spell].EquipCount--
 
 		// If the equip count is now 0, delete the entry and remove the spell
-		if mob.PlayerCharacter.SpellsEquipped[spellbookData.spell].EquipCount == 0 {
-			delete(mob.PlayerCharacter.SpellsEquipped, spellbookData.spell)
+		if mob.PlayerCharacter.SpellsEquipped[spellbookData.Spell].EquipCount == 0 {
+			delete(mob.PlayerCharacter.SpellsEquipped, spellbookData.Spell)
 
-			isSpellPrepared := slices.Contains(mob.Data.Spells, spellbookData.spell)
-			isSpellKnown := slices.Contains(mob.PlayerCharacter.SpellsKnown, spellbookData.spell)
+			isSpellPrepared := slices.Contains(mob.Data.Spells, spellbookData.Spell)
+			isSpellKnown := slices.Contains(mob.PlayerCharacter.SpellsKnown, spellbookData.Spell)
 			if isSpellPrepared && !isSpellKnown {
-				mob.Data.RemoveSpell(spellbookData.spell)
-				spellData := SPELL_DATA[spellbookData.spell]
-				world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You lost the spell %s.", spellData.name))
+				mob.Data.RemoveSpell(spellbookData.Spell)
+				spellData := SPELL_DATA[spellbookData.Spell]
+
+				return fmt.Sprintf("You lost the spell %s.", spellData.Name)
 			}
 		}
 	}
+
+	return ""
 }
 
 func (mob *Mob) spellcast(world *World, targetMob *Mob) {
 	// Check if caster has enough mana
 	spellData := SPELL_DATA[mob.castSpell]
-	if mob.Data.Mana < spellData.manaCost {
-		mob.mode = MOB_MODE_IDLE
-		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s tried to cast %s, but they don't have enough mana.", mob.Data.Name, spellData.name))
+	if mob.Data.Mana < spellData.ManaCost {
+		mob.Mode = MOB_MODE_IDLE
+		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s tried to cast %s, but they don't have enough mana.", mob.Data.Name, spellData.Name))
 		return
 	}
 
@@ -377,8 +384,8 @@ func (mob *Mob) spellcast(world *World, targetMob *Mob) {
 	}
 
 	// Cast spell
-	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s cast %s!", mob.Data.Name, spellData.name))
-	mob.Data.Mana -= spellData.manaCost
+	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s cast %s!", mob.Data.Name, spellData.Name))
+	mob.Data.Mana -= spellData.ManaCost
 	spellData.onHit(world, mob, targetMob)
 
 	if mob.PlayerCharacter != nil {
@@ -390,7 +397,7 @@ func (mob *Mob) spellcast(world *World, targetMob *Mob) {
 			if equippedSpell.Casts >= mob.Data.CastsToLearn(mob.castSpell) {
 				equippedSpell.IsKnown = true
 				mob.PlayerCharacter.SpellsKnown = append(mob.PlayerCharacter.SpellsKnown, mob.castSpell)
-				world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You have mastered %s!", spellData.name))
+				world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You have mastered %s!", spellData.Name))
 			}
 
 			// Spellbook durability
@@ -423,12 +430,12 @@ func (mob *Mob) getSpellProvidedBySlot(slot EquipmentSlot) (Spell, bool) {
 	}
 
 	itemData := ITEM_DATA[item.Id]
-	if itemData.itemType != ITEM_TYPE_EQUIPMENT_SPELLBOOK {
+	if itemData.ItemType != ITEM_TYPE_EQUIPMENT_SPELLBOOK {
 		return 0, false
 	}
 
-	spellbookData := itemData.data.(*ItemDataSpellbook)
-	return spellbookData.spell, true
+	spellbookData := itemData.Data.(*ItemDataSpellbook)
+	return spellbookData.Spell, true
 }
 
 func (mob *Mob) useItem(world *World, targetMob *Mob) {
@@ -444,7 +451,7 @@ func (mob *Mob) useItem(world *World, targetMob *Mob) {
 	// Check if the item still exists
 	// This is a legit edge case - player might drop the item from their inventory before their turn happens
 	if itemIndex == -1 {
-		mob.mode = MOB_MODE_IDLE
+		mob.Mode = MOB_MODE_IDLE
 		return
 	}
 
@@ -453,17 +460,17 @@ func (mob *Mob) useItem(world *World, targetMob *Mob) {
 
 	// Use item
 	itemData := ITEM_DATA[item.Id]
-	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s used %s!", mob.Data.Name, itemData.name))
+	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s used %s!", mob.Data.Name, itemData.Name))
 
-	switch itemData.itemType {
+	switch itemData.ItemType {
 		case ITEM_TYPE_CONSUMABLE:
-			consumableData := itemData.data.(*ItemDataConsumable)
-			consumableData.onUse(world, targetMob)
+			consumableData := itemData.Data.(*ItemDataConsumable)
+			consumableData.OnUse(world, targetMob)
 		case ITEM_TYPE_SPELL_SCROLL:
-			scrollData := itemData.data.(*ItemDataSpellScroll)
-			spellData := SPELL_DATA[scrollData.spell]
+			scrollData := itemData.Data.(*ItemDataSpellScroll)
+			spellData := SPELL_DATA[scrollData.Spell]
 			spellData.onHit(world, mob, targetMob)
 		default:
-			panic(fmt.Sprintf("Unhandled item type %s. This item type should never have been allowed to be used here.", ItemTypeToString(itemData.itemType)))
+			panic(fmt.Sprintf("Unhandled item type %s. This item type should never have been allowed to be used here.", ItemTypeToString(itemData.ItemType)))
 	}
 }

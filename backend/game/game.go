@@ -75,7 +75,7 @@ func (gamestate *GameState) RemovePlayer(playerId int) {
 	// Get the player index (and double-check that they even exist)
 	playerIndex, exists := gamestate.playerIdToIndexMap[playerId]
 	if !exists {
-		log.Printf("Tried to remove player %d, but they don't exist!", playerId)
+		log.Printf("Warn - Tried to remove player %d, but they don't exist!", playerId)
 		return
 	}
 
@@ -100,6 +100,22 @@ func (gamestate *GameState) RemovePlayer(playerId int) {
 func (gamestate *GameState) getPlayerById(playerId int) *Player {
 	playerIndex, exists := gamestate.playerIdToIndexMap[playerId]
 	if !exists {
+		return nil
+	}
+
+	return &gamestate.players[playerIndex]
+}
+
+func (gamestate *GameState) getPlayerByMobHandle(handle world.MobHandle) *Player {
+	mob := gamestate.world.Mobs.Get(handle)
+	if mob.PlayerCharacter == nil {
+		return nil
+	}
+
+	playerIndex, exists := gamestate.playerIdToIndexMap[mob.PlayerCharacter.PlayerId]
+	if !exists {
+		log.Printf("Warn - Tried get player %d by mob handle %d:%d, but they don't exist.",
+			mob.PlayerCharacter.PlayerId, handle.Id, handle.Generation)
 		return nil
 	}
 

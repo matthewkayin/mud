@@ -25,6 +25,7 @@ type EventMobMove struct {
 }
 
 type EventMobDeath struct {
+	PlayerId int
 	MobHandle MobHandle
 }
 
@@ -37,6 +38,9 @@ func (world *World) pushEvent(event Event) {
 	world.Events = append(world.Events, event)
 }
 
+// Adds a message event to the world event queue to a specific player
+// Messages sent using this function will be processed immediately after world update
+// This means you should only use this during world update or the message timing will be delayed
 func (world *World) messagePlayer(playerId int, message string) {
 	world.Events = append(world.Events, Event {
 		EventType: EVENT_TYPE_MESSAGE,
@@ -47,6 +51,9 @@ func (world *World) messagePlayer(playerId int, message string) {
 	})
 }
 
+// Adds a message event to the world event queue to all players in the room
+// Messages sent using this function will be processed immediately after world update
+// This means you should only use this during world update or the message timing will be delayed
 func (world *World) messageRoom(roomIndex int, message string) {
 	room := &world.Rooms[roomIndex]
 

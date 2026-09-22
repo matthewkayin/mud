@@ -1,5 +1,11 @@
 package world
 
+import (
+	"math"
+)
+
+const RECIPE_OUTPUT_MAX_DURABILITY = math.MaxInt32
+
 type Recipe int
 const (
 	RECIPE_HEALTH_POTION = iota
@@ -11,70 +17,81 @@ const (
 )
 
 type RecipeMaterial struct {
-	id ItemId
-	amount int32
+	Id ItemId
+	Amount int32
 }
 
 type RecipeData struct {
-	name string
-	job JobId
-	level int32
-	materials []RecipeMaterial
-	output Item
+	Name string
+	Job JobId
+	Level int32
+	Materials []RecipeMaterial
+	Output Item
 }
 
 var RECIPE_DATA = map[Recipe]*RecipeData {
 	RECIPE_HEALTH_POTION: {
-		name: "Potion of Health",
-		job: JOB_ALCHEMIST,
-		level: 1,
-		materials: []RecipeMaterial {
-			{id: ITEM_DUMMY_MATERIAL, amount: 10},
+		Name: "Potion of Health",
+		Job: JOB_ALCHEMIST,
+		Level: 1,
+		Materials: []RecipeMaterial {
+			{ Id: ITEM_DUMMY_MATERIAL, Amount: 10 },
 		},
-		output: Item {
+		Output: Item {
 			Id: ITEM_POTION_HEALTH,
 			Amount: 1,
 		},
 	},
 
 	RECIPE_MANA_POTION: {
-		name: "Potion of Mana",
-		job: JOB_ALCHEMIST,
-		level: 2,
-		materials: []RecipeMaterial {
-			{id: ITEM_DUMMY_MATERIAL, amount: 10},
+		Name: "Potion of Mana",
+		Job: JOB_ALCHEMIST,
+		Level: 2,
+		Materials: []RecipeMaterial {
+			{ Id: ITEM_DUMMY_MATERIAL, Amount: 10 },
 		},
-		output: Item {
+		Output: Item {
 			Id: ITEM_POTION_MANA,
 			Amount: 1,
 		},
 	},
 
 	RECIPE_SWORD: {
-		name: "Sword",
-		job: JOB_BLACKSMITH,
-		level: 1,
-		materials: []RecipeMaterial {
-			{id: ITEM_AXE, amount: 2},
-			{id: ITEM_DUMMY_MATERIAL, amount: 5},
+		Name: "Sword",
+		Job: JOB_BLACKSMITH,
+		Level: 1,
+		Materials: []RecipeMaterial {
+			{ Id: ITEM_AXE, Amount: 2 },
+			{ Id: ITEM_DUMMY_MATERIAL, Amount: 5 },
 		},
-		output: Item {
+		Output: Item {
 			Id: ITEM_SWORD,
 			Amount: 1,
+			Durability: RECIPE_OUTPUT_MAX_DURABILITY,
 		},
 	},
 
 	RECIPE_AXE: {
-		name: "Axe",
-		job: JOB_BLACKSMITH,
-		level: 1,
-		materials: []RecipeMaterial {
-			{id: ITEM_SWORD, amount: 2},
-			{id: ITEM_DUMMY_MATERIAL, amount: 5},
+		Name: "Axe",
+		Job: JOB_BLACKSMITH,
+		Level: 1,
+		Materials: []RecipeMaterial {
+			{ Id: ITEM_SWORD, Amount: 2 },
+			{ Id: ITEM_DUMMY_MATERIAL, Amount: 5 },
 		},
-		output: Item {
+		Output: Item {
 			Id: ITEM_AXE,
 			Amount: 1,
+			Durability: RECIPE_OUTPUT_MAX_DURABILITY,
 		},
 	},
+}
+
+func (recipeData *RecipeData) CreateOutput() Item {
+	output := recipeData.Output
+	if output.Durability == RECIPE_OUTPUT_MAX_DURABILITY {
+		output.Durability = output.GetMaxDurability()
+	}
+
+	return output
 }
