@@ -11,6 +11,7 @@ type World struct {
 
 	Mobs MobArray
 	Rooms []Room
+	Npcs []Npc
 }
 
 func WorldInitNew() *World {
@@ -22,6 +23,7 @@ func WorldInitNew() *World {
 
 		Mobs: MobArrayInit(),
 		Rooms: make([]Room, 0, WORLD_MAX_ROOMS),
+		Npcs: make([]Npc, 0, 1),
 	}
 
 	// Test world
@@ -101,10 +103,83 @@ func WorldInitNew() *World {
 		},
 	}
 
+	world.Npcs = []Npc {
+		{
+			Behavior: NPC_BEHAVIOR_AGGRO,
+			Data: MobData {
+				Name: "Goblin",
+				Room: 1,
+
+				Level: 1,
+				Experience: 0,
+
+				Stats: StatBlock {
+					Vitality: 4,
+					Strength: 2,
+					Agility: 6,
+					Intelligence: 2,
+					Faith: 4,
+				},
+
+				// TODO
+				Health: 4 * 5,
+				Mana: 2 * 5,
+
+				Spells: []Spell {},
+				Inventory: Inventory {
+					Items: []Item {
+						{ Id: ITEM_POTION_HEALTH },
+					},
+				},
+				Equipment: EquipmentInitEmpty(),
+			},
+		},
+		{
+			Behavior: NPC_BEHAVIOR_AGGRO,
+			Data: MobData {
+				Name: "Goblin",
+				Room: 1,
+
+				Level: 1,
+				Experience: 0,
+
+				Stats: StatBlock {
+					Vitality: 4,
+					Strength: 2,
+					Agility: 6,
+					Intelligence: 2,
+					Faith: 4,
+				},
+
+				// TODO
+				Health: 3 * 5,
+				Mana: 2 * 5,
+
+				Spells: []Spell {},
+				Inventory: Inventory {
+					Items: []Item {
+						{ Id: ITEM_POTION_HEALTH },
+					},
+				},
+				Equipment: EquipmentInitEmpty(),
+			},
+		},
+	}
+
+	// Init NPCs
+	for index := range len(world.Npcs) {
+		world.Npcs[index].init(world)
+	}
+
 	return world
 }
 
 func (world *World) Update() {
+	// Npc updates
+	for index := 0; index < len(world.Npcs); index++ {
+		world.Npcs[index].update(world)
+	}
+
 	// Room updates
 	for index := 0; index < len(world.Rooms); index++ {
 		world.updateRoom(index)

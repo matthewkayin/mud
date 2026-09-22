@@ -45,7 +45,7 @@ func playerInit(id int, inbox *chan string) Player {
 }
 
 func (player *Player) isLoggedIn() bool {
-	return player.character == nil
+	return player.character != nil
 }
 
 func (player *Player) getMenu() *Menu {

@@ -45,6 +45,7 @@ func (player *Player) doAction(gamestate *GameState) {
 		case ACTION_TYPE_ATTACK:
 			actionData := player.nextAction.data.(ActionAttack)
 
+			// BUG: Tried to call doAction on a nil mob handle (after death)
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			playerMob.SetModeAttack(gamestate.world, player.mobHandle, actionData.target)
 		case ACTION_TYPE_CAST:
