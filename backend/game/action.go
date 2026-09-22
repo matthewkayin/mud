@@ -46,17 +46,17 @@ func (player *Player) doAction(gamestate *GameState) {
 			actionData := player.nextAction.data.(ActionAttack)
 
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-			playerMob.SetModeAttack(gamestate, player.mobHandle, actionData.target)
+			playerMob.SetModeAttack(gamestate.world, player.mobHandle, actionData.target)
 		case ACTION_TYPE_CAST:
 			actionData := player.nextAction.data.(ActionCast)
 
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-			playerMob.SetModeCast(gamestate, player.mobHandle, actionData.spell, actionData.target)
+			playerMob.SetModeCast(gamestate.world, player.mobHandle, actionData.spell, actionData.target)
 		case ACTION_TYPE_USE_ITEM:
 			actionData := player.nextAction.data.(ActionUseItem)
 
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-			playerMob.SetModeUseItem(gamestate, player.mobHandle, actionData.itemId, actionData.target)
+			playerMob.SetModeUseItem(gamestate.world, player.mobHandle, actionData.itemId, actionData.target)
 		default:
 			log.Printf("Action type %d not handled!", player.nextAction.actionType)
 	}

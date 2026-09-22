@@ -130,20 +130,25 @@ func (gamestate *GameState) broadcast(message string) {
 func (gamestate *GameState) update() {
 	gamestate.world.Update()
 
-	// Pass messages from the world update to the players
-	for index := range len(gamestate.world.Messages) {
-		message := &gamestate.world.Messages[index]
-		for _, playerId := range message.ToPlayers {
-			playerIndex, exists := gamestate.playerIdToIndexMap[playerId]
-			if !exists {
-				continue
-			}
+	// Handle world events
+	for index := range len(gamestate.world.Events) {
+		event := &gamestate.world.Events[index]
+		switch event.EventType {
+			case world.EVENT_TYPE_MESSAGE:
+				eventData := event.Data.(world.EventMessage)
+				for _, playerId := range eventData.ToPlayers {
+					playerIndex, exists := gamestate.playerIdToIndexMap[playerId]
+					if !exists {
+						continue
+					}
 
-			player := &gamestate.players[playerIndex]
-			*player.inbox <- message.Message
+					player := &gamestate.players[playerIndex]
+					*player.inbox <- eventData.Message
+				}
+			// TODO: handle other event types
 		}
 	}
 
 	// Clear the messages
-	clear(gamestate.world.Messages)
+	clear(gamestate.world.Events)
 }
