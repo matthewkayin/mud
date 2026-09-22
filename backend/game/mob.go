@@ -569,3 +569,43 @@ func (mob *Mob) getSpellProvidedBySlot(slot EquipmentSlot) (Spell, bool) {
 	spellbookData := itemData.data.(*ItemDataSpellbook)
 	return spellbookData.spell, true
 }
+
+//prints the mob's current equipment to the player's inbox
+//broken to its own function because it currently has 2 uses,
+//and think it could be cool to have 3rd when we get to NPCs and/or thief appraisal abilities for spying/recon
+func (mob *Mob) printEquipmentList(player *Player) {
+
+	for index := range EQUIPMENT_SLOT_COUNT {
+		// Determine if we should skip the offhand item slot
+		mainHandItem := mob.data.EquippedItems.Get(EQUIPMENT_SLOT_MAIN_HAND)
+		shouldSkipOffhand := mainHandItem != nil && ITEM_DATA[mainHandItem.Id].itemType == EQUIPMENT_SLOT_MAIN_HAND
+
+		slot := EquipmentSlot(index)
+		item := mob.data.EquippedItems.Get(slot)
+		var itemData *ItemData = nil
+
+		// If two handed equipped, skip off hand
+		if slot == EQUIPMENT_SLOT_OFF_HAND && shouldSkipOffhand {
+			continue
+		}
+
+		// Determine item name
+		var itemName string
+		if item != nil {
+			itemData = ITEM_DATA[item.Id]
+			itemName = item.getNameWithCondition()
+		} else {
+			itemName = "<Nothing Equipped>"
+		}
+
+		// Determine slot name
+		var slotName string
+		if slot == EQUIPMENT_SLOT_MAIN_HAND && item != nil && itemData.itemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED {
+			slotName = "Both Hands"
+		} else {
+			slotName = EquipmentSlotToString(slot)
+		}
+
+		*player.inbox <- fmt.Sprintf("\t%s - %s", slotName, itemName)
+	}
+}

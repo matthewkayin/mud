@@ -118,6 +118,42 @@ func MenuWorld() Menu {
 		},
 	}
 
+	//see the details of a mob in the room
+	entries["inspect"] = MenuEntry {
+		usage: "inspect <mob>",
+		description: "Get information about a player or monster in your room.",
+		handler: func (gameState *GameState, player *Player, args []string) bool {
+
+			if len(args) < 1 {
+				return false
+			}
+
+			mobHandle, err := fuzzyFindTarget(gameState, player, args)
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
+			}
+
+			//if not a player, presume to be a monster -- update later based off gameplay decisions,
+			//needs of friendly NPC interactions
+			targetMob := gameState.world.Mobs.Get(mobHandle)
+			if targetMob.player == nil {
+				*player.inbox <- fmt.Sprintf("This is a level %d monster and it appears to be hostile!", targetMob.data.Level)
+				return true
+			}
+
+			*player.inbox <- fmt.Sprintf("This is a level %d %s %s %s whose name is %s.", targetMob.data.Level,
+			 																		 RACE_DATA[targetMob.player.character.Race].Name,
+																					 CLASS_DATA[targetMob.player.character.Class].Name,
+																					 JOB_DATA[targetMob.player.character.Job].Name,
+																					 targetMob.data.Name)
+			*player.inbox <- fmt.Sprintf("They are currently missing %d Hit Points.", targetMob.data.MaxHealth() - targetMob.data.Health)
+			*player.inbox <- "They have the following equipped:"
+			targetMob.printEquipmentList(player)
+			return true
+		},
+	}
+
 	// Exits
 	entries["exits"] = MenuEntry {
 		usage: "exits",
@@ -731,49 +767,16 @@ func MenuWorld() Menu {
 		},
 	}
 
-	// Show equipment
+	// Show your equipment -- should we deprecate this in favor of "inspect <self>"?
+	// "printEquipmentList" wouldn't be necessary as a function
 	entries["equipment"] = MenuEntry {
 		usage: "equipment",
 		description: "Show your current equipment",
 		handler: func (gameState *GameState, player *Player, args []string) bool {
 			playerMob := gameState.world.Mobs.Get(player.mobHandle)
 
-			// Determine if we should skip the offhand item slot
-			mainHandItem := playerMob.data.EquippedItems.Get(EQUIPMENT_SLOT_MAIN_HAND)
-			shouldSkipOffhand := mainHandItem != nil && ITEM_DATA[mainHandItem.Id].itemType == EQUIPMENT_SLOT_MAIN_HAND
-
 			*player.inbox <- "Your equipment is:"
-
-			for index := range EQUIPMENT_SLOT_COUNT {
-				slot := EquipmentSlot(index)
-				item := playerMob.data.EquippedItems.Get(slot)
-				var itemData *ItemData = nil
-
-				// If two handed equipped, skip off hand
-				if slot == EQUIPMENT_SLOT_OFF_HAND && shouldSkipOffhand {
-					continue
-				}
-
-				// Determine item name
-				var itemName string
-				if item != nil {
-					itemData = ITEM_DATA[item.Id]
-					itemName = item.getNameWithCondition()
-				} else {
-					itemName = "<Nothing Equipped>"
-				}
-
-				// Determine slot name
-				var slotName string
-				if slot == EQUIPMENT_SLOT_MAIN_HAND && item != nil && itemData.itemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED {
-					slotName = "Both Hands"
-				} else {
-					slotName = EquipmentSlotToString(slot)
-				}
-
-				*player.inbox <- fmt.Sprintf("\t%s - %s", slotName, itemName)
-			}
-
+			playerMob.printEquipmentList(player)
 			return true
 		},
 	}
