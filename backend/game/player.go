@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"mud/world"
 )
 
@@ -55,4 +56,18 @@ func (player *Player) setMenu(gamestate *GameState, menu PlayerMenu) {
 	player.getMenu().onExit(gamestate, player)
 	player.menu = menu
 	player.getMenu().onEnter(gamestate, player)
+}
+
+func playerOnMobDeath(gamestate *GameState, event *world.Event) {
+	eventData := event.Data.(world.EventMobDeath)
+
+	if eventData.PlayerId == world.MOB_PLAYER_NONE {
+		return
+	}
+
+	player := gamestate.getPlayerById(eventData.PlayerId)
+	*player.inbox <- fmt.Sprintf("Your character %s has died, and death is forever. RIP", player.character.Data.Name)
+
+	gamestate.world.RemoveCharacter(player.character)
+	player.setMenu(gamestate, PLAYER_MENU_LOGIN)
 }

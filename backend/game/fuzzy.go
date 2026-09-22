@@ -324,7 +324,7 @@ func fuzzyFindEquipmentSlotByItem(equipment *world.Equipment, searchWords []stri
 		return 0, errors.New("You have no items equipped.")
 	}
 
-	index := fuzzyFind(itemNames, searchWords, FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE)
+	index := fuzzyFind(itemNames, searchWords, FUZZY_FIND_NUMBER_NONE)
 
 	// Handle edge cases
 	if index == FUZZY_FIND_RESULT_NOT_FOUND {

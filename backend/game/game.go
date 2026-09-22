@@ -15,6 +15,8 @@ type Command struct {
 	Payload string
 }
 
+type EventListener func (gamestate *GameState, event* world.Event)
+
 type GameState struct {
 	Commands chan Command
 
@@ -22,11 +24,11 @@ type GameState struct {
 	playerIdToIndexMap map[int]int
 
 	world *world.World
+	eventListeners [][]EventListener
 }
 
 func GameStateInit() *GameState {
 	playerMenusInit()
-	world := world.WorldInitNew()
 
 	gamestate := &GameState {
 		Commands: make(chan Command, 1024),
@@ -34,8 +36,15 @@ func GameStateInit() *GameState {
 		players: make([]Player, 0, 64),
 		playerIdToIndexMap: make(map[int]int),
 
-		world: world,
+		world: world.WorldInitNew(),
+		eventListeners: make([][]EventListener, world.EVENT_TYPE_COUNT),
 	}
+
+	gamestate.addEventListener(world.EVENT_TYPE_MESSAGE, handleEventMessage)
+	gamestate.addEventListener(world.EVENT_TYPE_MOB_MOVE, tradeSessionOnMobMove)
+	gamestate.addEventListener(world.EVENT_TYPE_MOB_SET_TARGET,  tradeSessionOnMobSetTarget)
+	gamestate.addEventListener(world.EVENT_TYPE_MOB_DEATH, tradeSessionOnMobDeath)
+	gamestate.addEventListener(world.EVENT_TYPE_MOB_DEATH, playerOnMobDeath)
 
 	return gamestate
 }
@@ -68,7 +77,7 @@ func (gamestate *GameState) RegisterPlayer(playerId int, playerInbox *chan strin
 
 	newPlayer := &gamestate.players[newPlayerIndex]
 	*newPlayer.inbox <- "Welcome to the RC Disco MUD!"
-	// newPlayer.enterMenu(gamestate, &gamestate.menuLogin)
+	newPlayer.setMenu(gamestate, PLAYER_MENU_LOGIN)
 }
 
 func (gamestate *GameState) RemovePlayer(playerId int) {
@@ -80,10 +89,11 @@ func (gamestate *GameState) RemovePlayer(playerId int) {
 	}
 
 	// Check if they are logged in
-	// player := &gamestate.players[playerIndex]
-	// if player.isLoggedIn {
-		// player.exitWorld(gamestate)
-		// }
+	player := &gamestate.players[playerIndex]
+	if player.isLoggedIn() {
+		// A little hacky, the setMenu() will trigger the world menu on exit
+		player.setMenu(gamestate, PLAYER_MENU_LOGIN)
+	}
 
 	// Swap and pop them from the array
 	lastIndex := len(gamestate.players) - 1
@@ -164,29 +174,49 @@ func (gamestate *GameState) messageRoom(roomIndex int, message string) {
 	}
 }
 
+func (gamestate *GameState) addEventListener(eventType world.EventType, listener EventListener) {
+	gamestate.eventListeners[eventType] = append(gamestate.eventListeners[eventType], listener)
+}
+
 // This function is the update that is called on a 3-second interval
 func (gamestate *GameState) update() {
+	// Handle player actions
+	for index := 0; index < len(gamestate.players); index++ {
+		if !gamestate.players[index].isLoggedIn() {
+			continue
+		}
+
+		gamestate.players[index].doAction(gamestate)
+	}
+
+	// World update
 	gamestate.world.Update()
 
 	// Handle world events
 	for index := range len(gamestate.world.Events) {
 		event := &gamestate.world.Events[index]
-		switch event.EventType {
-			case world.EVENT_TYPE_MESSAGE:
-				eventData := event.Data.(world.EventMessage)
-				for _, playerId := range eventData.ToPlayers {
-					playerIndex, exists := gamestate.playerIdToIndexMap[playerId]
-					if !exists {
-						continue
-					}
-
-					player := &gamestate.players[playerIndex]
-					*player.inbox <- eventData.Message
-				}
-			// TODO: handle other event types
+		listeners := &gamestate.eventListeners[event.EventType]
+		for _, listener := range *listeners {
+			listener(gamestate, event)
 		}
 	}
 
-	// Clear the messages
-	clear(gamestate.world.Events)
+	// Clear world events
+	// This syntax for clearing the array is done because it keeps the underlying array
+	// so that way we're not allocating a new chunk of memory each time we reset the events
+	gamestate.world.Events = gamestate.world.Events[:0]
+}
+
+func handleEventMessage(gamestate *GameState, event* world.Event) {
+	eventData := event.Data.(world.EventMessage)
+
+	for _, playerId := range eventData.ToPlayers {
+		playerIndex, exists := gamestate.playerIdToIndexMap[playerId]
+		if !exists {
+			continue
+		}
+
+		player := &gamestate.players[playerIndex]
+		*player.inbox <- eventData.Message
+	}
 }

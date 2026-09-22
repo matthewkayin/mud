@@ -61,6 +61,14 @@ func MobInitFromCharacter(character *Character) Mob {
 	return mob
 }
 
+func (mob *Mob) GetPlayerId() int {
+	if mob.PlayerCharacter == nil {
+		return MOB_PLAYER_NONE
+	}
+
+	return mob.PlayerCharacter.PlayerId
+}
+
 func (mob *Mob) IsDead() bool {
 	return mob.Data.Health <= 0
 }
@@ -463,13 +471,15 @@ func (mob *Mob) useItem(world *World, targetMob *Mob) {
 	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s used %s!", mob.Data.Name, itemData.Name))
 
 	switch itemData.ItemType {
-		case ITEM_TYPE_CONSUMABLE:
+		case ITEM_TYPE_CONSUMABLE: {
 			consumableData := itemData.Data.(*ItemDataConsumable)
 			consumableData.OnUse(world, targetMob)
-		case ITEM_TYPE_SPELL_SCROLL:
+		}
+		case ITEM_TYPE_SPELL_SCROLL: {
 			scrollData := itemData.Data.(*ItemDataSpellScroll)
 			spellData := SPELL_DATA[scrollData.Spell]
 			spellData.onHit(world, mob, targetMob)
+		}
 		default:
 			panic(fmt.Sprintf("Unhandled item type %s. This item type should never have been allowed to be used here.", ItemTypeToString(itemData.ItemType)))
 	}

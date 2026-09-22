@@ -25,142 +25,6 @@ type TradeSession struct {
 	traderB Trader
 }
 
-func (player *Player) isTraderA() bool {
-	if player.tradeSession == nil {
-		log.Printf("Warn - Called isTraderA on player %d but they are not in a trade.", player.id)
-		return false
-	}
-
-	return player.id == player.tradeSession.traderA.playerId
-}
-
-func (player *Player) isTraderB() bool {
-	if player.tradeSession == nil {
-		log.Printf("Warn - Called isTraderB on player %d but they are not in a trade.", player.id)
-		return false
-	}
-
-	return player.id == player.tradeSession.traderB.playerId
-}
-
-func (player *Player) getTrader() *Trader {
-	if player.tradeSession == nil {
-		log.Printf("Warn - Tried to get player %d Trader but they are not in a trade.")
-		return nil
-	}
-
-	if player.isTraderA() {
-		return &player.tradeSession.traderA
-	} else {
-		return &player.tradeSession.traderB
-	}
-}
-
-// The player's counterparty is the trader who is opposite to them in the trade
-func (player *Player) getCounterparty() *Trader {
-	if player.tradeSession == nil {
-		log.Printf("Warn - Tried to get player %d counterparty but they are not in a trade.", player.id)
-		return nil
-	}
-
-	if player.isTraderA() {
-		return &player.tradeSession.traderB
-	} else {
-		return &player.tradeSession.traderA
-	}
-}
-
-func (trader *Trader) getPlayer(gamestate *GameState) *Player {
-	playerIndex, _ := gamestate.playerIdToIndexMap[trader.playerId]
-	return &gamestate.players[playerIndex]
-}
-
-func TradeSessionOnMobMove(gamestate *GameState, event world.Event) {
-	eventData := event.Data.(world.EventMobMove)
-
-	// If the mob is not a trading player, ignore the event
-	player := gamestate.getPlayerByMobHandle(eventData.MobHandle)
-	if player == nil || player.tradeSession == nil {
-		return
-	}
-
-	trader := player.getTrader()
-	counterparty := player.getCounterparty()
-
-	*player.inbox <- fmt.Sprintf("Your trade with %s has been cancelled because you left the room.", counterparty.name)
-	*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("Your trade with %s has been cancelled because they left the room.", trader.name)
-	player.tradeSession.cancel(gamestate)
-}
-
-func TradeSessionOnMobDeath(gamestate *GameState, event world.Event) {
-	eventData := event.Data.(world.EventMobDeath)
-
-	// If the mob is not a trading player, ignore it
-	player := gamestate.getPlayerById(eventData.PlayerId)
-	if player == nil || player.tradeSession == nil {
-		return
-	}
-
-	trader := player.getTrader()
-	counterparty := player.getCounterparty()
-
-	*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("Your trade with %s has been cancelled because they died.", trader.name)
-	player.tradeSession.cancel(gamestate)
-}
-
-func TradeSessionOnPlayerLogout(gamestate *GameState, playerId int) {
-	// If the mob player is not trading, ignore it
-	player := gamestate.getPlayerById(playerId)
-	if player == nil || player.tradeSession == nil {
-		return
-	}
-
-	trader := player.getTrader()
-	counterparty := player.getCounterparty()
-
-	*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("Your trade with %s has been cancelled because they logged out.", trader.name)
-	player.tradeSession.cancel(gamestate)
-}
-
-func TradeSessionOnMobSetTarget(gamestate *GameState, event world.Event) {
-	eventData := event.Data.(world.EventMobSetTarget)
-
-	attacker := gamestate.world.Mobs.Get(eventData.Attacker)
-	defender := gamestate.world.Mobs.Get(eventData.Defender)
-
-	// Ignore player vs player targeting (such as potion or heals)
-	if attacker.PlayerCharacter == nil && defender.PlayerCharacter == nil {
-		return
-	}
-
-	// Ignore NPC vs NPc targeting
-	if attacker.PlayerCharacter != nil && defender.PlayerCharacter != nil {
-		return
-	}
-
-	// At this point, either the attacker or defender will be a player,
-	// but not both, so get a handle to the player
-	var player *Player
-	if attacker.PlayerCharacter != nil {
-		player = gamestate.getPlayerById(attacker.PlayerCharacter.PlayerId)
-	}
-	if defender.PlayerCharacter != nil {
-		player = gamestate.getPlayerById(defender.PlayerCharacter.PlayerId)
-	}
-
-	// Ignore the event if the player isn't trading
-	if player == nil || player.tradeSession == nil {
-		return
-	}
-
-	trader := player.getTrader()
-	counterparty := player.getCounterparty()
-
-	*player.inbox <- fmt.Sprintf("Your trade with %s has been cancelled because you have entered combat.", counterparty.name)
-	*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("Your trade with %s has been cancelled because they have entered combat.", trader.name)
-	player.tradeSession.cancel(gamestate)
-}
-
 var MENU_TRADE_ENTRIES = map[string]MenuEntry {
 	"status": {
 		usage: "trade status",
@@ -486,6 +350,61 @@ var MENU_TRADE_ENTRIES = map[string]MenuEntry {
 	},
 }
 
+// PLAYER TRADE FUNCTIONS
+
+func (player *Player) isTraderA() bool {
+	if player.tradeSession == nil {
+		log.Printf("Warn - Called isTraderA on player %d but they are not in a trade.", player.id)
+		return false
+	}
+
+	return player.id == player.tradeSession.traderA.playerId
+}
+
+func (player *Player) isTraderB() bool {
+	if player.tradeSession == nil {
+		log.Printf("Warn - Called isTraderB on player %d but they are not in a trade.", player.id)
+		return false
+	}
+
+	return player.id == player.tradeSession.traderB.playerId
+}
+
+func (player *Player) getTrader() *Trader {
+	if player.tradeSession == nil {
+		log.Printf("Warn - Tried to get player %d Trader but they are not in a trade.", player.id)
+		return nil
+	}
+
+	if player.isTraderA() {
+		return &player.tradeSession.traderA
+	} else {
+		return &player.tradeSession.traderB
+	}
+}
+
+// The player's counterparty is the trader who is opposite to them in the trade
+func (player *Player) getCounterparty() *Trader {
+	if player.tradeSession == nil {
+		log.Printf("Warn - Tried to get player %d counterparty but they are not in a trade.", player.id)
+		return nil
+	}
+
+	if player.isTraderA() {
+		return &player.tradeSession.traderB
+	} else {
+		return &player.tradeSession.traderA
+	}
+}
+
+// TRADER FUNCTIONS
+
+func (trader *Trader) getPlayer(gamestate *GameState) *Player {
+	playerIndex, _ := gamestate.playerIdToIndexMap[trader.playerId]
+	return &gamestate.players[playerIndex]
+}
+
+
 func (trader *Trader) cancelTrade(gamestate *GameState) {
 	player := gamestate.getPlayerById(trader.playerId)
 	if player == nil {
@@ -513,6 +432,8 @@ func (trader *Trader) getOfferString() string {
 
 	return combineNames(offerStrings)
 }
+
+// TRADE SESSION FUNCTIONS
 
 func (session *TradeSession) cancel(gamestate *GameState) {
 	session.traderA.cancelTrade(gamestate)
@@ -554,4 +475,91 @@ func (session *TradeSession) reject(gamestate *GameState) {
 	*playerB.inbox <- fmt.Sprintf("You rejected %s's trade.", session.traderA.name)
 
 	session.cancel(gamestate)
+}
+
+// EVENT LISTENERS
+
+func tradeSessionOnMobMove(gamestate *GameState, event *world.Event) {
+	eventData := event.Data.(world.EventMobMove)
+
+	// If the mob is not a trading player, ignore the event
+	player := gamestate.getPlayerByMobHandle(eventData.MobHandle)
+	if player == nil || player.tradeSession == nil {
+		return
+	}
+
+	trader := player.getTrader()
+	counterparty := player.getCounterparty()
+
+	*player.inbox <- fmt.Sprintf("Your trade with %s has been cancelled because you left the room.", counterparty.name)
+	*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("Your trade with %s has been cancelled because they left the room.", trader.name)
+	player.tradeSession.cancel(gamestate)
+}
+
+func tradeSessionOnMobDeath(gamestate *GameState, event *world.Event) {
+	eventData := event.Data.(world.EventMobDeath)
+
+	// If the mob is not a trading player, ignore it
+	player := gamestate.getPlayerById(eventData.PlayerId)
+	if player == nil || player.tradeSession == nil {
+		return
+	}
+
+	trader := player.getTrader()
+	counterparty := player.getCounterparty()
+
+	*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("Your trade with %s has been cancelled because they died.", trader.name)
+	player.tradeSession.cancel(gamestate)
+}
+
+func tradeSessionOnMobSetTarget(gamestate *GameState, event *world.Event) {
+	eventData := event.Data.(world.EventMobSetTarget)
+
+	attacker := gamestate.world.Mobs.Get(eventData.Attacker)
+	defender := gamestate.world.Mobs.Get(eventData.Defender)
+
+	// Ignore player vs player targeting (such as potion or heals)
+	if attacker.PlayerCharacter == nil && defender.PlayerCharacter == nil {
+		return
+	}
+
+	// Ignore NPC vs NPc targeting
+	if attacker.PlayerCharacter != nil && defender.PlayerCharacter != nil {
+		return
+	}
+
+	// At this point, either the attacker or defender will be a player,
+	// but not both, so get a handle to the player
+	var player *Player
+	if attacker.PlayerCharacter != nil {
+		player = gamestate.getPlayerById(attacker.PlayerCharacter.PlayerId)
+	}
+	if defender.PlayerCharacter != nil {
+		player = gamestate.getPlayerById(defender.PlayerCharacter.PlayerId)
+	}
+
+	// Ignore the event if the player isn't trading
+	if player == nil || player.tradeSession == nil {
+		return
+	}
+
+	trader := player.getTrader()
+	counterparty := player.getCounterparty()
+
+	*player.inbox <- fmt.Sprintf("Your trade with %s has been cancelled because you have entered combat.", counterparty.name)
+	*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("Your trade with %s has been cancelled because they have entered combat.", trader.name)
+	player.tradeSession.cancel(gamestate)
+}
+
+func tradeSessionOnPlayerLogout(gamestate *GameState, player *Player) {
+	// If the player is not trading, ignore it
+	if player == nil || player.tradeSession == nil {
+		return
+	}
+
+	trader := player.getTrader()
+	counterparty := player.getCounterparty()
+
+	*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("Your trade with %s has been cancelled because they logged out.", trader.name)
+	player.tradeSession.cancel(gamestate)
 }

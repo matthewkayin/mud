@@ -24,8 +24,112 @@ func WorldInitNew() *World {
 		Rooms: make([]Room, 0, WORLD_MAX_ROOMS),
 	}
 
+	// Test world
+	world.Rooms = []Room {
+		{
+			Name: "Presentation Space",
+			Description: "You're in an open room with white walls and tan-wood flooring. Various pairing tables are strewn about the space, and a makeshift blue octopus floats overhead.",
+
+			Exits: [DIRECTION_COUNT]int {
+				ROOM_NONE,
+				1,
+				ROOM_NONE,
+				ROOM_NONE,
+			},
+			ExitIsLocked: [DIRECTION_COUNT]bool {
+				false,
+				false,
+				false,
+				false,
+			},
+			IsSafeZone: true,
+
+			Chests: []Chest {
+				{
+					Name: "Chest of Test",
+					DecayTimer: CHEST_DOES_NOT_DECAY,
+					Inventory: Inventory {
+						Items: []Item {
+							{ Id: ITEM_SWORD, Amount: 1, Durability: 1 },
+							{ Id: ITEM_SWORD, Amount: 1, Durability: 80 },
+							{ Id: ITEM_SWORD, Amount: 1, Durability: 120 },
+							{ Id: ITEM_GOLD, Amount: 100 },
+							{ Id: ITEM_AXE, Amount: 1, Durability: 100 },
+							{ Id: ITEM_AXE, Amount: 1, Durability: 75 },
+							{ Id: ITEM_SPELLBOOK_FIREBOLT, Amount: 1, Durability: 1 },
+							{ Id: ITEM_SPELLBOOK_CURE, Amount: 1, Durability: 1 },
+							{ Id: ITEM_POTION_HEALTH, Amount: 2 },
+							{ Id: ITEM_RECIPE_HEALTH_POT, Amount: 1 },
+							{ Id: ITEM_RECIPE_MANA_POT, Amount: 1 },
+							{ Id: ITEM_RECIPE_SWORD, Amount: 1 },
+							{ Id: ITEM_RECIPE_AXE, Amount: 1 },
+							{ Id: ITEM_DUMMY_MATERIAL, Amount: 200 },
+						},
+					},
+				},
+			},
+			Inventory: Inventory {
+				Items: []Item {},
+			},
+
+			Occupants: []MobHandle {},
+		},
+		{
+			Name: "The Kitchen",
+			Description: "Bursts of red, blue, and yellow tape paint the far wall. In front of this sits a long, oak dining table with chairs. A kitchenette hugs the far-left corner, complete with three different kinds of coffee makers and more in the cubboards.",
+
+			Exits: [DIRECTION_COUNT]int {
+				0,
+				ROOM_NONE,
+				ROOM_NONE,
+				ROOM_NONE,
+			},
+			ExitIsLocked: [DIRECTION_COUNT]bool {
+				false,
+				false,
+				false,
+				false,
+			},
+			IsSafeZone: false,
+
+			Chests: []Chest {},
+			Inventory: Inventory {
+				Items: []Item {},
+			},
+
+			Occupants: []MobHandle {},
+		},
+	}
+
 	return world
 }
 
 func (world *World) Update() {
+	// Room updates
+	for index := 0; index < len(world.Rooms); index++ {
+		world.updateRoom(index)
+	}
+}
+
+func (world *World) updateRoom(roomIndex int) {
+	room := &world.Rooms[roomIndex]
+
+	// Chest / Corpse decay
+	room.updateChestDecay()
+
+	// Occupant update / combat
+	occupants := room.sortOccupantsByInitiativeOrder(world)
+	for _, occupantHandle := range occupants {
+		// Get occupant mob
+		occupantMob := world.Mobs.Get(occupantHandle)
+		if occupantMob.IsDead() {
+			continue
+		}
+
+		// Update mob
+		occupantMob.Update(world)
+	}
+
+	// Remove dead occupants
+	room.removeDeadOccupants(world)
 }

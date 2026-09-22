@@ -29,14 +29,21 @@ var MENU_WORLD = Menu {
 		*player.inbox <- fmt.Sprintf("You are in %s.", playerRoom.Name)
 	},
 	onExit: func(gamestate *GameState, player *Player) {
-		// Remove player from current room
-		playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-		playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
-		playerRoom.RemoveOccupant(player.mobHandle)
-		gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("%s has left the world.", playerMob.Data.Name))
+		tradeSessionOnPlayerLogout(gamestate, player)
 
-		// Save player mob data back to their character
-		player.character.Data = playerMob.Data
+		// Get player mob
+		// Note that player mob will not exist here if the player died
+		playerMob, mobExists := gamestate.world.Mobs.GetIfExists(player.mobHandle)
+		if mobExists {
+			// Remove player from current room
+			playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
+			playerRoom.RemoveOccupant(player.mobHandle)
+			gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("%s has left the world.", playerMob.Data.Name))
+
+			// Save player mob data back to their character
+			player.character.Data = playerMob.Data
+		}
+
 		player.character = nil
 	},
 
@@ -326,14 +333,16 @@ var MENU_WORLD = Menu {
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 
 				switch playerMob.Mode {
-					case world.MOB_MODE_IDLE:
-					case world.MOB_MODE_ATTACK:
+					case world.MOB_MODE_IDLE: {}
+					case world.MOB_MODE_ATTACK: {
 						targetMob, targetExists := gamestate.world.Mobs.GetIfExists(playerMob.Target)
 						if targetExists {
 							gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("%s stopped attacking %s", playerMob.Data.Name, targetMob.Data.Name))
 						}
-					case world.MOB_MODE_CAST:
+					}
+					case world.MOB_MODE_CAST: {
 						gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("%s canceled their spell.", playerMob.Data.Name))
+					}
 				}
 
 				playerMob.Mode = world.MOB_MODE_IDLE
@@ -892,10 +901,6 @@ var MENU_WORLD = Menu {
 			usage: "remove [<item>] [from <slot>]",
 			description: "Remove an equipped item by name or by slot.",
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
-				if len(args) != 1 {
-					return false
-				}
-
 				// The way this works is that the user can specify a slot OR an item,
 				// but there's no reason for them to specify both so I'm not going to
 				// bother writing the code for it
@@ -926,6 +931,7 @@ var MENU_WORLD = Menu {
 					var err error
 					slot, err = fuzzyFindEquipmentSlotByItem(&playerMob.Data.Equipment, itemWords)
 					if err != nil {
+						*player.inbox <- err.Error()
 						return true
 					}
 				}
@@ -933,6 +939,7 @@ var MENU_WORLD = Menu {
 				// Unequip the item
 				item, _ := playerMob.Data.Equipment.Unequip(slot)
 				message := playerMob.OnPlayerItemUnequipped(item)
+				playerMob.Data.Inventory.AddItem(item)
 				if message != "" {
 					*player.inbox <- message
 				}

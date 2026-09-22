@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"log"
 	"errors"
+	"sort"
+	"slices"
+	"math/rand"
 )
 
 const ROOM_NONE int = -1
@@ -96,4 +99,104 @@ func (room *Room) RemoveOccupantByIndex(index int) {
 	lastIndex := len(room.Occupants) - 1
 	room.Occupants[index] = room.Occupants[lastIndex]
 	room.Occupants = room.Occupants[:lastIndex]
+}
+
+func (room *Room) updateChestDecay() {
+	chestIndex := 0
+	for chestIndex < len(room.Chests) {
+		chest := &room.Chests[chestIndex]
+		if chest.DecayTimer == CHEST_DOES_NOT_DECAY {
+			chestIndex++
+			continue
+		}
+
+		chest.DecayTimer--
+		if chest.DecayTimer == 0 {
+			room.Chests[chestIndex] = room.Chests[len(room.Chests) - 1]
+			room.Chests = room.Chests[:len(room.Chests) - 1]
+			continue
+		}
+
+		chestIndex++
+	}
+}
+
+// Sorts combatants by initiative order
+// Combatants are a clone of the room occupant handles because otherwise
+// the sorting will mess up multi-target identifiers i.e. Goblin #2 might
+// not be Goblin #2 anymore after the initiative sort
+func (room *Room) sortOccupantsByInitiativeOrder(world *World) []MobHandle {
+	combatants := slices.Clone(room.Occupants)
+	sort.Slice(combatants, func(i int, j int) bool {
+		mobI := world.Mobs.Get(room.Occupants[i])
+		mobJ := world.Mobs.Get(room.Occupants[j])
+
+		// If they have the same agility, choose a random one to go first
+		if mobI.Data.Agility() == mobJ.Data.Agility() {
+			return rand.Intn(2) == 0
+		}
+
+		return mobI.Data.Agility() > mobJ.Data.Agility()
+	})
+
+	return combatants
+}
+
+func (room *Room) removeDeadOccupants(world *World) {
+	// Remove dead occupants
+	occupantIndex := 0
+	for occupantIndex < len(room.Occupants) {
+		// Get occupant mob
+		occupantHandle := room.Occupants[occupantIndex]
+		occupantMob := world.Mobs.Get(occupantHandle)
+
+		// Check for mob death
+		if !occupantMob.IsDead() {
+			occupantIndex++
+			continue
+		}
+
+		// Remove occupant
+		room.RemoveOccupantByIndex(occupantIndex)
+
+		// Fire event
+		world.pushEvent(Event {
+			EventType: EVENT_TYPE_MOB_DEATH,
+			Data: EventMobDeath {
+				PlayerId: occupantMob.GetPlayerId(),
+				MobHandle: occupantHandle,
+			},
+		})
+
+		// If player mob, remove their equipment so that it goes into their corpse
+		if occupantMob.PlayerCharacter != nil {
+			for slotIndex := range EQUIPMENT_SLOT_COUNT {
+				slot := EquipmentSlot(slotIndex)
+				item, success := occupantMob.Data.Equipment.Unequip(slot)
+				if !success {
+					continue
+				}
+
+				// Perform random durability damage to the player's equipped items on death
+				halfMaxDurability := item.GetMaxDurability() / 2
+				durabilityDamage := halfMaxDurability + int32(rand.Intn(int(halfMaxDurability)))
+				item.Durability -= durabilityDamage
+				if item.Durability <= 0 {
+					continue
+				}
+
+				occupantMob.Data.Inventory.AddItem(item)
+			}
+		}
+
+		// Create corpse in room
+		room.Chests = append(room.Chests, Chest {
+			Name: fmt.Sprintf("%s's Corpse", occupantMob.Data.Name),
+			DecayTimer: CHEST_CORPOSE_DECAY_DURATION,
+			Inventory: occupantMob.Data.Inventory,
+		})
+
+		// Remove from mob array
+		world.Mobs.Remove(occupantHandle)
+	}
 }
