@@ -5,188 +5,218 @@ import (
 	"context"
 	"time"
 	"log"
-	"os"
+	"mud/world"
 )
 
-const GAME_SECONDS_PER_UPDATE = 3
-const GAME_UPDATE_INTERVAL = GAME_SECONDS_PER_UPDATE * time.Second
-const GAME_WORLD_JSON_PATH = "./world.json"
+const GAME_UPDATE_INTERVAL = world.WORLD_SECONDS_PER_UPDATE * time.Second
 
 type Command struct {
 	PlayerId int
 	Payload string
 }
 
+type EventListener func (gamestate *GameState, event* world.Event)
+
 type GameState struct {
 	Commands chan Command
-	sigintChannel chan os.Signal
 
-	// Menus
-	menuLogin Menu
-	menuCreateCharacter Menu
-	menuWorld Menu
-
-	// Events
-	eventListeners [][]func (gameState *GameState, event Event)
-
-	// Players
 	players []Player
 	playerIdToIndexMap map[int]int
 
-	world *World
+	world *world.World
+	eventListeners [][]EventListener
 }
 
-func InitState() *GameState {
-	// Create menus
-	menuLogin := MenuLogin()
-	menuCreateCharacter := MenuCreateCharacter()
-	menuWorld := MenuWorld()
+func GameStateInit() *GameState {
+	playerMenusInit()
 
-	// Create world
-	world := WorldInitFromFile(GAME_WORLD_JSON_PATH)
-	if world == nil {
-		world = WorldInitNew()
-	}
-	world.PostInit()
-
-	gameState := &GameState {
+	gamestate := &GameState {
 		Commands: make(chan Command, 1024),
-		sigintChannel: make(chan os.Signal, 1),
-
-		menuLogin: menuLogin,
-		menuCreateCharacter: menuCreateCharacter,
-		menuWorld: menuWorld,
-
-		eventListeners: make([][]func (gameState *GameState, event Event), EVENT_TYPE_COUNT),
 
 		players: make([]Player, 0, 64),
 		playerIdToIndexMap: make(map[int]int),
 
-		world: world,
+		world: world.WorldInitNew(),
+		eventListeners: make([][]EventListener, world.EVENT_TYPE_COUNT),
 	}
 
-	// Hook up event listeners
-	gameState.addEventListener(EVENT_TYPE_MOB_MOVE, TradeSessionOnMobMove)
-	gameState.addEventListener(EVENT_TYPE_PLAYER_LOGOUT, TradeSessionOnPlayerLogout)
-	gameState.addEventListener(EVENT_TYPE_MOB_DEATH, TradeSessionOnMobDeath)
-	gameState.addEventListener(EVENT_TYPE_MOB_SET_TARGET, TradeSessionOnMobSetTarget)
-	gameState.addEventListener(EVENT_TYPE_MOB_DEATH, PlayerOnMobDeath)
+	gamestate.addEventListener(world.EVENT_TYPE_MESSAGE, handleEventMessage)
+	gamestate.addEventListener(world.EVENT_TYPE_MOB_MOVE, tradeSessionOnMobMove)
+	gamestate.addEventListener(world.EVENT_TYPE_MOB_SET_TARGET,  tradeSessionOnMobSetTarget)
+	gamestate.addEventListener(world.EVENT_TYPE_MOB_DEATH, tradeSessionOnMobDeath)
+	gamestate.addEventListener(world.EVENT_TYPE_MOB_DEATH, playerOnMobDeath)
 
-	return gameState
+	return gamestate
 }
 
-func (gameState *GameState) getPlayerById(playerId int) *Player {
-	playerIndex, exists := gameState.playerIdToIndexMap[playerId]
-	if !exists {
-		return nil
-	}
-	return &gameState.players[playerIndex]
-}
-
-func (gameState *GameState) Run(ctx context.Context) {
+func (gamestate *GameState) Run(ctx context.Context) {
 	ticker := time.NewTicker(GAME_UPDATE_INTERVAL)
 	defer ticker.Stop()
 
-	gameLoop:
+	gameloop:
 	for {
 		select {
 			case <- ctx.Done():
-				break gameLoop
-			case command := <- gameState.Commands:
-				gameState.handleCommand(command)
+				break gameloop
+			case command := <- gamestate.Commands:
+				gamestate.handleCommand(command)
 			case <- ticker.C:
-				gameState.update()
+				gamestate.update()
 		}
 	}
 
 	log.Printf("Shutdown signal received. Shutting down server...")
-	gameState.world.Save("./world.json")
+	// gamestate.world.Save("./world.json")
 }
 
-func (gameState *GameState) RegisterPlayer(playerId int, playerInbox *chan string) {
-	gameState.players = append(gameState.players, PlayerInit(playerId, playerInbox))
-	newPlayerIndex := len(gameState.players) - 1
-	gameState.playerIdToIndexMap[playerId] = newPlayerIndex
+func (gamestate *GameState) RegisterPlayer(playerId int, playerInbox *chan string) {
+	player := playerInit(playerId, playerInbox)
+	gamestate.players = append(gamestate.players, player)
+	newPlayerIndex := len(gamestate.players) - 1
+	gamestate.playerIdToIndexMap[playerId] = newPlayerIndex
 
-	newPlayer := &gameState.players[newPlayerIndex]
+	newPlayer := &gamestate.players[newPlayerIndex]
 	*newPlayer.inbox <- "Welcome to the RC Disco MUD!"
-	newPlayer.enterMenu(gameState, &gameState.menuLogin)
+	newPlayer.setMenu(gamestate, PLAYER_MENU_LOGIN)
 }
 
-func (gameState *GameState) RemovePlayer(playerId int) {
+func (gamestate *GameState) RemovePlayer(playerId int) {
 	// Get the player index (and double-check that they even exist)
-	playerIndex, exists := gameState.playerIdToIndexMap[playerId]
+	playerIndex, exists := gamestate.playerIdToIndexMap[playerId]
 	if !exists {
-		log.Printf("Tried to remove player %d, but they don't exist!", playerId)
+		log.Printf("Warn - Tried to remove player %d, but they don't exist!", playerId)
 		return
 	}
 
 	// Check if they are logged in
-	player := &gameState.players[playerIndex]
-	if player.isLoggedIn {
-		player.exitWorld(gameState)
+	player := &gamestate.players[playerIndex]
+	if player.isLoggedIn() {
+		// A little hacky, the setMenu() will trigger the world menu on exit
+		player.setMenu(gamestate, PLAYER_MENU_LOGIN)
 	}
 
 	// Swap and pop them from the array
-	lastIndex := len(gameState.players) - 1
-	gameState.players[playerIndex] = gameState.players[lastIndex]
-	gameState.players = gameState.players[:lastIndex]
+	lastIndex := len(gamestate.players) - 1
+	gamestate.players[playerIndex] = gamestate.players[lastIndex]
+	gamestate.players = gamestate.players[:lastIndex]
 
 	// Delete their entry in the map
-	delete(gameState.playerIdToIndexMap, playerId)
+	delete(gamestate.playerIdToIndexMap, playerId)
 
 	// Tell everybody about it
-	gameState.broadcast(fmt.Sprintf("Player %d has left the game.", playerId))
+	gamestate.broadcast(fmt.Sprintf("Player %d has left the game.", playerId))
+}
+
+func (gamestate *GameState) getPlayerById(playerId int) *Player {
+	playerIndex, exists := gamestate.playerIdToIndexMap[playerId]
+	if !exists {
+		return nil
+	}
+
+	return &gamestate.players[playerIndex]
+}
+
+func (gamestate *GameState) getPlayerByMobHandle(handle world.MobHandle) *Player {
+	mob := gamestate.world.Mobs.Get(handle)
+	if mob.PlayerCharacter == nil {
+		return nil
+	}
+
+	playerIndex, exists := gamestate.playerIdToIndexMap[mob.PlayerCharacter.PlayerId]
+	if !exists {
+		log.Printf("Warn - Tried get player %d by mob handle %d:%d, but they don't exist.",
+			mob.PlayerCharacter.PlayerId, handle.Id, handle.Generation)
+		return nil
+	}
+
+	return &gamestate.players[playerIndex]
 }
 
 // Handles a player command
-func (gameState *GameState) handleCommand(command Command) {
+func (gamestate *GameState) handleCommand(command Command) {
 	// Lookup player index
-	playerIndex, playerIndexExists := gameState.playerIdToIndexMap[command.PlayerId]
+	playerIndex, playerIndexExists := gamestate.playerIdToIndexMap[command.PlayerId]
 	if !playerIndexExists {
 		log.Printf("Received command from player %d but they don't exist.", command.PlayerId)
 		return
 	}
 
-	// Handle command using the player's current menu
-	player := &gameState.players[playerIndex]
-	if player.menuInstance == nil {
-		log.Printf("Received command from player %d but they don't have a menu instance.", command.PlayerId)
-
-		// Remove the player because they are in an unrecoverable state
-		// TODO: We should also develop a way to kick them / i.e. trigger a close in their web socket connection
-		gameState.RemovePlayer(command.PlayerId)
-		return
-	}
-
-	player.menuInstance.HandleCommand(gameState, player, command.Payload)
+	player := &gamestate.players[playerIndex]
+	player.getMenu().handleCommand(gamestate, player, command.Payload)
 }
 
 // Sends a message to all player inboxes
-func (gameState *GameState) broadcast(message string) {
-	for _, player := range gameState.players {
+func (gamestate *GameState) broadcast(message string) {
+	for _, player := range gamestate.players {
 		*player.inbox <- message
 	}
 }
 
-// This function is the update that is called on a 3-second interval
-func (gameState *GameState) update() {
-	// Apply player actions
-	for index := 0; index < len(gameState.players); index++ {
-		if !gameState.players[index].isLoggedIn {
+func (gamestate *GameState) messageRoom(roomIndex int, message string) {
+	room := &gamestate.world.Rooms[roomIndex]
+
+	for _, mobHandle := range room.Occupants {
+		mob := gamestate.world.Mobs.Get(mobHandle)
+		if mob.PlayerCharacter == nil {
 			continue
 		}
 
-		gameState.players[index].doAction(gameState)
+		playerId := mob.PlayerCharacter.PlayerId
+		playerIndex, exists := gamestate.playerIdToIndexMap[playerId]
+		if !exists {
+			log.Printf("Warn - Mob %d:%d in room %d has player ID %d but that player does not exist.",
+				mobHandle.Id, mobHandle.Generation, roomIndex, playerId)
+			continue
+		}
+
+		player := &gamestate.players[playerIndex]
+		*player.inbox <- message
+	}
+}
+
+func (gamestate *GameState) addEventListener(eventType world.EventType, listener EventListener) {
+	gamestate.eventListeners[eventType] = append(gamestate.eventListeners[eventType], listener)
+}
+
+// This function is the update that is called on a 3-second interval
+func (gamestate *GameState) update() {
+	// Handle player actions
+	for index := 0; index < len(gamestate.players); index++ {
+		if !gamestate.players[index].isLoggedIn() {
+			continue
+		}
+
+		gamestate.players[index].doAction(gamestate)
 	}
 
-	// NPC updates
-	for index := 0; index < len(gameState.world.Npcs); index++ {
-		gameState.world.Npcs[index].update(gameState)
+	// World update
+	gamestate.world.Update()
+
+	// Handle world events
+	for index := range len(gamestate.world.Events) {
+		event := &gamestate.world.Events[index]
+		listeners := &gamestate.eventListeners[event.EventType]
+		for _, listener := range *listeners {
+			listener(gamestate, event)
+		}
 	}
 
-	// Room updates
-	for index := 0; index < len(gameState.world.Rooms); index++ {
-		gameState.world.Rooms[index].Update(gameState)
+	// Clear world events
+	// This syntax for clearing the array is done because it keeps the underlying array
+	// so that way we're not allocating a new chunk of memory each time we reset the events
+	gamestate.world.Events = gamestate.world.Events[:0]
+}
+
+func handleEventMessage(gamestate *GameState, event* world.Event) {
+	eventData := event.Data.(world.EventMessage)
+
+	for _, playerId := range eventData.ToPlayers {
+		playerIndex, exists := gamestate.playerIdToIndexMap[playerId]
+		if !exists {
+			continue
+		}
+
+		player := &gamestate.players[playerIndex]
+		*player.inbox <- eventData.Message
 	}
 }

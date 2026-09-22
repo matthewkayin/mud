@@ -1,4 +1,4 @@
-package game
+package world
 
 import (
 	"testing"
@@ -7,12 +7,12 @@ import (
 func TestRemoval(t *testing.T) {
 	mobArray := MobArrayInit()
 	a := mobArray.Push(Mob {
-		data: MobData {
+		Data: MobData {
 			Name: "A",
 		},
 	})
 	b := mobArray.Push(Mob {
-		data: MobData {
+		Data: MobData {
 			Name: "B",
 		},
 	})
@@ -37,7 +37,7 @@ func TestRemoval(t *testing.T) {
 	}
 
 	c := mobArray.Push(Mob {
-		data: MobData {
+		Data: MobData {
 			Name: "C",
 		},
 	})
@@ -46,8 +46,8 @@ func TestRemoval(t *testing.T) {
 		t.Errorf("Mob C does not exist, but it should!")
 	}
 
-	cIndex := mobArray.idToIndex[c.id].index
-	if c.id != 0 || c.generation != 1 || cIndex != 1 {
+	cIndex := mobArray.idToIndex[c.Id].index
+	if c.Id != 0 || c.Generation != 1 || cIndex != 1 {
 		t.Errorf("Mob C exists, but isn't stored in the array correctly!")
 	}
 }

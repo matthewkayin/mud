@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 	"strconv"
+	"mud/world"
 )
 
 const FUZZY_FIND_NUMBER_NONE = -1
@@ -157,10 +158,10 @@ func fuzzyFind(names []string, searchWords []string, fuzzyNumber int) int {
 	return bestIndices[fuzzyNumber - 1]
 }
 
-func fuzzyFindTarget(gameState *GameState, player *Player, searchWords []string) (MobHandle, error) {
+func fuzzyFindTarget(gamestate *GameState, player *Player, searchWords []string) (world.MobHandle, error) {
 	// Check that there are any arguments
 	if len(searchWords) == 0 {
-		return MobHandle{}, errors.New("You must specify a target.")
+		return world.MobHandle{}, errors.New("You must specify a target.")
 	}
 
 	// Get fuzzy number
@@ -173,14 +174,14 @@ func fuzzyFindTarget(gameState *GameState, player *Player, searchWords []string)
 	}
 
 	// Get handle to player room
-	playerMob := gameState.world.Mobs.Get(player.mobHandle)
-	room := gameState.world.Rooms[playerMob.data.Room]
+	playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+	room := gamestate.world.Rooms[playerMob.Data.Room]
 
 	// Put all room occupant names into an array
-	mobNames := make([]string, len(room.occupants))
-	for index, occupantHandle := range room.occupants {
-		occupant := gameState.world.Mobs.Get(occupantHandle)
-		mobNames[index] = occupant.data.Name
+	mobNames := make([]string, len(room.Occupants))
+	for index, occupantHandle := range room.Occupants {
+		occupant := gamestate.world.Mobs.Get(occupantHandle)
+		mobNames[index] = occupant.Data.Name
 	}
 
 	// Fuzzy find the target mob
@@ -188,32 +189,32 @@ func fuzzyFindTarget(gameState *GameState, player *Player, searchWords []string)
 
 	// Handle edge cases
 	if targetIndex == FUZZY_FIND_RESULT_NOT_FOUND {
-		return MobHandle{}, fmt.Errorf("No target in the room matches the name '%s'.", strings.Join(searchWords, " "))
+		return world.MobHandle{}, fmt.Errorf("No target in the room matches the name '%s'.", strings.Join(searchWords, " "))
 	}
 	if targetIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
-		return MobHandle{}, fmt.Errorf("The target string '%s' is ambiguous.", strings.Join(searchWords, " "))
+		return world.MobHandle{}, fmt.Errorf("The target string '%s' is ambiguous.", strings.Join(searchWords, " "))
 	}
 	if targetIndex == FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE {
-		return MobHandle{}, fmt.Errorf("No target in the room matches the number %d.", fuzzyNumber)
+		return world.MobHandle{}, fmt.Errorf("No target in the room matches the number %d.", fuzzyNumber)
 	}
 
-	return room.occupants[targetIndex], nil
+	return room.Occupants[targetIndex], nil
 }
 
-func fuzzyFindPreparedSpell(gameState *GameState, player *Player, searchWords []string) (Spell, error) {
+func fuzzyFindPreparedSpell(gamestate *GameState, player *Player, searchWords []string) (world.Spell, error) {
 	// Check that there are any arguments
 	if len(searchWords) == 0 {
 		return 0, errors.New("You must specify a spell.")
 	}
 
 	// Get handle to player mob
-	playerMob := gameState.world.Mobs.Get(player.mobHandle)
+	playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 
 	// Put all spell names into an array
-	spellNames := make([]string, len(playerMob.data.Spells))
-	for index, spell := range playerMob.data.Spells {
-		spellData := SPELL_DATA[spell]
-		spellNames[index] = spellData.name
+	spellNames := make([]string, len(playerMob.Data.Spells))
+	for index, spell := range playerMob.Data.Spells {
+		spellData := world.SPELL_DATA[spell]
+		spellNames[index] = spellData.Name
 	}
 
 	// Fuzzy find the target spell
@@ -230,17 +231,17 @@ func fuzzyFindPreparedSpell(gameState *GameState, player *Player, searchWords []
 		panic("Received fuzzy number out of range when no fuzzy number was provided.")
 	}
 
-	return playerMob.data.Spells[spellIndex], nil
+	return playerMob.Data.Spells[spellIndex], nil
 }
 
-func fuzzyFindKnownOrEquippedSpell(player *Player, searchWords []string) (Spell, error) {
+func fuzzyFindKnownOrEquippedSpell(player *Player, searchWords []string) (world.Spell, error) {
 	// Check that there are any arguments
 	if len(searchWords) == 0 {
 		return 0, errors.New("You must specify a spell.")
 	}
 
 	// Get equipped spells into a flat array
-	spellsEquipped := make([]Spell, 0, 2)
+	spellsEquipped := make([]world.Spell, 0, 2)
 	for spell, _ := range player.character.SpellsEquipped {
 		spellsEquipped = append(spellsEquipped, spell)
 	}
@@ -248,12 +249,12 @@ func fuzzyFindKnownOrEquippedSpell(player *Player, searchWords []string) (Spell,
 	// Put all spell names into an array
 	spellNames := make([]string, 0, len(player.character.SpellsKnown) + len(player.character.SpellsEquipped))
 	for _, spell := range player.character.SpellsKnown {
-		spellData := SPELL_DATA[spell]
-		spellNames = append(spellNames, spellData.name)
+		spellData := world.SPELL_DATA[spell]
+		spellNames = append(spellNames, spellData.Name)
 	}
 	for _, spell := range spellsEquipped {
-		spellData := SPELL_DATA[spell]
-		spellNames = append(spellNames, spellData.name)
+		spellData := world.SPELL_DATA[spell]
+		spellNames = append(spellNames, spellData.Name)
 	}
 
 	// Fuzzy find the target spell
@@ -279,7 +280,7 @@ func fuzzyFindKnownOrEquippedSpell(player *Player, searchWords []string) (Spell,
 	return spellsEquipped[spellIndex - len(player.character.SpellsKnown)], nil
 }
 
-func fuzzyFindInventoryItemIndex(inventory *Inventory, searchWords []string) int {
+func fuzzyFindInventoryItemIndex(inventory *world.Inventory, searchWords []string) int {
 	if len(searchWords) == 0 {
 		return FUZZY_FIND_RESULT_NOT_FOUND
 	}
@@ -291,30 +292,30 @@ func fuzzyFindInventoryItemIndex(inventory *Inventory, searchWords []string) int
 	// Put all item names into an array
 	itemNames := make([]string, len(inventory.Items))
 	for index := range len(inventory.Items) {
-		itemNames[index] = inventory.Items[index].getNameWithCondition()
+		itemNames[index] = inventory.Items[index].GetNameWithCondition()
 	}
 
 	// Fuzzy find the item
 	return fuzzyFind(itemNames, searchWords, fuzzyNumber)
 }
 
-func fuzzyFindEquipmentSlotByItem(equipment *Equipment, searchWords []string) (EquipmentSlot, error) {
+func fuzzyFindEquipmentSlotByItem(equipment *world.Equipment, searchWords []string) (world.EquipmentSlot, error) {
 	if len(searchWords) == 0 {
 		return 0, errors.New("You must specify an item.")
 	}
 
 	// Create parallel arrays of equipped item name and equipment slot
-	itemNames := make([]string, 0, EQUIPMENT_SLOT_COUNT)
-	equipmentSlots := make([]EquipmentSlot, 0, EQUIPMENT_SLOT_COUNT)
-	for slotIndex := range EQUIPMENT_SLOT_COUNT {
-		slot := EquipmentSlot(slotIndex)
+	itemNames := make([]string, 0, world.EQUIPMENT_SLOT_COUNT)
+	equipmentSlots := make([]world.EquipmentSlot, 0, world.EQUIPMENT_SLOT_COUNT)
+	for slotIndex := range world.EQUIPMENT_SLOT_COUNT {
+		slot := world.EquipmentSlot(slotIndex)
 		item := equipment.Get(slot)
 		if item == nil {
 			continue
 		}
 
-		itemData := ITEM_DATA[item.Id]
-		itemNames = append(itemNames, itemData.name)
+		itemData := world.ITEM_DATA[item.Id]
+		itemNames = append(itemNames, itemData.Name)
 		equipmentSlots = append(equipmentSlots, slot)
 	}
 
@@ -323,7 +324,7 @@ func fuzzyFindEquipmentSlotByItem(equipment *Equipment, searchWords []string) (E
 		return 0, errors.New("You have no items equipped.")
 	}
 
-	index := fuzzyFind(itemNames, searchWords, FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE)
+	index := fuzzyFind(itemNames, searchWords, FUZZY_FIND_NUMBER_NONE)
 
 	// Handle edge cases
 	if index == FUZZY_FIND_RESULT_NOT_FOUND {
@@ -341,16 +342,16 @@ func fuzzyFindEquipmentSlotByItem(equipment *Equipment, searchWords []string) (E
 	return equipmentSlots[index], nil
 }
 
-func fuzzyFindEquipmentSlot(searchWords []string) (EquipmentSlot, error) {
+func fuzzyFindEquipmentSlot(searchWords []string) (world.EquipmentSlot, error) {
 	if len(searchWords) == 0 {
 		return 0, errors.New("You must specify an equipment slot.")
 	}
 
 	// Equipment slot names
-	slotNames := make([]string, EQUIPMENT_SLOT_COUNT)
-	for index := range EQUIPMENT_SLOT_COUNT {
-		slot := EquipmentSlot(index)
-		slotNames[index] = EquipmentSlotToString(slot)
+	slotNames := make([]string, world.EQUIPMENT_SLOT_COUNT)
+	for index := range world.EQUIPMENT_SLOT_COUNT {
+		slot := world.EquipmentSlot(index)
+		slotNames[index] = world.EquipmentSlotToString(slot)
 	}
 
 	slotIndex := fuzzyFind(slotNames, searchWords, FUZZY_FIND_NUMBER_NONE)
@@ -368,10 +369,10 @@ func fuzzyFindEquipmentSlot(searchWords []string) (EquipmentSlot, error) {
 		panic("Received fuzzy number out of range when no fuzzy number was provided.")
 	}
 
-	return EquipmentSlot(slotIndex), nil
+	return world.EquipmentSlot(slotIndex), nil
 }
 
-func fuzzyFindChestInventory(room *Room, searchWords []string) (*Inventory, string, error) {
+func fuzzyFindChestInventory(room *world.Room, searchWords []string) (*world.Inventory, string, error) {
 	if len(searchWords) == 0 {
 		return nil, "", errors.New("You must specify a container.")
 	}
@@ -408,15 +409,14 @@ func fuzzyFindChestInventory(room *Room, searchWords []string) (*Inventory, stri
 	return &room.Chests[chestIndex].Inventory, room.Chests[chestIndex].Name, nil
 }
 
-func fuzzyFindKnownRecipe(character *Character, searchWords []string) (Recipe, error) {
-
+func fuzzyFindKnownRecipe(character *world.Character, searchWords []string) (world.Recipe, error) {
 	if len(searchWords) == 0 {
 		return 0, errors.New("You must specify a recipe.")
 	}
 
 	recipeNames := make([]string, len(character.RecipesKnown))
 	for index, recipe := range character.RecipesKnown {
-		recipeNames[index] = RECIPE_DATA[recipe].name
+		recipeNames[index] = world.RECIPE_DATA[recipe].Name
 	}
 
 	index := fuzzyFind(recipeNames, searchWords, FUZZY_FIND_NUMBER_NONE)

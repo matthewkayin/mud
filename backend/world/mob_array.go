@@ -1,4 +1,4 @@
-package game
+package world
 
 import (
 	"fmt"
@@ -6,8 +6,8 @@ import (
 )
 
 type MobHandle struct {
-	id uint32
-	generation uint32
+	Id uint32
+	Generation uint32
 }
 
 type MobIndex struct {
@@ -32,22 +32,22 @@ func MobArrayInit() MobArray {
 }
 
 func (array *MobArray) GetIfExists(handle MobHandle) (*Mob, bool) {
-	if int(handle.id) > len(array.idToIndex) - 1 {
-		log.Printf("Warm - Tried to get Mob with ID %d which is greater than the list of IDs which has length %d", handle.id, len(array.idToIndex))
+	if int(handle.Id) > len(array.idToIndex) - 1 {
+		log.Printf("Warm - Tried to get Mob with ID %d which is greater than the list of IDs which has length %d", handle.Id, len(array.idToIndex))
 		return nil, false
 	}
-	if array.idToIndex[handle.id].generation != handle.generation {
+	if array.idToIndex[handle.Id].generation != handle.Generation {
 		return nil, false
 	}
 
-	index := array.idToIndex[handle.id].index
+	index := array.idToIndex[handle.Id].index
 	return &array.data[index], true
 }
 
 func (array *MobArray) Get(handle MobHandle) *Mob {
 	mob, exists := array.GetIfExists(handle)
 	if !exists {
-		panic(fmt.Sprintf("Tried to get Mob with handle %d:%d, but it does not exist.", handle.id, handle.generation))
+		panic(fmt.Sprintf("Tried to get Mob with handle %d:%d, but it does not exist.", handle.Id, handle.Generation))
 	}
 
 	return mob
@@ -62,8 +62,8 @@ func (array *MobArray) Push(mob Mob) MobHandle {
 	} else {
 		// Since there's no free handles, we have to make a new handle and index
 		handle = MobHandle {
-			id: uint32(len(array.idToIndex)),
-			generation: 0,
+			Id: uint32(len(array.idToIndex)),
+			Generation: 0,
 		}
 		// Note: we're just allocating this element here, and it will be
 		// populated by the statement below
@@ -71,38 +71,38 @@ func (array *MobArray) Push(mob Mob) MobHandle {
 	}
 
 	// Set ID to index
-	array.idToIndex[handle.id] = MobIndex {
+	array.idToIndex[handle.Id] = MobIndex {
 		index: uint32(len(array.data)),
-		generation: handle.generation,
+		generation: handle.Generation,
 	}
 
 	// Add data
 	array.data = append(array.data, mob)
-	array.indexToId = append(array.indexToId, handle.id)
+	array.indexToId = append(array.indexToId, handle.Id)
 
 	return handle
 }
 
 func (array *MobArray) Remove(handle MobHandle) {
 	// Check that it's a valid handle
-	if int(handle.id) > len(array.idToIndex) {
-		panic(fmt.Sprintf("Tried to remove Mob with ID %d which is greater than the lsit of IDs which has length %d", handle.id, len(array.idToIndex)))
+	if int(handle.Id) > len(array.idToIndex) {
+		panic(fmt.Sprintf("Tried to remove Mob with ID %d which is greater than the lsit of IDs which has length %d", handle.Id, len(array.idToIndex)))
 	}
-	if array.idToIndex[handle.id].generation != handle.generation {
+	if array.idToIndex[handle.Id].generation != handle.Generation {
 		panic(fmt.Sprintf("Tried to move Mob with handle %d:%d but the generation does not match the current generation %d",
-			handle.id,
-			handle.generation,
-			array.idToIndex[handle.id].generation),
+			handle.Id,
+			handle.Generation,
+			array.idToIndex[handle.Id].generation),
 		)
 	}
 
 	// Invalidate the current index->ID entry by incrementing the generation
-	array.idToIndex[handle.id].generation++
+	array.idToIndex[handle.Id].generation++
 
 	// Add the handle to the list of free handles
 	array.freeHandles = append(array.freeHandles, MobHandle {
-		id: handle.id,
-		generation: handle.generation + 1,
+		Id: handle.Id,
+		Generation: handle.Generation + 1,
 	})
 
 	// Determine the index and ID of the last element
@@ -110,7 +110,7 @@ func (array *MobArray) Remove(handle MobHandle) {
 	lastId := array.indexToId[lastIndex]
 
 	// Redirect the last element's ID to point to the removed index
-	index := array.idToIndex[handle.id].index
+	index := array.idToIndex[handle.Id].index
 	array.idToIndex[lastId].index = index
 
 	// Move the last index into the removed slot

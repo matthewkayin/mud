@@ -1,8 +1,10 @@
 package game
 
-import "log"
+import (
+	"log"
+	"mud/world"
+)
 
-// You have to actually handle the player actions
 type ActionType int
 const (
 	ACTION_TYPE_NONE ActionType = iota
@@ -18,43 +20,44 @@ type Action struct {
 }
 
 type ActionAttack struct {
-	target MobHandle
+	target world.MobHandle
 }
 
 type ActionCast struct {
-	spell Spell
-	target MobHandle
+	spell world.Spell
+	target world.MobHandle
 }
 
 type ActionUseItem struct {
-	itemId ItemId
-	target MobHandle
+	itemId world.ItemId
+	target world.MobHandle
 }
 
 type ActionCraft struct {
-	itemId ItemId
-	target Recipe
+	itemId world.ItemId
+	target world.Recipe
 }
 
-func (player *Player) doAction(gameState *GameState) {
+func (player *Player) doAction(gamestate *GameState) {
 	switch player.nextAction.actionType {
 		case ACTION_TYPE_NONE:
 			break
 		case ACTION_TYPE_ATTACK:
 			actionData := player.nextAction.data.(ActionAttack)
 
-			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			playerMob.SetModeAttack(gameState, player.mobHandle, actionData.target)
+			// BUG: Tried to call doAction on a nil mob handle (after death)
+			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+			playerMob.SetModeAttack(gamestate.world, player.mobHandle, actionData.target)
 		case ACTION_TYPE_CAST:
 			actionData := player.nextAction.data.(ActionCast)
 
-			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			playerMob.SetModeCast(gameState, player.mobHandle, actionData.spell, actionData.target)
+			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+			playerMob.SetModeCast(gamestate.world, player.mobHandle, actionData.spell, actionData.target)
 		case ACTION_TYPE_USE_ITEM:
 			actionData := player.nextAction.data.(ActionUseItem)
 
-			playerMob := gameState.world.Mobs.Get(player.mobHandle)
-			playerMob.SetModeUseItem(gameState, player.mobHandle, actionData.itemId, actionData.target)
+			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+			playerMob.SetModeUseItem(gamestate.world, player.mobHandle, actionData.itemId, actionData.target)
 		default:
 			log.Printf("Action type %d not handled!", player.nextAction.actionType)
 	}

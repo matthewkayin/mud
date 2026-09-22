@@ -1,4 +1,4 @@
-package game
+package world
 
 import (
 	"fmt"
@@ -21,15 +21,58 @@ type Equipment struct {
 	// Instead, stat bonuses are recalculated when a character logins
 	// This way if an item gets a balance patch, players will get the patch applied
 	// to them when they login
-	statBonuses MobBaseStats
+	StatBonuses StatBlock
 }
+
+func ItemTypeMatchesEquipmentSlot(itemType ItemType, slot EquipmentSlot) bool {
+	switch itemType {
+		case ITEM_TYPE_EQUIPMENT_ONE_HANDED, ITEM_TYPE_EQUIPMENT_SPELLBOOK:
+			return slot == EQUIPMENT_SLOT_MAIN_HAND || slot == EQUIPMENT_SLOT_OFF_HAND
+		case ITEM_TYPE_EQUIPMENT_TWO_HANDED:
+			return slot == EQUIPMENT_SLOT_MAIN_HAND
+		case ITEM_TYPE_EQUIPMENT_OUTFIT:
+			return slot == EQUIPMENT_SLOT_OUTFIT
+		case ITEM_TYPE_EQUIPMENT_ACCESSORY:
+			return slot == EQUIPMENT_SLOT_ACCESSORY
+		// For all other items types, return false because they are not equipment
+		default:
+			return false
+	}
+}
+
+func EquipmentSlotForItemType(itemType ItemType) (EquipmentSlot, bool) {
+	switch itemType {
+		case ITEM_TYPE_EQUIPMENT_OUTFIT:
+			return EQUIPMENT_SLOT_OUTFIT, true
+		case ITEM_TYPE_EQUIPMENT_ACCESSORY:
+			return EQUIPMENT_SLOT_ACCESSORY, true
+		default:
+			return EQUIPMENT_SLOT_COUNT, false
+	}
+}
+
+func EquipmentSlotToString(slot EquipmentSlot) string {
+	switch slot {
+		case EQUIPMENT_SLOT_MAIN_HAND:
+			return "Main Hand"
+		case EQUIPMENT_SLOT_OFF_HAND:
+			return "Off Hand"
+		case EQUIPMENT_SLOT_OUTFIT:
+			return "Outfit"
+		case EQUIPMENT_SLOT_ACCESSORY:
+			return "Accessory"
+		default:
+			panic(fmt.Sprintf("No equipment slot string for slot %d", slot))
+	}
+}
+
 
 func EquipmentInitEmpty() Equipment {
 	equipment := Equipment {
 		IsSlotInUse: make([]bool, EQUIPMENT_SLOT_COUNT),
 		SlotItem: make([]Item, EQUIPMENT_SLOT_COUNT),
 
-		statBonuses: MobBaseStats {},
+		StatBonuses: StatBlock {},
 	}
 	for index := range EQUIPMENT_SLOT_COUNT {
 		equipment.IsSlotInUse[index] = false
@@ -52,7 +95,7 @@ func (equipment *Equipment) Unequip(slot EquipmentSlot) (Item, bool) {
 	}
 
 	item := equipment.SlotItem[slot]
-	if ITEM_DATA[item.Id].itemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED {
+	if ITEM_DATA[item.Id].ItemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED {
 		equipment.IsSlotInUse[EQUIPMENT_SLOT_MAIN_HAND] = false
 		equipment.IsSlotInUse[EQUIPMENT_SLOT_OFF_HAND] = false
 	} else {
@@ -69,8 +112,8 @@ func (equipment *Equipment) Equip(slot EquipmentSlot, item Item) ([]Item, bool) 
 	unequippedItems := make([]Item, 0, 2)
 
 	// Check item type against equipment slot
-	itemType := ITEM_DATA[item.Id].itemType
-	if !itemTypeMatchesEquipmentSlot(itemType, slot) {
+	itemType := ITEM_DATA[item.Id].ItemType
+	if !ItemTypeMatchesEquipmentSlot(itemType, slot) {
 		return unequippedItems, false
 	}
 
@@ -113,50 +156,8 @@ func (equipment *Equipment) Equip(slot EquipmentSlot, item Item) ([]Item, bool) 
 	return unequippedItems, true
 }
 
-func itemTypeMatchesEquipmentSlot(itemType ItemType, slot EquipmentSlot) bool {
-	switch itemType {
-		case ITEM_TYPE_EQUIPMENT_ONE_HANDED, ITEM_TYPE_EQUIPMENT_SPELLBOOK:
-			return slot == EQUIPMENT_SLOT_MAIN_HAND || slot == EQUIPMENT_SLOT_OFF_HAND
-		case ITEM_TYPE_EQUIPMENT_TWO_HANDED:
-			return slot == EQUIPMENT_SLOT_MAIN_HAND
-		case ITEM_TYPE_EQUIPMENT_OUTFIT:
-			return slot == EQUIPMENT_SLOT_OUTFIT
-		case ITEM_TYPE_EQUIPMENT_ACCESSORY:
-			return slot == EQUIPMENT_SLOT_ACCESSORY
-		// For all other items types, return false because they are not equipment
-		default:
-			return false
-	}
-}
-
-func EquipmentSlotForItemType(itemType ItemType) (EquipmentSlot, bool) {
-	switch itemType {
-		case ITEM_TYPE_EQUIPMENT_OUTFIT:
-			return EQUIPMENT_SLOT_OUTFIT, true
-		case ITEM_TYPE_EQUIPMENT_ACCESSORY:
-			return EQUIPMENT_SLOT_ACCESSORY, true
-		default:
-			return EQUIPMENT_SLOT_COUNT, false
-	}
-}
-
-func EquipmentSlotToString(slot EquipmentSlot) string {
-	switch slot {
-		case EQUIPMENT_SLOT_MAIN_HAND:
-			return "Main Hand"
-		case EQUIPMENT_SLOT_OFF_HAND:
-			return "Off Hand"
-		case EQUIPMENT_SLOT_OUTFIT:
-			return "Outfit"
-		case EQUIPMENT_SLOT_ACCESSORY:
-			return "Accessory"
-		default:
-			panic(fmt.Sprintf("No equipment slot string for slot %d", slot))
-	}
-}
-
 func (equipment *Equipment) CalculateStatBonuses() {
-	equipment.statBonuses = MobBaseStats {}
+	equipment.StatBonuses = StatBlock {}
 
 	for slotIndex := range EQUIPMENT_SLOT_COUNT {
 		slot := EquipmentSlot(slotIndex)
@@ -168,12 +169,12 @@ func (equipment *Equipment) CalculateStatBonuses() {
 		}
 
 		// Get item stat bonusees
-		itemStatBonuses := item.getStatBonuses()
+		itemStatBonuses := item.GetStatBonuses()
 		if itemStatBonuses == nil {
 			continue
 		}
 
-		equipment.statBonuses = equipment.statBonuses.Add(itemStatBonuses)
+		equipment.StatBonuses = equipment.StatBonuses.Add(itemStatBonuses)
 	}
 }
 
@@ -187,12 +188,12 @@ func (equipment *Equipment) IsHoldingSpellbookOf(spell Spell) bool {
 			continue
 		}
 		heldItemData := ITEM_DATA[heldItem.Id]
-		if heldItemData.itemType != ITEM_TYPE_EQUIPMENT_SPELLBOOK {
+		if heldItemData.ItemType != ITEM_TYPE_EQUIPMENT_SPELLBOOK {
 			continue
 		}
 
-		heldSpellbookData := heldItemData.data.(*ItemDataSpellbook)
-		if heldSpellbookData.spell == spell {
+		heldSpellbookData := heldItemData.Data.(*ItemDataSpellbook)
+		if heldSpellbookData.Spell == spell {
 			return true
 		}
 	}

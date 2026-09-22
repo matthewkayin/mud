@@ -9,7 +9,6 @@ import (
 	"github.com/coder/websocket"
 )
 
-
 func (apiState* ApiState) HandleGetWebSocket(writer http.ResponseWriter, request *http.Request) {
 	log.Printf("Invoked /api/websocket")
 
@@ -66,7 +65,7 @@ func (apiState* ApiState) HandleGetWebSocket(writer http.ResponseWriter, request
 		}
 
 		if messageType == websocket.MessageText {
-			apiState.gameState.Commands <- game.Command {
+			apiState.gamestate.Commands <- game.Command {
 				PlayerId: userId,
 				Payload: strings.TrimSpace(string(messageData)),
 			}
@@ -77,7 +76,7 @@ func (apiState* ApiState) HandleGetWebSocket(writer http.ResponseWriter, request
 
 func (apiState *ApiState) runSocketWriteLoop(ctx context.Context, connection *websocket.Conn, userId int) {
 	inbox := make(chan string, 100)
-	apiState.gameState.RegisterPlayer(userId, &inbox)
+	apiState.gamestate.RegisterPlayer(userId, &inbox)
 
 	writeLoop:
 	for {
@@ -97,5 +96,5 @@ func (apiState *ApiState) runSocketWriteLoop(ctx context.Context, connection *we
 		}
 	}
 
-	apiState.gameState.RemovePlayer(userId)
+	apiState.gamestate.RemovePlayer(userId)
 }

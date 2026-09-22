@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"encoding/json"
 	"encoding/base64"
-	"mud/core"
 )
 
 type rcTokenRequestBody struct {
@@ -34,7 +33,7 @@ const MUD_SESSION_COOKIE_NAME = "mud_session"
 
 func (apiState *ApiState) HandleAuthLogin(writer http.ResponseWriter, request *http.Request) {
 	log.Printf("Invoked /api/auth/login")
-	env := core.GetEnv()
+	env := GetEnv()
 
 	// TODO: state for CSRF
 	// Generate state for CSRF prevention
@@ -62,7 +61,7 @@ func (apiState *ApiState) HandleAuthLogin(writer http.ResponseWriter, request *h
 
 func (apiState *ApiState) HandleAuthCallback(writer http.ResponseWriter, request *http.Request) {
 	log.Printf("Invoked /api/auth/callback")
-	env := core.GetEnv()
+	env := GetEnv()
 
 	// Get auth code from URL
 	authCode := request.URL.Query().Get("code")
@@ -145,7 +144,7 @@ func (apiState *ApiState) HandleDebugLogin(writer http.ResponseWriter, request *
 }
 
 func getUserIdFromRcApi(token string) (int, error) {
-	env := core.GetEnv()
+	env := GetEnv()
 
 	// Build a GET request to the RC API
 	recurseRequest, err := http.NewRequest("GET", fmt.Sprintf("%s/profiles/me", env.RC_API_URL), nil)
