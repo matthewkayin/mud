@@ -1,5 +1,9 @@
 package world
 
+import (
+	"fmt"
+)
+
 var ITEM_DATA = []*ItemData {
 	ITEM_GOLD: {
 		name: "Gold",
@@ -65,14 +69,13 @@ var ITEM_DATA = []*ItemData {
 		description: "A red tonic that gives health to the drinker",
 		itemType: ITEM_TYPE_CONSUMABLE,
 		data: &ItemDataConsumable {
-			onUse: func(gameState *GameState, target *Mob) {
+			onUse: func(world *World, target *Mob) {
 				var healing int32 = 20
-				healingReceived := min(healing, target.data.MaxHealth() - target.data.Health)
-				target.data.Health += healingReceived
+				healingReceived := min(healing, target.Data.MaxHealth() - target.Data.Health)
+				target.Data.Health += healingReceived
 
 
-				room := gameState.world.Rooms[target.data.Room]
-				room.broadcast(gameState, fmt.Sprintf("%s drank a health potion and regained %d HP.", target.data.Name, healingReceived))
+				world.messageRoom(target.Data.Room, fmt.Sprintf("%s drank a health potion and regained %d HP.", target.Data.Name, healingReceived))
 			},
 		},
 	},
@@ -82,14 +85,13 @@ var ITEM_DATA = []*ItemData {
 		description: "A blue tonic that gives mana to the drinker.",
 		itemType: ITEM_TYPE_CONSUMABLE,
 		data: &ItemDataConsumable {
-			onUse: func(gameState *GameState, target *Mob) {
+			onUse: func(world *World, target *Mob) {
 				var mana int32 = 20
-				manaReceived := min(mana, target.data.MaxMana() - target.data.Mana)
-				target.data.Mana += manaReceived
+				manaReceived := min(mana, target.Data.MaxMana() - target.Data.Mana)
+				target.Data.Mana += manaReceived
 
 
-				room := gameState.world.Rooms[target.data.Room]
-				room.broadcast(gameState, fmt.Sprintf("%s drank a mana potion and regained %d MP.", target.data.Name, manaReceived))
+				world.messageRoom(target.Data.Room, fmt.Sprintf("%s drank a mana potion and regained %d HP.", target.Data.Name, manaReceived))
 			},
 		},
 	},

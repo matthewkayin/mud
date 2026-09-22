@@ -400,6 +400,10 @@ func (mob *Mob) spellcast(world *World, targetMob *Mob) {
 	}
 }
 
+func (mob *Mob) calculateMagicDamage(baseDamage int32, target *Mob) int32 {
+	return baseDamage + (mob.Data.Faith() / 2) + (target.Data.Faith() / 4)
+}
+
 func (mob *Mob) getEquipmentWhichProvidesSpell(spell Spell) (EquipmentSlot, bool) {
 	slots := []EquipmentSlot { EQUIPMENT_SLOT_MAIN_HAND, EQUIPMENT_SLOT_OFF_HAND }
 	for _, slot := range slots {

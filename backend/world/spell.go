@@ -1,5 +1,9 @@
 package world
 
+import (
+	"fmt"
+)
+
 var SPELL_CAST_TIME_INSTANT int32 = 0
 
 type Spell int32
@@ -31,15 +35,14 @@ var SPELL_DATA = []*SpellData {
 		canTargetPlayers: false,
 
 		onHit: func(world *World, caster *Mob, target *Mob) {
-			damage := caster.CalculateMagicDamage(10, target)
+			damage := caster.calculateMagicDamage(10, target)
 			target.Data.Health -= damage
 
-			room := world.Rooms[target.data.Room]
-			room.broadcast(gameState, fmt.Sprintf("%s took %d damage from the firebolt.", target.data.Name, damage))
+			world.messageRoom(target.Data.Room, fmt.Sprintf("%s took %d damage from the firebolt.", target.Data.Name, damage))
 			if target.IsDead() {
-				room.broadcast(gameState, fmt.Sprintf("%s has burnt to a crisp.", target.data.Name))
+				world.messageRoom(target.Data.Room, fmt.Sprintf("%s has burnt to a crisp.", target.Data.Name))
 			} else {
-				target.RollForConcentration(gameState, damage)
+				target.rollForConcentration(world, damage)
 			}
 		},
 	},
@@ -52,13 +55,12 @@ var SPELL_DATA = []*SpellData {
 		castTime: SPELL_CAST_TIME_INSTANT,
 		canTargetPlayers: true,
 
-		onHit: func(gameState *GameState, caster *Mob, target *Mob) {
-			healing := caster.CalculateMagicDamage(15, target)
-			healingReceived := min(healing, target.data.MaxHealth() - target.data.Health)
-			target.data.Health += healingReceived
+		onHit: func(world *World, caster *Mob, target *Mob) {
+			healing := caster.calculateMagicDamage(15, target)
+			healingReceived := min(healing, target.Data.MaxHealth() - target.Data.Health)
+			target.Data.Health += healingReceived
 
-			room := gameState.world.Rooms[target.data.Room]
-			room.broadcast(gameState, fmt.Sprintf("%s regained %d HP.", target.data.Name, healingReceived))
+			world.messageRoom(target.Data.Room, fmt.Sprintf("%s regained %d HP.", target.Data.Name, healingReceived))
 		},
 	},
 }
