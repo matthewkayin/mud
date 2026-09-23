@@ -168,6 +168,24 @@ func (room *Room) removeDeadOccupants(world *World) {
 			},
 		})
 
+		// If NPC mob, distribute experience to players in the room
+		if occupantMob.PlayerCharacter == nil {
+			// Get a list of all player mobs
+			playersInRoom := []*Mob{}
+			for _, handle := range room.Occupants {
+				mob := world.Mobs.Get(handle)
+				if mob.PlayerCharacter != nil {
+					playersInRoom = append(playersInRoom, mob)
+				}
+			}
+
+			// Dole out EXP to each of them
+			for _, player := range playersInRoom {
+				dispursedExp := occupantMob.Data.Experience / int32(len(playersInRoom))
+				player.GrantExperience(world, dispursedExp)
+			}
+		}
+
 		// If player mob, remove their equipment so that it goes into their corpse
 		if occupantMob.PlayerCharacter != nil {
 			for slotIndex := range EQUIPMENT_SLOT_COUNT {

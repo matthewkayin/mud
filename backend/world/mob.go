@@ -89,6 +89,7 @@ func (mob *Mob) GrantExperience(world *World, experience int32) {
 			mob.Data.Level++
 
 			// Recalculate stats
+			mob.PlayerCharacter.Data.Level = mob.Data.Level
 			mob.PlayerCharacter.recalculateStats()
 			mob.Data.Stats = mob.PlayerCharacter.Data.Stats
 
