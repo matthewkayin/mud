@@ -123,6 +123,9 @@ func (world *World) RemoveCharacter(character *Character) {
 	}
 
 	delete(world.Characters, character.Data.Name)
+
+	// Delete the character from disk
+	deleteCharacter(character)
 }
 
 func (character *Character) recalculateStats() {

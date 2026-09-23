@@ -9,6 +9,7 @@ import (
 )
 
 const GAME_UPDATE_INTERVAL = world.WORLD_SECONDS_PER_UPDATE * time.Second
+const GAME_SAVE_INTERVAL = 15 * time.Minute
 
 type Command struct {
 	PlayerId int
@@ -53,6 +54,9 @@ func (gamestate *GameState) Run(ctx context.Context) {
 	ticker := time.NewTicker(GAME_UPDATE_INTERVAL)
 	defer ticker.Stop()
 
+	saveTicker := time.NewTicker(GAME_SAVE_INTERVAL)
+	defer saveTicker.Stop()
+
 	gameloop:
 	for {
 		select {
@@ -62,11 +66,13 @@ func (gamestate *GameState) Run(ctx context.Context) {
 				gamestate.handleCommand(command)
 			case <- ticker.C:
 				gamestate.update()
+			case <- saveTicker.C:
+				gamestate.world.Save()
 		}
 	}
 
 	log.Printf("Shutdown signal received. Shutting down server...")
-	world.SaveAll(gamestate.world)
+	gamestate.world.Save()
 }
 
 func (gamestate *GameState) RegisterPlayer(playerId int, playerInbox *chan string) {
@@ -176,6 +182,12 @@ func (gamestate *GameState) messageRoom(roomIndex int, message string) {
 
 func (gamestate *GameState) addEventListener(eventType world.EventType, listener EventListener) {
 	gamestate.eventListeners[eventType] = append(gamestate.eventListeners[eventType], listener)
+}
+
+func (gamestate *GameState) createCharacter(playerId int, characterSheet *world.CharacterSheet) {
+	character := world.CharacterInitEmpty(playerId, characterSheet)
+	gamestate.world.AddCharacter(playerId, character)
+	world.SaveCharacter(character)
 }
 
 // This function is the update that is called on a 3-second interval

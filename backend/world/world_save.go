@@ -36,7 +36,7 @@ func characterSavePath(character *Character) string {
 		strings.ReplaceAll(character.Data.Name, " ", "_"))
 }
 
-func saveCharacter(character *Character) {
+func SaveCharacter(character *Character) {
 	path := characterSavePath(character)
 	flags := os.O_CREATE | os.O_WRONLY | os.O_TRUNC
 	file, err := os.OpenFile(path, flags, 0644)
@@ -56,6 +56,17 @@ func saveCharacter(character *Character) {
 	}
 
 	log.Printf("Saved character file %s.", path)
+}
+
+func deleteCharacter(character *Character) {
+	path := characterSavePath(character)
+	err := os.Remove(path)
+	if err != nil {
+		log.Printf("Error deleting character save %s: %s", path, err.Error())
+		return
+	}
+
+	log.Printf("Deleted character save %s.", path)
 }
 
 func (world *World) loadCharacters() {
@@ -86,7 +97,11 @@ func (world *World) loadCharacters() {
 	}
 }
 
-func saveWorld(world *World) {
+func (world *World) Save() {
+	for _, character := range world.Characters {
+		SaveCharacter(character)
+	}
+
 	flags := os.O_CREATE | os.O_WRONLY | os.O_TRUNC
 	file, err := os.OpenFile(WORLD_SAVE_PATH, flags, 0644)
 	if err != nil {
@@ -126,11 +141,4 @@ func loadWorld() *World {
 
 	log.Printf("Loaded World JSON.")
 	return world
-}
-
-func SaveAll(world *World) {
-	for _, character := range world.Characters {
-		saveCharacter(character)
-	}
-	saveWorld(world)
 }
