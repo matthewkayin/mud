@@ -58,7 +58,7 @@ export const GamePage = () => {
 
   return (
     <div>
-      <h1>RC Disco MUD!</h1>
+      <h1>Castle Recurse</h1>
       <Terminal prompt={terminalPrompt} lines={lines} command={command} setCommand={setCommand} onSubmit={onSubmit} />
     </div>
   );
