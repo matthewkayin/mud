@@ -5,6 +5,7 @@ import (
 	"context"
 	"time"
 	"log"
+	"mud/util"
 	"mud/world"
 )
 
@@ -20,6 +21,7 @@ type EventListener func (gamestate *GameState, event* world.Event)
 
 type GameState struct {
 	Commands chan Command
+	bannerLines []string
 
 	players []Player
 	playerIdToIndexMap map[int]int
@@ -31,8 +33,14 @@ type GameState struct {
 func GameStateInit() *GameState {
 	playerMenusInit()
 
+	bannerLines, err := util.ReadFileLines("./banner.txt")
+	if err != nil {
+		log.Fatalf("Error loading ASCII banner: %s", err.Error())
+	}
+
 	gamestate := &GameState {
 		Commands: make(chan Command, 1024),
+		bannerLines: bannerLines,
 
 		players: make([]Player, 0, 64),
 		playerIdToIndexMap: make(map[int]int),
@@ -82,7 +90,9 @@ func (gamestate *GameState) RegisterPlayer(playerId int, playerInbox *chan strin
 	gamestate.playerIdToIndexMap[playerId] = newPlayerIndex
 
 	newPlayer := &gamestate.players[newPlayerIndex]
-	*newPlayer.inbox <- "Welcome to the RC Disco MUD!"
+	for index := range len(gamestate.bannerLines) {
+		*newPlayer.inbox <- gamestate.bannerLines[index]
+	}
 	newPlayer.setMenu(gamestate, PLAYER_MENU_LOGIN)
 }
 
