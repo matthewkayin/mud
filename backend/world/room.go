@@ -29,7 +29,7 @@ type Room struct {
 	Inventory Inventory
 	Chests []Chest
 
-	Occupants []MobHandle
+	Occupants []MobHandle `json:"-"`
 }
 
 func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, direction Direction) error {

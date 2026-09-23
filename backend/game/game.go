@@ -36,7 +36,7 @@ func GameStateInit() *GameState {
 		players: make([]Player, 0, 64),
 		playerIdToIndexMap: make(map[int]int),
 
-		world: world.WorldInitNew(),
+		world: world.WorldInit(),
 		eventListeners: make([][]EventListener, world.EVENT_TYPE_COUNT),
 	}
 
@@ -66,7 +66,7 @@ func (gamestate *GameState) Run(ctx context.Context) {
 	}
 
 	log.Printf("Shutdown signal received. Shutting down server...")
-	// gamestate.world.Save("./world.json")
+	world.SaveAll(gamestate.world)
 }
 
 func (gamestate *GameState) RegisterPlayer(playerId int, playerInbox *chan string) {
