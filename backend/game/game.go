@@ -87,7 +87,6 @@ func (gamestate *GameState) RegisterPlayer(playerId int, playerInbox *chan strin
 	for index := range len(gamestate.bannerLines) {
 		*newPlayer.inbox <- gamestate.bannerLines[index]
 	}
-	*newPlayer.inbox <- "\n"
 	newPlayer.setMenu(gamestate, PLAYER_MENU_LOGIN)
 }
 
