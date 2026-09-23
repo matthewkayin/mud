@@ -325,12 +325,43 @@ var MENU_WORLD = Menu {
 		},
 
 		"hp": {
-			usage: "hp",
-			description: "Show your combat status including HP, MP, and conditions.",
+			usage: "hp [<player>] friends",
+			description: "Show your combat status including HP, MP, and conditions. Type 'hp <player>' to see this status for another player in the room. Type 'hp friends' to see this status for all players in the room.",
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
-				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-				*player.inbox <- fmt.Sprintf("HP: %d / %d", playerMob.Data.Health, playerMob.Data.MaxHealth())
-				*player.inbox <- fmt.Sprintf("MP: %d / %d", playerMob.Data.Mana, playerMob.Data.MaxMana())
+				if len(args) == 0 {
+					playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+					printMobHp(player, playerMob)
+
+					return true
+				}
+
+				if len(args) == 1 && strings.EqualFold(args[0], "friends") {
+					playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+					playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
+					for _, occupantHandle := range playerRoom.Occupants {
+						occupantMob := gamestate.world.Mobs.Get(occupantHandle)
+
+						// Skip NPCs
+						if occupantMob.PlayerCharacter == nil {
+							continue
+						}
+
+						printMobHp(player, occupantMob)
+						*player.inbox <- "\n"
+					}
+
+					return true
+				}
+
+				targetHandle, err := fuzzyFindTarget(gamestate, player, args)
+				if err != nil {
+					*player.inbox <- err.Error()
+					return true
+				}
+
+				targetMob := gamestate.world.Mobs.Get(targetHandle)
+				printMobHp(player, targetMob)
+
 				return true
 			},
 		},
@@ -1386,4 +1417,10 @@ func printMobEquipmentList(player *Player, mob *world.Mob) {
 
 		*player.inbox <- fmt.Sprintf("\t%s - %s", slotName, itemName)
 	}
+}
+
+func printMobHp(player *Player, mob *world.Mob) {
+	*player.inbox <- fmt.Sprintf("%s:", mob.Data.Name)
+	*player.inbox <- fmt.Sprintf("HP: %d / %d", mob.Data.Health, mob.Data.MaxHealth())
+	*player.inbox <- fmt.Sprintf("MP: %d / %d", mob.Data.Mana, mob.Data.MaxMana())
 }
