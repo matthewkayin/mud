@@ -123,6 +123,40 @@ var MENU_WORLD = Menu {
 			},
 		},
 
+		"inspect": {
+			usage: "inspect <mob>",
+			description: "Get information about a player or monster in the room",
+			handler: func (gamestate *GameState, player *Player, args []string) bool {
+				// Get target handle
+				targetHandle, err := fuzzyFindTarget(gamestate, player, args)
+				if err != nil {
+					*player.inbox <- err.Error()
+					return true
+				}
+
+				// TODO: Handle NPC case for friendly NPC interactions
+
+				// Handle monster case
+				targetMob := gamestate.world.Mobs.Get(targetHandle)
+				if targetMob.PlayerCharacter == nil {
+					*player.inbox <- fmt.Sprintf("%s is a level %d monster. It appears to be hostile!",
+						targetMob.Data.Name, targetMob.Data.Level)
+					return true
+				}
+
+				// Handle player case
+				*player.inbox <- fmt.Sprintf("%s is a level %d %s %s %s.",
+					targetMob.Data.Name, targetMob.Data.Level,
+					world.RACE_DATA[targetMob.PlayerCharacter.Race].Name,
+					world.CLASS_DATA[targetMob.PlayerCharacter.Class].Name,
+					world.JOB_DATA[targetMob.PlayerCharacter.Job].Name)
+				*player.inbox <- "They are wearing the following:"
+				printMobEquipmentList(player, targetMob)
+
+				return true
+			},
+		},
+
 		"exits": {
 			usage: "exits",
 			description: "Describe the exits of the current room.",
@@ -746,41 +780,8 @@ var MENU_WORLD = Menu {
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 
-				// Determine if we should skip the offhand item slot
-				mainHandItem := playerMob.Data.Equipment.Get(world.EQUIPMENT_SLOT_MAIN_HAND)
-				shouldSkipOffhand := mainHandItem != nil && world.ITEM_DATA[mainHandItem.Id].ItemType == world.EQUIPMENT_SLOT_MAIN_HAND
-
 				*player.inbox <- "Your equipment is:"
-
-				for index := range world.EQUIPMENT_SLOT_COUNT {
-					slot := world.EquipmentSlot(index)
-					item := playerMob.Data.Equipment.Get(slot)
-					var itemData *world.ItemData = nil
-
-					// If two handed equipped, skip off hand
-					if slot == world.EQUIPMENT_SLOT_OFF_HAND && shouldSkipOffhand {
-						continue
-					}
-
-					// Determine item name
-					var itemName string
-					if item != nil {
-						itemData = world.ITEM_DATA[item.Id]
-						itemName = item.GetNameWithCondition()
-					} else {
-						itemName = "<Nothing Equipped>"
-					}
-
-					// Determine slot name
-					var slotName string
-					if slot == world.EQUIPMENT_SLOT_MAIN_HAND && item != nil && itemData.ItemType == world.ITEM_TYPE_EQUIPMENT_TWO_HANDED {
-						slotName = "Both Hands"
-					} else {
-						slotName = world.EquipmentSlotToString(slot)
-					}
-
-					*player.inbox <- fmt.Sprintf("\t%s - %s", slotName, itemName)
-				}
+				printMobEquipmentList(player, playerMob)
 
 				return true
 			},
@@ -1347,5 +1348,41 @@ func describeRoomToPlayer(gameState *GameState, player *Player, room *world.Room
 		}
 
 		*player.inbox <- fmt.Sprintf("In this room is %s", combineNames(chestNames))
+	}
+}
+
+func printMobEquipmentList(player *Player, mob *world.Mob) {
+	// Determine if we should skip the offhand item slot
+	mainHandItem := mob.Data.Equipment.Get(world.EQUIPMENT_SLOT_MAIN_HAND)
+	shouldSkipOffhand := mainHandItem != nil && world.ITEM_DATA[mainHandItem.Id].ItemType == world.EQUIPMENT_SLOT_MAIN_HAND
+
+	for index := range world.EQUIPMENT_SLOT_COUNT {
+		slot := world.EquipmentSlot(index)
+		item := mob.Data.Equipment.Get(slot)
+		var itemData *world.ItemData = nil
+
+		// If two handed equipped, skip off hand
+		if slot == world.EQUIPMENT_SLOT_OFF_HAND && shouldSkipOffhand {
+			continue
+		}
+
+		// Determine item name
+		var itemName string
+		if item != nil {
+			itemData = world.ITEM_DATA[item.Id]
+			itemName = item.GetNameWithCondition()
+		} else {
+			itemName = "<Nothing Equipped>"
+		}
+
+		// Determine slot name
+		var slotName string
+		if slot == world.EQUIPMENT_SLOT_MAIN_HAND && item != nil && itemData.ItemType == world.ITEM_TYPE_EQUIPMENT_TWO_HANDED {
+			slotName = "Both Hands"
+		} else {
+			slotName = world.EquipmentSlotToString(slot)
+		}
+
+		*player.inbox <- fmt.Sprintf("\t%s - %s", slotName, itemName)
 	}
 }
