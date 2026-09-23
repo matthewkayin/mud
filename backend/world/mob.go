@@ -93,6 +93,9 @@ func (mob *Mob) GrantExperience(world *World, experience int32) {
 			mob.PlayerCharacter.recalculateStats()
 			mob.Data.Stats = mob.PlayerCharacter.Data.Stats
 
+			// Save the character to disk
+			SaveCharacter(mob.PlayerCharacter)
+
 			// Announce level up message
 			world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("Level up! %s is now level %d.", mob.Data.Name, mob.Data.Level))
 			continue

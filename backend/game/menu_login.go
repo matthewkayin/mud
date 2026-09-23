@@ -90,13 +90,12 @@ var MENU_LOGIN = Menu {
 				}
 
 				// Create the character
-				character := world.CharacterInitEmpty(player.id, &world.CharacterSheet {
+				gamestate.createCharacter(player.id, &world.CharacterSheet {
 					Name: name,
 					Race: race,
 					Class: class,
 					Job: job,
 				})
-				gamestate.world.AddCharacter(player.id, character)
 
 				*player.inbox <- fmt.Sprintf("Your character has been created! Type 'login %s' to login to them.", name)
 

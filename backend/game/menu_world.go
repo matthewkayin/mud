@@ -42,6 +42,7 @@ var MENU_WORLD = Menu {
 
 			// Save player mob data back to their character
 			player.character.Data = playerMob.Data
+			world.SaveCharacter(player.character)
 		}
 
 		player.character = nil
