@@ -7,6 +7,7 @@ import (
 	"sort"
 	"slices"
 	"math/rand"
+	"mud/bitset"
 )
 
 const ROOM_NONE int = -1
@@ -50,7 +51,6 @@ func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, direction
 	oldRoomIndex := occupantMob.Data.Room
 
 	// Move the occupant
-
 	room.RemoveOccupant(occupantHandle)
 
 	// Note that the order matters here, we don't want to send these messages to the moving
@@ -61,6 +61,11 @@ func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, direction
 
 	newRoom.AddOccupant(occupantHandle)
 	occupantMob.Data.Room = newRoomIndex
+
+	// Player room discovery
+	if occupantMob.PlayerCharacter != nil {
+		bitset.Set(occupantMob.PlayerCharacter.RoomsDiscovered, newRoomIndex, true)
+	}
 
 	// Fire event
 	world.pushEvent(Event {
