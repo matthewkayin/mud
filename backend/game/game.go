@@ -84,8 +84,6 @@ func (gamestate *GameState) RegisterPlayer(playerId int, playerInbox *chan strin
 	gamestate.playerIdToIndexMap[playerId] = newPlayerIndex
 
 	newPlayer := &gamestate.players[newPlayerIndex]
-	*newPlayer.inbox <- "Welcome to..."
-	*newPlayer.inbox <- "\n"
 	for index := range len(gamestate.bannerLines) {
 		*newPlayer.inbox <- gamestate.bannerLines[index]
 	}
