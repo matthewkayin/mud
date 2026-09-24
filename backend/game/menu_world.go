@@ -26,7 +26,8 @@ var MENU_WORLD = Menu {
 
 		// Enter world menu
 		*player.inbox <- fmt.Sprintf("You have logged in. Welcome, %s.", player.character.Data.Name)
-		*player.inbox <- fmt.Sprintf("You are in %s.", playerRoom.Name)
+		room := &gamestate.world.Rooms[player.character.Data.Room]
+		describeRoomToPlayer(gamestate, player, room)
 	},
 	onExit: func(gamestate *GameState, player *Player) {
 		tradeSessionOnPlayerLogout(gamestate, player)
