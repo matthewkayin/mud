@@ -1376,9 +1376,9 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 
 	//give urgent descriptions of npc mobs dependent on their current state
 	for _, mobHandle := range room.Occupants {
-		mob := gameState.world.Mobs.Get(mobHandle)
+		mob := gamestate.world.Mobs.Get(mobHandle)
 		if mob.Npc != nil {
-			msg, urgent := mob.Npc.Behavior.GetDescription(gameState.world, mob.Npc)
+			msg, urgent := mob.Npc.Behavior.GetDescription(gamestate.world, mob.Npc)
 			if urgent {
 				*player.inbox <- msg
 			}
@@ -1390,8 +1390,10 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 		for index := range len(room.Chests) {
 			chest := &room.Chests[index]
 			chestNames = append(chestNames, chest.Name)
+		}
+	}
 }
-      
+
 func printMobEquipmentList(player *Player, mob *world.Mob) {
 	// Determine if we should skip the offhand item slot
 	mainHandItem := mob.Data.Equipment.Get(world.EQUIPMENT_SLOT_MAIN_HAND)
