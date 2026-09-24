@@ -103,68 +103,9 @@ func WorldInitNew() *World {
 		},
 	}
 
-	world.Npcs = []Npc {
-		{
-			Behavior: NPC_BEHAVIOR_AGGRO,
-			Data: MobData {
-				Name: "Goblin",
-				Room: 1,
+	world.Npcs = []Npc {}
+	generateNpc(world, NPC_ID_GOBLIN_1, 2, 1)
 
-				Level: 1,
-				Experience: 0,
-
-				Stats: StatBlock {
-					Vitality: 4,
-					Strength: 2,
-					Agility: 6,
-					Intelligence: 2,
-					Faith: 4,
-				},
-
-				// TODO
-				Health: 4 * 5,
-				Mana: 2 * 5,
-
-				Spells: []Spell {},
-				Inventory: Inventory {
-					Items: []Item {
-						{ Id: ITEM_POTION_HEALTH },
-					},
-				},
-				Equipment: EquipmentInitEmpty(),
-			},
-		},
-		{
-			Behavior: NPC_BEHAVIOR_AGGRO,
-			Data: MobData {
-				Name: "Goblin",
-				Room: 1,
-
-				Level: 1,
-				Experience: 0,
-
-				Stats: StatBlock {
-					Vitality: 4,
-					Strength: 2,
-					Agility: 6,
-					Intelligence: 2,
-					Faith: 4,
-				},
-
-				// TODO
-				Health: 3 * 5,
-				Mana: 2 * 5,
-
-				Spells: []Spell {},
-				Inventory: Inventory {
-					Items: []Item {
-						{ Id: ITEM_POTION_HEALTH },
-					},
-				},
-				Equipment: EquipmentInitEmpty(),
-			},
-		},
-	}
 
 	// Init NPCs
 	for index := range len(world.Npcs) {

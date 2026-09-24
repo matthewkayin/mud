@@ -2,29 +2,55 @@ package world
 
 import (
 	"fmt"
+	"log"
 )
 
 // TODO: change this to a longer duration
 // TODO: make this customizable per NPC?
 const NPC_RESPAWN_DURATION int = 60 / WORLD_SECONDS_PER_UPDATE
 
+type NpcId int
+const (
+	NPC_ID_GOBLIN_1 = iota
+)
+
 type NpcBehavior int
 const (
-	NPC_BEHAVIOR_AGGRO = iota
+	NPC_BEHAVIOR_GOBLIN = iota
 )
+
+type NpcMode int
+const (
+	NPC_MODE_AGGRO = iota
+)
+
 
 type Npc struct {
 	Behavior NpcBehavior
+	Mode NpcMode
 	Data MobData
 
 	mobHandle MobHandle
 	respawnTimer int
 }
 
+//insert an npc of a certain quantity into the world's npc array
+func generateNpc(world *World, id NpcId, amount int, room int) {
+	npc := *NPC_DATA[id]
+	npc.Data.Room = room
+	n := 0
+	for n < amount {
+		world.Npcs = append(world.Npcs, npc)
+		n++
+	}
+}
+
+//initialize the npc in the npc array at game startup
 func (npc *Npc) init(world *World) {
 	npc.spawnMob(world)
 }
 
+//spawns the mob associated with the npc
 func (npc *Npc) spawnMob(world *World) {
 	npcMob := MobInit(&npc.Data)
 	npc.mobHandle = world.Mobs.Push(npcMob)
@@ -54,8 +80,8 @@ func (npc *Npc) update(world *World) {
 	}
 
 	// Behavior update
-	switch npc.Behavior {
-		case NPC_BEHAVIOR_AGGRO: {
+	switch npc.Mode {
+		case NPC_MODE_AGGRO: {
 			// If the mob is doing something, keep doing it
 			if npcMob.Mode != MOB_MODE_IDLE {
 				break
