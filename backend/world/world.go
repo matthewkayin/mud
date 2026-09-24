@@ -154,7 +154,7 @@ func WorldInitNew() *World {
 				Spells: []Spell {},
 				Inventory: Inventory {
 					Items: []Item {
-						{ Id: ITEM_POTION_HEALTH },
+						{ Id: ITEM_POTION_HEALTH, Amount: 1 },
 					},
 				},
 				Equipment: EquipmentInitEmpty(),
@@ -184,7 +184,7 @@ func WorldInitNew() *World {
 				Spells: []Spell {},
 				Inventory: Inventory {
 					Items: []Item {
-						{ Id: ITEM_POTION_HEALTH },
+						{ Id: ITEM_POTION_HEALTH, Amount: 1 },
 					},
 				},
 				Equipment: EquipmentInitEmpty(),

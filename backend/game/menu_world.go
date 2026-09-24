@@ -22,7 +22,7 @@ var MENU_WORLD = Menu {
 		player.mobHandle = gamestate.world.Mobs.Push(playerMob)
 		playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
 		gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("%s has joined the room.", player.character.Data.Name))
-		playerRoom.AddOccupant(player.mobHandle)
+		playerRoom.AddOccupant(gamestate.world, player.mobHandle)
 
 		// Enter world menu
 		*player.inbox <- fmt.Sprintf("You have logged in. Welcome, %s.", player.character.Data.Name)
@@ -142,7 +142,7 @@ var MENU_WORLD = Menu {
 				targetMob := gamestate.world.Mobs.Get(targetHandle)
 				if targetMob.PlayerCharacter == nil {
 					*player.inbox <- fmt.Sprintf("%s is a level %d monster. It appears to be hostile!",
-						targetMob.Data.Name, targetMob.Data.Level)
+						targetMob.GetName(), targetMob.Data.Level)
 					return true
 				}
 
@@ -211,8 +211,8 @@ var MENU_WORLD = Menu {
 					}
 					targetPlayer := &gamestate.players[targetPlayerIndex]
 
-					*player.inbox <- fmt.Sprintf("You told %s: '%s'", playerMob.Data.Name, message)
-					*targetPlayer.inbox <- fmt.Sprintf("%s told you: '%s'", playerMob.Data.Name, message)
+					*player.inbox <- fmt.Sprintf("You told %s: '%s'", targetMob.GetName(), message)
+					*targetPlayer.inbox <- fmt.Sprintf("%s told you: '%s'", playerMob.GetName(), message)
 					return true
 				}
 
@@ -585,7 +585,7 @@ var MENU_WORLD = Menu {
 						*player.inbox <- fmt.Sprintf("You only have %d %s in your inventory.", result.amount, result.itemName)
 						fallthrough
 					case INVENTORY_TRANSFER_STATUS_OK:
-						*player.inbox <- fmt.Sprintf("You gave %s to %s.", itemNameWithAmount(result.itemName, result.amount), targetMob.Data.Name)
+						*player.inbox <- fmt.Sprintf("You gave %s to %s.", itemNameWithAmount(result.itemName, result.amount), targetMob.GetName())
 					case INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED:
 						*player.inbox <- "You must specify an item to give."
 					case INVENTORY_TRANSFER_STATUS_ITEM_NOT_FOUND:
@@ -1362,7 +1362,7 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 			// Get a pointer to the mob
 			mob := gamestate.world.Mobs.Get(mobHandle)
 			// Add their name to the list
-			otherPlayerNames = append(otherPlayerNames, mob.Data.Name)
+			otherPlayerNames = append(otherPlayerNames, mob.GetName())
 		}
 
 		otherPlayersStr := combineNames(otherPlayerNames)

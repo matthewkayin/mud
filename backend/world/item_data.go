@@ -73,7 +73,7 @@ var ITEM_DATA = []*ItemData {
 				healingReceived := min(healing, target.Data.MaxHealth() - target.Data.Health)
 				target.Data.Health += healingReceived
 
-				world.messageRoom(target.Data.Room, fmt.Sprintf("%s drank a health potion and regained %d HP.", target.Data.Name, healingReceived))
+				world.messageRoom(target.Data.Room, fmt.Sprintf("%s drank a health potion and regained %d HP.", target.GetName(), healingReceived))
 			},
 		},
 	},
@@ -88,7 +88,7 @@ var ITEM_DATA = []*ItemData {
 				manaReceived := min(mana, target.Data.MaxMana() - target.Data.Mana)
 				target.Data.Mana += manaReceived
 
-				world.messageRoom(target.Data.Room, fmt.Sprintf("%s drank a mana potion and regained %d HP.", target.Data.Name, manaReceived))
+				world.messageRoom(target.Data.Room, fmt.Sprintf("%s drank a mana potion and regained %d HP.", target.GetName(), manaReceived))
 			},
 		},
 	},

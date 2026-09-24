@@ -91,14 +91,14 @@ var MENU_TRADE_ENTRIES = map[string]MenuEntry {
 			// Check if target mob is a player
 			targetMob := gamestate.world.Mobs.Get(targetHandle)
 			if targetMob.PlayerCharacter == nil {
-				*player.inbox <- fmt.Sprintf("You cannot trade with %s because they are not a player.", targetMob.Data.Name)
+				*player.inbox <- fmt.Sprintf("You cannot trade with %s because they are not a player.", targetMob.GetName())
 				return true
 			}
 
 			// Check if target mob is already trading
 			targetPlayer := gamestate.getPlayerByMobHandle(targetHandle)
 			if targetPlayer.tradeSession != nil {
-				*player.inbox <- fmt.Sprintf("You cannot begin trading with %s because they're already trading with someone.", targetMob.Data.Name)
+				*player.inbox <- fmt.Sprintf("You cannot begin trading with %s because they're already trading with someone.", targetMob.GetName())
 				return true
 			}
 

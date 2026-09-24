@@ -38,9 +38,9 @@ var SPELL_DATA = []*SpellData {
 			damage := caster.calculateMagicDamage(10, target)
 			target.Data.Health -= damage
 
-			world.messageRoom(target.Data.Room, fmt.Sprintf("%s took %d damage from the firebolt.", target.Data.Name, damage))
+			world.messageRoom(target.Data.Room, fmt.Sprintf("%s took %d damage from the firebolt.", target.GetName(), damage))
 			if target.IsDead() {
-				world.messageRoom(target.Data.Room, fmt.Sprintf("%s has burnt to a crisp.", target.Data.Name))
+				world.messageRoom(target.Data.Room, fmt.Sprintf("%s has burnt to a crisp.", target.GetName()))
 			} else {
 				target.rollForConcentration(world, damage)
 			}
@@ -60,7 +60,7 @@ var SPELL_DATA = []*SpellData {
 			healingReceived := min(healing, target.Data.MaxHealth() - target.Data.Health)
 			target.Data.Health += healingReceived
 
-			world.messageRoom(target.Data.Room, fmt.Sprintf("%s regained %d HP.", target.Data.Name, healingReceived))
+			world.messageRoom(target.Data.Room, fmt.Sprintf("%s regained %d HP.", target.GetName(), healingReceived))
 		},
 	},
 }
