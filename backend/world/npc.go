@@ -8,25 +8,51 @@ import (
 // TODO: make this customizable per NPC?
 const NPC_RESPAWN_DURATION int = 60 / WORLD_SECONDS_PER_UPDATE
 
-type NpcBehavior int
+type NpcBehaviorType int
 const (
-	NPC_BEHAVIOR_AGGRO = iota
+	NPC_BEHAVIOR_TYPE_GOBLIN = iota
 )
 
+type NpcId int
+const (
+	NPC_ID_GOBLIN_1 = iota
+)
+
+type Behavior interface {
+	onUpdate(world *World, npc *Npc)
+	onAttacked(world *World, npc *Npc)
+	GetDescription(world *World, npc *Npc) (string, bool)
+}
+
 type Npc struct {
-	Behavior NpcBehavior
+	Behavior Behavior
 	Data MobData
 
 	mobHandle MobHandle
 	respawnTimer int
 }
 
+//insert an npc of a certain quantity into the world's npc array
+func generateNpc(world *World, id NpcId, amount int, room int) {
+	n := 0
+	for n < amount {
+		npc := *NPC_DATA[id]
+		npc.Behavior = behaviorGoblinInit()
+		npc.Data.Room = room
+		world.Npcs = append(world.Npcs, npc)
+		n++
+	}
+}
+
+//initialize the npc in the npc array at game startup
 func (npc *Npc) init(world *World) {
 	npc.spawnMob(world)
 }
 
+//spawns the mob associated with the npc
 func (npc *Npc) spawnMob(world *World) {
 	npcMob := MobInit(&npc.Data)
+	npcMob.Npc = npc
 	npc.mobHandle = world.Mobs.Push(npcMob)
 	npcRoom := &world.Rooms[npcMob.Data.Room]
 	npcRoom.AddOccupant(world, npc.mobHandle)
@@ -47,38 +73,12 @@ func (npc *Npc) update(world *World) {
 	}
 
 	// Check for mob death
-	npcMob, npcMobExists := world.Mobs.GetIfExists(npc.mobHandle)
+	_, npcMobExists := world.Mobs.GetIfExists(npc.mobHandle)
 	if !npcMobExists {
 		npc.respawnTimer = NPC_RESPAWN_DURATION
 		return
 	}
 
 	// Behavior update
-	switch npc.Behavior {
-		case NPC_BEHAVIOR_AGGRO: {
-			// If the mob is doing something, keep doing it
-			if npcMob.Mode != MOB_MODE_IDLE {
-				break
-			}
-
-			// If the mob is not doing anything, then find a target
-			npcRoom := &world.Rooms[npcMob.Data.Room]
-			for _, targetHandle := range npcRoom.Occupants {
-				// Don't attack yourself
-				if targetHandle == npc.mobHandle {
-					continue
-				}
-
-				// For now, only attack players
-				targetMob := world.Mobs.Get(targetHandle)
-				if targetMob.PlayerCharacter == nil {
-					continue
-				}
-
-				// Found target, set to attack
-				npcMob.SetModeAttack(world, npc.mobHandle, targetHandle)
-				break
-			}
-		}
-	}
+	npc.Behavior.onUpdate(world, npc)
 }

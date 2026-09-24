@@ -33,6 +33,7 @@ const (
 
 type Mob struct {
 	PlayerCharacter *Character
+	Npc *Npc
 	Data MobData
 
 	Mode MobMode
@@ -160,6 +161,9 @@ func (mob *Mob) SetModeUseItem(world *World, mobHandle MobHandle, itemId ItemId,
 }
 
 func (mob *Mob) Update(world *World) {
+	if mob.IsDead() {
+		return
+	}
 	switch mob.Mode {
 		case MOB_MODE_IDLE:
 		case MOB_MODE_ATTACK:
@@ -204,6 +208,14 @@ func (mob *Mob) getTargetIfExists(world *World) (*Mob, bool) {
 	}
 
 	return targetMob, true
+}
+
+func (mob *Mob) damage(world *World, damage int32) {
+	mob.Data.Health -= damage
+
+	if mob.Npc != nil {
+		mob.Npc.Behavior.onAttacked(world, mob.Npc)
+	}
 }
 
 func (mob *Mob) attackTargetWithWeapon(world *World, room *Room, targetMob *Mob, slot EquipmentSlot) {
@@ -263,8 +275,7 @@ func (mob *Mob) attackTargetWithWeapon(world *World, room *Room, targetMob *Mob,
 	damage = max(damage, attackerMinDamage)
 
 	// Deal damage
-	targetMob.Data.Health -= damage
-
+	targetMob.damage(world, damage)
 	// Broadcast result to room
 	critStr := ""
 	if crit {

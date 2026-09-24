@@ -61,7 +61,7 @@ func WorldInitNew() *World {
 			Exits: [DIRECTION_COUNT]int {
 				ROOM_NONE,
 				1,
-				ROOM_NONE,
+				2,
 				ROOM_NONE,
 			},
 			ExitIsLocked: [DIRECTION_COUNT]bool {
@@ -118,7 +118,7 @@ func WorldInitNew() *World {
 				false,
 				false,
 			},
-			IsSafeZone: false,
+			IsSafeZone: true,
 
 			Chests: []Chest {},
 			Inventory: Inventory {
@@ -127,69 +127,64 @@ func WorldInitNew() *World {
 
 			Occupants: []MobHandle {},
 		},
+		{
+				Name: "The Stairs",
+				Description: "You are in a cold, dank set of stairs.",
+
+				Exits: [DIRECTION_COUNT]int {
+					ROOM_NONE,
+					3,
+					ROOM_NONE,
+					0,
+				},
+				ExitIsLocked: [DIRECTION_COUNT]bool {
+					false,
+					false,
+					false,
+					false,
+				},
+				IsSafeZone: false,
+
+				Chests: []Chest {},
+				Inventory: Inventory {
+					Items: []Item {},
+				},
+
+				Occupants: []MobHandle {},
+			},
+			{
+				Name: "The Basement",
+				Description: "What a hideous place.",
+
+				Exits: [DIRECTION_COUNT]int {
+					2,
+					ROOM_NONE,
+					ROOM_NONE,
+					ROOM_NONE,
+				},
+				ExitIsLocked: [DIRECTION_COUNT]bool {
+					false,
+					false,
+					false,
+					false,
+				},
+				IsSafeZone: false,
+
+				Chests: []Chest {},
+				Inventory: Inventory {
+					Items: []Item {},
+				},
+
+				Occupants: []MobHandle {},
+			},
 	}
 
-	world.Npcs = []Npc {
-		{
-			Behavior: NPC_BEHAVIOR_AGGRO,
-			Data: MobData {
-				Name: "Goblin",
-				Room: 1,
+	world.Npcs = []Npc {}
+	generateNpc(world, NPC_ID_GOBLIN_1, 2, 3)
 
-				Level: 1,
-				Experience: 100,
-
-				Stats: StatBlock {
-					Vitality: 4,
-					Strength: 2,
-					Agility: 6,
-					Intelligence: 2,
-					Faith: 4,
-				},
-
-				// TODO
-				Health: 4 * 5,
-				Mana: 2 * 5,
-
-				Spells: []Spell {},
-				Inventory: Inventory {
-					Items: []Item {
-						{ Id: ITEM_POTION_HEALTH, Amount: 1 },
-					},
-				},
-				Equipment: EquipmentInitEmpty(),
-			},
-		},
-		{
-			Behavior: NPC_BEHAVIOR_AGGRO,
-			Data: MobData {
-				Name: "Goblin",
-				Room: 1,
-
-				Level: 1,
-				Experience: 100,
-
-				Stats: StatBlock {
-					Vitality: 4,
-					Strength: 2,
-					Agility: 6,
-					Intelligence: 2,
-					Faith: 4,
-				},
-
-				// TODO
-				Health: 3 * 5,
-				Mana: 2 * 5,
-
-				Spells: []Spell {},
-				Inventory: Inventory {
-					Items: []Item {
-						{ Id: ITEM_POTION_HEALTH, Amount: 1 },
-					},
-				},
-				Equipment: EquipmentInitEmpty(),
-			},
-		},
+	// Init NPCs
+	for index := range len(world.Npcs) {
+		world.Npcs[index].init(world)
 	}
 
 	return world

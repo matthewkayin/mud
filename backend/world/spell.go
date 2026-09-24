@@ -36,7 +36,7 @@ var SPELL_DATA = []*SpellData {
 
 		onHit: func(world *World, caster *Mob, target *Mob) {
 			damage := caster.calculateMagicDamage(10, target)
-			target.Data.Health -= damage
+			target.damage(world, damage)
 
 			world.messageRoom(target.Data.Room, fmt.Sprintf("%s took %d damage from the firebolt.", target.GetName(), damage))
 			if target.IsDead() {
