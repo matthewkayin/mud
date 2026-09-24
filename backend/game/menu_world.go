@@ -1339,6 +1339,17 @@ func describeRoomToPlayer(gameState *GameState, player *Player, room *world.Room
 		*player.inbox <- fmt.Sprintf("%s %s here.", otherPlayersStr, isString)
 	}
 
+	//give urgent descriptions of npc mobs dependent on their current state
+	for _, mobHandle := range room.Occupants {
+		mob := gameState.world.Mobs.Get(mobHandle)
+		if mob.Npc != nil {
+			msg, urgent := mob.Npc.Behavior.GetDescription(gameState.world, mob.Npc)
+			if urgent {
+				*player.inbox <- msg
+			}
+		}
+	}
+
 	if len(room.Chests) > 0 {
 		chestNames := make([]string, 0, len(room.Chests))
 		for index := range len(room.Chests) {

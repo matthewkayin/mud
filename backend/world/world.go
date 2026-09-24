@@ -35,7 +35,7 @@ func WorldInitNew() *World {
 			Exits: [DIRECTION_COUNT]int {
 				ROOM_NONE,
 				1,
-				ROOM_NONE,
+				2,
 				ROOM_NONE,
 			},
 			ExitIsLocked: [DIRECTION_COUNT]bool {
@@ -92,7 +92,7 @@ func WorldInitNew() *World {
 				false,
 				false,
 			},
-			IsSafeZone: false,
+			IsSafeZone: true,
 
 			Chests: []Chest {},
 			Inventory: Inventory {
@@ -101,11 +101,60 @@ func WorldInitNew() *World {
 
 			Occupants: []MobHandle {},
 		},
+		{
+				Name: "The Stairs",
+				Description: "You are in a cold, dank set of stairs.",
+
+				Exits: [DIRECTION_COUNT]int {
+					ROOM_NONE,
+					3,
+					ROOM_NONE,
+					0,
+				},
+				ExitIsLocked: [DIRECTION_COUNT]bool {
+					false,
+					false,
+					false,
+					false,
+				},
+				IsSafeZone: false,
+
+				Chests: []Chest {},
+				Inventory: Inventory {
+					Items: []Item {},
+				},
+
+				Occupants: []MobHandle {},
+			},
+			{
+				Name: "The Basement",
+				Description: "What a hideous place.",
+
+				Exits: [DIRECTION_COUNT]int {
+					2,
+					ROOM_NONE,
+					ROOM_NONE,
+					ROOM_NONE,
+				},
+				ExitIsLocked: [DIRECTION_COUNT]bool {
+					false,
+					false,
+					false,
+					false,
+				},
+				IsSafeZone: false,
+
+				Chests: []Chest {},
+				Inventory: Inventory {
+					Items: []Item {},
+				},
+
+				Occupants: []MobHandle {},
+			},
 	}
 
 	world.Npcs = []Npc {}
-	generateNpc(world, NPC_ID_GOBLIN_1, 2, 1)
-
+	generateNpc(world, NPC_ID_GOBLIN_1, 2, 3)
 
 	// Init NPCs
 	for index := range len(world.Npcs) {
