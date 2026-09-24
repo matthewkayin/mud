@@ -34,11 +34,11 @@ type Npc struct {
 
 //insert an npc of a certain quantity into the world's npc array
 func generateNpc(world *World, id NpcId, amount int, room int) {
-	npc := *NPC_DATA[id]
-	npc.Behavior = behaviorGoblinInit()
-	npc.Data.Room = room
 	n := 0
 	for n < amount {
+		npc := *NPC_DATA[id]
+		npc.Behavior = behaviorGoblinInit()
+		npc.Data.Room = room
 		world.Npcs = append(world.Npcs, npc)
 		n++
 	}

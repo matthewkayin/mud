@@ -2,10 +2,12 @@ package world
 
 import (
 	"fmt"
+	"math/rand/v2"
 )
 
 const BEHAVIOR_GOBLIN_SLEEP_DURATION int32 = (10 * 60) / WORLD_SECONDS_PER_UPDATE
 const BEHAVIOR_GOBLIN_AWAKE_TIMER int32 = (50 * 60) / WORLD_SECONDS_PER_UPDATE
+const BEHAVIOR_GOBLIN_SURPRISE_TIMER int32 = 3
 
 type BehaviorGoblinMode int
 const (
@@ -24,7 +26,7 @@ type BehaviorGoblin struct {
 func behaviorGoblinInit() *BehaviorGoblin {
 	return &BehaviorGoblin{
 		Mode: BEHAVIOR_GOBLIN_MODE_IDLE,
-		SleepyTimer: BEHAVIOR_GOBLIN_AWAKE_TIMER,
+		SleepyTimer: 1 + rand.Int32N(BEHAVIOR_GOBLIN_AWAKE_TIMER),
 	}
 }
 
@@ -47,7 +49,7 @@ func (behavior *BehaviorGoblin) onUpdate(world *World, npc *Npc) {
 			if playerInRoom {
 				world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s is getting ready to fight.", npcMob.Data.Name))
 				behavior.Mode = BEHAVIOR_GOBLIN_MODE_SURPRISED
-				behavior.SurprisedTimer = 3
+				behavior.SurprisedTimer = BEHAVIOR_GOBLIN_SURPRISE_TIMER
 				break
 			}
 
@@ -118,7 +120,7 @@ func (behavior *BehaviorGoblin) onAttacked(world *World, npc *Npc) {
 	if behavior.Mode == BEHAVIOR_GOBLIN_MODE_SLEEPY {
 		world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s is disgruntled that you have attacked them in their sleep!", npc.Data.Name))
 		behavior.Mode = BEHAVIOR_GOBLIN_MODE_SURPRISED
-		behavior.SurprisedTimer = 3
+		behavior.SurprisedTimer = BEHAVIOR_GOBLIN_SURPRISE_TIMER * 2
 	}
 }
 
