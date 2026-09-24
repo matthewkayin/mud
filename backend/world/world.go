@@ -182,11 +182,6 @@ func WorldInitNew() *World {
 	world.Npcs = []Npc {}
 	generateNpc(world, NPC_ID_GOBLIN_1, 2, 3)
 
-	// Init NPCs
-	for index := range len(world.Npcs) {
-		world.Npcs[index].init(world)
-	}
-
 	return world
 }
 
