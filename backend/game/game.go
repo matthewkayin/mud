@@ -1,7 +1,6 @@
 package game
 
 import (
-	"fmt"
 	"context"
 	"time"
 	"log"
@@ -118,9 +117,6 @@ func (gamestate *GameState) RemovePlayer(playerId int) {
 
 	// Delete their entry in the map
 	delete(gamestate.playerIdToIndexMap, playerId)
-
-	// Tell everybody about it
-	gamestate.broadcast(fmt.Sprintf("Player %d has left the game.", playerId))
 }
 
 func (gamestate *GameState) getPlayerById(playerId int) *Player {
