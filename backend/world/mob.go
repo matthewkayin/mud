@@ -41,6 +41,8 @@ type Mob struct {
 	castSpell Spell
 	castTimer int32
 	useItemId ItemId
+
+	fuzzyNumber int
 }
 
 func MobInit(data *MobData) Mob {
@@ -48,6 +50,8 @@ func MobInit(data *MobData) Mob {
 		PlayerCharacter: nil,
 		Data: *data,
 		Mode: MOB_MODE_IDLE,
+
+		fuzzyNumber: 1,
 	}
 
 	mob.Data.Equipment.CalculateStatBonuses()
@@ -67,6 +71,13 @@ func (mob *Mob) GetPlayerId() int {
 	}
 
 	return mob.PlayerCharacter.PlayerId
+}
+
+func (mob *Mob) GetName() string {
+	if mob.fuzzyNumber == 1 {
+		return mob.Data.Name
+	}
+	return fmt.Sprintf("%s %d", mob.Data.Name, mob.fuzzyNumber)
 }
 
 func (mob *Mob) IsDead() bool {
@@ -218,7 +229,7 @@ func (mob *Mob) attackTargetWithWeapon(world *World, room *Room, targetMob *Mob,
 	evasionChance := targetAgility / (targetAgility + (mobAgility * MOB_EVASION_K))
 	evasionRoll := rand.Float32()
 	if evasionRoll < evasionChance {
-		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s dodged %s's attack!", targetMob.Data.Name, mob.Data.Name))
+		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s dodged %s's attack!", targetMob.GetName(), mob.GetName()))
 		return
 	}
 
@@ -259,9 +270,9 @@ func (mob *Mob) attackTargetWithWeapon(world *World, room *Room, targetMob *Mob,
 	if crit {
 		critStr = "Critical hit! "
 	}
-	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s%s struck %s for %d damage.", critStr, mob.Data.Name, targetMob.Data.Name, damage))
+	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s%s struck %s for %d damage.", critStr, mob.GetName(), targetMob.GetName(), damage))
 	if targetMob.IsDead() {
-		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s has slain %s.", mob.Data.Name, targetMob.Data.Name))
+		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s has slain %s.", mob.GetName(), targetMob.GetName()))
 	} else {
 		targetMob.rollForConcentration(world, damage)
 	}
@@ -297,7 +308,7 @@ func (mob *Mob) rollForConcentration(world *World, damage int32) {
 
 	// Concentration broken!
 	mob.Mode = MOB_MODE_IDLE
-	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s lost concentration on their spell!", mob.Data.Name))
+	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s lost concentration on their spell!", mob.GetName()))
 }
 
 func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot) {
@@ -310,7 +321,7 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 
 	item.Durability--
 	if item.Durability == 0 {
-		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s's %s broke!", mob.Data.Name, itemData.Name))
+		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s's %s broke!", mob.GetName(), itemData.Name))
 		item, _ := mob.Data.Equipment.Unequip(slot)
 		message := mob.OnPlayerItemUnequipped(item)
 		if message != "" {
@@ -384,19 +395,19 @@ func (mob *Mob) spellcast(world *World, targetMob *Mob) {
 	spellData := SPELL_DATA[mob.castSpell]
 	if mob.Data.Mana < spellData.ManaCost {
 		mob.Mode = MOB_MODE_IDLE
-		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s tried to cast %s, but they don't have enough mana.", mob.Data.Name, spellData.Name))
+		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s tried to cast %s, but they don't have enough mana.", mob.GetName(), spellData.Name))
 		return
 	}
 
 	// Check spell timer
 	if mob.castTimer > 0 {
 		mob.castTimer--
-		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s is charging a spell...", mob.Data.Name))
+		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s is charging a spell...", mob.GetName()))
 		return
 	}
 
 	// Cast spell
-	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s cast %s!", mob.Data.Name, spellData.Name))
+	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s cast %s!", mob.GetName(), spellData.Name))
 	mob.Data.Mana -= spellData.ManaCost
 	spellData.onHit(world, mob, targetMob)
 
@@ -472,7 +483,7 @@ func (mob *Mob) useItem(world *World, targetMob *Mob) {
 
 	// Use item
 	itemData := ITEM_DATA[item.Id]
-	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s used %s!", mob.Data.Name, itemData.Name))
+	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s used %s!", mob.GetName(), itemData.Name))
 
 	switch itemData.ItemType {
 		case ITEM_TYPE_CONSUMABLE: {

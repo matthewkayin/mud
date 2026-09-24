@@ -1,12 +1,13 @@
 package world
 
 import (
+	"errors"
 	"fmt"
 	"log"
-	"errors"
-	"sort"
-	"slices"
 	"math/rand"
+	"slices"
+	"sort"
+	"strings"
 	"mud/bitset"
 )
 
@@ -56,10 +57,10 @@ func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, direction
 	// Note that the order matters here, we don't want to send these messages to the moving
 	// player. Since the occupantHandle is in neither room at this point, the broadcast
 	// function will not send the messages into the occupant's inbox
-	world.messageRoom(oldRoomIndex, fmt.Sprintf("%s left the room.", occupantMob.Data.Name))
-	world.messageRoom(newRoomIndex, fmt.Sprintf("%s entered the room.", occupantMob.Data.Name))
+	world.messageRoom(oldRoomIndex, fmt.Sprintf("%s left the room.", occupantMob.GetName()))
+	world.messageRoom(newRoomIndex, fmt.Sprintf("%s entered the room.", occupantMob.GetName()))
 
-	newRoom.AddOccupant(occupantHandle)
+	newRoom.AddOccupant(world, occupantHandle)
 	occupantMob.Data.Room = newRoomIndex
 
 	// Player room discovery
@@ -80,7 +81,23 @@ func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, direction
 	return nil
 }
 
-func (room *Room) AddOccupant(handle MobHandle) {
+func (room *Room) AddOccupant(world *World, handle MobHandle) {
+	// Determine the fuzzy numbers in use by other mobs of the same name
+	mob := world.Mobs.Get(handle)
+	fuzzyNumbersInUse := []int{}
+	for _, occupantHandle := range room.Occupants {
+		occupantMob := world.Mobs.Get(occupantHandle)
+		if strings.EqualFold(mob.Data.Name, occupantMob.Data.Name) {
+			fuzzyNumbersInUse = append(fuzzyNumbersInUse, occupantMob.fuzzyNumber)
+		}
+	}
+
+	// For the joining mob, choose the first fuzzy number not in use
+	mob.fuzzyNumber = 1
+	for slices.Contains(fuzzyNumbersInUse, mob.fuzzyNumber) {
+		mob.fuzzyNumber++
+	}
+
 	room.Occupants = append(room.Occupants, handle)
 }
 
@@ -214,7 +231,7 @@ func (room *Room) removeDeadOccupants(world *World) {
 
 		// Create corpse in room
 		room.Chests = append(room.Chests, Chest {
-			Name: fmt.Sprintf("%s's Corpse", occupantMob.Data.Name),
+			Name: fmt.Sprintf("%s's Corpse", occupantMob.GetName()),
 			DecayTimer: CHEST_CORPOSE_DECAY_DURATION,
 			Inventory: occupantMob.Data.Inventory,
 		})
