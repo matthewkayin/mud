@@ -1,14 +1,15 @@
 package game
 
 import (
-	"fmt"
 	"context"
 	"time"
 	"log"
+	"mud/util"
 	"mud/world"
 )
 
 const GAME_UPDATE_INTERVAL = world.WORLD_SECONDS_PER_UPDATE * time.Second
+const GAME_SAVE_INTERVAL = 15 * time.Minute
 
 type Command struct {
 	PlayerId int
@@ -19,6 +20,7 @@ type EventListener func (gamestate *GameState, event* world.Event)
 
 type GameState struct {
 	Commands chan Command
+	bannerLines []string
 
 	players []Player
 	playerIdToIndexMap map[int]int
@@ -30,13 +32,19 @@ type GameState struct {
 func GameStateInit() *GameState {
 	playerMenusInit()
 
+	bannerLines, err := util.ReadFileLines("./banner.txt")
+	if err != nil {
+		log.Fatalf("Error loading ASCII banner: %s", err.Error())
+	}
+
 	gamestate := &GameState {
 		Commands: make(chan Command, 1024),
+		bannerLines: bannerLines,
 
 		players: make([]Player, 0, 64),
 		playerIdToIndexMap: make(map[int]int),
 
-		world: world.WorldInitNew(),
+		world: world.WorldInit(),
 		eventListeners: make([][]EventListener, world.EVENT_TYPE_COUNT),
 	}
 
@@ -53,6 +61,9 @@ func (gamestate *GameState) Run(ctx context.Context) {
 	ticker := time.NewTicker(GAME_UPDATE_INTERVAL)
 	defer ticker.Stop()
 
+	saveTicker := time.NewTicker(GAME_SAVE_INTERVAL)
+	defer saveTicker.Stop()
+
 	gameloop:
 	for {
 		select {
@@ -62,11 +73,13 @@ func (gamestate *GameState) Run(ctx context.Context) {
 				gamestate.handleCommand(command)
 			case <- ticker.C:
 				gamestate.update()
+			case <- saveTicker.C:
+				gamestate.world.Save()
 		}
 	}
 
 	log.Printf("Shutdown signal received. Shutting down server...")
-	// gamestate.world.Save("./world.json")
+	gamestate.world.Save()
 }
 
 func (gamestate *GameState) RegisterPlayer(playerId int, playerInbox *chan string) {
@@ -76,7 +89,9 @@ func (gamestate *GameState) RegisterPlayer(playerId int, playerInbox *chan strin
 	gamestate.playerIdToIndexMap[playerId] = newPlayerIndex
 
 	newPlayer := &gamestate.players[newPlayerIndex]
-	*newPlayer.inbox <- "Welcome to the RC Disco MUD!"
+	for index := range len(gamestate.bannerLines) {
+		*newPlayer.inbox <- gamestate.bannerLines[index]
+	}
 	newPlayer.setMenu(gamestate, PLAYER_MENU_LOGIN)
 }
 
@@ -102,9 +117,6 @@ func (gamestate *GameState) RemovePlayer(playerId int) {
 
 	// Delete their entry in the map
 	delete(gamestate.playerIdToIndexMap, playerId)
-
-	// Tell everybody about it
-	gamestate.broadcast(fmt.Sprintf("Player %d has left the game.", playerId))
 }
 
 func (gamestate *GameState) getPlayerById(playerId int) *Player {
@@ -176,6 +188,12 @@ func (gamestate *GameState) messageRoom(roomIndex int, message string) {
 
 func (gamestate *GameState) addEventListener(eventType world.EventType, listener EventListener) {
 	gamestate.eventListeners[eventType] = append(gamestate.eventListeners[eventType], listener)
+}
+
+func (gamestate *GameState) createCharacter(playerId int, characterSheet *world.CharacterSheet) {
+	character := world.CharacterInitEmpty(playerId, characterSheet)
+	gamestate.world.AddCharacter(playerId, character)
+	world.SaveCharacter(character)
 }
 
 // This function is the update that is called on a 3-second interval

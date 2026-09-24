@@ -1,12 +1,14 @@
 package world
 
 import (
+	"errors"
 	"fmt"
 	"log"
-	"errors"
-	"sort"
-	"slices"
 	"math/rand"
+	"slices"
+	"sort"
+	"strings"
+	"mud/bitset"
 )
 
 const ROOM_NONE int = -1
@@ -29,7 +31,7 @@ type Room struct {
 	Inventory Inventory
 	Chests []Chest
 
-	Occupants []MobHandle
+	Occupants []MobHandle `json:"-"`
 }
 
 func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, direction Direction) error {
@@ -50,17 +52,21 @@ func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, direction
 	oldRoomIndex := occupantMob.Data.Room
 
 	// Move the occupant
-
 	room.RemoveOccupant(occupantHandle)
 
 	// Note that the order matters here, we don't want to send these messages to the moving
 	// player. Since the occupantHandle is in neither room at this point, the broadcast
 	// function will not send the messages into the occupant's inbox
-	world.messageRoom(oldRoomIndex, fmt.Sprintf("%s left the room.", occupantMob.Data.Name))
-	world.messageRoom(newRoomIndex, fmt.Sprintf("%s entered the room.", occupantMob.Data.Name))
+	world.messageRoom(oldRoomIndex, fmt.Sprintf("%s left the room.", occupantMob.GetName()))
+	world.messageRoom(newRoomIndex, fmt.Sprintf("%s entered the room.", occupantMob.GetName()))
 
-	newRoom.AddOccupant(occupantHandle)
+	newRoom.AddOccupant(world, occupantHandle)
 	occupantMob.Data.Room = newRoomIndex
+
+	// Player room discovery
+	if occupantMob.PlayerCharacter != nil {
+		bitset.Set(occupantMob.PlayerCharacter.RoomsDiscovered, newRoomIndex, true)
+	}
 
 	// Fire event
 	world.pushEvent(Event {
@@ -75,7 +81,23 @@ func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, direction
 	return nil
 }
 
-func (room *Room) AddOccupant(handle MobHandle) {
+func (room *Room) AddOccupant(world *World, handle MobHandle) {
+	// Determine the fuzzy numbers in use by other mobs of the same name
+	mob := world.Mobs.Get(handle)
+	fuzzyNumbersInUse := []int{}
+	for _, occupantHandle := range room.Occupants {
+		occupantMob := world.Mobs.Get(occupantHandle)
+		if strings.EqualFold(mob.Data.Name, occupantMob.Data.Name) {
+			fuzzyNumbersInUse = append(fuzzyNumbersInUse, occupantMob.fuzzyNumber)
+		}
+	}
+
+	// For the joining mob, choose the first fuzzy number not in use
+	mob.fuzzyNumber = 1
+	for slices.Contains(fuzzyNumbersInUse, mob.fuzzyNumber) {
+		mob.fuzzyNumber++
+	}
+
 	room.Occupants = append(room.Occupants, handle)
 }
 
@@ -168,6 +190,24 @@ func (room *Room) removeDeadOccupants(world *World) {
 			},
 		})
 
+		// If NPC mob, distribute experience to players in the room
+		if occupantMob.PlayerCharacter == nil {
+			// Get a list of all player mobs
+			playersInRoom := []*Mob{}
+			for _, handle := range room.Occupants {
+				mob := world.Mobs.Get(handle)
+				if mob.PlayerCharacter != nil {
+					playersInRoom = append(playersInRoom, mob)
+				}
+			}
+
+			// Dole out EXP to each of them
+			for _, player := range playersInRoom {
+				dispursedExp := occupantMob.Data.Experience / int32(len(playersInRoom))
+				player.GrantExperience(world, dispursedExp)
+			}
+		}
+
 		// If player mob, remove their equipment so that it goes into their corpse
 		if occupantMob.PlayerCharacter != nil {
 			for slotIndex := range EQUIPMENT_SLOT_COUNT {
@@ -191,7 +231,7 @@ func (room *Room) removeDeadOccupants(world *World) {
 
 		// Create corpse in room
 		room.Chests = append(room.Chests, Chest {
-			Name: fmt.Sprintf("%s's Corpse", occupantMob.Data.Name),
+			Name: fmt.Sprintf("%s's Corpse", occupantMob.GetName()),
 			DecayTimer: CHEST_CORPOSE_DECAY_DURATION,
 			Inventory: occupantMob.Data.Inventory,
 		})

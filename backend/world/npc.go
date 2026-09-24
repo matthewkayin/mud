@@ -55,9 +55,9 @@ func (npc *Npc) spawnMob(world *World) {
 	npcMob.Npc = npc
 	npc.mobHandle = world.Mobs.Push(npcMob)
 	npcRoom := &world.Rooms[npcMob.Data.Room]
-	npcRoom.AddOccupant(npc.mobHandle)
+	npcRoom.AddOccupant(world, npc.mobHandle)
 
-	world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s has spawned into this room.", npcMob.Data.Name))
+	world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s has spawned into this room.", npcMob.GetName()))
 }
 
 func (npc *Npc) update(world *World) {

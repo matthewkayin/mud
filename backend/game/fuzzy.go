@@ -164,10 +164,6 @@ func fuzzyFindTarget(gamestate *GameState, player *Player, searchWords []string)
 		return world.MobHandle{}, errors.New("You must specify a target.")
 	}
 
-	// Get fuzzy number
-	var fuzzyNumber int
-	fuzzyNumber, searchWords = getFuzzyNumberFromArgs(searchWords)
-
 	// Handle when user targets "self"
 	if len(searchWords) == 1 && strings.EqualFold(searchWords[0], "self") {
 		return player.mobHandle, nil
@@ -181,11 +177,11 @@ func fuzzyFindTarget(gamestate *GameState, player *Player, searchWords []string)
 	mobNames := make([]string, len(room.Occupants))
 	for index, occupantHandle := range room.Occupants {
 		occupant := gamestate.world.Mobs.Get(occupantHandle)
-		mobNames[index] = occupant.Data.Name
+		mobNames[index] = occupant.GetName()
 	}
 
 	// Fuzzy find the target mob
-	targetIndex := fuzzyFind(mobNames, searchWords, fuzzyNumber)
+	targetIndex := fuzzyFind(mobNames, searchWords, FUZZY_FIND_NUMBER_NONE)
 
 	// Handle edge cases
 	if targetIndex == FUZZY_FIND_RESULT_NOT_FOUND {
@@ -195,7 +191,7 @@ func fuzzyFindTarget(gamestate *GameState, player *Player, searchWords []string)
 		return world.MobHandle{}, fmt.Errorf("The target string '%s' is ambiguous.", strings.Join(searchWords, " "))
 	}
 	if targetIndex == FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE {
-		return world.MobHandle{}, fmt.Errorf("No target in the room matches the number %d.", fuzzyNumber)
+		panic("Received fuzzy result number out of range but no fuzzy number was specified.")
 	}
 
 	return room.Occupants[targetIndex], nil

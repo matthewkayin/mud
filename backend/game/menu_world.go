@@ -22,11 +22,12 @@ var MENU_WORLD = Menu {
 		player.mobHandle = gamestate.world.Mobs.Push(playerMob)
 		playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
 		gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("%s has joined the room.", player.character.Data.Name))
-		playerRoom.AddOccupant(player.mobHandle)
+		playerRoom.AddOccupant(gamestate.world, player.mobHandle)
 
 		// Enter world menu
 		*player.inbox <- fmt.Sprintf("You have logged in. Welcome, %s.", player.character.Data.Name)
-		*player.inbox <- fmt.Sprintf("You are in %s.", playerRoom.Name)
+		room := &gamestate.world.Rooms[player.character.Data.Room]
+		describeRoomToPlayer(gamestate, player, room)
 	},
 	onExit: func(gamestate *GameState, player *Player) {
 		tradeSessionOnPlayerLogout(gamestate, player)
@@ -42,6 +43,7 @@ var MENU_WORLD = Menu {
 
 			// Save player mob data back to their character
 			player.character.Data = playerMob.Data
+			world.SaveCharacter(player.character)
 		}
 
 		player.character = nil
@@ -123,33 +125,35 @@ var MENU_WORLD = Menu {
 			},
 		},
 
-		"exits": {
-			usage: "exits",
-			description: "Describe the exits of the current room.",
+		"inspect": {
+			usage: "inspect <mob>",
+			description: "Get information about a player or monster in the room",
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
-				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-				room := &gamestate.world.Rooms[playerMob.Data.Room]
-
-				exitFound := false
-				for directionIndex := range world.DIRECTION_COUNT {
-					direction := world.Direction(directionIndex)
-
-					if room.Exits[direction] == world.ROOM_NONE {
-						continue
-					}
-
-					roomName := "an undiscovered room"
-					if bitset.Check(player.character.RoomsDiscovered, room.Exits[direction]) {
-						roomName = gamestate.world.Rooms[room.Exits[direction]].Name
-					}
-
-					*player.inbox <- fmt.Sprintf("To the %s is %s.", world.DirectionToString(direction), roomName)
-					exitFound = true
+				// Get target handle
+				targetHandle, err := fuzzyFindTarget(gamestate, player, args)
+				if err != nil {
+					*player.inbox <- err.Error()
+					return true
 				}
 
-				if !exitFound {
-					*player.inbox <- "This room has no exits!"
+				// TODO: Handle NPC case for friendly NPC interactions
+
+				// Handle monster case
+				targetMob := gamestate.world.Mobs.Get(targetHandle)
+				if targetMob.PlayerCharacter == nil {
+					*player.inbox <- fmt.Sprintf("%s is a level %d monster. It appears to be hostile!",
+						targetMob.GetName(), targetMob.Data.Level)
+					return true
 				}
+
+				// Handle player case
+				*player.inbox <- fmt.Sprintf("%s is a level %d %s %s %s.",
+					targetMob.Data.Name, targetMob.Data.Level,
+					world.RACE_DATA[targetMob.PlayerCharacter.Race].Name,
+					world.CLASS_DATA[targetMob.PlayerCharacter.Class].Name,
+					world.JOB_DATA[targetMob.PlayerCharacter.Job].Name)
+				*player.inbox <- "They are wearing the following:"
+				printMobEquipmentList(player, targetMob)
 
 				return true
 			},
@@ -207,8 +211,8 @@ var MENU_WORLD = Menu {
 					}
 					targetPlayer := &gamestate.players[targetPlayerIndex]
 
-					*player.inbox <- fmt.Sprintf("You told %s: '%s'", playerMob.Data.Name, message)
-					*targetPlayer.inbox <- fmt.Sprintf("%s told you: '%s'", playerMob.Data.Name, message)
+					*player.inbox <- fmt.Sprintf("You told %s: '%s'", targetMob.GetName(), message)
+					*targetPlayer.inbox <- fmt.Sprintf("%s told you: '%s'", playerMob.GetName(), message)
 					return true
 				}
 
@@ -290,12 +294,43 @@ var MENU_WORLD = Menu {
 		},
 
 		"hp": {
-			usage: "hp",
-			description: "Show your combat status including HP, MP, and conditions.",
+			usage: "hp [<player>] friends",
+			description: "Show your combat status including HP, MP, and conditions. Type 'hp <player>' to see this status for another player in the room. Type 'hp friends' to see this status for all players in the room.",
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
-				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-				*player.inbox <- fmt.Sprintf("HP: %d / %d", playerMob.Data.Health, playerMob.Data.MaxHealth())
-				*player.inbox <- fmt.Sprintf("MP: %d / %d", playerMob.Data.Mana, playerMob.Data.MaxMana())
+				if len(args) == 0 {
+					playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+					printMobHp(player, playerMob)
+
+					return true
+				}
+
+				if len(args) == 1 && strings.EqualFold(args[0], "friends") {
+					playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+					playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
+					for _, occupantHandle := range playerRoom.Occupants {
+						occupantMob := gamestate.world.Mobs.Get(occupantHandle)
+
+						// Skip NPCs
+						if occupantMob.PlayerCharacter == nil {
+							continue
+						}
+
+						printMobHp(player, occupantMob)
+						*player.inbox <- "\n"
+					}
+
+					return true
+				}
+
+				targetHandle, err := fuzzyFindTarget(gamestate, player, args)
+				if err != nil {
+					*player.inbox <- err.Error()
+					return true
+				}
+
+				targetMob := gamestate.world.Mobs.Get(targetHandle)
+				printMobHp(player, targetMob)
+
 				return true
 			},
 		},
@@ -550,7 +585,7 @@ var MENU_WORLD = Menu {
 						*player.inbox <- fmt.Sprintf("You only have %d %s in your inventory.", result.amount, result.itemName)
 						fallthrough
 					case INVENTORY_TRANSFER_STATUS_OK:
-						*player.inbox <- fmt.Sprintf("You gave %s to %s.", itemNameWithAmount(result.itemName, result.amount), targetMob.Data.Name)
+						*player.inbox <- fmt.Sprintf("You gave %s to %s.", itemNameWithAmount(result.itemName, result.amount), targetMob.GetName())
 					case INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED:
 						*player.inbox <- "You must specify an item to give."
 					case INVENTORY_TRANSFER_STATUS_ITEM_NOT_FOUND:
@@ -746,41 +781,8 @@ var MENU_WORLD = Menu {
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 
-				// Determine if we should skip the offhand item slot
-				mainHandItem := playerMob.Data.Equipment.Get(world.EQUIPMENT_SLOT_MAIN_HAND)
-				shouldSkipOffhand := mainHandItem != nil && world.ITEM_DATA[mainHandItem.Id].ItemType == world.EQUIPMENT_SLOT_MAIN_HAND
-
 				*player.inbox <- "Your equipment is:"
-
-				for index := range world.EQUIPMENT_SLOT_COUNT {
-					slot := world.EquipmentSlot(index)
-					item := playerMob.Data.Equipment.Get(slot)
-					var itemData *world.ItemData = nil
-
-					// If two handed equipped, skip off hand
-					if slot == world.EQUIPMENT_SLOT_OFF_HAND && shouldSkipOffhand {
-						continue
-					}
-
-					// Determine item name
-					var itemName string
-					if item != nil {
-						itemData = world.ITEM_DATA[item.Id]
-						itemName = item.GetNameWithCondition()
-					} else {
-						itemName = "<Nothing Equipped>"
-					}
-
-					// Determine slot name
-					var slotName string
-					if slot == world.EQUIPMENT_SLOT_MAIN_HAND && item != nil && itemData.ItemType == world.ITEM_TYPE_EQUIPMENT_TWO_HANDED {
-						slotName = "Both Hands"
-					} else {
-						slotName = world.EquipmentSlotToString(slot)
-					}
-
-					*player.inbox <- fmt.Sprintf("\t%s - %s", slotName, itemName)
-				}
+				printMobEquipmentList(player, playerMob)
 
 				return true
 			},
@@ -1311,8 +1313,40 @@ var MENU_WORLD = Menu {
 	},
 }
 
-func describeRoomToPlayer(gameState *GameState, player *Player, room *world.Room) {
+func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room) {
 	*player.inbox <- room.Description
+
+	// Chests
+	if len(room.Chests) > 0 {
+		chestNames := make([]string, 0, len(room.Chests))
+		for index := range len(room.Chests) {
+			chest := &room.Chests[index]
+			chestNames = append(chestNames, chest.Name)
+		}
+
+		*player.inbox <- fmt.Sprintf("In this room is %s", combineNames(chestNames))
+	}
+
+	// Exits
+	exitFound := false
+	for directionIndex := range world.DIRECTION_COUNT {
+		direction := world.Direction(directionIndex)
+
+		if room.Exits[direction] == world.ROOM_NONE {
+			continue
+		}
+
+		roomName := "an undiscovered room"
+		if bitset.Check(player.character.RoomsDiscovered, room.Exits[direction]) {
+			roomName = gamestate.world.Rooms[room.Exits[direction]].Name
+		}
+
+		*player.inbox <- fmt.Sprintf("To the %s is %s.", world.DirectionToString(direction), roomName)
+		exitFound = true
+	}
+	if !exitFound {
+		*player.inbox <- "This room has no exits!"
+	}
 
 	// Send the list of players in the room
 	if len(room.Occupants) > 1 {
@@ -1326,9 +1360,9 @@ func describeRoomToPlayer(gameState *GameState, player *Player, room *world.Room
 			}
 
 			// Get a pointer to the mob
-			mob := gameState.world.Mobs.Get(mobHandle)
+			mob := gamestate.world.Mobs.Get(mobHandle)
 			// Add their name to the list
-			otherPlayerNames = append(otherPlayerNames, mob.Data.Name)
+			otherPlayerNames = append(otherPlayerNames, mob.GetName())
 		}
 
 		otherPlayersStr := combineNames(otherPlayerNames)
@@ -1338,6 +1372,7 @@ func describeRoomToPlayer(gameState *GameState, player *Player, room *world.Room
 		}
 		*player.inbox <- fmt.Sprintf("%s %s here.", otherPlayersStr, isString)
 	}
+
 
 	//give urgent descriptions of npc mobs dependent on their current state
 	for _, mobHandle := range room.Occupants {
@@ -1355,8 +1390,46 @@ func describeRoomToPlayer(gameState *GameState, player *Player, room *world.Room
 		for index := range len(room.Chests) {
 			chest := &room.Chests[index]
 			chestNames = append(chestNames, chest.Name)
+}
+      
+func printMobEquipmentList(player *Player, mob *world.Mob) {
+	// Determine if we should skip the offhand item slot
+	mainHandItem := mob.Data.Equipment.Get(world.EQUIPMENT_SLOT_MAIN_HAND)
+	shouldSkipOffhand := mainHandItem != nil && world.ITEM_DATA[mainHandItem.Id].ItemType == world.EQUIPMENT_SLOT_MAIN_HAND
+
+	for index := range world.EQUIPMENT_SLOT_COUNT {
+		slot := world.EquipmentSlot(index)
+		item := mob.Data.Equipment.Get(slot)
+		var itemData *world.ItemData = nil
+
+		// If two handed equipped, skip off hand
+		if slot == world.EQUIPMENT_SLOT_OFF_HAND && shouldSkipOffhand {
+			continue
 		}
 
-		*player.inbox <- fmt.Sprintf("In this room is %s", combineNames(chestNames))
+		// Determine item name
+		var itemName string
+		if item != nil {
+			itemData = world.ITEM_DATA[item.Id]
+			itemName = item.GetNameWithCondition()
+		} else {
+			itemName = "<Nothing Equipped>"
+		}
+
+		// Determine slot name
+		var slotName string
+		if slot == world.EQUIPMENT_SLOT_MAIN_HAND && item != nil && itemData.ItemType == world.ITEM_TYPE_EQUIPMENT_TWO_HANDED {
+			slotName = "Both Hands"
+		} else {
+			slotName = world.EquipmentSlotToString(slot)
+		}
+
+		*player.inbox <- fmt.Sprintf("\t%s - %s", slotName, itemName)
 	}
+}
+
+func printMobHp(player *Player, mob *world.Mob) {
+	*player.inbox <- fmt.Sprintf("%s:", mob.Data.Name)
+	*player.inbox <- fmt.Sprintf("HP: %d / %d", mob.Data.Health, mob.Data.MaxHealth())
+	*player.inbox <- fmt.Sprintf("MP: %d / %d", mob.Data.Mana, mob.Data.MaxMana())
 }

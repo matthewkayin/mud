@@ -1,27 +1,53 @@
 package world
 
+import (
+	"log"
+)
+
 const WORLD_SECONDS_PER_UPDATE = 3
 const WORLD_MAX_ROOMS int = 1024
 
+// `json:"-"` tells the JSON parser to ignore those fields
+
 type World struct {
-	Events []Event
+	Events []Event `json:"-"`
 
-	Characters map[string]*Character
-	PlayerCharacters map[int][]string
+	Characters map[string]*Character `json:"-"`
+	PlayerCharacters map[int][]string `json:"-"`
 
-	Mobs MobArray
+	Mobs MobArray `json:"-"`
 	Rooms []Room
 	Npcs []Npc
 }
 
-func WorldInitNew() *World {
-	world := &World {
-		Events: make([]Event, 0, 64),
+func WorldInit() *World {
+	worldCreateSaveFolders()
 
+	world := loadWorld()
+	if world == nil {
+		world = WorldInitNew()
+	}
+
+	// Init transient data structures
+	world.Events = make([]Event, 0, 64)
+	world.Mobs = MobArrayInit()
+
+	// Init NPCs
+	for index := range len(world.Npcs) {
+		world.Npcs[index].init(world)
+	}
+
+	log.Printf("World initialized.")
+	return world
+}
+
+func WorldInitNew() *World {
+	log.Print("Creating new world...")
+
+	world := &World {
 		Characters: map[string]*Character {},
 		PlayerCharacters: map[int][]string {},
 
-		Mobs: MobArrayInit(),
 		Rooms: make([]Room, 0, WORLD_MAX_ROOMS),
 		Npcs: make([]Npc, 0, 1),
 	}

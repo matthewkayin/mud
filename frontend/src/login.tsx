@@ -25,7 +25,7 @@ export const LoginPage = () => {
 
   return (
     <div>
-      <h1>RC Disco MUD!</h1>
+      <h1>Castle Recurse</h1>
       <form onSubmit = {handleLogin}>
         <div>
           { debugAuth && <input value={debugUser} onChange={(event) => setDebugUser(event.target.value)}></input> }

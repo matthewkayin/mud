@@ -17,6 +17,7 @@ var CHARACTER_NAME_BANNED_KEYWORDS = []string {
 	"on",
 	"from",
 	"all",
+	"friends",
 }
 
 func CharacterNameValidate(world *World, name string) (string, error) {
