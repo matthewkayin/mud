@@ -3,9 +3,9 @@ package game
 import (
 	"fmt"
 	"log"
-	"slices"
 	"mud/bitset"
 	"mud/world"
+	"slices"
 	"strings"
 )
 
@@ -140,14 +140,22 @@ var MENU_WORLD = Menu {
 
 				// Handle monster case
 				targetMob := gamestate.world.Mobs.Get(targetHandle)
-				if targetMob.PlayerCharacter == nil {
-					*player.inbox <- fmt.Sprintf("%s is a level %d monster. It appears to be hostile!",
-						targetMob.GetName(), targetMob.Data.Level)
+				if targetMob.Npc != nil {
+					// General description
+					*player.inbox <- fmt.Sprintf("%s (Level %d): %s",
+						targetMob.GetName(), targetMob.Data.Level, targetMob.Npc.GetDescription())
+
+					// Status description
+					statusDescription, hasStatusDescription := targetMob.Npc.GetStatusDescription()
+					if hasStatusDescription {
+						*player.inbox <- fmt.Sprintf("It %s", statusDescription)
+					}
+
 					return true
 				}
 
 				// Handle player case
-				*player.inbox <- fmt.Sprintf("%s is a level %d %s %s %s.",
+				*player.inbox <- fmt.Sprintf("%s (Level %d): %s %s %s.",
 					targetMob.Data.Name, targetMob.Data.Level,
 					world.RACE_DATA[targetMob.PlayerCharacter.Race].Name,
 					world.CLASS_DATA[targetMob.PlayerCharacter.Class].Name,
@@ -279,12 +287,21 @@ var MENU_WORLD = Menu {
 					return true
 				}
 
-				// Move player
-				err := playerRoom.MoveOccupant(gamestate.world, player.mobHandle, direction)
-				if err != nil {
-					*player.inbox <- err.Error()
+				// Check if there is an exit in that direction
+				newRoomIndex := playerRoom.Exits[direction]
+				if newRoomIndex == world.ROOM_NONE {
+					*player.inbox <- "There is no exit in that direction."
 					return true
 				}
+
+				// Check if the exit is locked
+				if playerRoom.ExitIsLocked[direction] {
+					*player.inbox <- fmt.Sprintf("The %s exit is locked.", world.DirectionToString(direction))
+					return true
+				}
+
+				// Move player
+				playerRoom.MoveOccupant(gamestate.world, player.mobHandle, newRoomIndex)
 
 				playerRoom = &gamestate.world.Rooms[playerMob.Data.Room]
 				*player.inbox <- fmt.Sprintf("You moved into %s.", playerRoom.Name)
@@ -1373,14 +1390,13 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 		*player.inbox <- fmt.Sprintf("%s %s here.", otherPlayersStr, isString)
 	}
 
-
 	//give urgent descriptions of npc mobs dependent on their current state
 	for _, mobHandle := range room.Occupants {
 		mob := gamestate.world.Mobs.Get(mobHandle)
 		if mob.Npc != nil {
-			msg, urgent := mob.Npc.Behavior.GetDescription(gamestate.world, mob.Npc)
+			msg, urgent := mob.Npc.GetStatusDescription()
 			if urgent {
-				*player.inbox <- msg
+				*player.inbox <- fmt.Sprintf("%s %s", mob.Data.Name, msg)
 			}
 		}
 	}

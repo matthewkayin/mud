@@ -1,7 +1,6 @@
 package world
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"math/rand"
@@ -34,18 +33,7 @@ type Room struct {
 	Occupants []MobHandle `json:"-"`
 }
 
-func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, direction Direction) error {
-	// Check if there is an exit in that direction
-	newRoomIndex := room.Exits[direction]
-	if newRoomIndex == ROOM_NONE {
-		return errors.New("There is no exit in that direction.")
-	}
-
-	// Check if the exit is locked
-	if room.ExitIsLocked[direction] {
-		return fmt.Errorf("The %s exit is locked.", DirectionToString(direction))
-	}
-
+func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, newRoomIndex int) {
 	// Get a pointer to the new room
 	newRoom := &world.Rooms[newRoomIndex]
 	occupantMob := world.Mobs.Get(occupantHandle)
@@ -53,14 +41,15 @@ func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, direction
 
 	// Move the occupant
 	room.RemoveOccupant(occupantHandle)
-
-	// Note that the order matters here, we don't want to send these messages to the moving
-	// player. Since the occupantHandle is in neither room at this point, the broadcast
-	// function will not send the messages into the occupant's inbox
 	world.messageRoom(oldRoomIndex, fmt.Sprintf("%s left the room.", occupantMob.GetName()))
-	world.messageRoom(newRoomIndex, fmt.Sprintf("%s entered the room.", occupantMob.GetName()))
 
 	newRoom.AddOccupant(world, occupantHandle)
+	world.messageRoomWithOptions(MessageRoomOptions {
+		roomIndex: newRoomIndex,
+		ignore: []MobHandle { occupantHandle },
+		message: fmt.Sprintf("%s entered the room.", occupantMob.GetName()),
+	})
+
 	occupantMob.Data.Room = newRoomIndex
 
 	// Player room discovery
@@ -77,8 +66,6 @@ func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, direction
 			ToRoom: newRoomIndex,
 		},
 	})
-
-	return nil
 }
 
 func (room *Room) AddOccupant(world *World, handle MobHandle) {

@@ -1,33 +1,34 @@
 package world
 
-type NpcId int
+import (
+	"mud/util"
+)
+
+type NpcType int
 const (
-	NPC_GOLBIN = iota
+	NPC_TYPE_GOLBIN = iota
 )
 
 type NpcDrop struct {
 	itemId ItemId
-	minAmount int32
-	maxAmount int32
-	minDurability int32
-	maxDurability int32
+
+	amountRange util.Int32Range
+	durabilityRange util.Int32Range
 	dropChance int32
 }
 
 type NpcData struct {
 	name string
-	behaviorId NpcBehaviorId
+	description string
 	baseStats StatBlock
 	scaling StatBlock
 	equipment Equipment
-
-	dropCount int
-	drops []NpcDrop
 }
 
 var NPC_DATA = []*NpcData {
-	NPC_GOLBIN: {
+	NPC_TYPE_GOLBIN: {
 		name: "Goblin",
+		description: "You see a repulsive, green monster that wants to eat you.",
 
 		baseStats: StatBlock {
 			Vitality: 4,
@@ -44,29 +45,5 @@ var NPC_DATA = []*NpcData {
 			Faith: 4,
 		},
 		equipment: EquipmentInitEmpty(),
-
-		dropCount: 2,
-		drops: []NpcDrop {
-			{
-				itemId: ITEM_GOLD,
-				minAmount: 5,
-				maxAmount: 10,
-				dropChance: 6,
-			},
-			{
-				itemId: ITEM_POTION_HEALTH,
-				minAmount: 1,
-				maxAmount: 1,
-				dropChance: 3,
-			},
-			{
-				itemId: ITEM_SWORD,
-				minAmount: 1,
-				maxAmount: 1,
-				minDurability: 25,
-				maxDurability: 49,
-				dropChance: 1,
-			},
-		},
 	},
 }

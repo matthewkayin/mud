@@ -214,7 +214,7 @@ func (mob *Mob) damage(world *World, damage int32) {
 	mob.Data.Health -= damage
 
 	if mob.Npc != nil {
-		mob.Npc.Behavior.onAttacked(world, mob.Npc)
+		mob.Npc.onAttacked(world)
 	}
 }
 
