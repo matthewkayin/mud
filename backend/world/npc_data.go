@@ -1,34 +1,72 @@
 package world
 
+type NpcId int
+const (
+	NPC_GOLBIN = iota
+)
 
-var NPC_DATA = []*Npc {
+type NpcDrop struct {
+	itemId ItemId
+	minAmount int32
+	maxAmount int32
+	minDurability int32
+	maxDurability int32
+	dropChance int32
+}
 
-	NPC_ID_GOBLIN_1: {
-		Data: MobData {
-			Name: "Goblin",
+type NpcData struct {
+	name string
+	behaviorId NpcBehaviorId
+	baseStats StatBlock
+	scaling StatBlock
+	equipment Equipment
 
-			Level: 1,
-			Experience: 0,
+	dropCount int
+	drops []NpcDrop
+}
 
-			Stats: StatBlock {
-				Vitality: 4,
-				Strength: 2,
-				Agility: 6,
-				Intelligence: 2,
-				Faith: 4,
+var NPC_DATA = []*NpcData {
+	NPC_GOLBIN: {
+		name: "Goblin",
+
+		baseStats: StatBlock {
+			Vitality: 4,
+			Strength: 2,
+			Agility: 6,
+			Intelligence: 2,
+			Faith: 4,
+		},
+		scaling: StatBlock {
+			Vitality: 4,
+			Strength: 2,
+			Agility: 6,
+			Intelligence: 2,
+			Faith: 4,
+		},
+		equipment: EquipmentInitEmpty(),
+
+		dropCount: 2,
+		drops: []NpcDrop {
+			{
+				itemId: ITEM_GOLD,
+				minAmount: 5,
+				maxAmount: 10,
+				dropChance: 6,
 			},
-
-			// TODO
-			Health: 3 * 5,
-			Mana: 2 * 5,
-
-			Spells: []Spell {},
-			Inventory: Inventory {
-				Items: []Item {
-					{ Id: ITEM_POTION_HEALTH },
-				},
+			{
+				itemId: ITEM_POTION_HEALTH,
+				minAmount: 1,
+				maxAmount: 1,
+				dropChance: 3,
 			},
-			Equipment: EquipmentInitEmpty(),
+			{
+				itemId: ITEM_SWORD,
+				minAmount: 1,
+				maxAmount: 1,
+				minDurability: 25,
+				maxDurability: 49,
+				dropChance: 1,
+			},
 		},
 	},
 }

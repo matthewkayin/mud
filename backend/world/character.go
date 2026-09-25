@@ -140,12 +140,16 @@ func (character *Character) recalculateStats() {
 	scaling := classData.Scaling
 	scaling = scaling.Add(&jobData.Scaling)
 
-	character.Data.Stats = StatBlock {
-		Vitality: calculateStatAtLevel(baseStats.Vitality, scaling.Vitality, character.Data.Level),
-		Strength: calculateStatAtLevel(baseStats.Strength, scaling.Strength, character.Data.Level),
-		Agility: calculateStatAtLevel(baseStats.Agility, scaling.Agility, character.Data.Level),
-		Intelligence: calculateStatAtLevel(baseStats.Intelligence, scaling.Intelligence, character.Data.Level),
-		Faith: calculateStatAtLevel(baseStats.Faith, scaling.Faith, character.Data.Level),
+	character.Data.Stats = calculateStatBlockAtLevel(&baseStats, &scaling, character.Data.Level)
+}
+
+func calculateStatBlockAtLevel(base *StatBlock, scaling *StatBlock, level int32) StatBlock {
+	return StatBlock {
+		Vitality: calculateStatAtLevel(base.Vitality, scaling.Vitality, level),
+		Strength: calculateStatAtLevel(base.Strength, scaling.Strength, level),
+		Agility: calculateStatAtLevel(base.Agility, scaling.Agility, level),
+		Intelligence: calculateStatAtLevel(base.Intelligence, scaling.Intelligence, level),
+		Faith: calculateStatAtLevel(base.Faith, scaling.Faith, level),
 	}
 }
 

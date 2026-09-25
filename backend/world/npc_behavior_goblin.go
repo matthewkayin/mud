@@ -30,7 +30,7 @@ func behaviorGoblinInit() *BehaviorGoblin {
 	}
 }
 
-func (behavior *BehaviorGoblin) onUpdate(world *World, npc *Npc) {
+func (behavior *BehaviorGoblin) update(world *World, npc *Npc) {
 	npcMob := world.Mobs.Get(npc.mobHandle)
 
 	switch behavior.Mode {
@@ -118,7 +118,7 @@ func (behavior *BehaviorGoblin) onUpdate(world *World, npc *Npc) {
 func (behavior *BehaviorGoblin) onAttacked(world *World, npc *Npc) {
 	npcMob := world.Mobs.Get(npc.mobHandle)
 	if behavior.Mode == BEHAVIOR_GOBLIN_MODE_SLEEPY {
-		world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s is disgruntled that you have attacked them in their sleep!", npc.Data.Name))
+		world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s is disgruntled that you have attacked them in their sleep!", npcMob.Data.Name))
 		behavior.Mode = BEHAVIOR_GOBLIN_MODE_SURPRISED
 		behavior.SurprisedTimer = BEHAVIOR_GOBLIN_SURPRISE_TIMER * 2
 	}

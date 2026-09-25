@@ -34,7 +34,7 @@ func WorldInit() *World {
 
 	// Init NPCs
 	for index := range len(world.Npcs) {
-		world.Npcs[index].init(world)
+		world.Npcs[index].spawnMob(world)
 	}
 
 	log.Printf("World initialized.")
@@ -179,8 +179,22 @@ func WorldInitNew() *World {
 			},
 	}
 
-	world.Npcs = []Npc {}
-	generateNpc(world, NPC_ID_GOBLIN_1, 2, 3)
+	world.Npcs = []Npc {
+		{
+			Id: NPC_GOLBIN,
+			MinLevel: 1,
+			MaxLevel: 2,
+			SpawnRoom: 3,
+			RespawnDuration: 60 / WORLD_SECONDS_PER_UPDATE,
+		},
+		{
+			Id: NPC_GOLBIN,
+			MinLevel: 1,
+			MaxLevel: 2,
+			SpawnRoom: 3,
+			RespawnDuration: 60 / WORLD_SECONDS_PER_UPDATE,
+		},
+	}
 
 	return world
 }

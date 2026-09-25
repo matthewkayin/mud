@@ -2,62 +2,110 @@ package world
 
 import (
 	"fmt"
+	"math/rand/v2"
 )
-
-// TODO: change this to a longer duration
-// TODO: make this customizable per NPC?
-const NPC_RESPAWN_DURATION int = 60 / WORLD_SECONDS_PER_UPDATE
-
-type NpcBehaviorType int
-const (
-	NPC_BEHAVIOR_TYPE_GOBLIN = iota
-)
-
-type NpcId int
-const (
-	NPC_ID_GOBLIN_1 = iota
-)
-
-type Behavior interface {
-	onUpdate(world *World, npc *Npc)
-	onAttacked(world *World, npc *Npc)
-	GetDescription(world *World, npc *Npc) (string, bool)
-}
 
 type Npc struct {
-	Behavior Behavior
-	Data MobData
+	Id NpcId
+	MinLevel int32
+	MaxLevel int32
+	SpawnRoom int
+	RespawnDuration int
 
+	Behavior NpcBehavior `json:"-"`
 	mobHandle MobHandle
 	respawnTimer int
 }
 
-//insert an npc of a certain quantity into the world's npc array
-func generateNpc(world *World, id NpcId, amount int, room int) {
-	n := 0
-	for n < amount {
-		npc := *NPC_DATA[id]
-		npc.Behavior = behaviorGoblinInit()
-		npc.Data.Room = room
-		world.Npcs = append(world.Npcs, npc)
-		n++
-	}
-}
-
-//initialize the npc in the npc array at game startup
-func (npc *Npc) init(world *World) {
-	npc.spawnMob(world)
-}
-
 //spawns the mob associated with the npc
 func (npc *Npc) spawnMob(world *World) {
-	npcMob := MobInit(&npc.Data)
+	npcData := NPC_DATA[npc.Id]
+
+	// Create mob data
+	level := npc.MinLevel + rand.Int32N(npc.MaxLevel - npc.MinLevel)
+	stats := calculateStatBlockAtLevel(&npcData.baseStats, &npcData.scaling, level)
+	mobData := MobData {
+		Name: npcData.name,
+		Room: npc.SpawnRoom,
+
+		Level: level,
+		Experience: 0, // TODO
+
+		Stats: stats,
+		Spells: []Spell {},
+		Inventory: npc.determineDrops(),
+		Equipment: npcData.equipment,
+	}
+
+	mobData.Health = mobData.MaxHealth()
+	mobData.Mana = mobData.MaxMana()
+
+	// Init mob
+	npcMob := MobInit(&mobData)
 	npcMob.Npc = npc
+
+	// Add mob to world
 	npc.mobHandle = world.Mobs.Push(npcMob)
 	npcRoom := &world.Rooms[npcMob.Data.Room]
 	npcRoom.AddOccupant(world, npc.mobHandle)
 
+	// Create Npc behavior
+	npc.Behavior = NpcBehaviorInit(npcData.behaviorId)
+
 	world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s has spawned into this room.", npcMob.GetName()))
+}
+
+func (npc *Npc) determineDrops() Inventory {
+	npcData := NPC_DATA[npc.Id]
+
+	// Determine total drop chance among all NPC drops
+	var dropChanceTotal int32 = 0
+	for _, drop := range npcData.drops {
+		dropChanceTotal += drop.dropChance
+	}
+
+	inventory := Inventory { Items: []Item {} }
+
+	// Roll for an item and add it to the inventory
+	for _ = range npcData.dropCount {
+		roll := rand.Int32N(dropChanceTotal)
+		var dropChance int32 = 0
+		var dropIndex int = 0
+
+		for dropIndex < len(npcData.drops) {
+			dropChance += npcData.drops[dropIndex].dropChance
+			if roll <= dropChance {
+				break
+			}
+			dropIndex++
+		}
+
+		if dropIndex == len(npcData.drops) {
+			panic("Something bad happened during Npc drop determination")
+		}
+
+		drop := &npcData.drops[dropIndex]
+
+		// Determine amount
+		var amount int32 = 1
+		if drop.maxAmount - drop.minAmount > 0 {
+			amount = drop.minAmount + rand.Int32N(drop.maxAmount - drop.minAmount)
+		}
+
+		// Determine durability
+		var durability int32 = 0
+		if drop.maxDurability - drop.minDurability > 0 {
+			durability = drop.minDurability + rand.Int32N(drop.maxDurability - drop.minDurability)
+		}
+
+		inventory.AddItem(Item {
+			Id: drop.itemId,
+			Amount: amount,
+			Durability: durability,
+		})
+	}
+
+	return inventory
 }
 
 func (npc *Npc) update(world *World) {
@@ -75,10 +123,10 @@ func (npc *Npc) update(world *World) {
 	// Check for mob death
 	_, npcMobExists := world.Mobs.GetIfExists(npc.mobHandle)
 	if !npcMobExists {
-		npc.respawnTimer = NPC_RESPAWN_DURATION
+		npc.respawnTimer = npc.RespawnDuration
 		return
 	}
 
 	// Behavior update
-	npc.Behavior.onUpdate(world, npc)
+	npc.Behavior.update(world, npc)
 }
