@@ -71,7 +71,7 @@ func (npc *Npc) spawnMob(world *World) {
 		Room: npc.SpawnRoom,
 
 		Level: level,
-		Experience: 0, // TODO
+		Experience: npcData.experienceWorth + (npcData.experienceWorthScaling * (level - 1)),
 
 		Stats: stats,
 		Spells: []Spell {},

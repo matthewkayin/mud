@@ -20,6 +20,8 @@ type NpcDrop struct {
 type NpcData struct {
 	name string
 	description string
+	experienceWorth int32
+	experienceWorthScaling int32
 	baseStats StatBlock
 	scaling StatBlock
 	equipment Equipment
@@ -29,6 +31,9 @@ var NPC_DATA = []*NpcData {
 	NPC_TYPE_GOLBIN: {
 		name: "Goblin",
 		description: "You see a repulsive, green monster that wants to eat you.",
+
+		experienceWorth: 100,
+		experienceWorthScaling: 25,
 
 		baseStats: StatBlock {
 			Vitality: 4,
