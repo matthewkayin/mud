@@ -11,7 +11,7 @@ const (
 	ACTION_TYPE_ATTACK
 	ACTION_TYPE_CAST
 	ACTION_TYPE_USE_ITEM
-	ACTION_TYPE_CRAFT
+	ACTION_TYPE_CRAFT_ITEM
 )
 
 type Action struct {
@@ -33,8 +33,8 @@ type ActionUseItem struct {
 	target world.MobHandle
 }
 
-type ActionCraft struct {
-	itemId world.ItemId
+type ActionCraftItem struct {
+	amount int32
 	target world.Recipe
 }
 
@@ -58,6 +58,11 @@ func (player *Player) doAction(gamestate *GameState) {
 
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			playerMob.SetModeUseItem(gamestate.world, player.mobHandle, actionData.itemId, actionData.target)
+		case  ACTION_TYPE_CRAFT_ITEM:
+			actionData := player.nextAction.data.(ActionCraftItem)
+
+			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+			playerMob.SetModeCraftItem(gamestate.world, player.mobHandle, actionData.target, actionData.amount)
 		default:
 			log.Printf("Action type %d not handled!", player.nextAction.actionType)
 	}
