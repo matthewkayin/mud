@@ -7,8 +7,8 @@ import (
 type Direction int
 const (
 	DIRECTION_NORTH = iota
-	DIRECTION_SOUTH
 	DIRECTION_EAST
+	DIRECTION_SOUTH
 	DIRECTION_WEST
 	DIRECTION_COUNT
 )
@@ -41,4 +41,8 @@ func DirectionFromString(directionStr string) (Direction, bool) {
 		default:
 			return 0, false
 	}
+}
+
+func DirectionOppositeOf(direction Direction) Direction {
+	return (direction + 2) % DIRECTION_COUNT
 }

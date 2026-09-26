@@ -2,6 +2,7 @@ package world
 
 import (
 	"log"
+	"mud/util"
 )
 
 const WORLD_SECONDS_PER_UPDATE = 3
@@ -34,7 +35,7 @@ func WorldInit() *World {
 
 	// Init NPCs
 	for index := range len(world.Npcs) {
-		world.Npcs[index].init(world)
+		world.Npcs[index].spawnMob(world)
 	}
 
 	log.Printf("World initialized.")
@@ -53,136 +54,292 @@ func WorldInitNew() *World {
 	}
 
 	// Test world
-	world.Rooms = []Room {
-		{
-			Name: "Presentation Space",
-			Description: "You're in an open room with white walls and tan-wood flooring. Various pairing tables are strewn about the space, and a makeshift blue octopus floats overhead.",
+	world.Rooms = []Room {}
 
-			Exits: [DIRECTION_COUNT]int {
-				ROOM_NONE,
-				1,
-				2,
-				ROOM_NONE,
-			},
-			ExitIsLocked: [DIRECTION_COUNT]bool {
-				false,
-				false,
-				false,
-				false,
-			},
-			IsSafeZone: true,
+	// PRESENTATION SPACE
+	presentationSpace := world.addRoom(Room {
+		Name: "Presentation Space",
+		Description: "You're in an open room with white walls and tan-wood flooring. Various pairing tables are strewn about the space, and a makeshift blue octopus floats overhead.",
 
-			Chests: []Chest {
-				{
-					Name: "Chest of Test",
-					DecayTimer: CHEST_DOES_NOT_DECAY,
-					Inventory: Inventory {
-						Items: []Item {
-							{ Id: ITEM_SWORD, Amount: 1, Durability: 1 },
-							{ Id: ITEM_SWORD, Amount: 1, Durability: 80 },
-							{ Id: ITEM_SWORD, Amount: 1, Durability: 120 },
-							{ Id: ITEM_GOLD, Amount: 100 },
-							{ Id: ITEM_AXE, Amount: 1, Durability: 100 },
-							{ Id: ITEM_AXE, Amount: 1, Durability: 75 },
-							{ Id: ITEM_SPELLBOOK_FIREBOLT, Amount: 1, Durability: 1 },
-							{ Id: ITEM_SPELLBOOK_CURE, Amount: 1, Durability: 1 },
-							{ Id: ITEM_POTION_HEALTH, Amount: 2 },
-							{ Id: ITEM_RECIPE_HEALTH_POT, Amount: 1 },
-							{ Id: ITEM_RECIPE_MANA_POT, Amount: 1 },
-							{ Id: ITEM_RECIPE_SWORD, Amount: 1 },
-							{ Id: ITEM_RECIPE_AXE, Amount: 1 },
-							{ Id: ITEM_DUMMY_MATERIAL, Amount: 200 },
-						},
+		Exits: [DIRECTION_COUNT]int {
+			ROOM_NONE,
+			ROOM_NONE,
+			ROOM_NONE,
+			ROOM_NONE,
+		},
+		ExitIsLocked: [DIRECTION_COUNT]bool {
+			false,
+			false,
+			false,
+			false,
+		},
+		IsSafeZone: true,
+
+		Chests: []Chest {
+			{
+				Name: "Chest of Test",
+				DecayTimer: CHEST_DOES_NOT_DECAY,
+				Inventory: Inventory {
+					Items: []Item {
+						{ Id: ITEM_SWORD, Amount: 1, Durability: 1 },
+						{ Id: ITEM_SWORD, Amount: 1, Durability: 80 },
+						{ Id: ITEM_SWORD, Amount: 1, Durability: 120 },
+						{ Id: ITEM_GOLD, Amount: 100 },
+						{ Id: ITEM_AXE, Amount: 1, Durability: 100 },
+						{ Id: ITEM_AXE, Amount: 1, Durability: 75 },
+						{ Id: ITEM_SPELLBOOK_FIREBOLT, Amount: 1, Durability: 1 },
+						{ Id: ITEM_SPELLBOOK_CURE, Amount: 1, Durability: 1 },
+						{ Id: ITEM_POTION_HEALTH, Amount: 2 },
+						{ Id: ITEM_RECIPE_HEALTH_POT, Amount: 1 },
+						{ Id: ITEM_RECIPE_MANA_POT, Amount: 1 },
+						{ Id: ITEM_RECIPE_SWORD, Amount: 1 },
+						{ Id: ITEM_RECIPE_AXE, Amount: 1 },
+						{ Id: ITEM_DUMMY_MATERIAL, Amount: 200 },
 					},
 				},
 			},
-			Inventory: Inventory {
-				Items: []Item {},
-			},
-
-			Occupants: []MobHandle {},
 		},
-		{
-			Name: "The Kitchen",
-			Description: "Bursts of red, blue, and yellow tape paint the far wall. In front of this sits a long, oak dining table with chairs. A kitchenette hugs the far-left corner, complete with three different kinds of coffee makers and more in the cubboards.",
-
-			Exits: [DIRECTION_COUNT]int {
-				0,
-				ROOM_NONE,
-				ROOM_NONE,
-				ROOM_NONE,
-			},
-			ExitIsLocked: [DIRECTION_COUNT]bool {
-				false,
-				false,
-				false,
-				false,
-			},
-			IsSafeZone: true,
-
-			Chests: []Chest {},
-			Inventory: Inventory {
-				Items: []Item {},
-			},
-
-			Occupants: []MobHandle {},
+		Inventory: Inventory {
+			Items: []Item {},
 		},
-		{
-				Name: "The Stairs",
-				Description: "You are in a cold, dank set of stairs.",
 
-				Exits: [DIRECTION_COUNT]int {
-					ROOM_NONE,
-					3,
-					ROOM_NONE,
-					0,
-				},
-				ExitIsLocked: [DIRECTION_COUNT]bool {
-					false,
-					false,
-					false,
-					false,
-				},
-				IsSafeZone: false,
+		Occupants: []MobHandle {},
+	})
 
-				Chests: []Chest {},
-				Inventory: Inventory {
-					Items: []Item {},
-				},
+	// KITCHEN
+	kitchen := world.addRoom(Room {
+		Name: "The Kitchen",
+		Description: "Bursts of red, blue, and yellow tape paint the far wall. In front of this sits a long, oak dining table with chairs. A kitchenette hugs the far-left corner, complete with three different kinds of coffee makers and more in the cubboards.",
 
-				Occupants: []MobHandle {},
-			},
-			{
-				Name: "The Basement",
-				Description: "What a hideous place.",
+		Exits: [DIRECTION_COUNT]int {
+			ROOM_NONE,
+			ROOM_NONE,
+			ROOM_NONE,
+			ROOM_NONE,
+		},
+		ExitIsLocked: [DIRECTION_COUNT]bool {
+			false,
+			false,
+			false,
+			false,
+		},
+		IsSafeZone: true,
 
-				Exits: [DIRECTION_COUNT]int {
-					2,
-					ROOM_NONE,
-					ROOM_NONE,
-					ROOM_NONE,
-				},
-				ExitIsLocked: [DIRECTION_COUNT]bool {
-					false,
-					false,
-					false,
-					false,
-				},
-				IsSafeZone: false,
+		Chests: []Chest {},
+		Inventory: Inventory {
+			Items: []Item {},
+		},
 
-				Chests: []Chest {},
-				Inventory: Inventory {
-					Items: []Item {},
-				},
+		Occupants: []MobHandle {},
+	})
 
-				Occupants: []MobHandle {},
-			},
-	}
+	// STAIRS
+	stairs := world.addRoom(Room {
+		Name: "The Stairs",
+		Description: "You are in a cold, dank set of stairs.",
+
+		Exits: [DIRECTION_COUNT]int {
+			ROOM_NONE,
+			ROOM_NONE,
+			ROOM_NONE,
+			ROOM_NONE,
+		},
+		ExitIsLocked: [DIRECTION_COUNT]bool {
+			false,
+			false,
+			false,
+			false,
+		},
+		IsSafeZone: false,
+
+		Chests: []Chest {},
+		Inventory: Inventory {
+			Items: []Item {},
+		},
+
+		Occupants: []MobHandle {},
+	})
+
+	// BASEMENT
+	basement := world.addRoom(Room {
+		Name: "The Basement",
+		Description: "What a hideous place.",
+
+		Exits: [DIRECTION_COUNT]int {
+			ROOM_NONE,
+			ROOM_NONE,
+			ROOM_NONE,
+			ROOM_NONE,
+		},
+		ExitIsLocked: [DIRECTION_COUNT]bool {
+			false,
+			false,
+			false,
+			false,
+		},
+		IsSafeZone: false,
+
+		Chests: []Chest {},
+		Inventory: Inventory {
+			Items: []Item {},
+		},
+
+		Occupants: []MobHandle {},
+	})
+
+	// CLIFFSIDE
+	cliffside := world.addRoom(Room {
+		Name: "A spooky cliffside",
+		Description: "The stairs from the castle lead out to this spooky cliffside.",
+
+		Exits: [DIRECTION_COUNT]int {
+			ROOM_NONE,
+			ROOM_NONE,
+			ROOM_NONE,
+			ROOM_NONE,
+		},
+		ExitIsLocked: [DIRECTION_COUNT]bool {
+			false,
+			false,
+			false,
+			false,
+		},
+		IsSafeZone: false,
+
+		Chests: []Chest {},
+		Inventory: Inventory {
+			Items: []Item {},
+		},
+
+		Occupants: []MobHandle {},
+	})
+
+	// BRIDGE
+	bridge := world.addRoom(Room {
+		Name: "A rickety bridge",
+		Description: "You're standing on a rickety wooden bridge, which sways and creaks as you step. Don't look down!",
+
+		Exits: [DIRECTION_COUNT]int {
+			ROOM_NONE,
+			ROOM_NONE,
+			ROOM_NONE,
+			ROOM_NONE,
+		},
+		ExitIsLocked: [DIRECTION_COUNT]bool {
+			false,
+			false,
+			false,
+			false,
+		},
+		IsSafeZone: false,
+
+		Chests: []Chest {},
+		Inventory: Inventory {
+			Items: []Item {},
+		},
+
+		Occupants: []MobHandle {},
+	})
+
+	// Room connections
+	/*
+		Kitchen -- Presentation Space
+						|
+				 	 Stairs -- Cliffside -- Bridge
+						|
+					 Basement
+	 */
+	world.Rooms[kitchen].Exits[DIRECTION_EAST] = presentationSpace
+	world.Rooms[presentationSpace].Exits[DIRECTION_WEST] = kitchen
+	world.Rooms[presentationSpace].Exits[DIRECTION_SOUTH] = stairs
+	world.Rooms[stairs].Exits[DIRECTION_NORTH] = presentationSpace
+	world.Rooms[stairs].Exits[DIRECTION_EAST] = cliffside
+	world.Rooms[stairs].Exits[DIRECTION_SOUTH] = basement
+	world.Rooms[cliffside].Exits[DIRECTION_WEST] = stairs
+	world.Rooms[cliffside].Exits[DIRECTION_EAST] = bridge
+	world.Rooms[bridge].Exits[DIRECTION_WEST] = cliffside
+
+	// NPCS
 
 	world.Npcs = []Npc {}
-	generateNpc(world, NPC_ID_GOBLIN_1, 2, 3)
+
+	goblinItemDrops := []NpcDrop {
+		{
+			itemId: ITEM_GOLD,
+			amountRange: util.Int32Range { Min: 5, Max: 10, },
+			dropChance: 6,
+		},
+		{
+			itemId: ITEM_POTION_HEALTH,
+			amountRange: util.Int32Range { Min: 1, Max: 1, },
+			dropChance: 3,
+		},
+		{
+			itemId: ITEM_SWORD,
+			amountRange: util.Int32Range { Min: 1, Max: 1, },
+			durabilityRange: util.Int32Range { Min: 25, Max: 49, },
+			dropChance: 1,
+		},
+	}
+
+	world.Npcs = append(world.Npcs, Npc {
+		Type: NPC_TYPE_GOLBIN,
+		LevelRange: util.Int32Range { Min: 1, Max: 2 },
+		StartingDisposition: NPC_DISPOSITION_HOSTILE,
+		MovementType: NPC_MOVEMENT_TYPE_SENTINEL,
+		SpawnRoom: basement,
+		RespawnDuration: 60 / WORLD_SECONDS_PER_UPDATE,
+		SleepDuration: (10 * 60) / WORLD_SECONDS_PER_UPDATE,
+		AwakeDuration: (50 * 60) / WORLD_SECONDS_PER_UPDATE,
+		MovementStepDuration: 0,
+		DropCount: 2,
+		Drops: goblinItemDrops,
+	})
+
+	world.Npcs = append(world.Npcs, Npc {
+		Type: NPC_TYPE_GOLBIN,
+		LevelRange: util.Int32Range { Min: 1, Max: 2 },
+		StartingDisposition: NPC_DISPOSITION_HOSTILE,
+		MovementType: NPC_MOVEMENT_TYPE_WANDER,
+		SpawnRoom: basement,
+		RespawnDuration: 60 / WORLD_SECONDS_PER_UPDATE,
+		SleepDuration: (10 * 60) / WORLD_SECONDS_PER_UPDATE,
+		AwakeDuration: (50 * 60) / WORLD_SECONDS_PER_UPDATE,
+		MovementStepDuration: (1 * 60) / WORLD_SECONDS_PER_UPDATE,
+		DropCount: 2,
+		Drops: goblinItemDrops,
+	})
+
+	world.Npcs = append(world.Npcs, Npc {
+		Type: NPC_TYPE_TROLL,
+		LevelRange: util.Int32Range { Min: 3, Max: 3 },
+		StartingDisposition: NPC_DISPOSITION_NEUTRAL,
+		MovementType: NPC_MOVEMENT_TYPE_SENTINEL,
+		Behavior: &BehaviorTroll {
+			ExitToBlock: DIRECTION_EAST,
+			Toll: Item {
+				Id: ITEM_GOLD,
+				Amount: 25,
+			},
+		},
+		SpawnRoom: cliffside,
+		RespawnDuration: 120 / WORLD_SECONDS_PER_UPDATE,
+		SleepDuration: 0,
+		AwakeDuration: 0,
+		MovementStepDuration: 0,
+		DropCount: 0,
+		Drops: []NpcDrop {},
+	})
 
 	return world
+}
+
+// Temporary function, delete when adding level editor
+// Purpose of this function is to make it easy to return the index of the room
+func (world *World) addRoom(room Room) int {
+	index := len(world.Rooms)
+	world.Rooms = append(world.Rooms, room)
+	return index
 }
 
 func (world *World) Update() {

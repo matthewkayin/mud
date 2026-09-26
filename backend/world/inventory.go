@@ -8,7 +8,7 @@ func (inventory *Inventory) Length() int {
 	return len(inventory.Items)
 }
 
-func (inventory *Inventory) FindItem (id ItemId) (int, bool) {
+func (inventory *Inventory) FindItem(id ItemId) (int, bool) {
 	for index := range inventory.Length() {
 		if inventory.Items[index].Id == id {
 			return index, true
@@ -18,7 +18,8 @@ func (inventory *Inventory) FindItem (id ItemId) (int, bool) {
 	return 0, false
 }
 
-func (inventory *Inventory) AddItem(item Item) {
+// Returns the index that the item was added at
+func (inventory *Inventory) AddItem(item Item) int {
 	itemData := ITEM_DATA[item.Id]
 	if itemData.ItemCanStack() {
 		// Find an existing item with this ID
@@ -34,11 +35,12 @@ func (inventory *Inventory) AddItem(item Item) {
 		// add the amount to the stack
 		if index < inventory.Length() {
 			inventory.Items[index].Amount += item.Amount
-			return
+			return index
 		}
 	}
 
 	inventory.Items = append(inventory.Items, item)
+	return inventory.Length() - 1
 }
 
 func (inventory *Inventory) RemoveItem(index int) Item {

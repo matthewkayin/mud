@@ -3,9 +3,9 @@ package game
 import (
 	"fmt"
 	"log"
-	"slices"
 	"mud/bitset"
 	"mud/world"
+	"slices"
 	"strings"
 )
 
@@ -140,14 +140,22 @@ var MENU_WORLD = Menu {
 
 				// Handle monster case
 				targetMob := gamestate.world.Mobs.Get(targetHandle)
-				if targetMob.PlayerCharacter == nil {
-					*player.inbox <- fmt.Sprintf("%s is a level %d monster. It appears to be hostile!",
-						targetMob.GetName(), targetMob.Data.Level)
+				if targetMob.Npc != nil {
+					// General description
+					*player.inbox <- fmt.Sprintf("%s (Level %d): %s",
+						targetMob.GetName(), targetMob.Data.Level, targetMob.Npc.GetDescription())
+
+					// Status description
+					statusDescription, hasStatusDescription := targetMob.Npc.GetStatusDescription(gamestate.world)
+					if hasStatusDescription {
+						*player.inbox <- statusDescription
+					}
+
 					return true
 				}
 
 				// Handle player case
-				*player.inbox <- fmt.Sprintf("%s is a level %d %s %s %s.",
+				*player.inbox <- fmt.Sprintf("%s (Level %d): %s %s %s.",
 					targetMob.Data.Name, targetMob.Data.Level,
 					world.RACE_DATA[targetMob.PlayerCharacter.Race].Name,
 					world.CLASS_DATA[targetMob.PlayerCharacter.Class].Name,
@@ -279,12 +287,21 @@ var MENU_WORLD = Menu {
 					return true
 				}
 
-				// Move player
-				err := playerRoom.MoveOccupant(gamestate.world, player.mobHandle, direction)
-				if err != nil {
-					*player.inbox <- err.Error()
+				// Check if there is an exit in that direction
+				newRoomIndex := playerRoom.Exits[direction]
+				if newRoomIndex == world.ROOM_NONE {
+					*player.inbox <- "There is no exit in that direction."
 					return true
 				}
+
+				// Check if the exit is locked
+				if playerRoom.ExitIsLocked[direction] {
+					*player.inbox <- fmt.Sprintf("The %s exit is locked.", world.DirectionToString(direction))
+					return true
+				}
+
+				// Move player
+				playerRoom.MoveOccupant(gamestate.world, player.mobHandle, newRoomIndex)
 
 				playerRoom = &gamestate.world.Rooms[playerMob.Data.Room]
 				*player.inbox <- fmt.Sprintf("You moved into %s.", playerRoom.Name)
@@ -571,21 +588,29 @@ var MENU_WORLD = Menu {
 					return true
 				}
 
-				// TODO: allow giving to non-player NPCs for things like RP and encounters?
 				targetMob := gamestate.world.Mobs.Get(targetHandle)
-				if targetMob.PlayerCharacter == nil {
-					*player.inbox <- "You cannot give an item to someone who isn't a player."
-					return true
-				}
-
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+
 				result := inventoryTransfer(&playerMob.Data.Inventory, &targetMob.Data.Inventory, itemWords)
 				switch result.status {
 					case INVENTORY_TRANSFER_STATUS_PARTIAL:
 						*player.inbox <- fmt.Sprintf("You only have %d %s in your inventory.", result.amount, result.itemName)
 						fallthrough
-					case INVENTORY_TRANSFER_STATUS_OK:
-						*player.inbox <- fmt.Sprintf("You gave %s to %s.", itemNameWithAmount(result.itemName, result.amount), targetMob.GetName())
+					case INVENTORY_TRANSFER_STATUS_OK: {
+						gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("%s gave %s to %s.",
+							playerMob.Data.Name, itemNameWithAmount(result.itemName, result.amount), targetMob.Data.Name))
+
+						if targetMob.Npc != nil {
+							targetMob.Npc.OnEvent(gamestate.world, world.BehaviorEvent {
+								Type: world.BEHAVIOR_EVENT_TYPE_ITEM_GIVEN,
+								Data: world.BehaviorEventItemGiven {
+									PlayerHandle: player.mobHandle,
+									AddedToIndex: result.addedToIndex,
+									Amount: result.amount,
+								},
+							})
+						}
+					}
 					case INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED:
 						*player.inbox <- "You must specify an item to give."
 					case INVENTORY_TRANSFER_STATUS_ITEM_NOT_FOUND:
@@ -1373,12 +1398,11 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 		*player.inbox <- fmt.Sprintf("%s %s here.", otherPlayersStr, isString)
 	}
 
-
 	//give urgent descriptions of npc mobs dependent on their current state
 	for _, mobHandle := range room.Occupants {
 		mob := gamestate.world.Mobs.Get(mobHandle)
 		if mob.Npc != nil {
-			msg, urgent := mob.Npc.Behavior.GetDescription(gamestate.world, mob.Npc)
+			msg, urgent := mob.Npc.GetStatusDescription(gamestate.world)
 			if urgent {
 				*player.inbox <- msg
 			}
