@@ -33,11 +33,6 @@ func WorldInit() *World {
 	world.Events = make([]Event, 0, 64)
 	world.Mobs = MobArrayInit()
 
-	// Init NPCs
-	for index := range len(world.Npcs) {
-		world.Npcs[index].spawnMob(world)
-	}
-
 	log.Printf("World initialized.")
 	return world
 }
