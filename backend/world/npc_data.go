@@ -8,7 +8,7 @@ var NPC_DATA = []*Npc {
 			Name: "Goblin",
 
 			Level: 1,
-			Experience: 0,
+			Experience: 100,
 
 			Stats: StatBlock {
 				Vitality: 4,
@@ -25,7 +25,6 @@ var NPC_DATA = []*Npc {
 			Spells: []Spell {},
 			Inventory: Inventory {
 				Items: []Item {
-					{ Id: ITEM_POTION_HEALTH },
 				},
 			},
 			Equipment: EquipmentInitEmpty(),

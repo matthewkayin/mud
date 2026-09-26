@@ -29,6 +29,7 @@ const (
 	MOB_MODE_ATTACK
 	MOB_MODE_CAST
 	MOB_MODE_USE_ITEM
+	MOB_MODE_CRAFT_ITEM
 )
 
 type Mob struct {
@@ -42,6 +43,9 @@ type Mob struct {
 	castSpell Spell
 	castTimer int32
 	useItemId ItemId
+
+	craftItemRecipe Recipe
+	craftItemAmount int32
 
 	fuzzyNumber int
 }
@@ -118,6 +122,10 @@ func (mob *Mob) GrantExperience(world *World, experience int32) {
 	}
 }
 
+func (mob *Mob) SetModeIdle() {
+	mob.Mode = MOB_MODE_IDLE
+}
+
 func (mob *Mob) SetModeAttack(world *World, mobHandle MobHandle, targetHandle MobHandle) {
 	mob.Mode = MOB_MODE_ATTACK
 	mob.Target = targetHandle
@@ -160,6 +168,12 @@ func (mob *Mob) SetModeUseItem(world *World, mobHandle MobHandle, itemId ItemId,
 	})
 }
 
+func (mob *Mob) SetModeCraftItem(world *World, mobHandle MobHandle, recipe Recipe, amount int32) {
+	mob.Mode = MOB_MODE_CRAFT_ITEM
+	mob.craftItemRecipe = recipe
+	mob.craftItemAmount = amount
+}
+
 func (mob *Mob) Update(world *World) {
 	if mob.IsDead() {
 		return
@@ -197,6 +211,27 @@ func (mob *Mob) Update(world *World) {
 			// Use item
 			mob.useItem(world, targetMob)
 			mob.Mode = MOB_MODE_IDLE
+		case MOB_MODE_CRAFT_ITEM:
+			//halt if no more or required
+			if mob.craftItemAmount <= 0 {
+				mob.SetModeIdle()
+				break
+			}
+
+			//craft the item
+			hadIngredients := mob.CraftItem(world, mob.craftItemRecipe)
+
+			//halt if something was amiss
+			if !hadIngredients {
+				mob.SetModeIdle()
+				break
+			}
+
+			//increment amount left to craftItemAmount
+			if hadIngredients {
+				mob.craftItemAmount--
+				break
+			}
 	}
 }
 
@@ -509,4 +544,43 @@ func (mob *Mob) useItem(world *World, targetMob *Mob) {
 		default:
 			panic(fmt.Sprintf("Unhandled item type %s. This item type should never have been allowed to be used here.", ItemTypeToString(itemData.ItemType)))
 	}
+}
+
+func (mob *Mob) CraftItem(world *World, recipe Recipe) bool {
+	recipeData := RECIPE_DATA[recipe]
+
+	//check if a player is crafting so we know to send them messages
+	isPlayer := false
+	if mob.PlayerCharacter != nil {
+		isPlayer = true
+	}
+
+	//check for the materials
+	for _, ingredient := range recipeData.Materials {
+		amountOfIngredient := mob.Data.Inventory.AmountOf(ingredient.Id)
+		if amountOfIngredient < ingredient.Amount {
+			if isPlayer {
+				world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You lack the ingredients to craft %s", recipeData.Name))
+			}
+			return false
+		}
+	}
+
+	// Remove the materials from the player's inventory
+	for _, ingredient := range recipeData.Materials {
+		amountToRemove := ingredient.Amount
+		for amountToRemove > 0 {
+			index, _ := mob.Data.Inventory.FindItem(ingredient.Id)
+			item := mob.Data.Inventory.RemoveItems(index, amountToRemove)
+			amountToRemove -= item.Amount
+		}
+	}
+
+	// Add the crafted item to the player's inventory
+	recipeOutput := recipeData.CreateOutput()
+	mob.Data.Inventory.AddItem(recipeOutput)
+	if isPlayer {
+	world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You crafted %s.", recipeOutput.GetNameWithAmount()))
+	}
+	return true
 }

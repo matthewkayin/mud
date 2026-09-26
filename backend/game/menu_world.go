@@ -3,9 +3,10 @@ package game
 import (
 	"fmt"
 	"log"
-	"slices"
 	"mud/bitset"
 	"mud/world"
+	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -688,12 +689,22 @@ var MENU_WORLD = Menu {
 		},
 
 		"craft": {
-			usage: "craft <item>",
+			usage: "craft [<amount>] <item>",
 			description: "Craft an item for which you know the recipe",
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
-				recipe, err := fuzzyFindKnownRecipe(player.character, args)
-				if err != nil {
-					*player.inbox <- err.Error()
+
+				//check whether they put in a quantity
+				amount, atoiErr := strconv.Atoi(args[0])
+				batchAmount := int32(amount)
+				if atoiErr != nil {
+					batchAmount = 1
+				} else {
+					args = args[1:]
+				}
+
+				recipe, fuzErr := fuzzyFindKnownRecipe(player.character, args)
+				if fuzErr != nil {
+					*player.inbox <- fuzErr.Error()
 					return true
 				}
 
@@ -703,26 +714,23 @@ var MENU_WORLD = Menu {
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 				for _, ingredient := range recipeData.Materials {
 					amountOfIngredient := playerMob.Data.Inventory.AmountOf(ingredient.Id)
-					if amountOfIngredient < ingredient.Amount {
-						*player.inbox <- fmt.Sprintf("You lack the ingredients to craft %s", recipeData.Name)
+					if amountOfIngredient < batchAmount * ingredient.Amount {
+						if batchAmount == 0 {
+							*player.inbox <- fmt.Sprintf("You lack the ingredients to craft %s", recipeData.Name)
+						} else {
+							*player.inbox <- fmt.Sprintf("You lack the ingredients to craft %d x %s", batchAmount, recipeData.Name)
+						}
 						return true
 					}
 				}
 
-				// Remove the materials from the player's inventory
-				for _, ingredient := range recipeData.Materials {
-					amountToRemove := ingredient.Amount
-					for amountToRemove > 0 {
-						index, _ := playerMob.Data.Inventory.FindItem(ingredient.Id)
-						item := playerMob.Data.Inventory.RemoveItems(index, amountToRemove)
-						amountToRemove -= item.Amount
-					}
+				player.nextAction = Action {
+					actionType: ACTION_TYPE_CRAFT_ITEM,
+					data: ActionCraftItem {
+						target: recipe,
+						amount: batchAmount,
+					},
 				}
-
-				// Add the crafted item to the player's inventory
-				recipeOutput := recipeData.CreateOutput()
-				playerMob.Data.Inventory.AddItem(recipeOutput)
-				*player.inbox <- fmt.Sprintf("You crafted %s.", recipeOutput.GetNameWithAmount())
 
 				return true
 			},
