@@ -1,7 +1,6 @@
 package world
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"math/rand"
@@ -34,18 +33,7 @@ type Room struct {
 	Occupants []MobHandle `json:"-"`
 }
 
-func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, direction Direction) error {
-	// Check if there is an exit in that direction
-	newRoomIndex := room.Exits[direction]
-	if newRoomIndex == ROOM_NONE {
-		return errors.New("There is no exit in that direction.")
-	}
-
-	// Check if the exit is locked
-	if room.ExitIsLocked[direction] {
-		return fmt.Errorf("The %s exit is locked.", DirectionToString(direction))
-	}
-
+func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, newRoomIndex int) {
 	// Get a pointer to the new room
 	newRoom := &world.Rooms[newRoomIndex]
 	occupantMob := world.Mobs.Get(occupantHandle)
@@ -53,14 +41,15 @@ func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, direction
 
 	// Move the occupant
 	room.RemoveOccupant(occupantHandle)
-
-	// Note that the order matters here, we don't want to send these messages to the moving
-	// player. Since the occupantHandle is in neither room at this point, the broadcast
-	// function will not send the messages into the occupant's inbox
 	world.messageRoom(oldRoomIndex, fmt.Sprintf("%s left the room.", occupantMob.GetName()))
-	world.messageRoom(newRoomIndex, fmt.Sprintf("%s entered the room.", occupantMob.GetName()))
 
 	newRoom.AddOccupant(world, occupantHandle)
+	world.messageRoomWithOptions(MessageRoomOptions {
+		roomIndex: newRoomIndex,
+		ignore: []MobHandle { occupantHandle },
+		message: fmt.Sprintf("%s entered the room.", occupantMob.GetName()),
+	})
+
 	occupantMob.Data.Room = newRoomIndex
 
 	// Player room discovery
@@ -78,7 +67,22 @@ func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, direction
 		},
 	})
 
-	return nil
+	// Fire event to NPCs
+	if occupantMob.PlayerCharacter != nil {
+		for _, handle := range newRoom.Occupants {
+			mob := world.Mobs.Get(handle)
+			if mob.Npc == nil {
+				continue
+			}
+
+			mob.Npc.OnEvent(world, BehaviorEvent {
+				Type: BEHAVIOR_EVENT_TYPE_PLAYER_ENTERED,
+				Data: BehaviorEventPlayerEntered {
+					PlayerHandle: occupantHandle,
+				},
+			})
+		}
+	}
 }
 
 func (room *Room) AddOccupant(world *World, handle MobHandle) {
@@ -121,6 +125,14 @@ func (room *Room) RemoveOccupantByIndex(index int) {
 	lastIndex := len(room.Occupants) - 1
 	room.Occupants[index] = room.Occupants[lastIndex]
 	room.Occupants = room.Occupants[:lastIndex]
+}
+
+func (room *Room) SetExitLocked(world *World, direction Direction, value bool) {
+	adjacentRoom := &world.Rooms[room.Exits[direction]]
+	oppositeDirection := DirectionOppositeOf(direction)
+
+	room.ExitIsLocked[direction] = value
+	adjacentRoom.ExitIsLocked[oppositeDirection] = value
 }
 
 func (room *Room) updateChestDecay() {

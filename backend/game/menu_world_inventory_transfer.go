@@ -31,6 +31,7 @@ type InventoryTransferResult struct {
 	status InventoryTransferStatus
 	amount int32
 	itemName string
+	addedToIndex int
 }
 
 func inventoryTransfer(fromInventory *world.Inventory, toInventory *world.Inventory, itemWords []string) InventoryTransferResult {
@@ -105,7 +106,7 @@ func inventoryTransfer(fromInventory *world.Inventory, toInventory *world.Invent
 
 	// Transfer item
 	removedItem := fromInventory.RemoveItems(itemIndex, amount)
-	toInventory.AddItem(removedItem)
+	addedToIndex := toInventory.AddItem(removedItem)
 
 	// Determine result status
 	resultStatus := INVENTORY_TRANSFER_STATUS_OK
@@ -117,6 +118,7 @@ func inventoryTransfer(fromInventory *world.Inventory, toInventory *world.Invent
 		status: InventoryTransferStatus(resultStatus),
 		amount: removedItem.Amount,
 		itemName: removedItem.GetNameWithCondition(),
+		addedToIndex: addedToIndex,
 	}
 }
 

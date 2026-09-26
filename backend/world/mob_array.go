@@ -77,6 +77,7 @@ func (array *MobArray) Push(mob Mob) MobHandle {
 	}
 
 	// Add data
+	mob.Handle = handle
 	array.data = append(array.data, mob)
 	array.indexToId = append(array.indexToId, handle.Id)
 
