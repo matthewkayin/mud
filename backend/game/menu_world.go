@@ -296,7 +296,13 @@ var MENU_WORLD = Menu {
 
 				// Check if the exit is locked
 				if playerRoom.ExitIsLocked[direction] {
-					*player.inbox <- fmt.Sprintf("The %s exit is locked.", world.DirectionToString(direction))
+					*player.inbox <- fmt.Sprintf("The %s exit is blocked.", world.DirectionToString(direction))
+					return true
+				}
+
+				// If in combat, roll escape check
+				if playerMob.IsInCombat(gamestate.world) && !playerMob.RollForEscape(gamestate.world) {
+					*player.inbox <- "You failed to escape combat!"
 					return true
 				}
 

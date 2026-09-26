@@ -305,7 +305,7 @@ func (npc *Npc) movementStep(world *World) {
 					continue
 				}
 
-				// Don't walk into adjacent rooms
+				// Don't walk into safe rooms
 				adjacentRoom := &world.Rooms[adjacentRoomIndex]
 				if adjacentRoom.IsSafeZone {
 					continue

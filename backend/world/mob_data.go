@@ -19,6 +19,7 @@ type MobData struct {
 	ExperienceToNextLevel int32
 
 	Stats StatBlock
+	Abilities MobAbility
 
 	Health int32
 	Mana int32
@@ -102,5 +103,17 @@ func (mobData *MobData) RemoveSpell(toRemove Spell) {
 			mobData.Spells = mobData.Spells[:lastIndex]
 			return
 		}
+	}
+}
+
+func (mobData *MobData) HasAbility(ability MobAbility) bool {
+	return (mobData.Abilities & ability) == ability
+}
+
+func (mobData *MobData) SetHasAbility(ability MobAbility, value bool) {
+	if value {
+		mobData.Abilities |= ability
+	} else {
+		mobData.Abilities &= ^ability
 	}
 }

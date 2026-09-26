@@ -7,7 +7,6 @@ const (
 	EVENT_TYPE_MESSAGE = iota
 	EVENT_TYPE_MOB_MOVE
 	EVENT_TYPE_MOB_DEATH
-	EVENT_TYPE_MOB_SET_TARGET
 	EVENT_TYPE_COUNT
 )
 
@@ -30,11 +29,6 @@ type EventMobMove struct {
 type EventMobDeath struct {
 	PlayerId int
 	MobHandle MobHandle
-}
-
-type EventMobSetTarget struct {
-	Attacker MobHandle
-	Defender MobHandle
 }
 
 type MessageRoomOptions struct {

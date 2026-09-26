@@ -3,8 +3,8 @@ package world
 import (
 	"fmt"
 	"log"
-	"slices"
 	"math/rand/v2"
+	"slices"
 )
 
 const MOB_PLAYER_NONE = -1
@@ -22,6 +22,12 @@ const MOB_EVASION_K float32 = 6.0
 // so 50 is roughly the "max agility" a mob can have
 const MOB_CRIT_K float32 = 0.33 / 50.0
 const MOB_CRIT_DAMAGE_MULTIPLIER float32 = 1.5
+
+// Escape chance starts at 1.0, meaning you have full escape chance
+// After an escape attempt fails, your escape chance gets dropped to 0.0
+// It will recover a little each tick. At a rate of 0.1, your recovery chance recovers in 30s
+const MOB_ESCAPE_CHANCE_MAX float32 = 1.0
+const MOB_ESCAPE_CHANCE_RECOVERY_RATE float32 = 0.1
 
 type MobMode int32
 const (
@@ -48,6 +54,7 @@ type Mob struct {
 	craftItemRecipe Recipe
 	craftItemAmount int32
 
+	escapeChance float32
 	fuzzyNumber int
 }
 
@@ -57,6 +64,7 @@ func MobInit(data *MobData) Mob {
 		Data: *data,
 		Mode: MOB_MODE_IDLE,
 
+		escapeChance: MOB_ESCAPE_CHANCE_MAX,
 		fuzzyNumber: 1,
 	}
 
@@ -90,6 +98,18 @@ func (mob *Mob) IsDead() bool {
 	return mob.Data.Health <= 0
 }
 
+func (mob *Mob) IsInCombat(world *World) bool {
+	// TODO: if player is in stealth, return false
+
+	// A mob is in combat if at least one occupant in the room is a hostile, non-sleeping NPC
+	return slices.ContainsFunc(world.Rooms[mob.Data.Room].Occupants, func(handle MobHandle) bool {
+		occupant := world.Mobs.Get(handle)
+		return occupant.Npc != nil &&
+			occupant.Npc.mode != NPC_MODE_SLEEP &&
+			occupant.Npc.disposition == NPC_DISPOSITION_HOSTILE
+	})
+}
+
 func (mob *Mob) GrantExperience(world *World, experience int32) {
 	// This function is only meant for player mobs at this time
 	if mob.PlayerCharacter == nil {
@@ -104,17 +124,37 @@ func (mob *Mob) GrantExperience(world *World, experience int32) {
 			mob.Data.Experience = 0
 			mob.Data.ExperienceToNextLevel = mob.Data.GetExpToNextLevel()
 			mob.Data.Level++
+			mob.PlayerCharacter.Data.Level = mob.Data.Level
+
+			// Announce level up message
+			world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("Level up! %s is now level %d.", mob.Data.Name, mob.Data.Level))
+
+			// Grant class unlocks
+			classData := CLASS_DATA[mob.PlayerCharacter.Class]
+			for _, unlock := range classData.UnlocksAtLevel[mob.Data.Level] {
+				mob.PlayerCharacter.grantClassUnlock(unlock)
+
+				// Announce ability unlock to player
+				switch unlock.Type {
+					case CLASS_UNLOCK_ABILITY: {
+						ability := unlock.Data.(MobAbility)
+						abilityData := MOB_ABILITY_DATA[ability]
+						world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You got the ability %s!", abilityData.Name))
+					}
+					case CLASS_UNLOCK_SPELL: {
+						// TODO
+					}
+				}
+			}
 
 			// Recalculate stats
-			mob.PlayerCharacter.Data.Level = mob.Data.Level
 			mob.PlayerCharacter.recalculateStats()
 			mob.Data.Stats = mob.PlayerCharacter.Data.Stats
+			mob.Data.Abilities = mob.PlayerCharacter.Data.Abilities
 
 			// Save the character to disk
 			SaveCharacter(mob.PlayerCharacter)
 
-			// Announce level up message
-			world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("Level up! %s is now level %d.", mob.Data.Name, mob.Data.Level))
 			continue
 		}
 
@@ -130,14 +170,6 @@ func (mob *Mob) SetModeIdle() {
 func (mob *Mob) SetModeAttack(world *World, mobHandle MobHandle, targetHandle MobHandle) {
 	mob.Mode = MOB_MODE_ATTACK
 	mob.Target = targetHandle
-
-	world.pushEvent(Event {
-		EventType: EVENT_TYPE_MOB_SET_TARGET,
-		Data: EventMobSetTarget {
-			Attacker: mobHandle,
-			Defender: targetHandle,
-		},
-	})
 }
 
 func (mob *Mob) SetModeCast(world *World, mobHandle MobHandle, spell Spell, targetHandle MobHandle) {
@@ -145,28 +177,12 @@ func (mob *Mob) SetModeCast(world *World, mobHandle MobHandle, spell Spell, targ
 	mob.Target = targetHandle
 	mob.castSpell = spell
 	mob.castTimer = SPELL_DATA[spell].CastTime
-
-	world.pushEvent(Event {
-		EventType: EVENT_TYPE_MOB_SET_TARGET,
-		Data: EventMobSetTarget {
-			Attacker: mobHandle,
-			Defender: targetHandle,
-		},
-	})
 }
 
 func (mob *Mob) SetModeUseItem(world *World, mobHandle MobHandle, itemId ItemId, targetHandle MobHandle) {
 	mob.Mode = MOB_MODE_USE_ITEM
 	mob.Target = targetHandle
 	mob.useItemId = itemId
-
-	world.pushEvent(Event {
-		EventType: EVENT_TYPE_MOB_SET_TARGET,
-		Data: EventMobSetTarget {
-			Attacker: mobHandle,
-			Defender: targetHandle,
-		},
-	})
 }
 
 func (mob *Mob) SetModeCraftItem(world *World, mobHandle MobHandle, recipe Recipe, amount int32) {
@@ -179,9 +195,13 @@ func (mob *Mob) Update(world *World) {
 	if mob.IsDead() {
 		return
 	}
+
+	mob.escapeChance = min(mob.escapeChance + MOB_ESCAPE_CHANCE_RECOVERY_RATE, MOB_ESCAPE_CHANCE_MAX)
+
 	switch mob.Mode {
 		case MOB_MODE_IDLE:
-		case MOB_MODE_ATTACK:
+
+		case MOB_MODE_ATTACK: {
 			// Check if target exists
 			targetMob, targetExists := mob.getTargetIfExists(world)
 			if !targetExists {
@@ -189,10 +209,11 @@ func (mob *Mob) Update(world *World) {
 			}
 
 			// Attack with weapon
-			room := &world.Rooms[mob.Data.Room]
-			mob.attackTargetWithWeapon(world, room, targetMob, EQUIPMENT_SLOT_MAIN_HAND)
-			mob.attackTargetWithWeapon(world, room, targetMob, EQUIPMENT_SLOT_OFF_HAND)
-		case MOB_MODE_CAST:
+			mob.attackTargetWithWeapon(world, targetMob, EQUIPMENT_SLOT_MAIN_HAND)
+			mob.attackTargetWithWeapon(world, targetMob, EQUIPMENT_SLOT_OFF_HAND)
+		}
+
+		case MOB_MODE_CAST: {
 			// Check if target exists
 			targetMob, targetExists := mob.getTargetIfExists(world)
 			if !targetExists {
@@ -202,7 +223,9 @@ func (mob *Mob) Update(world *World) {
 			// Cast spell
 			mob.spellcast(world, targetMob)
 			mob.Mode = MOB_MODE_IDLE
-		case MOB_MODE_USE_ITEM:
+		}
+
+		case MOB_MODE_USE_ITEM: {
 			// Check if target exists
 			targetMob, targetExists := mob.getTargetIfExists(world)
 			if !targetExists {
@@ -212,8 +235,9 @@ func (mob *Mob) Update(world *World) {
 			// Use item
 			mob.useItem(world, targetMob)
 			mob.Mode = MOB_MODE_IDLE
-		case MOB_MODE_CRAFT_ITEM:
+		}
 
+		case MOB_MODE_CRAFT_ITEM: {
 			//craft the item
 			hadIngredients := mob.CraftItem(world, mob.craftItemRecipe)
 
@@ -231,6 +255,7 @@ func (mob *Mob) Update(world *World) {
 				mob.SetModeIdle()
 				break
 			}
+		}
 	}
 }
 
@@ -257,7 +282,7 @@ func (mob *Mob) damage(world *World, attackerHandle MobHandle, damage int32) {
 	}
 }
 
-func (mob *Mob) attackTargetWithWeapon(world *World, room *Room, targetMob *Mob, slot EquipmentSlot) {
+func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot EquipmentSlot) {
 	// Check for weapon
 	weapon := mob.Data.Equipment.Get(slot)
 	var itemData *ItemData = nil
@@ -359,6 +384,37 @@ func (mob *Mob) rollForConcentration(world *World, damage int32) {
 	// Concentration broken!
 	mob.Mode = MOB_MODE_IDLE
 	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s lost concentration on their spell!", mob.GetName()))
+}
+
+func (mob *Mob) RollForEscape(world *World) bool {
+	// All the escape chances are multiplied together
+	// This is mathematically the same as doing individual escape rolls
+	// for each monster
+	var escapeChance float32 = mob.escapeChance
+
+	mobAgility := float32(mob.Data.Agility())
+
+	room := &world.Rooms[mob.Data.Room]
+	for _, handle := range room.Occupants {
+		occupant := world.Mobs.Get(handle)
+		// TODO: change to !occupant.isNpc()
+		if occupant.Npc == nil {
+			continue
+		}
+
+		occupantAgility := float32(occupant.Data.Agility())
+		escapeChance *= mobAgility / (mobAgility + occupantAgility)
+	}
+
+	// Roll to escape
+	escaped := rand.Float32() < escapeChance
+
+	// On failed roll, drop escape chance to 0.0
+	if !escaped {
+		mob.escapeChance = 0.0
+	}
+
+	return escaped
 }
 
 func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot) {
