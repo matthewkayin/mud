@@ -66,6 +66,23 @@ func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, newRoomIn
 			ToRoom: newRoomIndex,
 		},
 	})
+
+	// Fire event to NPCs
+	if occupantMob.PlayerCharacter != nil {
+		for _, handle := range newRoom.Occupants {
+			mob := world.Mobs.Get(handle)
+			if mob.Npc == nil {
+				continue
+			}
+
+			mob.Npc.OnEvent(world, BehaviorEvent {
+				Type: BEHAVIOR_EVENT_TYPE_PLAYER_ENTERED,
+				Data: BehaviorEventPlayerEntered {
+					PlayerHandle: occupantHandle,
+				},
+			})
+		}
+	}
 }
 
 func (room *Room) AddOccupant(world *World, handle MobHandle) {
@@ -108,6 +125,14 @@ func (room *Room) RemoveOccupantByIndex(index int) {
 	lastIndex := len(room.Occupants) - 1
 	room.Occupants[index] = room.Occupants[lastIndex]
 	room.Occupants = room.Occupants[:lastIndex]
+}
+
+func (room *Room) SetExitLocked(world *World, direction Direction, value bool) {
+	adjacentRoom := &world.Rooms[room.Exits[direction]]
+	oppositeDirection := DirectionOppositeOf(direction)
+
+	room.ExitIsLocked[direction] = value
+	adjacentRoom.ExitIsLocked[oppositeDirection] = value
 }
 
 func (room *Room) updateChestDecay() {

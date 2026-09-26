@@ -146,9 +146,9 @@ var MENU_WORLD = Menu {
 						targetMob.GetName(), targetMob.Data.Level, targetMob.Npc.GetDescription())
 
 					// Status description
-					statusDescription, hasStatusDescription := targetMob.Npc.GetStatusDescription()
+					statusDescription, hasStatusDescription := targetMob.Npc.GetStatusDescription(gamestate.world)
 					if hasStatusDescription {
-						*player.inbox <- fmt.Sprintf("It %s", statusDescription)
+						*player.inbox <- statusDescription
 					}
 
 					return true
@@ -588,21 +588,29 @@ var MENU_WORLD = Menu {
 					return true
 				}
 
-				// TODO: allow giving to non-player NPCs for things like RP and encounters?
 				targetMob := gamestate.world.Mobs.Get(targetHandle)
-				if targetMob.PlayerCharacter == nil {
-					*player.inbox <- "You cannot give an item to someone who isn't a player."
-					return true
-				}
-
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+
 				result := inventoryTransfer(&playerMob.Data.Inventory, &targetMob.Data.Inventory, itemWords)
 				switch result.status {
 					case INVENTORY_TRANSFER_STATUS_PARTIAL:
 						*player.inbox <- fmt.Sprintf("You only have %d %s in your inventory.", result.amount, result.itemName)
 						fallthrough
-					case INVENTORY_TRANSFER_STATUS_OK:
-						*player.inbox <- fmt.Sprintf("You gave %s to %s.", itemNameWithAmount(result.itemName, result.amount), targetMob.GetName())
+					case INVENTORY_TRANSFER_STATUS_OK: {
+						gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("%s gave %s to %s.",
+							playerMob.Data.Name, itemNameWithAmount(result.itemName, result.amount), targetMob.Data.Name))
+
+						if targetMob.Npc != nil {
+							targetMob.Npc.OnEvent(gamestate.world, world.BehaviorEvent {
+								Type: world.BEHAVIOR_EVENT_TYPE_ITEM_GIVEN,
+								Data: world.BehaviorEventItemGiven {
+									PlayerHandle: player.mobHandle,
+									AddedToIndex: result.addedToIndex,
+									Amount: result.amount,
+								},
+							})
+						}
+					}
 					case INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED:
 						*player.inbox <- "You must specify an item to give."
 					case INVENTORY_TRANSFER_STATUS_ITEM_NOT_FOUND:
@@ -1394,9 +1402,9 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 	for _, mobHandle := range room.Occupants {
 		mob := gamestate.world.Mobs.Get(mobHandle)
 		if mob.Npc != nil {
-			msg, urgent := mob.Npc.GetStatusDescription()
+			msg, urgent := mob.Npc.GetStatusDescription(gamestate.world)
 			if urgent {
-				*player.inbox <- fmt.Sprintf("%s %s", mob.Data.Name, msg)
+				*player.inbox <- msg
 			}
 		}
 	}

@@ -57,14 +57,14 @@ func WorldInitNew() *World {
 	world.Rooms = []Room {}
 
 	// PRESENTATION SPACE
-	world.Rooms = append(world.Rooms, Room {
+	presentationSpace := world.addRoom(Room {
 		Name: "Presentation Space",
 		Description: "You're in an open room with white walls and tan-wood flooring. Various pairing tables are strewn about the space, and a makeshift blue octopus floats overhead.",
 
 		Exits: [DIRECTION_COUNT]int {
 			ROOM_NONE,
-			1,
-			2,
+			ROOM_NONE,
+			ROOM_NONE,
 			ROOM_NONE,
 		},
 		ExitIsLocked: [DIRECTION_COUNT]bool {
@@ -107,12 +107,12 @@ func WorldInitNew() *World {
 	})
 
 	// KITCHEN
-	world.Rooms = append(world.Rooms, Room {
+	kitchen := world.addRoom(Room {
 		Name: "The Kitchen",
 		Description: "Bursts of red, blue, and yellow tape paint the far wall. In front of this sits a long, oak dining table with chairs. A kitchenette hugs the far-left corner, complete with three different kinds of coffee makers and more in the cubboards.",
 
 		Exits: [DIRECTION_COUNT]int {
-			0,
+			ROOM_NONE,
 			ROOM_NONE,
 			ROOM_NONE,
 			ROOM_NONE,
@@ -134,15 +134,15 @@ func WorldInitNew() *World {
 	})
 
 	// STAIRS
-	world.Rooms = append(world.Rooms, Room {
+	stairs := world.addRoom(Room {
 		Name: "The Stairs",
 		Description: "You are in a cold, dank set of stairs.",
 
 		Exits: [DIRECTION_COUNT]int {
 			ROOM_NONE,
-			3,
 			ROOM_NONE,
-			0,
+			ROOM_NONE,
+			ROOM_NONE,
 		},
 		ExitIsLocked: [DIRECTION_COUNT]bool {
 			false,
@@ -161,13 +161,12 @@ func WorldInitNew() *World {
 	})
 
 	// BASEMENT
-	roomBasementIndex := len(world.Rooms)
-	world.Rooms = append(world.Rooms, Room {
+	basement := world.addRoom(Room {
 		Name: "The Basement",
 		Description: "What a hideous place.",
 
 		Exits: [DIRECTION_COUNT]int {
-			2,
+			ROOM_NONE,
 			ROOM_NONE,
 			ROOM_NONE,
 			ROOM_NONE,
@@ -187,6 +186,80 @@ func WorldInitNew() *World {
 
 		Occupants: []MobHandle {},
 	})
+
+	// CLIFFSIDE
+	cliffside := world.addRoom(Room {
+		Name: "A spooky cliffside",
+		Description: "The stairs from the castle lead out to this spooky cliffside.",
+
+		Exits: [DIRECTION_COUNT]int {
+			ROOM_NONE,
+			ROOM_NONE,
+			ROOM_NONE,
+			ROOM_NONE,
+		},
+		ExitIsLocked: [DIRECTION_COUNT]bool {
+			false,
+			false,
+			false,
+			false,
+		},
+		IsSafeZone: false,
+
+		Chests: []Chest {},
+		Inventory: Inventory {
+			Items: []Item {},
+		},
+
+		Occupants: []MobHandle {},
+	})
+
+	// BRIDGE
+	bridge := world.addRoom(Room {
+		Name: "A rickety bridge",
+		Description: "You're standing on a rickety wooden bridge, which sways and creaks as you step. Don't look down!",
+
+		Exits: [DIRECTION_COUNT]int {
+			ROOM_NONE,
+			ROOM_NONE,
+			ROOM_NONE,
+			ROOM_NONE,
+		},
+		ExitIsLocked: [DIRECTION_COUNT]bool {
+			false,
+			false,
+			false,
+			false,
+		},
+		IsSafeZone: false,
+
+		Chests: []Chest {},
+		Inventory: Inventory {
+			Items: []Item {},
+		},
+
+		Occupants: []MobHandle {},
+	})
+
+	// Room connections
+	/*
+		Kitchen -- Presentation Space
+						|
+				 	 Stairs -- Cliffside -- Bridge
+						|
+					 Basement
+	 */
+	world.Rooms[kitchen].Exits[DIRECTION_EAST] = presentationSpace
+	world.Rooms[presentationSpace].Exits[DIRECTION_WEST] = kitchen
+	world.Rooms[presentationSpace].Exits[DIRECTION_SOUTH] = stairs
+	world.Rooms[stairs].Exits[DIRECTION_NORTH] = presentationSpace
+	world.Rooms[stairs].Exits[DIRECTION_EAST] = cliffside
+	world.Rooms[stairs].Exits[DIRECTION_SOUTH] = basement
+	world.Rooms[cliffside].Exits[DIRECTION_WEST] = stairs
+	world.Rooms[cliffside].Exits[DIRECTION_EAST] = bridge
+	world.Rooms[bridge].Exits[DIRECTION_WEST] = cliffside
+
+	// NPCS
 
 	world.Npcs = []Npc {}
 
@@ -214,7 +287,7 @@ func WorldInitNew() *World {
 		LevelRange: util.Int32Range { Min: 1, Max: 2 },
 		StartingDisposition: NPC_DISPOSITION_HOSTILE,
 		MovementType: NPC_MOVEMENT_TYPE_SENTINEL,
-		SpawnRoom: roomBasementIndex,
+		SpawnRoom: basement,
 		RespawnDuration: 60 / WORLD_SECONDS_PER_UPDATE,
 		SleepDuration: (10 * 60) / WORLD_SECONDS_PER_UPDATE,
 		AwakeDuration: (50 * 60) / WORLD_SECONDS_PER_UPDATE,
@@ -228,7 +301,7 @@ func WorldInitNew() *World {
 		LevelRange: util.Int32Range { Min: 1, Max: 2 },
 		StartingDisposition: NPC_DISPOSITION_HOSTILE,
 		MovementType: NPC_MOVEMENT_TYPE_WANDER,
-		SpawnRoom: roomBasementIndex,
+		SpawnRoom: basement,
 		RespawnDuration: 60 / WORLD_SECONDS_PER_UPDATE,
 		SleepDuration: (10 * 60) / WORLD_SECONDS_PER_UPDATE,
 		AwakeDuration: (50 * 60) / WORLD_SECONDS_PER_UPDATE,
@@ -237,40 +310,69 @@ func WorldInitNew() *World {
 		Drops: goblinItemDrops,
 	})
 
+	world.Npcs = append(world.Npcs, Npc {
+		Type: NPC_TYPE_TROLL,
+		LevelRange: util.Int32Range { Min: 3, Max: 3 },
+		StartingDisposition: NPC_DISPOSITION_NEUTRAL,
+		MovementType: NPC_MOVEMENT_TYPE_SENTINEL,
+		Behavior: &BehaviorTroll {
+			ExitToBlock: DIRECTION_EAST,
+			Toll: Item {
+				Id: ITEM_GOLD,
+				Amount: 25,
+			},
+		},
+		SpawnRoom: cliffside,
+		RespawnDuration: 120 / WORLD_SECONDS_PER_UPDATE,
+		SleepDuration: 0,
+		AwakeDuration: 0,
+		MovementStepDuration: 0,
+		DropCount: 0,
+		Drops: []NpcDrop {},
+	})
+
 	return world
 }
 
-func (world *World) Update() {
-// Npc updates
-for index := 0; index < len(world.Npcs); index++ {
-	world.Npcs[index].update(world)
+// Temporary function, delete when adding level editor
+// Purpose of this function is to make it easy to return the index of the room
+func (world *World) addRoom(room Room) int {
+	index := len(world.Rooms)
+	world.Rooms = append(world.Rooms, room)
+	return index
 }
 
-// Room updates
-for index := 0; index < len(world.Rooms); index++ {
-	world.updateRoom(index)
-}
+func (world *World) Update() {
+	// Npc updates
+	for index := 0; index < len(world.Npcs); index++ {
+		world.Npcs[index].update(world)
+	}
+
+	// Room updates
+	for index := 0; index < len(world.Rooms); index++ {
+		world.updateRoom(index)
+	}
 }
 
 func (world *World) updateRoom(roomIndex int) {
-room := &world.Rooms[roomIndex]
+	room := &world.Rooms[roomIndex]
 
-// Chest / Corpse decay
-room.updateChestDecay()
+	// Chest / Corpse decay
+	room.updateChestDecay()
 
-// Occupant update / combat
-occupants := room.sortOccupantsByInitiativeOrder(world)
-for _, occupantHandle := range occupants {
-	// Get occupant mob
-	occupantMob := world.Mobs.Get(occupantHandle)
-	if occupantMob.IsDead() {
-		continue
+	// Occupant update / combat
+	occupants := room.sortOccupantsByInitiativeOrder(world)
+	for _, occupantHandle := range occupants {
+		// Get occupant mob
+		occupantMob := world.Mobs.Get(occupantHandle)
+		if occupantMob.IsDead() {
+			continue
+		}
+
+		// Update mob
+		occupantMob.Update(world)
 	}
 
-	// Update mob
-	occupantMob.Update(world)
-}
-
-// Remove dead occupants
-room.removeDeadOccupants(world)
+	// Remove dead occupants
+	room.removeDeadOccupants(world)
 }

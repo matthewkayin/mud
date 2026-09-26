@@ -34,6 +34,7 @@ const (
 type Mob struct {
 	PlayerCharacter *Character
 	Npc *Npc
+	Handle MobHandle
 	Data MobData
 
 	Mode MobMode
@@ -210,11 +211,16 @@ func (mob *Mob) getTargetIfExists(world *World) (*Mob, bool) {
 	return targetMob, true
 }
 
-func (mob *Mob) damage(world *World, damage int32) {
+func (mob *Mob) damage(world *World, attackerHandle MobHandle, damage int32) {
 	mob.Data.Health -= damage
 
 	if mob.Npc != nil {
-		mob.Npc.onAttacked(world)
+		mob.Npc.OnEvent(world, BehaviorEvent {
+			Type: BEHAVIOR_EVENT_TYPE_ATTACKED,
+			Data: BehaviorEventAttacked {
+				AttackerHandle: attackerHandle,
+			},
+		})
 	}
 }
 
@@ -275,7 +281,7 @@ func (mob *Mob) attackTargetWithWeapon(world *World, room *Room, targetMob *Mob,
 	damage = max(damage, attackerMinDamage)
 
 	// Deal damage
-	targetMob.damage(world, damage)
+	targetMob.damage(world, mob.Handle, damage)
 	// Broadcast result to room
 	critStr := ""
 	if crit {

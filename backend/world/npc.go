@@ -1,18 +1,18 @@
 package world
 
 import (
-	"log"
 	"fmt"
-	"slices"
+	"log"
 	"math/rand/v2"
 	"mud/util"
+	"slices"
 )
 
 // Rather than reset the NPC's sleepy timer after combat,
 // we instead apply this adrenaline number to their sleepy timer,
 // so sleepy time is delayed but not completely reset
 const NPC_SLEEPY_ADRENALINE_DURATION int32 = (5 * 60) / WORLD_SECONDS_PER_UPDATE
-const NPC_SURPRISE_DURATION int32 = 2
+const NPC_SURPRISE_DURATION int32 = 1
 
 type NpcMode int
 const (
@@ -43,6 +43,7 @@ type Npc struct {
 	LevelRange util.Int32Range
 	StartingDisposition NpcDisposition
 	MovementType NpcMovementType
+	Behavior Behavior
 	SpawnRoom int
 	RespawnDuration int32
 	SleepDuration int32
@@ -94,7 +95,13 @@ func (npc *Npc) spawnMob(world *World) {
 	// Init behavior
 	npc.setModeIdle()
 	npc.disposition = npc.StartingDisposition
-	npc.sleepyTimer = 1 + rand.Int32N(npc.AwakeDuration)
+	if npc.hasSleepCycle() {
+		npc.sleepyTimer = 1 + rand.Int32N(npc.AwakeDuration)
+	}
+
+	if npc.Behavior != nil {
+		npc.Behavior.init(npc, world)
+	}
 
 	world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s has spawned into this room.", npcMob.GetName()))
 }
@@ -162,6 +169,10 @@ func (npc *Npc) update(world *World) {
 		npc.mode = NPC_MODE_DEAD
 		npc.timer = npc.RespawnDuration
 		return
+	}
+
+	if npc.Behavior != nil {
+		npc.Behavior.update(npc, world)
 	}
 
 	switch npc.mode {
@@ -309,12 +320,35 @@ func (npc *Npc) movementStep(world *World) {
 	}
 }
 
-func (npc *Npc) onAttacked(world *World) {
+func (npc *Npc) OnEvent(world *World, event BehaviorEvent) {
+	// First, try event through behavior
+	if npc.Behavior != nil {
+		eventHandled := npc.Behavior.onEvent(npc, world, event)
+		if eventHandled {
+			return
+		}
+	}
+
+	// If behavior did not handle event, fallback to default
 	npcMob := world.Mobs.Get(npc.mobHandle)
-	if npc.mode == NPC_MODE_SLEEP {
-		npc.mode = NPC_MODE_SURPRISE
-		npc.timer = NPC_SURPRISE_DURATION * 2
-		world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s was violently awoken from their nap! They seem disgruntled.", npcMob.Data.Name))
+	switch event.Type {
+		case BEHAVIOR_EVENT_TYPE_ATTACKED: {
+			if npc.mode == NPC_MODE_SLEEP {
+				npc.mode = NPC_MODE_SURPRISE
+				npc.timer = NPC_SURPRISE_DURATION + 1
+				world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s was violently awoken from their nap! They seem disgruntled.", npcMob.Data.Name))
+			}
+		}
+
+		case BEHAVIOR_EVENT_TYPE_ITEM_GIVEN: {
+			eventData := event.Data.(BehaviorEventItemGiven)
+
+			playerMob := world.Mobs.Get(eventData.PlayerHandle)
+			item := npcMob.Data.Inventory.RemoveItems(eventData.AddedToIndex, eventData.Amount)
+			playerMob.Data.Inventory.AddItem(item)
+
+			world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s is uninterested in this item. They returned it to %s.", npcMob.Data.Name, playerMob.Data.Name))
+		}
 	}
 }
 
@@ -322,9 +356,18 @@ func (npc *Npc) GetDescription() string {
 	return NPC_DATA[npc.Type].description
 }
 
-func (npc *Npc) GetStatusDescription() (string, bool) {
+func (npc *Npc) GetStatusDescription(world *World) (string, bool) {
+	// If behavior provides a description, then return it
+	if npc.Behavior != nil {
+		description, hasBehaviorDescription := npc.Behavior.getDescription(npc, world)
+		if hasBehaviorDescription {
+			return description, true
+		}
+	}
+
+	npcMob := world.Mobs.Get(npc.mobHandle)
 	if npc.mode == NPC_MODE_SLEEP {
-		return "is taking a nap.", true
+		return fmt.Sprintf("%s is taking a nap.", npcMob.Data.Name), true
 	}
 	return "", false
 }
