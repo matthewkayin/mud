@@ -212,11 +212,6 @@ func (mob *Mob) Update(world *World) {
 			mob.useItem(world, targetMob)
 			mob.Mode = MOB_MODE_IDLE
 		case MOB_MODE_CRAFT_ITEM:
-			//halt if no more or required
-			if mob.craftItemAmount <= 0 {
-				mob.SetModeIdle()
-				break
-			}
 
 			//craft the item
 			hadIngredients := mob.CraftItem(world, mob.craftItemRecipe)
@@ -228,8 +223,11 @@ func (mob *Mob) Update(world *World) {
 			}
 
 			//increment amount left to craftItemAmount
-			if hadIngredients {
-				mob.craftItemAmount--
+			mob.craftItemAmount--
+
+			//halt if no more are required
+			if mob.craftItemAmount <= 0 {
+				mob.SetModeIdle()
 				break
 			}
 	}

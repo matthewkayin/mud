@@ -693,13 +693,16 @@ var MENU_WORLD = Menu {
 			description: "Craft an item for which you know the recipe",
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
 
+					if len(args) < 1 {
+						return false
+					}
+
 				//check whether they put in a quantity
 				amount, atoiErr := strconv.Atoi(args[0])
-				batchAmount := int32(amount)
-				if atoiErr != nil {
-					batchAmount = 1
-				} else {
+				var batchAmount int32 = 1
+				if atoiErr == nil {
 					args = args[1:]
+					batchAmount = int32(amount)
 				}
 
 				recipe, fuzErr := fuzzyFindKnownRecipe(player.character, args)
@@ -715,11 +718,8 @@ var MENU_WORLD = Menu {
 				for _, ingredient := range recipeData.Materials {
 					amountOfIngredient := playerMob.Data.Inventory.AmountOf(ingredient.Id)
 					if amountOfIngredient < batchAmount * ingredient.Amount {
-						if batchAmount == 0 {
-							*player.inbox <- fmt.Sprintf("You lack the ingredients to craft %s", recipeData.Name)
-						} else {
-							*player.inbox <- fmt.Sprintf("You lack the ingredients to craft %d x %s", batchAmount, recipeData.Name)
-						}
+						*player.inbox <- fmt.Sprintf("You lack the ingredients to craft %s", itemNameWithAmount(recipeData.Name, batchAmount))
+
 						return true
 					}
 				}
