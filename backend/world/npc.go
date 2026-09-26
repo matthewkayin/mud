@@ -338,6 +338,13 @@ func (npc *Npc) OnEvent(world *World, event BehaviorEvent) {
 				npc.timer = NPC_SURPRISE_DURATION + 1
 				world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s was violently awoken from their nap! They seem disgruntled.", npcMob.Data.Name))
 			}
+
+			// TODO: for friendly NPCs, like town guards,
+			// make the NPC hostile only to the attacker, not
+			// all players?
+			if npc.disposition == NPC_DISPOSITION_NEUTRAL {
+				npc.disposition = NPC_DISPOSITION_HOSTILE
+			}
 		}
 
 		case BEHAVIOR_EVENT_TYPE_ITEM_GIVEN: {
