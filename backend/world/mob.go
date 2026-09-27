@@ -23,11 +23,25 @@ const MOB_EVASION_K float32 = 6.0
 const MOB_CRIT_K float32 = 0.33 / 50.0
 const MOB_CRIT_DAMAGE_MULTIPLIER float32 = 1.5
 
+// Making Stealth K smaller makes it harder for monsters to see players
+// Stealth chance = (ThiefAGI / (ThiefAGI + K * EnemyINT))
+//                    * EscapeChance * (1 - EnemyAwareness)
+//                    + Armor Penalty + Room Brightness
+const MOB_STEALTH_K float32 = 0.5
+
 // Escape chance starts at 1.0, meaning you have full escape chance
 // After an escape attempt fails, your escape chance gets dropped to 0.0
 // It will recover a little each tick. At a rate of 0.1, your recovery chance recovers in 30s
 const MOB_ESCAPE_CHANCE_MAX float32 = 1.0
 const MOB_ESCAPE_CHANCE_RECOVERY_RATE float32 = 0.1
+
+const MOB_ALERTNESS_MAX float32 = 1.0
+const MOB_ALERTNESS_COOLDOWN_RATE float32 = 0.05
+
+type MobFlag uint32
+const (
+	MOB_FLAG_HIDDEN MobFlag = 1 << iota
+)
 
 type MobMode int32
 const (
@@ -47,6 +61,8 @@ type Mob struct {
 	Mode MobMode
 	Target MobHandle
 
+	flags MobFlag
+
 	castSpell Spell
 	castTimer int32
 	useItemId ItemId
@@ -55,6 +71,7 @@ type Mob struct {
 	craftItemAmount int32
 
 	escapeChance float32
+	alertness float32
 	fuzzyNumber int
 }
 
@@ -99,7 +116,10 @@ func (mob *Mob) IsDead() bool {
 }
 
 func (mob *Mob) IsInCombat(world *World) bool {
-	// TODO: if player is in stealth, return false
+	// If player is hidden, then they are not in combat
+	if mob.CheckFlag(MOB_FLAG_HIDDEN) {
+		return false
+	}
 
 	// A mob is in combat if at least one occupant in the room is a hostile, non-sleeping NPC
 	return slices.ContainsFunc(world.Rooms[mob.Data.Room].Occupants, func(handle MobHandle) bool {
@@ -108,6 +128,18 @@ func (mob *Mob) IsInCombat(world *World) bool {
 			occupant.Npc.mode != NPC_MODE_SLEEP &&
 			occupant.Npc.disposition == NPC_DISPOSITION_HOSTILE
 	})
+}
+
+func (mob *Mob) CheckFlag(flag MobFlag) bool {
+	return (mob.flags & flag) == flag
+}
+
+func (mob *Mob) SetFlag(flag MobFlag, value bool) {
+	if value {
+		mob.flags |= flag
+	} else {
+		mob.flags &= ^flag
+	}
 }
 
 func (mob *Mob) GrantExperience(world *World, experience int32) {
@@ -197,6 +229,7 @@ func (mob *Mob) Update(world *World) {
 	}
 
 	mob.escapeChance = min(mob.escapeChance + MOB_ESCAPE_CHANCE_RECOVERY_RATE, MOB_ESCAPE_CHANCE_MAX)
+	mob.alertness = max(mob.alertness - MOB_ALERTNESS_COOLDOWN_RATE, 0.0)
 
 	switch mob.Mode {
 		case MOB_MODE_IDLE:
@@ -211,6 +244,10 @@ func (mob *Mob) Update(world *World) {
 			// Attack with weapon
 			mob.attackTargetWithWeapon(world, targetMob, EQUIPMENT_SLOT_MAIN_HAND)
 			mob.attackTargetWithWeapon(world, targetMob, EQUIPMENT_SLOT_OFF_HAND)
+
+			// Update status
+			mob.alertness = MOB_ALERTNESS_MAX
+			mob.SetFlag(MOB_FLAG_HIDDEN, false)
 		}
 
 		case MOB_MODE_CAST: {
@@ -223,6 +260,10 @@ func (mob *Mob) Update(world *World) {
 			// Cast spell
 			mob.spellcast(world, targetMob)
 			mob.Mode = MOB_MODE_IDLE
+
+			// Update status
+			mob.alertness = MOB_ALERTNESS_MAX
+			mob.SetFlag(MOB_FLAG_HIDDEN, false)
 		}
 
 		case MOB_MODE_USE_ITEM: {
@@ -261,7 +302,13 @@ func (mob *Mob) Update(world *World) {
 
 func (mob *Mob) getTargetIfExists(world *World) (*Mob, bool) {
 	targetMob, targetExists := world.Mobs.GetIfExists(mob.Target)
-	if !targetExists || targetMob.IsDead() || targetMob.Data.Room != mob.Data.Room {
+	targetIsInvalid :=
+		!targetExists ||
+		targetMob.IsDead() ||
+		targetMob.Data.Room != mob.Data.Room ||
+		targetMob.CheckFlag(MOB_FLAG_HIDDEN)
+
+	if targetIsInvalid {
 		mob.Mode = MOB_MODE_IDLE
 		return nil, false
 	}
@@ -271,6 +318,7 @@ func (mob *Mob) getTargetIfExists(world *World) (*Mob, bool) {
 
 func (mob *Mob) damage(world *World, attackerHandle MobHandle, damage int32) {
 	mob.Data.Health -= damage
+	mob.alertness = MOB_ALERTNESS_MAX
 
 	if mob.Npc != nil {
 		mob.Npc.OnEvent(world, BehaviorEvent {
@@ -398,7 +446,7 @@ func (mob *Mob) RollForEscape(world *World) bool {
 	for _, handle := range room.Occupants {
 		occupant := world.Mobs.Get(handle)
 		// TODO: change to !occupant.isNpc()
-		if occupant.Npc == nil {
+		if occupant.Npc == nil || occupant.Npc.disposition != NPC_DISPOSITION_HOSTILE {
 			continue
 		}
 
@@ -415,6 +463,39 @@ func (mob *Mob) RollForEscape(world *World) bool {
 	}
 
 	return escaped
+}
+
+func (mob *Mob) RollForStealth(world *World) bool {
+	var enemyIntelligence float32 = 0.0
+	var enemyAlertness float32 = 0.0
+
+	// Determine the highest intelligence of all hostile mobs in the room
+	room := &world.Rooms[mob.Data.Room]
+	for _, handle := range room.Occupants {
+		occupant := world.Mobs.Get(handle)
+		if occupant.Npc == nil || occupant.Npc.disposition != NPC_DISPOSITION_HOSTILE {
+			continue
+		}
+
+		enemyIntelligence = max(enemyIntelligence, float32(occupant.Data.Intelligence()))
+		enemyAlertness = max(enemyAlertness, occupant.alertness)
+	}
+
+	// TODO: Armor Penalty and Room Brightness modifier
+
+	// Roll to hide
+	mobAgility := float32(mob.Data.Agility())
+	stealthChance := (mobAgility / (mobAgility + (MOB_STEALTH_K * enemyIntelligence)))
+	stealthChance *= mob.escapeChance
+	stealthChance *= (1.0 - enemyAlertness)
+	hidden := rand.Float32() < stealthChance
+
+	// On failed roll, drop escape chance to 0.0
+	if !hidden {
+		mob.escapeChance = 0.0
+	}
+
+	return hidden
 }
 
 func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot) {

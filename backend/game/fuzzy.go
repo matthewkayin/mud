@@ -174,10 +174,16 @@ func fuzzyFindTarget(gamestate *GameState, player *Player, searchWords []string)
 	room := gamestate.world.Rooms[playerMob.Data.Room]
 
 	// Put all room occupant names into an array
-	mobNames := make([]string, len(room.Occupants))
-	for index, occupantHandle := range room.Occupants {
+	mobNames := make([]string, 0, len(room.Occupants))
+	for _, occupantHandle := range room.Occupants {
 		occupant := gamestate.world.Mobs.Get(occupantHandle)
-		mobNames[index] = occupant.GetName()
+
+		// Skip hidden occupants, except you can still target yourself of course
+		if occupant.CheckFlag(world.MOB_FLAG_HIDDEN) && occupantHandle != player.mobHandle {
+			continue
+		}
+
+		mobNames = append(mobNames, occupant.GetName())
 	}
 
 	// Fuzzy find the target mob
