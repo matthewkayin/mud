@@ -723,10 +723,16 @@ var MENU_WORLD = Menu {
 			usage: "craft [<amount>] <item>",
 			description: "Craft an item for which you know the recipe",
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
+				if len(args) < 1 {
+					return false
+				}
 
-					if len(args) < 1 {
-						return false
-					}
+				// Check if they are in comabt
+				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+				if playerMob.IsInCombat(gamestate.world) {
+					*player.inbox <- "You cannot craft items while you are in combat."
+					return true
+				}
 
 				//check whether they put in a quantity
 				amount, atoiErr := strconv.Atoi(args[0])
@@ -745,7 +751,6 @@ var MENU_WORLD = Menu {
 				recipeData := world.RECIPE_DATA[recipe]
 
 				// Check if the player has the materials
-				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 				for _, ingredient := range recipeData.Materials {
 					amountOfIngredient := playerMob.Data.Inventory.AmountOf(ingredient.Id)
 					if amountOfIngredient < batchAmount * ingredient.Amount {
@@ -835,8 +840,14 @@ var MENU_WORLD = Menu {
 					return false
 				}
 
-				itemWords, slotWords, userSpecifiedSlot := splitArgsBy(args, "in")
+				// Check if they are in combat
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+				if playerMob.IsInCombat(gamestate.world) {
+					*player.inbox <- "You cannot equip items while you are in combat."
+					return true
+				}
+
+				itemWords, slotWords, userSpecifiedSlot := splitArgsBy(args, "in")
 
 				// Determine the item
 				itemIndex := fuzzyFindInventoryItemIndex(&playerMob.Data.Inventory, itemWords)
@@ -946,7 +957,13 @@ var MENU_WORLD = Menu {
 				// but there's no reason for them to specify both so I'm not going to
 				// bother writing the code for it
 
+				// Check if they are in combat
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+				if playerMob.IsInCombat(gamestate.world) {
+					*player.inbox <- "You cannot remove items while you are in combat."
+					return true
+				}
+
 				itemWords, slotWords, userSpecifiedSlot := splitArgsBy(args, "from")
 
 				var slot world.EquipmentSlot

@@ -73,6 +73,13 @@ var MENU_TRADE_ENTRIES = map[string]MenuEntry {
 				return true
 			}
 
+			// Check if player is in combat
+			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+			if playerMob.IsInCombat(gamestate.world) {
+				*player.inbox <- "YOu cannot begin a trade session while you're in combat."
+				return true
+			}
+
 			// If someone is requesting a trade with this player, then reject that
 			// trade session and open up a new one (this prevents players from locking
 			// each other into trade requests)
@@ -102,8 +109,14 @@ var MENU_TRADE_ENTRIES = map[string]MenuEntry {
 				return true
 			}
 
+			// Check if the target is in combat
+			// This is a real edge case, if player is in stealth, they won't be in combat, but another player in the room might be
+			if targetMob.IsInCombat(gamestate.world) {
+				*player.inbox <- fmt.Sprintf("You cannot begin a trade session with %s because they are in comabt.", targetMob.Data.Name)
+				return true
+			}
+
 			// Initiate trade request
-			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			player.tradeSession = &TradeSession {
 				status: TRADE_STATUS_REQUESTED,
 				traderA: Trader {
