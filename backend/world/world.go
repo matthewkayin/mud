@@ -260,20 +260,20 @@ func WorldInitNew() *World {
 
 	goblinItemDrops := []NpcDrop {
 		{
-			itemId: ITEM_GOLD,
-			amountRange: util.Int32Range { Min: 5, Max: 10, },
-			dropChance: 6,
+			ItemId: ITEM_GOLD,
+			AmountRange: util.Int32Range { Min: 5, Max: 10, },
+			DropChance: 6,
 		},
 		{
-			itemId: ITEM_POTION_HEALTH,
-			amountRange: util.Int32Range { Min: 1, Max: 1, },
-			dropChance: 3,
+			ItemId: ITEM_POTION_HEALTH,
+			AmountRange: util.Int32Range { Min: 1, Max: 1, },
+			DropChance: 3,
 		},
 		{
-			itemId: ITEM_SWORD,
-			amountRange: util.Int32Range { Min: 1, Max: 1, },
-			durabilityRange: util.Int32Range { Min: 25, Max: 49, },
-			dropChance: 1,
+			ItemId: ITEM_SWORD,
+			AmountRange: util.Int32Range { Min: 1, Max: 1, },
+			DurabilityRange: util.Int32Range { Min: 25, Max: 49, },
+			DropChance: 1,
 		},
 	}
 
@@ -310,11 +310,13 @@ func WorldInitNew() *World {
 		LevelRange: util.Int32Range { Min: 3, Max: 3 },
 		StartingDisposition: NPC_DISPOSITION_NEUTRAL,
 		MovementType: NPC_MOVEMENT_TYPE_SENTINEL,
-		Behavior: &BehaviorTroll {
-			ExitToBlock: DIRECTION_EAST,
-			Toll: Item {
-				Id: ITEM_GOLD,
-				Amount: 25,
+		Behavior: Behavior {
+			Hooks: &BehaviorTroll {
+				ExitToBlock: DIRECTION_EAST,
+				Toll: Item {
+					Id: ITEM_GOLD,
+					Amount: 25,
+				},
 			},
 		},
 		SpawnRoom: cliffside,

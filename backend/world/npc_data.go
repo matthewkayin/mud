@@ -1,22 +1,10 @@
 package world
 
-import (
-	"mud/util"
-)
-
 type NpcType int
 const (
 	NPC_TYPE_GOLBIN = iota
 	NPC_TYPE_TROLL
 )
-
-type NpcDrop struct {
-	itemId ItemId
-
-	amountRange util.Int32Range
-	durabilityRange util.Int32Range
-	dropChance int32
-}
 
 type NpcData struct {
 	name string
