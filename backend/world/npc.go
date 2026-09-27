@@ -3,9 +3,9 @@ package world
 import (
 	"fmt"
 	"log"
+	"slices"
 	"math/rand/v2"
 	"mud/util"
-	"slices"
 )
 
 // Rather than reset the NPC's sleepy timer after combat,
@@ -36,6 +36,14 @@ const (
 	NPC_DISPOSITION_NEUTRAL = iota
 	NPC_DISPOSITION_HOSTILE
 )
+
+type NpcDrop struct {
+	ItemId ItemId
+
+	AmountRange util.Int32Range
+	DurabilityRange util.Int32Range
+	DropChance int32
+}
 
 type Npc struct {
 	// NPC "config" variables - These are public and saved to world JSON
@@ -99,8 +107,8 @@ func (npc *Npc) spawnMob(world *World) {
 		npc.sleepyTimer = 1 + rand.Int32N(npc.AwakeDuration)
 	}
 
-	if npc.Behavior != nil {
-		npc.Behavior.init(npc, world)
+	if npc.Behavior.Hooks != nil {
+		npc.Behavior.Hooks.init(npc, world)
 	}
 
 	world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s has spawned into this room.", npcMob.GetName()))
@@ -110,7 +118,7 @@ func (npc *Npc) determineDrops() Inventory {
 	// Determine total drop chance among all NPC drops
 	var dropChanceTotal int32 = 0
 	for _, drop := range npc.Drops {
-		dropChanceTotal += drop.dropChance
+		dropChanceTotal += drop.DropChance
 	}
 
 	inventory := Inventory { Items: []Item {} }
@@ -122,7 +130,7 @@ func (npc *Npc) determineDrops() Inventory {
 		var dropIndex int = 0
 
 		for dropIndex < len(npc.Drops) {
-			dropChance += npc.Drops[dropIndex].dropChance
+			dropChance += npc.Drops[dropIndex].DropChance
 			if roll <= dropChance {
 				break
 			}
@@ -135,9 +143,9 @@ func (npc *Npc) determineDrops() Inventory {
 
 		drop := &npc.Drops[dropIndex]
 		inventory.AddItem(Item {
-			Id: drop.itemId,
-			Amount: drop.amountRange.ChooseRandom(),
-			Durability: drop.durabilityRange.ChooseRandom(),
+			Id: drop.ItemId,
+			Amount: drop.AmountRange.ChooseRandom(),
+			Durability: drop.DurabilityRange.ChooseRandom(),
 		})
 	}
 
@@ -171,8 +179,8 @@ func (npc *Npc) update(world *World) {
 		return
 	}
 
-	if npc.Behavior != nil {
-		npc.Behavior.update(npc, world)
+	if npc.Behavior.Hooks != nil {
+		npc.Behavior.Hooks.update(npc, world)
 	}
 
 	switch npc.mode {
@@ -322,8 +330,8 @@ func (npc *Npc) movementStep(world *World) {
 
 func (npc *Npc) OnEvent(world *World, event BehaviorEvent) {
 	// First, try event through behavior
-	if npc.Behavior != nil {
-		eventHandled := npc.Behavior.onEvent(npc, world, event)
+	if npc.Behavior.Hooks != nil {
+		eventHandled := npc.Behavior.Hooks.onEvent(npc, world, event)
 		if eventHandled {
 			return
 		}
@@ -365,8 +373,8 @@ func (npc *Npc) GetDescription() string {
 
 func (npc *Npc) GetStatusDescription(world *World) (string, bool) {
 	// If behavior provides a description, then return it
-	if npc.Behavior != nil {
-		description, hasBehaviorDescription := npc.Behavior.getDescription(npc, world)
+	if npc.Behavior.Hooks != nil {
+		description, hasBehaviorDescription := npc.Behavior.Hooks.getDescription(npc, world)
 		if hasBehaviorDescription {
 			return description, true
 		}
