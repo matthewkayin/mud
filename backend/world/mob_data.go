@@ -19,6 +19,7 @@ type MobData struct {
 	ExperienceToNextLevel int32
 
 	Stats StatBlock
+	Abilities uint32
 
 	Health int32
 	Mana int32
@@ -103,4 +104,30 @@ func (mobData *MobData) RemoveSpell(toRemove Spell) {
 			return
 		}
 	}
+}
+
+func (mobData *MobData) HasAbility(ability MobAbility) bool {
+	var abilityFlag uint32 = 1 << ability
+	return (mobData.Abilities & abilityFlag) == abilityFlag
+}
+
+func (mobData *MobData) SetHasAbility(ability MobAbility, value bool) {
+	var abilityFlag uint32 = 1 << ability
+	if value {
+		mobData.Abilities |= abilityFlag
+	} else {
+		mobData.Abilities &= ^abilityFlag
+	}
+}
+
+func (mobData *MobData) GetAbilityList() []MobAbility {
+	list := make([]MobAbility, 0, 1)
+	for abilityIndex := range MOB_ABILITY_COUNT {
+		ability := MobAbility(abilityIndex)
+		if mobData.HasAbility(ability) {
+			list = append(list, ability)
+		}
+	}
+
+	return list
 }

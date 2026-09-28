@@ -81,6 +81,11 @@ func CharacterInitEmpty(playerId int, characterSheet *CharacterSheet) *Character
 	character.RoomsDiscovered = bitset.New(CHARACTER_ROOMS_DISCOVERED_BYTE_SIZE)
 	bitset.Set(character.RoomsDiscovered, character.Data.Room, true)
 
+	// Grant first level unlocks
+	for _, unlock := range classData.UnlocksAtLevel[character.Data.Level] {
+		character.grantClassUnlock(unlock)
+	}
+
 	return character
 }
 
@@ -155,4 +160,16 @@ func calculateStatBlockAtLevel(base *StatBlock, scaling *StatBlock, level int32)
 
 func calculateStatAtLevel(base int32, scaling int32, level int32) int32 {
 	return base + int32(2.0 * float32(level - 1) * (float32(scaling) / 10.0))
+}
+
+func (character *Character) grantClassUnlock(unlock ClassUnlock) {
+	switch unlock.Type {
+		case CLASS_UNLOCK_ABILITY: {
+			ability := unlock.Data.(MobAbility)
+			character.Data.SetHasAbility(ability, true)
+		}
+		case CLASS_UNLOCK_SPELL: {
+			// TODO
+		}
+	}
 }

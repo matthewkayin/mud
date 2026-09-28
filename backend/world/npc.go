@@ -161,6 +161,14 @@ func (npc *Npc) setModeIdle() {
 	npc.timer = npc.MovementStepDuration
 }
 
+func (npc *Npc) setModeSurprise(world *World) {
+	npcMob := world.Mobs.Get(npc.mobHandle)
+
+	npc.mode = NPC_MODE_SURPRISE
+	npc.timer = NPC_SURPRISE_DURATION
+	npcMob.alertness = MOB_ALERTNESS_MAX
+}
+
 func (npc *Npc) update(world *World) {
 	if npc.mode == NPC_MODE_DEAD {
 		npc.timer--
@@ -190,13 +198,18 @@ func (npc *Npc) update(world *World) {
 				// Check if there is a player in the room
 				roomHasPlayer := slices.ContainsFunc(world.Rooms[npcMob.Data.Room].Occupants, func (handle MobHandle) bool {
 					mob := world.Mobs.Get(handle)
-					return mob.PlayerCharacter != nil
+					if mob.CheckFlag(MOB_FLAG_HIDDEN) {
+						return false
+					}
+					if mob.PlayerCharacter == nil {
+						return false
+					}
+					return true
 				})
 
 				// If room has player, get ready to fight
 				if roomHasPlayer {
-					npc.mode = NPC_MODE_SURPRISE
-					npc.timer = NPC_SURPRISE_DURATION
+					npc.setModeSurprise(world)
 					world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s is getting ready to fight!", npcMob.Data.Name))
 					break
 				}
@@ -253,6 +266,11 @@ func (npc *Npc) update(world *World) {
 					continue
 				}
 
+				// Don't attack hidden players
+				if targetMob.CheckFlag(MOB_FLAG_HIDDEN) {
+					continue
+				}
+
 				// Found target, set to attack
 				npcMob.SetModeAttack(world, npc.mobHandle, targetHandle)
 				break
@@ -305,7 +323,7 @@ func (npc *Npc) movementStep(world *World) {
 					continue
 				}
 
-				// Don't walk into adjacent rooms
+				// Don't walk into safe rooms
 				adjacentRoom := &world.Rooms[adjacentRoomIndex]
 				if adjacentRoom.IsSafeZone {
 					continue
@@ -342,8 +360,7 @@ func (npc *Npc) OnEvent(world *World, event BehaviorEvent) {
 	switch event.Type {
 		case BEHAVIOR_EVENT_TYPE_ATTACKED: {
 			if npc.mode == NPC_MODE_SLEEP {
-				npc.mode = NPC_MODE_SURPRISE
-				npc.timer = NPC_SURPRISE_DURATION + 1
+				npc.setModeSurprise(world)
 				world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s was violently awoken from their nap! They seem disgruntled.", npcMob.Data.Name))
 			}
 
