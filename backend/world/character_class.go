@@ -15,8 +15,8 @@ const (
 
 type ClassUnlockType int
 const (
-	CLASS_UNLOCK_ABILITY = iota
-	CLASS_UNLOCK_SPELL
+	CLASS_UNLOCK_TYPE_ABILITY = iota
+	CLASS_UNLOCK_TYPE_SPELL
 )
 
 type ClassUnlock struct {
@@ -78,8 +78,8 @@ var CLASS_DATA []*ClassData = []*ClassData {
 			Faith: 6,
 		},
 		UnlocksAtLevel: [MOB_MAX_LEVEL][]ClassUnlock {
-			1: []ClassUnlock {
-				{ Type: CLASS_UNLOCK_ABILITY,  Data: MOB_ABILITY_SNEAK, },
+			1: {
+				{ Type: CLASS_UNLOCK_TYPE_ABILITY,  Data: MOB_ABILITY_SNEAK, },
 			},
 		},
 	},
@@ -119,6 +119,10 @@ var CLASS_DATA []*ClassData = []*ClassData {
 			Intelligence: 8,
 			Faith: 10,
 		},
-		UnlocksAtLevel: [MOB_MAX_LEVEL][]ClassUnlock {},
+		UnlocksAtLevel: [MOB_MAX_LEVEL][]ClassUnlock {
+			1: {
+				{ Type: CLASS_UNLOCK_TYPE_SPELL, Data: SPELL_CURE, },
+			},
+		},
 	},
 }

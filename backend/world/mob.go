@@ -164,19 +164,8 @@ func (mob *Mob) GrantExperience(world *World, experience int32) {
 			// Grant class unlocks
 			classData := CLASS_DATA[mob.PlayerCharacter.Class]
 			for _, unlock := range classData.UnlocksAtLevel[mob.Data.Level] {
-				mob.PlayerCharacter.grantClassUnlock(unlock)
-
-				// Announce ability unlock to player
-				switch unlock.Type {
-					case CLASS_UNLOCK_ABILITY: {
-						ability := unlock.Data.(MobAbility)
-						abilityData := MOB_ABILITY_DATA[ability]
-						world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You got the ability %s!", abilityData.Name))
-					}
-					case CLASS_UNLOCK_SPELL: {
-						// TODO
-					}
-				}
+				message := mob.PlayerCharacter.grantClassUnlock(unlock)
+				world.messagePlayer(mob.PlayerCharacter.PlayerId, message)
 			}
 
 			// Recalculate stats

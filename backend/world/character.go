@@ -1,8 +1,10 @@
 package world
 
 import (
+	"fmt"
 	"log"
 	"strings"
+	"slices"
 	"mud/bitset"
 )
 
@@ -29,6 +31,7 @@ type Character struct {
 
 	SpellsEquipped map[Spell]*CharacterEquippedSpell
 	SpellsKnown []Spell
+	ClassSpells []Spell
 	RecipesKnown []Recipe
 	RoomsDiscovered []byte
 	Data MobData
@@ -67,6 +70,7 @@ func CharacterInitEmpty(playerId int, characterSheet *CharacterSheet) *Character
 	character.Data.Spells = make([]Spell, 0, 1)
 	character.SpellsEquipped = make(map[Spell]*CharacterEquippedSpell)
 	character.SpellsKnown = make([]Spell, 0, 1)
+	character.ClassSpells = make([]Spell, 0, 1)
 	character.RecipesKnown = make([]Recipe, 0, 1)
 
 	// Init inventory
@@ -133,6 +137,11 @@ func (world *World) RemoveCharacter(character *Character) {
 	deleteCharacter(character)
 }
 
+func (character *Character) HasSpell(spell Spell) bool {
+	return slices.Contains(character.SpellsKnown, spell) ||
+		slices.Contains(character.ClassSpells, spell)
+}
+
 func (character *Character) recalculateStats() {
 	raceData := RACE_DATA[character.Race]
 	classData := CLASS_DATA[character.Class]
@@ -162,14 +171,25 @@ func calculateStatAtLevel(base int32, scaling int32, level int32) int32 {
 	return base + int32(2.0 * float32(level - 1) * (float32(scaling) / 10.0))
 }
 
-func (character *Character) grantClassUnlock(unlock ClassUnlock) {
+func (character *Character) grantClassUnlock(unlock ClassUnlock) string {
 	switch unlock.Type {
-		case CLASS_UNLOCK_ABILITY: {
+		case CLASS_UNLOCK_TYPE_ABILITY: {
 			ability := unlock.Data.(MobAbility)
+			abilityData := MOB_ABILITY_DATA[ability]
+
 			character.Data.SetHasAbility(ability, true)
+			return fmt.Sprintf("You got the ability %s!", abilityData.Name)
 		}
-		case CLASS_UNLOCK_SPELL: {
-			// TODO
+
+		case CLASS_UNLOCK_TYPE_SPELL: {
+			spell := unlock.Data.(Spell)
+			spellData := SPELL_DATA[spell]
+
+			character.ClassSpells = append(character.ClassSpells, spell)
+			return fmt.Sprintf("You learned the spell %s!", spellData.Name)
 		}
+
+		default:
+			panic(fmt.Sprintf("Unhandled class unlock type %d.", unlock.Type))
 	}
 }

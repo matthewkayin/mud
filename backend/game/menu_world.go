@@ -996,6 +996,7 @@ var MENU_WORLD = Menu {
 				// If the equipped item is a spellbook, add the spell to their spells equipped
 				if (itemData.ItemType == world.ITEM_TYPE_EQUIPMENT_SPELLBOOK) {
 					spellbookData := itemData.Data.(*world.ItemDataSpellbook)
+					isSpellKnown := player.character.HasSpell(spellbookData.Spell)
 
 					// Increment spell equiped count
 					_, entryExists := player.character.SpellsEquipped[spellbookData.Spell]
@@ -1003,12 +1004,11 @@ var MENU_WORLD = Menu {
 						player.character.SpellsEquipped[spellbookData.Spell] = &world.CharacterEquippedSpell {
 							EquipCount: 0,
 							Casts: 0,
-							IsKnown: slices.Contains(player.character.SpellsKnown, spellbookData.Spell),
+							IsKnown: isSpellKnown,
 						}
 					}
 					player.character.SpellsEquipped[spellbookData.Spell].EquipCount++
 
-					isSpellKnown := slices.Contains(player.character.SpellsKnown, spellbookData.Spell)
 					if !isSpellKnown {
 						spellData := world.SPELL_DATA[spellbookData.Spell]
 						*player.inbox <- fmt.Sprintf("You can now prepare the spell %s.", spellData.Name)
@@ -1079,32 +1079,37 @@ var MENU_WORLD = Menu {
 
 		"spells": {
 			usage: "spells",
-			description: "Show a list of the spells you have prepared",
+			description: "Show a list of the spells you can cast",
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 
 				*player.inbox <- fmt.Sprintf("Spells Prepared (%d / %d):", len(playerMob.Data.Spells), playerMob.Data.SpellSlots())
+				if len(playerMob.Data.Spells) != 0 {
+					for _, spell := range playerMob.Data.Spells {
+						spellData := world.SPELL_DATA[spell]
 
-				if len(playerMob.Data.Spells) == 0 {
+						masteryStr := "Known"
+
+						equippedSpell, spellIsEquipped := player.character.SpellsEquipped[spell]
+						if spellIsEquipped && !equippedSpell.IsKnown {
+							casts := float32(equippedSpell.Casts)
+							castsToLearn := float32(playerMob.Data.CastsToLearn(spell))
+							mastery := int32((casts / castsToLearn) * 100.0)
+							masteryStr = fmt.Sprintf("Mastery: %d", mastery)
+						}
+
+						*player.inbox <- fmt.Sprintf("%s | Cost: %d | %s | %s",
+							spellData.Name, spellData.ManaCost, masteryStr, spellData.Description)
+					}
+				} else {
 					*player.inbox <- "You haven't prepared any spells."
-					return true
 				}
 
-				for _, spell := range playerMob.Data.Spells {
+				*player.inbox <- "\nClass Spells:"
+				for _, spell := range player.character.ClassSpells {
 					spellData := world.SPELL_DATA[spell]
-
-					masteryStr := "Known"
-
-					equippedSpell, spellIsEquipped := player.character.SpellsEquipped[spell]
-					if spellIsEquipped && !equippedSpell.IsKnown {
-						casts := float32(equippedSpell.Casts)
-						castsToLearn := float32(playerMob.Data.CastsToLearn(spell))
-						mastery := int32((casts / castsToLearn) * 100.0)
-						masteryStr = fmt.Sprintf("Mastery: %d", mastery)
-					}
-
-					*player.inbox <- fmt.Sprintf("%s | Cost: %d | %s | %s",
-						spellData.Name, spellData.ManaCost, masteryStr, spellData.Description)
+					*player.inbox <- fmt.Sprintf("%s - Cost: %d - %s",
+						spellData.Name, spellData.ManaCost, spellData.Description)
 				}
 
 				return true
@@ -1115,10 +1120,18 @@ var MENU_WORLD = Menu {
 			usage: "library",
 			description: "Show a list of all the spells you know",
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
-				if len(player.character.SpellsKnown) == 0 {
+				if len(player.character.SpellsKnown) == 0 && len(player.character.ClassSpells) == 0 {
 					*player.inbox <- "You don't know any spells."
 				}
 
+				*player.inbox <- "Class Spells:"
+				for _, spell := range player.character.ClassSpells {
+					spellData := world.SPELL_DATA[spell]
+					*player.inbox <- fmt.Sprintf("%s - Cost: %d - %s",
+						spellData.Name, spellData.ManaCost, spellData.Description)
+				}
+
+				*player.inbox <- "\nKnown Spells:"
 				for _, spell := range player.character.SpellsKnown {
 					spellData := world.SPELL_DATA[spell]
 					*player.inbox <- fmt.Sprintf("%s - Cost: %d - %s",
@@ -1155,6 +1168,14 @@ var MENU_WORLD = Menu {
 				if isPrepared {
 					spellData := world.SPELL_DATA[spell]
 					*player.inbox <- fmt.Sprintf("You have already prepared %s.", spellData.Name)
+					return true
+				}
+
+				// Check if the spell is a class spell
+				spellIndex := fuzzyFindClassSpellIndex(player, args)
+				if spellIndex >= 0 {
+					spellData := world.SPELL_DATA[player.character.ClassSpells[spellIndex]]
+					*player.inbox <- fmt.Sprintf("You do not need to prepare %s because it is a class spell. You can cast it at any time, and it does not take up a spell slot.", spellData.Name)
 					return true
 				}
 
@@ -1212,7 +1233,7 @@ var MENU_WORLD = Menu {
 				}
 
 				// Find the spell in their spell list
-				spell, err := fuzzyFindPreparedSpell(gamestate, player, spellWords)
+				spell, err := fuzzyFindCastableSpell(gamestate, player, spellWords)
 				if err != nil {
 					*player.inbox <- err.Error()
 					return true
