@@ -6,7 +6,7 @@ const ROOM_Y_SPACING = 20;
 const ROOM_WIDTH = 200;
 const ROOM_HEIGHT = 80;
 
-export const EDITOR_HOVERED_ROOM_GRID_INDEX_NONE = -1;
+export const EDITOR_ROOM_GRID_INDEX_NONE = -1;
 
 export const EditorStateHoverType = {
   NONE: 0,
@@ -30,7 +30,8 @@ type RenderRoomParams = {
 export class EditorState {
   cameraOffset: Vec2 = { x: 0, y: 0 };
   cameraZoom: number = 1.0;
-  hoveredRoomGridIndex: number = EDITOR_HOVERED_ROOM_GRID_INDEX_NONE;
+  hoveredRoomGridIndex: number = EDITOR_ROOM_GRID_INDEX_NONE;
+  selectedRoomGridIndex: number = EDITOR_ROOM_GRID_INDEX_NONE;
 
   world: mud.World = {
     Rooms: [],
@@ -121,7 +122,7 @@ export class EditorState {
   }
 
   onMouseMoved(mouseWorldPos: Vec2) {
-    this.hoveredRoomGridIndex = EDITOR_HOVERED_ROOM_GRID_INDEX_NONE;
+    this.hoveredRoomGridIndex = EDITOR_ROOM_GRID_INDEX_NONE;
 
     // Check for hovering over rooms
     for (let y = 0; y < this.roomGridHeight; y++) {
@@ -136,7 +137,7 @@ export class EditorState {
   }
 
   createRoom() {
-    if (this.hoveredRoomGridIndex === EDITOR_HOVERED_ROOM_GRID_INDEX_NONE) {
+    if (this.hoveredRoomGridIndex === EDITOR_ROOM_GRID_INDEX_NONE) {
       return;
     }
     if (this.roomGrid[this.hoveredRoomGridIndex] !== mud.ROOM_NONE) {
@@ -177,11 +178,11 @@ export class EditorState {
         }
 
         const room = this.world.Rooms[roomIndex];
-        const isHovered = this.hoveredRoomGridIndex === roomGridIndex;
+        const isSelected = this.selectedRoomGridIndex === roomGridIndex;
         this.renderRoom(context, {
           cell: { x, y },
           dashBorder: false,
-          color: isHovered ? '#ffff00' : '#fff',
+          color: isSelected ? '#ffff00' : '#fff',
           text: room.Name,
         });
       }

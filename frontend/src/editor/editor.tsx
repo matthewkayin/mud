@@ -1,7 +1,8 @@
-import { useRef, useEffect } from 'react';
-import { Box, Paper, Button } from '@mui/material';
+import { useRef, useEffect, useState } from 'react';
+import { Box } from '@mui/material';
 import * as mud from '../mud/types';
-import { EDITOR_HOVERED_ROOM_GRID_INDEX_NONE, EditorState } from './state';
+import { EditorSidebar } from './sidebar';
+import { EDITOR_ROOM_GRID_INDEX_NONE, EditorState } from './state';
 
 const CAMERA_ZOOM_MIN = 0.5;
 const CAMERA_ZOOM_MAX = 2.0;
@@ -9,6 +10,7 @@ const CAMERA_ZOOM_MAX = 2.0;
 export const Editor = () => {
   const canvasRef = useRef(null);
   const canvasBoxRef = useRef(null);
+  const [selectedRoom, setSelectedRoom] = useState<mud.Room | null>(null);
   const stateRef = useRef(new EditorState());
 
   // RESIZE
@@ -53,11 +55,20 @@ export const Editor = () => {
 
     const onMouseClick = () => {
       const state = stateRef.current;
+
+      // Create room
       const shouldCreateRoom =
-        state.hoveredRoomGridIndex !== EDITOR_HOVERED_ROOM_GRID_INDEX_NONE &&
+        state.hoveredRoomGridIndex !== EDITOR_ROOM_GRID_INDEX_NONE &&
         state.roomGrid[state.hoveredRoomGridIndex] === mud.ROOM_NONE;
       if (shouldCreateRoom) {
         state.createRoom()
+      }
+
+      // Select the room that was clicked
+      const hoveredRoomIndex = state.roomGrid[state.hoveredRoomGridIndex];
+      if (hoveredRoomIndex !== mud.ROOM_NONE) {
+        state.selectedRoomGridIndex = state.hoveredRoomGridIndex;
+        setSelectedRoom(state.world.Rooms[hoveredRoomIndex]);
       }
     };
 
@@ -153,22 +164,7 @@ export const Editor = () => {
       height: '100vh',
       overflow: 'hidden'
     }}>
-      <Paper
-        elevation={2}
-        sx={{
-          width: '25%',
-          minWidth: '25%',
-          height: '100%',
-          borderRadius: 0,
-          borderRight: '1px solid',
-          borderColor: 'divider',
-          p: 2,
-          boxSixing: 'border-box',
-          overflowY: 'auto',
-        }}
-      >
-        <Button variant="outlined">+ Room</Button>
-      </Paper>
+      <EditorSidebar room={selectedRoom} />
       <Box
         ref={canvasBoxRef}
         sx={{
