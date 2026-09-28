@@ -5,9 +5,6 @@ import (
 	"mud/util"
 )
 
-const WORLD_SECONDS_PER_UPDATE = 3
-const WORLD_MAX_ROOMS int = 1024
-
 // `json:"-"` tells the JSON parser to ignore those fields
 
 type World struct {

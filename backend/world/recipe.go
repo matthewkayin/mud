@@ -1,10 +1,6 @@
 package world
 
-import (
-	"math"
-)
-
-const RECIPE_OUTPUT_MAX_DURABILITY = math.MaxInt32
+const RECIPE_OUTPUT_MAX_DURABILITY = -1
 
 type Recipe int
 const (
