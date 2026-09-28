@@ -12,25 +12,11 @@ import (
 func (apiState* ApiState) HandleGetWebSocket(writer http.ResponseWriter, request *http.Request) {
 	log.Printf("Invoked /api/websocket")
 
-	// Get the auth token from the query param
-	sessionToken, err := request.Cookie(MUD_SESSION_COOKIE_NAME)
-	if err != nil {
-		http.Error(writer, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
-	// Check the list of active auth tokens
-	// TODO: handle token expiration and clear the cache?
-	apiState.tokenToIdMutex.RLock()
-	userId, authenticated := apiState.tokenToIdMap[sessionToken.Value]
-	apiState.tokenToIdMutex.RUnlock()
-
+	userId, authenticated := apiState.getAuthenticatedUserId(request)
 	if !authenticated {
-		http.Error(writer, err.Error(), http.StatusUnauthorized)
+		http.Error(writer, "User unauthorized.", http.StatusUnauthorized)
 		return
 	}
-
-	log.Printf("Authenticated user %d", userId)
 
 	// Upgrade the HTTP connection to a WebSocket connection
 	connection, acceptError := websocket.Accept(writer, request, &websocket.AcceptOptions {

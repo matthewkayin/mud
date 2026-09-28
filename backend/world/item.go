@@ -42,7 +42,7 @@ const (
 )
 
 type ItemDataConsumable struct {
-	OnUse func(world *World, target *Mob)
+	onUse func(world *World, target *Mob)
 }
 
 type ItemDataSpellScroll struct {

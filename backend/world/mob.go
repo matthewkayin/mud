@@ -538,7 +538,7 @@ func (mob *Mob) useItem(world *World, targetMob *Mob) {
 	switch itemData.ItemType {
 		case ITEM_TYPE_CONSUMABLE: {
 			consumableData := itemData.Data.(*ItemDataConsumable)
-			consumableData.OnUse(world, targetMob)
+			consumableData.onUse(world, targetMob)
 		}
 		case ITEM_TYPE_SPELL_SCROLL: {
 			scrollData := itemData.Data.(*ItemDataSpellScroll)

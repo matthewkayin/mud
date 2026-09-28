@@ -211,3 +211,24 @@ func (apiState *ApiState) createSessionForUser(writer http.ResponseWriter, reque
 	// Redirect user back to home page
 	http.Redirect(writer, request, "http://localhost:5173/game", http.StatusSeeOther)
 }
+
+func (apiState *ApiState) getAuthenticatedUserId(request *http.Request) (int, bool) {
+	// Get the auth token from cookies param
+	sessionToken, err := request.Cookie(MUD_SESSION_COOKIE_NAME)
+	if err != nil {
+		return 0, false
+	}
+
+	// Check the list of active auth tokens
+	// TODO: handle token expiration and clear the cache?
+	apiState.tokenToIdMutex.RLock()
+	userId, authenticated := apiState.tokenToIdMap[sessionToken.Value]
+	apiState.tokenToIdMutex.RUnlock()
+
+	if !authenticated {
+		return 0, false
+	}
+
+	log.Printf("Authenticated user %d", userId)
+	return userId, true
+}
