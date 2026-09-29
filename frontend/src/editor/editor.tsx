@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { Box } from '@mui/material';
 import * as mud from '../mud/types';
 import { EditorSidebar } from './sidebar';
-import { EDITOR_ROOM_GRID_INDEX_NONE, EditorState } from './state';
+import { EDITOR_ROOM_GRID_INDEX_NONE, EditorState, EditorActionType } from './state';
 
 const CAMERA_ZOOM_MIN = 0.5;
 const CAMERA_ZOOM_MAX = 2.0;
@@ -10,8 +10,12 @@ const CAMERA_ZOOM_MAX = 2.0;
 export const Editor = () => {
   const canvasRef = useRef(null);
   const canvasBoxRef = useRef(null);
-  const [selectedRoom, setSelectedRoom] = useState<mud.Room | null>(null);
+  const [sidebarGeneration, setSidebarGeneration] = useState(0);
   const stateRef = useRef(new EditorState());
+
+  useEffect(() => {
+    stateRef.current.setSidebarGeneration = setSidebarGeneration;
+  }, [setSidebarGeneration]);
 
   // RESIZE
   useEffect(() => {
@@ -61,14 +65,19 @@ export const Editor = () => {
         state.hoveredRoomGridIndex !== EDITOR_ROOM_GRID_INDEX_NONE &&
         state.roomGrid[state.hoveredRoomGridIndex] === mud.ROOM_NONE;
       if (shouldCreateRoom) {
-        state.createRoom()
+        state.doAction({
+          type: EditorActionType.ADD_ROOM,
+          data: {
+            roomGridIndex: state.hoveredRoomGridIndex,
+          },
+        });
       }
 
       // Select the room that was clicked
       const hoveredRoomIndex = state.roomGrid[state.hoveredRoomGridIndex];
       if (hoveredRoomIndex !== mud.ROOM_NONE) {
         state.selectedRoomGridIndex = state.hoveredRoomGridIndex;
-        setSelectedRoom(state.world.Rooms[hoveredRoomIndex]);
+        state.refreshSidebar();
       }
     };
 
@@ -164,7 +173,7 @@ export const Editor = () => {
       height: '100vh',
       overflow: 'hidden'
     }}>
-      <EditorSidebar room={selectedRoom} />
+      <EditorSidebar generation={sidebarGeneration} stateRef={stateRef} />
       <Box
         ref={canvasBoxRef}
         sx={{

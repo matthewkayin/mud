@@ -8,16 +8,25 @@ const ROOM_HEIGHT = 80;
 
 export const EDITOR_ROOM_GRID_INDEX_NONE = -1;
 
-export const EditorStateHoverType = {
-  NONE: 0,
-  ROOM: 1,
-  NEW_ROOM: 2,
+export const EditorActionType = {
+  ADD_ROOM: 0,
+  EDIT_ROOM: 1,
 } as const;
-export type EditorStateHoverType = (typeof EditorStateHoverType)[keyof typeof EditorStateHoverType];
+export type EditorActionType = (typeof EditorActionType)[keyof typeof EditorActionType];
 
-export type EditorStateHover = {
-  type: EditorStateHoverType;
-  index: number;
+export type EditorActionAddRoom = {
+  roomGridIndex: number;
+}
+
+export type EditorActionSetRoomName = {
+  roomIndex: number;
+  value: mud.Room;
+  previous: mud.Room;
+}
+
+export type EditorAction = {
+  type: EditorActionType,
+  data: EditorActionAddRoom | EditorActionSetRoomName,
 }
 
 type RenderRoomParams = {
@@ -41,6 +50,9 @@ export class EditorState {
   roomGridWidth: number;
   roomGridHeight: number;
   roomGrid: number[] = [];
+
+  actionHistory: EditorAction[] = [];
+  setSidebarGeneration: React.Dispatch<React.SetStateAction<number>>;
 
   constructor() {
     this.roomGridWidth = 16;
@@ -136,28 +148,66 @@ export class EditorState {
     }
   }
 
-  createRoom() {
-    if (this.hoveredRoomGridIndex === EDITOR_ROOM_GRID_INDEX_NONE) {
-      return;
-    }
-    if (this.roomGrid[this.hoveredRoomGridIndex] !== mud.ROOM_NONE) {
+  doAction(action: EditorAction) {
+    this.executeAction(action, false);
+    this.actionHistory.push(action);
+  }
+
+  undoAction() {
+    if (this.actionHistory.length === 0) {
       return;
     }
 
-    const newRoomIndex = this.world.Rooms.length;
-    this.world.Rooms.push({
-      Name: 'New Room',
-      Description: 'This is a new room',
-      Exits: new Array(mud.DIRECTION_COUNT).fill(mud.ROOM_NONE),
-      ExitIsLocked: new Array(mud.DIRECTION_COUNT).fill(false),
-      IsSafeZone: false,
-      Inventory: {
-        Items: [],
-      },
-      Chests: [],
-    });
+    const action = this.actionHistory.pop();
+    this.executeAction(action, true);
+  }
 
-    this.setRoomGrid(this.hoveredRoomGridIndex, newRoomIndex);
+  executeAction(action: EditorAction, undo: boolean) {
+    switch (action.type) {
+      case EditorActionType.ADD_ROOM: {
+        const data = action.data as EditorActionAddRoom;
+
+        if (!undo) {
+          const newRoomIndex = this.world.Rooms.length;
+          this.world.Rooms.push({
+            Name: 'New Room',
+            Description: 'This is a new room',
+            Exits: new Array(mud.DIRECTION_COUNT).fill(mud.ROOM_NONE),
+            ExitIsLocked: new Array(mud.DIRECTION_COUNT).fill(false),
+            IsSafeZone: false,
+            Inventory: {
+              Items: [],
+            },
+            Chests: [],
+          });
+
+          this.setRoomGrid(data.roomGridIndex, newRoomIndex);
+        } else {
+          this.world.Rooms.pop();
+          this.setRoomGrid(data.roomGridIndex, EDITOR_ROOM_GRID_INDEX_NONE);
+          if (this.selectedRoomGridIndex === data.roomGridIndex) {
+            this.selectedRoomGridIndex = EDITOR_ROOM_GRID_INDEX_NONE;
+          }
+        }
+        break;
+      }
+
+      case EditorActionType.EDIT_ROOM: {
+        const data = action.data as EditorActionSetRoomName;
+
+        this.world.Rooms[data.roomIndex] = !undo
+          ? structuredClone(data.value)
+          : structuredClone(data.previous);
+
+        break;
+      }
+    }
+
+    this.refreshSidebar();
+  }
+
+  refreshSidebar() {
+    this.setSidebarGeneration((previous: number) => previous + 1);
   }
 
   render(context: CanvasRenderingContext2D) {
