@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Paper, TextField, Typography } from '@mui/material';
+import { Checkbox, FormControlLabel, Paper, Stack, TextField, Typography } from '@mui/material';
 import { EDITOR_ROOM_GRID_INDEX_NONE, EditorState, EditorActionType } from './state';
 import * as mud from '../mud/types';
 
@@ -64,34 +64,70 @@ const EditorSidebarRoomCluster = ({ generation, stateRef }: EditorSidebarRoomClu
     );
   }
 
-  const onSubmit = () => {
+  const onSubmit = (value = room) => {
     stateRef.current.doAction({
       type: EditorActionType.EDIT_ROOM,
       data: {
         roomIndex: roomIndex,
-        value: structuredClone(room),
+        value: structuredClone(value),
         previous: structuredClone(stateRef.current.world.Rooms[roomIndex]),
       },
     })
   };
 
+  const onTextFieldKeydown = (event) => {
+    if (event.key === 'Enter') {
+      onSubmit();
+    }
+  };
+
   return (
-    <TextField
-      label="Name"
-      value={room.Name}
-      onChange={(event) => {
-        setRoom((previous) => ({
-          ...previous,
-          Name: event.target.value,
-        }))
-      }}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter') {
-          onSubmit();
+    <Stack spacing={2}>
+      <TextField
+        label="Name"
+        value={room.Name}
+        onChange={(event) => {
+          setRoom((previous) => ({
+            ...previous,
+            Name: event.target.value,
+          }))
+        }}
+        onKeyDown={onTextFieldKeydown}
+        onBlur={() => onSubmit()}
+        variant="standard"
+      />
+
+      <TextField
+        label="Description"
+        value={room.Description}
+        onChange={(event) => {
+          setRoom((previous) => ({
+            ...previous,
+            Description: event.target.value,
+          }))
+        }}
+        onKeyDown={onTextFieldKeydown}
+        onBlur={() => onSubmit()}
+        multiline
+        variant="standard"
+      />
+
+      <FormControlLabel
+        label="Safe Zone"
+        control={
+          <Checkbox
+            checked={room.IsSafeZone}
+            onChange={(event) => {
+              const newRoom: mud.Room = {
+                ...room,
+                IsSafeZone: event.target.checked,
+              };
+              setRoom(() => newRoom);
+              onSubmit(newRoom);
+            }}
+          />
         }
-      }}
-      onBlur={() => onSubmit()}
-      variant="standard"
-    />
+      />
+    </Stack>
   )
 }
