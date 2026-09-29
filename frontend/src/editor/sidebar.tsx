@@ -1,19 +1,27 @@
 import { useEffect, useState } from 'react';
-import { Checkbox, FormControlLabel, Paper, Stack, TextField, Typography } from '@mui/material';
+import { Checkbox, FormControlLabel, Paper, Stack, TextField, Typography, Button, MenuItem, Select } from '@mui/material';
 import { EDITOR_ROOM_GRID_INDEX_NONE, EditorState, EditorActionType } from './state';
 import * as mud from '../mud/types';
 
 export type EditorSidebarProps = {
   generation: number;
   stateRef: React.RefObject<EditorState>;
+  itemData: mud.ItemData[];
 }
 
 type EditorSidebarRoomClusterProps = {
   generation: number;
   stateRef: React.RefObject<EditorState>;
+  itemData: mud.ItemData[];
 }
 
-export const EditorSidebar = ({ generation, stateRef }: EditorSidebarProps) => {
+type EditorSidebarInventoryClusterProps = {
+  inventory: mud.Inventory;
+  itemData: mud.ItemData[];
+  onAddItem: () => void;
+}
+
+export const EditorSidebar = ({ generation, stateRef, itemData }: EditorSidebarProps) => {
   return (
     <Paper
       elevation={2}
@@ -29,12 +37,12 @@ export const EditorSidebar = ({ generation, stateRef }: EditorSidebarProps) => {
         overflowY: 'auto',
       }}
     >
-      <EditorSidebarRoomCluster generation={generation} stateRef={stateRef} />
+      <EditorSidebarRoomCluster generation={generation} stateRef={stateRef} itemData={itemData} />
     </Paper>
   );
 };
 
-const EditorSidebarRoomCluster = ({ generation, stateRef }: EditorSidebarRoomClusterProps) => {
+const EditorSidebarRoomCluster = ({ generation, stateRef, itemData }: EditorSidebarRoomClusterProps) => {
   const [roomIndex, setRoomIndex] = useState(mud.ROOM_NONE);
   const [room, setRoom] = useState<mud.Room | null>(null);
 
@@ -122,12 +130,50 @@ const EditorSidebarRoomCluster = ({ generation, stateRef }: EditorSidebarRoomClu
                 ...room,
                 IsSafeZone: event.target.checked,
               };
-              setRoom(() => newRoom);
+              setRoom(newRoom);
               onSubmit(newRoom);
             }}
           />
         }
       />
+
+      <Typography>Room Inventory:</Typography>
+      <EditorSidebarInventoryCluster
+        inventory={room.Inventory}
+        itemData={itemData}
+        onAddItem={() => {
+          console.log("bitch ehllo?");
+          const newRoom = structuredClone(room);
+          newRoom.Inventory.Items.push({
+            Id: 0,
+            Amount: 1,
+            Durability: 0,
+          });
+          setRoom(newRoom);
+          onSubmit(newRoom);
+        }}
+      />
+    </Stack>
+  )
+}
+
+const EditorSidebarInventoryCluster = ({ inventory, itemData, onAddItem }: EditorSidebarInventoryClusterProps) => {
+  console.log("render inventory cluster ", inventory);
+  console.log("item data", itemData);
+  return (
+    <Stack spacing={2}>
+      {inventory.Items.map((item: mud.Item) => (
+        <>
+          <Select
+            label="Item"
+            value={item.Id}
+          >{itemData.map((entry, index) => (
+            <MenuItem value={index} >{entry.Name}</MenuItem>
+          ))}
+          </Select>
+        </>
+      ))}
+      <Button onClick={onAddItem}>+ Add Item</Button>
     </Stack>
   )
 }

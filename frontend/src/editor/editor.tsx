@@ -11,11 +11,24 @@ export const Editor = () => {
   const canvasRef = useRef(null);
   const canvasBoxRef = useRef(null);
   const [sidebarGeneration, setSidebarGeneration] = useState(0);
+
+  const [itemData, setItemData] = useState<mud.ItemData[]>([]);
+  const [itemDataGeneration, setItemDataGeneration] = useState(0);
+
   const stateRef = useRef(new EditorState());
 
   useEffect(() => {
     stateRef.current.setSidebarGeneration = setSidebarGeneration;
-  }, [setSidebarGeneration]);
+    stateRef.current.setItemDataGeneration = setItemDataGeneration;
+  }, [setSidebarGeneration, setItemDataGeneration]);
+
+  useEffect(() => {
+    stateRef.current.loadItemData();
+  }, []);
+
+  useEffect(() => {
+    setItemData(stateRef.current.itemData);
+  }, [itemDataGeneration]);
 
   // RESIZE
   useEffect(() => {
@@ -173,7 +186,7 @@ export const Editor = () => {
       height: '100vh',
       overflow: 'hidden'
     }}>
-      <EditorSidebar generation={sidebarGeneration} stateRef={stateRef} />
+      <EditorSidebar generation={sidebarGeneration} stateRef={stateRef} itemData={itemData} />
       <Box
         ref={canvasBoxRef}
         sx={{

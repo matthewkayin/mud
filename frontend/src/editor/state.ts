@@ -46,18 +46,38 @@ export class EditorState {
     Rooms: [],
     Npcs: [],
   };
+  itemData: mud.ItemData[] = [];
+
+  setSidebarGeneration: React.Dispatch<React.SetStateAction<number>>;
+  setItemDataGeneration: React.Dispatch<React.SetStateAction<number>>;
 
   roomGridWidth: number;
   roomGridHeight: number;
   roomGrid: number[] = [];
 
   actionHistory: EditorAction[] = [];
-  setSidebarGeneration: React.Dispatch<React.SetStateAction<number>>;
 
   constructor() {
     this.roomGridWidth = 16;
     this.roomGridHeight = 16;
     this.roomGrid = new Array(this.roomGridWidth * this.roomGridHeight).fill(mud.ROOM_NONE);
+  }
+
+  async loadItemData() {
+    try {
+      const response = await fetch(`http://${window.location.hostname}:7272/api/world/items`, {
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP response ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      this.itemData = data as mud.ItemData[];
+      this.setItemDataGeneration((previous) => previous + 1);
+    } catch (err) {
+      console.error('Failed to fetch item data:', err);
+      return;
+    }
   }
 
   roomGridIndex(cell: Vec2): number {
