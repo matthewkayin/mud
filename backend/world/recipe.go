@@ -85,8 +85,9 @@ var RECIPE_DATA = map[Recipe]*RecipeData {
 
 func (recipeData *RecipeData) CreateOutput() Item {
 	output := recipeData.Output
+	itemData := ITEM_DATA[output.Id]
 	if output.Durability == RECIPE_OUTPUT_MAX_DURABILITY {
-		output.Durability = output.GetMaxDurability()
+		output.Durability = itemData.GetMaxDurability()
 	}
 
 	return output

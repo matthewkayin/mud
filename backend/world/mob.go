@@ -387,7 +387,7 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 	}
 
 	// If item has become damaged, tell the user
-	maxDurability := item.GetMaxDurability()
+	maxDurability := itemData.GetMaxDurability()
 	itemWasDamaged := (item.Durability + 1) < maxDurability / 2
 	itemIsDamaged := item.Durability < maxDurability / 2
 	if itemIsDamaged && !itemWasDamaged {

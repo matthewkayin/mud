@@ -1,5 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Checkbox, FormControlLabel, Paper, Stack, TextField, Typography, Button, MenuItem, Select } from '@mui/material';
+import {
+  Checkbox,
+  FormControlLabel,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+  Button,
+  MenuItem,
+  Select,
+} from '@mui/material';
+import NumberField from './number_field.tsx';
 import { EDITOR_ROOM_GRID_INDEX_NONE, EditorState, EditorActionType } from './state';
 import * as mud from '../mud/types';
 
@@ -19,6 +30,7 @@ type EditorSidebarInventoryClusterProps = {
   inventory: mud.Inventory;
   itemData: mud.ItemData[];
   onAddItem: () => void;
+  onEditItem: (itemIndex: number, item: mud.Item) => void;
 }
 
 export const EditorSidebar = ({ generation, stateRef, itemData }: EditorSidebarProps) => {
@@ -142,7 +154,6 @@ const EditorSidebarRoomCluster = ({ generation, stateRef, itemData }: EditorSide
         inventory={room.Inventory}
         itemData={itemData}
         onAddItem={() => {
-          console.log("bitch ehllo?");
           const newRoom = structuredClone(room);
           newRoom.Inventory.Items.push({
             Id: 0,
@@ -152,25 +163,47 @@ const EditorSidebarRoomCluster = ({ generation, stateRef, itemData }: EditorSide
           setRoom(newRoom);
           onSubmit(newRoom);
         }}
+        onEditItem={(itemIndex, item) => {
+          const newRoom = structuredClone(room);
+          newRoom.Inventory.Items[itemIndex] = item;
+          setRoom(newRoom);
+          onSubmit(newRoom);
+        }}
       />
     </Stack>
   )
 }
 
-const EditorSidebarInventoryCluster = ({ inventory, itemData, onAddItem }: EditorSidebarInventoryClusterProps) => {
-  console.log("render inventory cluster ", inventory);
-  console.log("item data", itemData);
+const EditorSidebarInventoryCluster = ({ inventory, itemData, onAddItem, onEditItem }: EditorSidebarInventoryClusterProps) => {
   return (
     <Stack spacing={2}>
-      {inventory.Items.map((item: mud.Item) => (
+      {inventory.Items.map((item: mud.Item, itemIndex: number) => (
         <>
-          <Select
-            label="Item"
-            value={item.Id}
-          >{itemData.map((entry, index) => (
-            <MenuItem value={index} >{entry.Name}</MenuItem>
-          ))}
-          </Select>
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{
+              alignItems: 'center',
+            }}
+          >
+            <Typography>ID:</Typography>
+            <Select
+              label="Item"
+              value={item.Id}
+              onChange={(event) => onEditItem(itemIndex, { ...item, Id: event.target.value })}
+            >{itemData.map((entry, index) => (
+              <MenuItem value={index}>{entry.Name}</MenuItem>
+            ))}
+            </Select>
+
+            <Typography>ID:</Typography>
+            <NumberField
+              min={1}
+              value={item.Amount}
+              size="small"
+              onValueChange={(value) => onEditItem(itemIndex, { ...item, Amount: value })}
+            />
+          </Stack>
         </>
       ))}
       <Button onClick={onAddItem}>+ Add Item</Button>

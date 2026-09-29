@@ -230,7 +230,8 @@ func (room *Room) removeDeadOccupants(world *World) {
 				}
 
 				// Perform random durability damage to the player's equipped items on death
-				halfMaxDurability := item.GetMaxDurability() / 2
+				itemData := ITEM_DATA[item.Id]
+				halfMaxDurability := itemData.GetMaxDurability() / 2
 				durabilityDamage := halfMaxDurability + int32(rand.Intn(int(halfMaxDurability)))
 				item.Durability -= durabilityDamage
 				if item.Durability <= 0 {

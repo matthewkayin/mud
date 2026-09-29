@@ -85,6 +85,16 @@ type ItemData struct {
 	Data any
 }
 
+// Used by the world editor so that it can access data about items that
+// would otherwise be function calls...
+type ItemDataExt struct {
+	Name string
+	Description string
+	ItemType ItemType
+	MaxDurability int
+	Data any
+}
+
 // HELPERS
 
 func (itemData *ItemData) ItemIsOneHanded() bool {
@@ -162,7 +172,7 @@ func (item *Item) GetStatRequirements() *StatBlock {
 func (item *Item) GetNameWithCondition() string {
 	itemData := ITEM_DATA[item.Id]
 
-	maxDurability := item.GetMaxDurability()
+	maxDurability := itemData.GetMaxDurability()
 	if maxDurability == 0 {
 		return itemData.Name
 	}
@@ -188,8 +198,7 @@ func (item *Item) GetNameWithAmount() string {
 	return fmt.Sprintf("%d %s", item.Amount, itemName)
 }
 
-func (item *Item) GetMaxDurability() int32 {
-	itemData := ITEM_DATA[item.Id]
+func (itemData *ItemData) GetMaxDurability() int32 {
 	switch itemData.ItemType {
 		case ITEM_TYPE_EQUIPMENT_ONE_HANDED, ITEM_TYPE_EQUIPMENT_TWO_HANDED:
 			weaponData := itemData.Data.(*ItemDataWeapon)
