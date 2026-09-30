@@ -1,66 +1,29 @@
 import { useEffect, useState } from 'react';
+import { EditorState } from '../../state/state';
+import * as mud from '../../../mud/types';
+import { EDITOR_GRID_INDEX_NONE, EditorActionType } from '../../state';
+import { InventoryCluster } from './inventory';
 import {
-  Checkbox,
-  FormControlLabel,
-  Paper,
   Stack,
   TextField,
+  FormControlLabel,
+  Checkbox,
   Typography,
-  Button,
-  MenuItem,
-  Select,
 } from '@mui/material';
-import NumberField from './number_field.tsx';
-import { EDITOR_ROOM_GRID_INDEX_NONE, EditorState, EditorActionType } from './state';
-import * as mud from '../mud/types';
 
-export type EditorSidebarProps = {
+export type RoomClusterProps = {
   generation: number;
   stateRef: React.RefObject<EditorState>;
   itemData: mud.ItemData[];
 }
 
-type EditorSidebarRoomClusterProps = {
-  generation: number;
-  stateRef: React.RefObject<EditorState>;
-  itemData: mud.ItemData[];
-}
-
-type EditorSidebarInventoryClusterProps = {
-  inventory: mud.Inventory;
-  itemData: mud.ItemData[];
-  onAddItem: () => void;
-  onEditItem: (itemIndex: number, item: mud.Item) => void;
-}
-
-export const EditorSidebar = ({ generation, stateRef, itemData }: EditorSidebarProps) => {
-  return (
-    <Paper
-      elevation={2}
-      sx={{
-        width: '25%',
-        minWidth: '25%',
-        height: '100%',
-        borderRadius: 0,
-        borderRight: '1px solid',
-        borderColor: 'divider',
-        p: 2,
-        boxSixing: 'border-box',
-        overflowY: 'auto',
-      }}
-    >
-      <EditorSidebarRoomCluster generation={generation} stateRef={stateRef} itemData={itemData} />
-    </Paper>
-  );
-};
-
-const EditorSidebarRoomCluster = ({ generation, stateRef, itemData }: EditorSidebarRoomClusterProps) => {
+export function RoomCluster({ generation, stateRef, itemData }: RoomClusterProps) {
   const [roomIndex, setRoomIndex] = useState(mud.ROOM_NONE);
   const [room, setRoom] = useState<mud.Room | null>(null);
 
   useEffect(() => {
     const updateRoom = () => {
-      if (stateRef.current.selectedRoomGridIndex === EDITOR_ROOM_GRID_INDEX_NONE) {
+      if (stateRef.current.selectedRoomGridIndex === EDITOR_GRID_INDEX_NONE) {
         setRoomIndex(mud.ROOM_NONE);
         return;
       }
@@ -150,7 +113,7 @@ const EditorSidebarRoomCluster = ({ generation, stateRef, itemData }: EditorSide
       />
 
       <Typography>Room Inventory:</Typography>
-      <EditorSidebarInventoryCluster
+      <InventoryCluster
         inventory={room.Inventory}
         itemData={itemData}
         onAddItem={() => {
@@ -170,43 +133,6 @@ const EditorSidebarRoomCluster = ({ generation, stateRef, itemData }: EditorSide
           onSubmit(newRoom);
         }}
       />
-    </Stack>
-  )
-}
-
-const EditorSidebarInventoryCluster = ({ inventory, itemData, onAddItem, onEditItem }: EditorSidebarInventoryClusterProps) => {
-  return (
-    <Stack spacing={2}>
-      {inventory.Items.map((item: mud.Item, itemIndex: number) => (
-        <>
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{
-              alignItems: 'center',
-            }}
-          >
-            <Typography>ID:</Typography>
-            <Select
-              label="Item"
-              value={item.Id}
-              onChange={(event) => onEditItem(itemIndex, { ...item, Id: event.target.value })}
-            >{itemData.map((entry, index) => (
-              <MenuItem value={index}>{entry.Name}</MenuItem>
-            ))}
-            </Select>
-
-            <Typography>ID:</Typography>
-            <NumberField
-              min={1}
-              value={item.Amount}
-              size="small"
-              onValueChange={(value) => onEditItem(itemIndex, { ...item, Amount: value })}
-            />
-          </Stack>
-        </>
-      ))}
-      <Button onClick={onAddItem}>+ Add Item</Button>
     </Stack>
   )
 }

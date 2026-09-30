@@ -1,4 +1,10 @@
-import * as mud from '../mud/types';
+import * as mud from '../../mud/types';
+import {
+  EditorActionType,
+  type EditorAction,
+  type EditorActionAddRoom,
+  type EditorActionEditRoom,
+} from './action';
 import { type Vec2, type Rect, rectHasPoint } from './util';
 
 const ROOM_X_SPACING = 20;
@@ -6,28 +12,8 @@ const ROOM_Y_SPACING = 20;
 const ROOM_WIDTH = 200;
 const ROOM_HEIGHT = 80;
 
-export const EDITOR_ROOM_GRID_INDEX_NONE = -1;
+export const EDITOR_GRID_INDEX_NONE = -1;
 
-export const EditorActionType = {
-  ADD_ROOM: 0,
-  EDIT_ROOM: 1,
-} as const;
-export type EditorActionType = (typeof EditorActionType)[keyof typeof EditorActionType];
-
-export type EditorActionAddRoom = {
-  roomGridIndex: number;
-}
-
-export type EditorActionSetRoomName = {
-  roomIndex: number;
-  value: mud.Room;
-  previous: mud.Room;
-}
-
-export type EditorAction = {
-  type: EditorActionType,
-  data: EditorActionAddRoom | EditorActionSetRoomName,
-}
 
 type RenderRoomParams = {
   cell: Vec2;
@@ -39,8 +25,8 @@ type RenderRoomParams = {
 export class EditorState {
   cameraOffset: Vec2 = { x: 0, y: 0 };
   cameraZoom: number = 1.0;
-  hoveredRoomGridIndex: number = EDITOR_ROOM_GRID_INDEX_NONE;
-  selectedRoomGridIndex: number = EDITOR_ROOM_GRID_INDEX_NONE;
+  hoveredRoomGridIndex: number = EDITOR_GRID_INDEX_NONE;
+  selectedRoomGridIndex: number = EDITOR_GRID_INDEX_NONE;
 
   world: mud.World = {
     Rooms: [],
@@ -154,7 +140,7 @@ export class EditorState {
   }
 
   onMouseMoved(mouseWorldPos: Vec2) {
-    this.hoveredRoomGridIndex = EDITOR_ROOM_GRID_INDEX_NONE;
+    this.hoveredRoomGridIndex = EDITOR_GRID_INDEX_NONE;
 
     // Check for hovering over rooms
     for (let y = 0; y < this.roomGridHeight; y++) {
@@ -204,16 +190,16 @@ export class EditorState {
           this.setRoomGrid(data.roomGridIndex, newRoomIndex);
         } else {
           this.world.Rooms.pop();
-          this.setRoomGrid(data.roomGridIndex, EDITOR_ROOM_GRID_INDEX_NONE);
+          this.setRoomGrid(data.roomGridIndex, EDITOR_GRID_INDEX_NONE);
           if (this.selectedRoomGridIndex === data.roomGridIndex) {
-            this.selectedRoomGridIndex = EDITOR_ROOM_GRID_INDEX_NONE;
+            this.selectedRoomGridIndex = EDITOR_GRID_INDEX_NONE;
           }
         }
         break;
       }
 
       case EditorActionType.EDIT_ROOM: {
-        const data = action.data as EditorActionSetRoomName;
+        const data = action.data as EditorActionEditRoom;
 
         this.world.Rooms[data.roomIndex] = !undo
           ? structuredClone(data.value)

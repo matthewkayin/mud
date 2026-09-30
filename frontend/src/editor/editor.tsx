@@ -1,15 +1,15 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { Box } from '@mui/material';
 import * as mud from '../mud/types';
-import { EditorSidebar } from './sidebar';
-import { EDITOR_ROOM_GRID_INDEX_NONE, EditorState, EditorActionType } from './state';
+import { Sidebar } from './sidebar/sidebar';
+import { Canvas } from './canvas/canvas';
+import { EDITOR_GRID_INDEX_NONE, EditorState, EditorActionType } from './state';
+import type { CanvasMouseWheelEvent as CanvasMouseScrollEvent } from './canvas/canvas';
 
 const CAMERA_ZOOM_MIN = 0.5;
 const CAMERA_ZOOM_MAX = 2.0;
 
-export const Editor = () => {
-  const canvasRef = useRef(null);
-  const canvasBoxRef = useRef(null);
+export function Editor() {
   const [sidebarGeneration, setSidebarGeneration] = useState(0);
 
   const [itemData, setItemData] = useState<mud.ItemData[]>([]);
@@ -30,153 +30,75 @@ export const Editor = () => {
     setItemData(stateRef.current.itemData);
   }, [itemDataGeneration]);
 
-  // RESIZE
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const box = canvasBoxRef.current;
-    if (!canvas || !box) {
-      return;
-    }
+  // Canvas callbacks
 
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const { width, height } = entry.contentRect;
-        canvas.width = width;
-        canvas.height = height;
-
-        const context = canvas.getContext('2d');
-        if (!context) {
-          return;
-        }
-
-        stateRef.current.render(context);
-      }
-    });
-    resizeObserver.observe(box);
-
-    return () => resizeObserver.disconnect();
+  const onRender = useCallback((context: CanvasRenderingContext2D) => {
+    stateRef.current.render(context);
   }, []);
 
-  // CANVAS EVENT LISTENERS
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) {
-      return;
+  const onMouseClick = useCallback(() => {
+    const state = stateRef.current;
+
+    // Create room
+    const shouldCreateRoom =
+      state.hoveredRoomGridIndex !== EDITOR_GRID_INDEX_NONE &&
+      state.roomGrid[state.hoveredRoomGridIndex] === mud.ROOM_NONE;
+    if (shouldCreateRoom) {
+      state.doAction({
+        type: EditorActionType.ADD_ROOM,
+        data: {
+          roomGridIndex: state.hoveredRoomGridIndex,
+        },
+      });
     }
 
-    // onContextMenu prevents the default right-click menu from popping up, allowing us
-    // to use right-click to drag the camera
-    const onContextMenu = (event) => {
-      event.preventDefault();
-    };
-
-    const onMouseClick = () => {
-      const state = stateRef.current;
-
-      // Create room
-      const shouldCreateRoom =
-        state.hoveredRoomGridIndex !== EDITOR_ROOM_GRID_INDEX_NONE &&
-        state.roomGrid[state.hoveredRoomGridIndex] === mud.ROOM_NONE;
-      if (shouldCreateRoom) {
-        state.doAction({
-          type: EditorActionType.ADD_ROOM,
-          data: {
-            roomGridIndex: state.hoveredRoomGridIndex,
-          },
-        });
-      }
-
-      // Select the room that was clicked
-      const hoveredRoomIndex = state.roomGrid[state.hoveredRoomGridIndex];
-      if (hoveredRoomIndex !== mud.ROOM_NONE) {
-        state.selectedRoomGridIndex = state.hoveredRoomGridIndex;
-        state.refreshSidebar();
-      }
-    };
-
-    const onMouseMove = (event) => {
-      const BUTTON_RIGHT = 2;
-      const state = stateRef.current;
-
-      // Mouse drag
-      if ((event.buttons & BUTTON_RIGHT) === BUTTON_RIGHT) {
-        state.cameraOffset.x += event.movementX;
-        state.cameraOffset.y += event.movementY;
-      }
-
-      // Determine mouse world pos
-
-      const mouseWorldPos = {
-        x: (event.offsetX - state.cameraOffset.x) / state.cameraZoom,
-        y: (event.offsetY - state.cameraOffset.y) / state.cameraZoom,
-      };
-      state.onMouseMoved(mouseWorldPos);
-    };
-
-    const onMouseScroll = (event) => {
-      const state = stateRef.current;
-      const canvas = canvasRef.current;
-
-      const rect = canvas.getBoundingClientRect();
-      const mouseX = event.clientX - rect.left;
-      const mouseY = event.clientY - rect.top;
-
-      const worldX = (mouseX - state.cameraOffset.x) / state.cameraZoom;
-      const worldY = (mouseY - state.cameraOffset.y) / state.cameraZoom;
-
-      if (event.deltaY < 0) {
-        state.cameraZoom += state.cameraZoom * 0.1;
-      } else if (event.deltaY > 0) {
-        state.cameraZoom -= state.cameraZoom * 0.1;
-      }
-
-      if (state.cameraZoom < CAMERA_ZOOM_MIN) {
-        state.cameraZoom = CAMERA_ZOOM_MIN;
-      } else if (state.cameraZoom > CAMERA_ZOOM_MAX) {
-        state.cameraZoom = CAMERA_ZOOM_MAX;
-      }
-
-      state.cameraOffset.x = mouseX - worldX * state.cameraZoom;
-      state.cameraOffset.y = mouseY - worldY * state.cameraZoom;
-    };
-
-    canvas.addEventListener('contextmenu', onContextMenu);
-    canvas.addEventListener('click', onMouseClick);
-    canvas.addEventListener('mousemove', onMouseMove);
-    canvas.addEventListener('wheel', onMouseScroll);
-
-    return () => {
-      canvas.removeEventListener('contextmenu', onContextMenu);
-      canvas.removeEventListener('click', onMouseClick);
-      canvas.removeEventListener('mousemove', onMouseMove);
-      canvas.removeEventListener('wheel', onMouseScroll);
-    };
+    // Select the room that was clicked
+    const hoveredRoomIndex = state.roomGrid[state.hoveredRoomGridIndex];
+    if (hoveredRoomIndex !== mud.ROOM_NONE) {
+      state.selectedRoomGridIndex = state.hoveredRoomGridIndex;
+      state.refreshSidebar();
+    }
   }, []);
 
-  // CANVAS DRAW
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) {
-      return;
+  const onMouseMove = useCallback((event: MouseEvent) => {
+    const BUTTON_RIGHT = 2;
+    const state = stateRef.current;
+
+    // Mouse drag
+    if ((event.buttons & BUTTON_RIGHT) === BUTTON_RIGHT) {
+      state.cameraOffset.x += event.movementX;
+      state.cameraOffset.y += event.movementY;
     }
 
-    const context = canvas.getContext('2d');
-    if (!context) {
-      return;
+    // Determine mouse world pos
+
+    const mouseWorldPos = {
+      x: (event.offsetX - state.cameraOffset.x) / state.cameraZoom,
+      y: (event.offsetY - state.cameraOffset.y) / state.cameraZoom,
+    };
+    state.onMouseMoved(mouseWorldPos);
+  }, []);
+
+  const onMouseScroll = useCallback((event: CanvasMouseScrollEvent) => {
+    const state = stateRef.current;
+
+    const worldX = (event.mouseX - state.cameraOffset.x) / state.cameraZoom;
+    const worldY = (event.mouseY - state.cameraOffset.y) / state.cameraZoom;
+
+    if (event.scrollY < 0) {
+      state.cameraZoom += state.cameraZoom * 0.1;
+    } else if (event.scrollY > 0) {
+      state.cameraZoom -= state.cameraZoom * 0.1;
     }
 
-    let animationFrameId: number;
-    const render = () => {
-      stateRef.current.render(context);
-      animationFrameId = requestAnimationFrame(render);
-    };
+    if (state.cameraZoom < CAMERA_ZOOM_MIN) {
+      state.cameraZoom = CAMERA_ZOOM_MIN;
+    } else if (state.cameraZoom > CAMERA_ZOOM_MAX) {
+      state.cameraZoom = CAMERA_ZOOM_MAX;
+    }
 
-    // start the render loop
-    animationFrameId = requestAnimationFrame(render);
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
+    state.cameraOffset.x = event.mouseX - worldX * state.cameraZoom;
+    state.cameraOffset.y = event.mouseY - worldY * state.cameraZoom;
   }, []);
 
   return (
@@ -186,24 +108,17 @@ export const Editor = () => {
       height: '100vh',
       overflow: 'hidden'
     }}>
-      <EditorSidebar generation={sidebarGeneration} stateRef={stateRef} itemData={itemData} />
-      <Box
-        ref={canvasBoxRef}
-        sx={{
-          width: '100%',
-          height: '100%',
-          backgroundColor: '#000',
-        }}
-      >
-        <canvas
-          ref={canvasRef}
-          style={{
-            width: '100%',
-            height: '100%',
-            imageRendering: 'pixelated',
-          }}
-        />
-      </Box>
+      <Sidebar
+        generation={sidebarGeneration}
+        stateRef={stateRef}
+        itemData={itemData}
+      />
+      <Canvas
+        onRender={onRender}
+        onMouseClick={onMouseClick}
+        onMouseMove={onMouseMove}
+        onMouseScroll={onMouseScroll}
+      />
     </Box>
   );
 };
