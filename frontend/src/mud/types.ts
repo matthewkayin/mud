@@ -98,8 +98,8 @@ export const DIRECTION_COUNT = 4;
 export interface DropTableEntry {
   ItemId: ItemId;
   AmountRange: Int32Range;
-  Durability: number /* float32 */;
-  DropChance: number /* float32 */;
+  DurabilityPercentRange: Int32Range;
+  DropChancePercent: number /* int32 */;
 }
 export interface DropTable {
   Entries: DropTableEntry[];
@@ -408,10 +408,6 @@ export interface NpcData {
 export interface Int32Range {
   Min: number /* int32 */;
   Max: number /* int32 */;
-}
-export interface Float32Range {
-  Min: number /* float32 */;
-  Max: number /* float32 */;
 }
 
 //////////

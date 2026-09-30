@@ -112,8 +112,8 @@ export function RoomCluster({ generation, stateRef, itemData }: RoomClusterProps
         }
       />
 
-      <Typography>Room Inventory:</Typography>
       <DropTableCluster
+        name="Room Items"
         dropTable={room.DropTable}
         itemData={itemData}
         onEdit={(dropTable) => {

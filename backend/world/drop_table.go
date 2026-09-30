@@ -9,8 +9,8 @@ type DropTableEntry struct {
 	ItemId ItemId
 
 	AmountRange Int32Range
-	Durability float32
-	DropChance float32
+	DurabilityPercentRange Int32Range
+	DropChancePercent int32
 }
 
 type DropTable struct {
@@ -25,7 +25,7 @@ func (table *DropTable) getLoot() Inventory {
 	// Roll items and add them to the inventory
 	for index := range len(table.Entries) {
 		entry := &table.Entries[index]
-		droppedItem := rand.Float32() < entry.DropChance
+		droppedItem := rand.Int32N(100) < entry.DropChancePercent
 		if !droppedItem {
 			continue
 		}
@@ -47,10 +47,12 @@ func (table *DropTable) getLoot() Inventory {
 			maxDurability := float32(itemData.GetMaxDurability())
 
 			for _ = range amount {
+				durabilityPercent := float32(entry.DurabilityPercentRange.ChooseRandom()) / 100.0
+
 				inventory.AddItem(Item {
 					Id: entry.ItemId,
 					Amount: 1,
-					Durability: int32(entry.Durability * maxDurability),
+					Durability: int32(durabilityPercent * maxDurability),
 				})
 			}
 		}

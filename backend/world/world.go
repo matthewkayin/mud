@@ -260,18 +260,18 @@ func WorldInitNew() *World {
 			{
 				ItemId: ITEM_GOLD,
 				AmountRange: Int32Range { Min: 5, Max: 10, },
-				DropChance: 6,
+				DropChancePercent: 60,
 			},
 			{
 				ItemId: ITEM_POTION_HEALTH,
 				AmountRange: Int32Range { Min: 1, Max: 1, },
-				DropChance: 3,
+				DropChancePercent: 30,
 			},
 			{
 				ItemId: ITEM_SWORD,
 				AmountRange: Int32Range { Min: 1, Max: 1, },
-				Durability: 0.5,
-				DropChance: 1,
+				DurabilityPercentRange: Int32Range { Min: 25, Max: 75 },
+				DropChancePercent: 10,
 			},
 		},
 	}
