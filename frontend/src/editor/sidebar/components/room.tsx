@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { EditorState } from '../../state/state';
 import * as mud from '../../../mud/types';
 import { EDITOR_GRID_INDEX_NONE, EditorActionType } from '../../state';
-import { InventoryCluster } from './inventory';
+import { DropTableCluster } from './drop_table';
 import {
   Stack,
   TextField,
@@ -113,22 +113,12 @@ export function RoomCluster({ generation, stateRef, itemData }: RoomClusterProps
       />
 
       <Typography>Room Inventory:</Typography>
-      <InventoryCluster
-        inventory={room.Inventory}
+      <DropTableCluster
+        dropTable={room.DropTable}
         itemData={itemData}
-        onAddItem={() => {
+        onEdit={(dropTable) => {
           const newRoom = structuredClone(room);
-          newRoom.Inventory.Items.push({
-            Id: 0,
-            Amount: 1,
-            Durability: 0,
-          });
-          setRoom(newRoom);
-          onSubmit(newRoom);
-        }}
-        onEditItem={(itemIndex, item) => {
-          const newRoom = structuredClone(room);
-          newRoom.Inventory.Items[itemIndex] = item;
+          newRoom.DropTable = dropTable;
           setRoom(newRoom);
           onSubmit(newRoom);
         }}

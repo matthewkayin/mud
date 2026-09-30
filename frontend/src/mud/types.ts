@@ -93,6 +93,19 @@ export const DIRECTION_WEST = 3;
 export const DIRECTION_COUNT = 4;
 
 //////////
+// source: drop_table.go
+
+export interface DropTableEntry {
+  ItemId: ItemId;
+  AmountRange: Int32Range;
+  Durability: number /* float32 */;
+  DropChance: number /* float32 */;
+}
+export interface DropTable {
+  Entries: DropTableEntry[];
+}
+
+//////////
 // source: equipment.go
 
 export type EquipmentSlot = number /* int */;
@@ -318,18 +331,12 @@ export const NPC_MOVEMENT_TYPE_WANDER = 1;
 export type NpcDisposition = number /* int */;
 export const NPC_DISPOSITION_NEUTRAL = 0;
 export const NPC_DISPOSITION_HOSTILE = 1;
-export interface NpcDrop {
-  ItemId: ItemId;
-  AmountRange: any /* util.Int32Range */;
-  DurabilityRange: any /* util.Int32Range */;
-  DropChance: number /* int32 */;
-}
 export interface Npc {
   /**
    * NPC "config" variables - These are public and saved to world JSON
    */
   Type: NpcType;
-  LevelRange: any /* util.Int32Range */;
+  LevelRange: Int32Range;
   StartingDisposition: NpcDisposition;
   MovementType: NpcMovementType;
   Behavior: Behavior;
@@ -338,8 +345,7 @@ export interface Npc {
   SleepDuration: number /* int32 */;
   AwakeDuration: number /* int32 */;
   MovementStepDuration: number /* int32 */;
-  DropCount: number /* int32 */;
-  Drops: NpcDrop[];
+  DropTable: DropTable;
 }
 
 //////////
@@ -397,6 +403,18 @@ export interface NpcData {
 }
 
 //////////
+// source: range.go
+
+export interface Int32Range {
+  Min: number /* int32 */;
+  Max: number /* int32 */;
+}
+export interface Float32Range {
+  Min: number /* float32 */;
+  Max: number /* float32 */;
+}
+
+//////////
 // source: recipe.go
 
 export const RECIPE_OUTPUT_MAX_DURABILITY = -1;
@@ -423,11 +441,16 @@ export interface RecipeData {
 // source: room.go
 
 export const ROOM_NONE: number /* int */ = -1;
-export const CHEST_DOES_NOT_DECAY = -1;
 export const CHEST_CORPOSE_DECAY_DURATION = 30 / WORLD_SECONDS_PER_UPDATE;
+export type ChestType = number /* int */;
+export const CHEST_TYPE_CHEST = 0;
+export const CHEST_TYPE_CORPSE = 1;
 export interface Chest {
   Name: string;
-  DecayTimer: number /* int */;
+  Type: ChestType;
+  Timer: number /* int32 */;
+  RespawnDuration: number /* int32 */;
+  DropTable: DropTable;
   Inventory: Inventory;
 }
 export interface Room {
@@ -436,6 +459,7 @@ export interface Room {
   Exits: number /* int */[];
   ExitIsLocked: boolean[];
   IsSafeZone: boolean;
+  DropTable: DropTable;
   Inventory: Inventory;
   Chests: Chest[];
 }

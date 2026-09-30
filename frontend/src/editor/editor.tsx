@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { Box } from '@mui/material';
 import * as mud from '../mud/types';
+import { apiWorldGetData } from './api';
 import { Sidebar } from './sidebar/sidebar';
 import { Canvas } from './canvas/canvas';
 import { EDITOR_GRID_INDEX_NONE, EditorState, EditorActionType } from './state';
@@ -11,24 +12,22 @@ const CAMERA_ZOOM_MAX = 2.0;
 
 export function Editor() {
   const [sidebarGeneration, setSidebarGeneration] = useState(0);
-
   const [itemData, setItemData] = useState<mud.ItemData[]>([]);
-  const [itemDataGeneration, setItemDataGeneration] = useState(0);
-
   const stateRef = useRef(new EditorState());
 
+  // Set state setSidebarGeneration
   useEffect(() => {
     stateRef.current.setSidebarGeneration = setSidebarGeneration;
-    stateRef.current.setItemDataGeneration = setItemDataGeneration;
-  }, [setSidebarGeneration, setItemDataGeneration]);
+  }, [setSidebarGeneration]);
 
+  // Load item data
   useEffect(() => {
-    stateRef.current.loadItemData();
+    const getData = async () => {
+      const data = await apiWorldGetData('/api/world/items');
+      setItemData(data as mud.ItemData[]);
+    };
+    getData();
   }, []);
-
-  useEffect(() => {
-    setItemData(stateRef.current.itemData);
-  }, [itemDataGeneration]);
 
   // Canvas callbacks
 

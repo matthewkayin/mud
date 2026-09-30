@@ -14,7 +14,6 @@ const ROOM_HEIGHT = 80;
 
 export const EDITOR_GRID_INDEX_NONE = -1;
 
-
 type RenderRoomParams = {
   cell: Vec2;
   dashBorder: boolean;
@@ -33,9 +32,9 @@ export class EditorState {
     Npcs: [],
   };
   itemData: mud.ItemData[] = [];
+  spellData: mud.SpellData[] = [];
 
   setSidebarGeneration: React.Dispatch<React.SetStateAction<number>>;
-  setItemDataGeneration: React.Dispatch<React.SetStateAction<number>>;
 
   roomGridWidth: number;
   roomGridHeight: number;
@@ -50,20 +49,6 @@ export class EditorState {
   }
 
   async loadItemData() {
-    try {
-      const response = await fetch(`http://${window.location.hostname}:7272/api/world/items`, {
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP response ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      this.itemData = data as mud.ItemData[];
-      this.setItemDataGeneration((previous) => previous + 1);
-    } catch (err) {
-      console.error('Failed to fetch item data:', err);
-      return;
-    }
   }
 
   roomGridIndex(cell: Vec2): number {
@@ -181,6 +166,9 @@ export class EditorState {
             Exits: new Array(mud.DIRECTION_COUNT).fill(mud.ROOM_NONE),
             ExitIsLocked: new Array(mud.DIRECTION_COUNT).fill(false),
             IsSafeZone: false,
+            DropTable: {
+              Entries: [],
+            },
             Inventory: {
               Items: [],
             },

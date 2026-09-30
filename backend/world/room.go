@@ -12,12 +12,20 @@ import (
 
 const ROOM_NONE int = -1
 
-const CHEST_DOES_NOT_DECAY = -1
 const CHEST_CORPOSE_DECAY_DURATION = 30 / WORLD_SECONDS_PER_UPDATE
+
+type ChestType int
+const (
+	CHEST_TYPE_CHEST = iota
+	CHEST_TYPE_CORPSE
+)
 
 type Chest struct {
 	Name string
-	DecayTimer int
+	Type ChestType
+	Timer int32
+	RespawnDuration int32
+	DropTable DropTable
 	Inventory Inventory
 }
 
@@ -27,6 +35,7 @@ type Room struct {
 	Exits [DIRECTION_COUNT]int
 	ExitIsLocked [DIRECTION_COUNT]bool
 	IsSafeZone bool
+	DropTable DropTable
 	Inventory Inventory
 	Chests []Chest
 
@@ -135,17 +144,17 @@ func (room *Room) SetExitLocked(world *World, direction Direction, value bool) {
 	adjacentRoom.ExitIsLocked[oppositeDirection] = value
 }
 
-func (room *Room) updateChestDecay() {
+func (room *Room) updateChests() {
 	chestIndex := 0
 	for chestIndex < len(room.Chests) {
 		chest := &room.Chests[chestIndex]
-		if chest.DecayTimer == CHEST_DOES_NOT_DECAY {
-			chestIndex++
-			continue
-		}
 
-		chest.DecayTimer--
-		if chest.DecayTimer == 0 {
+		chest.Timer--
+		if chest.Timer <= 0 && chest.Type == CHEST_TYPE_CHEST {
+			chest.Inventory = chest.DropTable.getLoot()
+			chest.Timer = chest.RespawnDuration
+		}
+		if chest.Timer <= 0 && chest.Type == CHEST_TYPE_CORPSE {
 			room.Chests[chestIndex] = room.Chests[len(room.Chests) - 1]
 			room.Chests = room.Chests[:len(room.Chests) - 1]
 			continue
@@ -245,7 +254,7 @@ func (room *Room) removeDeadOccupants(world *World) {
 		// Create corpse in room
 		room.Chests = append(room.Chests, Chest {
 			Name: fmt.Sprintf("%s's Corpse", occupantMob.GetName()),
-			DecayTimer: CHEST_CORPOSE_DECAY_DURATION,
+			Timer: CHEST_CORPOSE_DECAY_DURATION,
 			Inventory: occupantMob.Data.Inventory,
 		})
 

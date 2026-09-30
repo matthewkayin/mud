@@ -77,21 +77,10 @@ type ItemDataRecipe struct {
 	Recipe Recipe
 }
 
-
 type ItemData struct {
 	Name string
 	Description string
 	ItemType ItemType
-	Data any
-}
-
-// Used by the world editor so that it can access data about items that
-// would otherwise be function calls...
-type ItemDataExt struct {
-	Name string
-	Description string
-	ItemType ItemType
-	MaxDurability int
 	Data any
 }
 
