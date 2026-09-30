@@ -3,13 +3,14 @@ import { EditorState } from '../../state/state';
 import * as mud from '../../../mud/types';
 import { EDITOR_GRID_INDEX_NONE, EditorActionType } from '../../state';
 import { DropTableCluster } from './drop_table';
+import { TextField } from './text_field';
 import {
   Stack,
-  TextField,
   FormControlLabel,
   Checkbox,
   Typography,
 } from '@mui/material';
+import { RoomChestsCluster } from './room_chests';
 
 export type RoomClusterProps = {
   generation: number;
@@ -58,12 +59,6 @@ export function RoomCluster({ generation, stateRef, itemData }: RoomClusterProps
     })
   };
 
-  const onTextFieldKeydown = (event) => {
-    if (event.key === 'Enter') {
-      onSubmit();
-    }
-  };
-
   return (
     <Stack spacing={2}>
       <TextField
@@ -75,9 +70,7 @@ export function RoomCluster({ generation, stateRef, itemData }: RoomClusterProps
             Name: event.target.value,
           }))
         }}
-        onKeyDown={onTextFieldKeydown}
-        onBlur={() => onSubmit()}
-        variant="standard"
+        onSubmit={onSubmit}
       />
 
       <TextField
@@ -89,10 +82,8 @@ export function RoomCluster({ generation, stateRef, itemData }: RoomClusterProps
             Description: event.target.value,
           }))
         }}
-        onKeyDown={onTextFieldKeydown}
-        onBlur={() => onSubmit()}
+        onSubmit={onSubmit}
         multiline
-        variant="standard"
       />
 
       <FormControlLabel
@@ -121,6 +112,15 @@ export function RoomCluster({ generation, stateRef, itemData }: RoomClusterProps
           newRoom.DropTable = dropTable;
           setRoom(newRoom);
           onSubmit(newRoom);
+        }}
+      />
+
+      <RoomChestsCluster
+        room={room}
+        itemData={itemData}
+        onEdit={(editedRoom: mud.Room) => {
+          setRoom(editedRoom);
+          onSubmit(editedRoom);
         }}
       />
     </Stack>

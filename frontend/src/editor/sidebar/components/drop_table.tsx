@@ -6,13 +6,16 @@ import {
   Select,
   MenuItem,
   Button,
-  Box,
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Divider,
+  IconButton,
+  Box,
 } from '@mui/material';
 import { RangeNumberPicker } from './range_number_picker';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 type DropTableClusterProps = {
   name: string;
@@ -34,9 +37,9 @@ export function DropTableCluster({ name, dropTable, itemData, onEdit }: DropTabl
       <AccordionDetails>
         <Stack spacing={2}>
           {dropTable.Entries.map((entry: mud.DropTableEntry, index: number) => (
-            <Box sx={{borderBottom: '1px solid #555', paddingBottom: '16px' }}>
-              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                <Typography>ID:</Typography>
+            <Stack spacing={2}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Typography sx={{ marginRight: '16px' }}>ID:</Typography>
                 <Select
                   label="Item"
                   value={entry.ItemId}
@@ -48,11 +51,25 @@ export function DropTableCluster({ name, dropTable, itemData, onEdit }: DropTabl
                   sx={{
                     width: '45%',
                   }}
+                  size="small"
                 >
                   {itemIdDropdownOptions}
                 </Select>
+                <Box sx={{ marginLeft: 'auto' }}>
+                  <IconButton
+                    onClick={() => {
+                      const editedTable = structuredClone(dropTable);
+                      editedTable.Entries.splice(index, 1);
+                      onEdit(editedTable);
+                    }}
+                  >
+                    <DeleteIcon/>
+                  </IconButton>
+                </Box>
+              </Box>
 
-                <Typography>Chance:</Typography>
+              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                <Typography sx={{ width: '98%' }}>Drop Chance:</Typography>
                 <NumberField
                   min={1}
                   max={100}
@@ -90,7 +107,8 @@ export function DropTableCluster({ name, dropTable, itemData, onEdit }: DropTabl
                   onEdit(editedTable);
                 }}
               />
-            </Box>
+            <Divider/>
+            </Stack>
           ))}
 
           <Button onClick={() => {
