@@ -58,7 +58,11 @@ var CLASS_DATA []*ClassData = []*ClassData {
 			Intelligence: 6,
 			Faith: 8,
 		},
-		UnlocksAtLevel: [MOB_MAX_LEVEL][]ClassUnlock {},
+		UnlocksAtLevel: [MOB_MAX_LEVEL][]ClassUnlock {
+			1: {
+				{ Type: CLASS_UNLOCK_TYPE_ABILITY,  Data: MOB_ABILITY_TAUNT, },
+			},
+		},
 	},
 
 	CLASS_THIEF: {

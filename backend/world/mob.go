@@ -50,6 +50,7 @@ const (
 	MOB_MODE_CAST
 	MOB_MODE_USE_ITEM
 	MOB_MODE_CRAFT_ITEM
+	MOB_MODE_TAUNT
 )
 
 type Mob struct {
@@ -212,6 +213,11 @@ func (mob *Mob) SetModeCraftItem(world *World, mobHandle MobHandle, recipe Recip
 	mob.craftItemAmount = amount
 }
 
+func (mob *Mob) SetModeTaunt(world *World, mobHandle MobHandle, targetHandle MobHandle) {
+	mob.Mode = MOB_MODE_TAUNT
+	mob.Target = targetHandle
+}
+
 func (mob *Mob) Update(world *World) {
 	if mob.IsDead() {
 		return
@@ -285,6 +291,18 @@ func (mob *Mob) Update(world *World) {
 				mob.SetModeIdle()
 				break
 			}
+		}
+
+		case MOB_MODE_TAUNT: {
+			// Check if target exists
+			targetMob, targetExists := mob.getTargetIfExists(world)
+			if !targetExists {
+				break
+			}
+
+			mob.Mode = MOB_MODE_IDLE
+			targetMob.SetModeAttack(world, mob.Target, mob.Handle)
+			world.messageRoom(mob.Data.Room, fmt.Sprintf("%s taunted %s!", mob.Data.Name, targetMob.Data.Name))
 		}
 	}
 }
