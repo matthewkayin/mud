@@ -14,10 +14,11 @@ import { ChestCluster } from './chest';
 type RoomChestsClusterProps = {
   room: mud.Room;
   itemData: mud.ItemData[];
+  onNameEdit: (name: string, index: number) => void;
   onEdit: (editedRoom: mud.Room) => void;
 }
 
-export function RoomChestsCluster({ room, itemData, onEdit }: RoomChestsClusterProps) {
+export function RoomChestsCluster({ room, itemData, onNameEdit, onEdit }: RoomChestsClusterProps) {
   return (
     <Accordion>
       <AccordionSummary expandIcon={<ExpandMoreIcon/>}>
@@ -30,9 +31,15 @@ export function RoomChestsCluster({ room, itemData, onEdit }: RoomChestsClusterP
             <ChestCluster
               chest={chest}
               itemData={itemData}
+              onNameEdit={(name) => onNameEdit(name, index)}
               onEdit={(editedChest: mud.Chest) => {
                 const editedRoom = structuredClone(room);
                 editedRoom.Chests[index] = editedChest;
+                onEdit(editedRoom);
+              }}
+              onDelete={() => {
+                const editedRoom = structuredClone(room);
+                editedRoom.Chests.splice(index, 1);
                 onEdit(editedRoom);
               }}
             />

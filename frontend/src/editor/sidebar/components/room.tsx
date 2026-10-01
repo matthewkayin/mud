@@ -118,6 +118,11 @@ export function RoomCluster({ generation, stateRef, itemData }: RoomClusterProps
       <RoomChestsCluster
         room={room}
         itemData={itemData}
+        onNameEdit={(name: string, index: number) => {
+          const editedRoom = structuredClone(room);
+          editedRoom.Chests[index].Name = name;
+          setRoom(editedRoom);
+        }}
         onEdit={(editedRoom: mud.Room) => {
           setRoom(editedRoom);
           onSubmit(editedRoom);
