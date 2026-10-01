@@ -1,8 +1,9 @@
 import * as mud from '../../../mud/types';
-import { Stack, IconButton } from '@mui/material';
+import { Stack, IconButton, Typography } from '@mui/material';
 import { TextField } from './text_field';
 import { DropTableCluster } from './drop_table';
 import DeleteIcon from '@mui/icons-material/Delete';
+import NumberField from './number_field';
 
 type ChestClusterProps = {
   chest: mud.Chest;
@@ -35,6 +36,20 @@ export function ChestCluster({ chest, itemData, onNameEdit, onEdit, onDelete }: 
         >
           <DeleteIcon/>
         </IconButton>
+      </Stack>
+
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+        <Typography>Refresh Duration (Minutes):</Typography>
+        <NumberField
+          min={0}
+          step={1}
+          value={Math.floor((chest.RespawnDuration / 60) / mud.WORLD_SECONDS_PER_UPDATE)}
+          onValueChange={(value) => {
+            const editedChest = structuredClone(chest);
+            editedChest.RespawnDuration = value * 60 * mud.WORLD_SECONDS_PER_UPDATE;
+            onEdit(editedChest);
+          }}
+        />
       </Stack>
 
       <DropTableCluster
