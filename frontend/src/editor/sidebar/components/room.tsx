@@ -44,7 +44,7 @@ export function RoomCluster({ generation, stateRef, itemData }: RoomClusterProps
 
   if (roomIndex === mud.ROOM_NONE) {
     return (
-      <Typography>No Room Selected</Typography>
+      <Typography>(None Selected)</Typography>
     );
   }
 

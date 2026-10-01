@@ -31,8 +31,6 @@ export class EditorState {
     Rooms: [],
     Npcs: [],
   };
-  itemData: mud.ItemData[] = [];
-  spellData: mud.SpellData[] = [];
 
   setSidebarGeneration: React.Dispatch<React.SetStateAction<number>>;
 
@@ -41,6 +39,7 @@ export class EditorState {
   roomGrid: number[] = [];
 
   actionHistory: EditorAction[] = [];
+  actionHistoryIndex: number = 0;
 
   constructor() {
     this.roomGridWidth = 16;
@@ -141,16 +140,37 @@ export class EditorState {
 
   doAction(action: EditorAction) {
     this.executeAction(action, false);
+
+    while (this.actionHistory.length > this.actionHistoryIndex) {
+      this.actionHistory.pop();
+    }
     this.actionHistory.push(action);
+    this.actionHistoryIndex++;
+    console.log(`DO ${this.actionHistoryIndex}: `, this.actionHistory);
   }
 
   undoAction() {
-    if (this.actionHistory.length === 0) {
+    if (this.actionHistoryIndex === 0) {
+      console.log('UNDO - No action to undo');
       return;
     }
 
-    const action = this.actionHistory.pop();
+    this.actionHistoryIndex--;
+    const action = this.actionHistory[this.actionHistoryIndex];
     this.executeAction(action, true);
+    console.log(`UNDO ${this.actionHistoryIndex}: `, this.actionHistory);
+  }
+
+  redoAction() {
+    if (this.actionHistoryIndex === this.actionHistory.length) {
+      console.log('REDO - No action to redo');
+      return;
+    }
+
+    const action = this.actionHistory[this.actionHistoryIndex];
+    this.executeAction(action, false);
+    this.actionHistoryIndex++;
+    console.log(`REDO ${this.actionHistoryIndex}: `, this.actionHistory);
   }
 
   executeAction(action: EditorAction, undo: boolean) {
@@ -178,7 +198,7 @@ export class EditorState {
           this.setRoomGrid(data.roomGridIndex, newRoomIndex);
         } else {
           this.world.Rooms.pop();
-          this.setRoomGrid(data.roomGridIndex, EDITOR_GRID_INDEX_NONE);
+          this.setRoomGrid(data.roomGridIndex, mud.ROOM_NONE);
           if (this.selectedRoomGridIndex === data.roomGridIndex) {
             this.selectedRoomGridIndex = EDITOR_GRID_INDEX_NONE;
           }
@@ -205,6 +225,7 @@ export class EditorState {
   }
 
   render(context: CanvasRenderingContext2D) {
+    console.log('render begin');
     context.fillStyle = '#000';
     context.fillRect(0, 0, context.canvas.width, context.canvas.height);
 
@@ -244,6 +265,7 @@ export class EditorState {
     }
 
     context.restore();
+    console.log('render end');
   }
 
   renderRoom(context: CanvasRenderingContext2D, params: RenderRoomParams) {

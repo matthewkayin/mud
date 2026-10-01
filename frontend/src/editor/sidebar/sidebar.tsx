@@ -1,7 +1,10 @@
-import { Paper } from '@mui/material';
+import { Paper, Stack, Typography, IconButton } from '@mui/material';
 import { RoomCluster } from './components/room';
 import { EditorState } from '../state';
 import * as mud from '../../mud/types';
+import SaveIcon from '@mui/icons-material/Save';
+import UndoIcon from '@mui/icons-material/Undo';
+import RedoIcon from '@mui/icons-material/Redo';
 
 export type SidebarProps = {
   generation: number;
@@ -25,11 +28,26 @@ export function Sidebar({ generation, stateRef, itemData }: SidebarProps) {
         overflowY: 'auto',
       }}
     >
-      <RoomCluster
-        generation={generation}
-        stateRef={stateRef}
-        itemData={itemData}
-      />
+      <Stack spacing={2}>
+        <Stack direction="row" spacing={2}>
+          <IconButton>
+            <SaveIcon/>
+          </IconButton>
+          <IconButton onClick={() => stateRef.current.undoAction()}>
+            <UndoIcon/>
+          </IconButton>
+          <IconButton onClick={() => stateRef.current.redoAction()}>
+            <RedoIcon/>
+          </IconButton>
+        </Stack>
+
+        <Typography>Room</Typography>
+        <RoomCluster
+          generation={generation}
+          stateRef={stateRef}
+          itemData={itemData}
+        />
+      </Stack>
     </Paper>
   );
 };
