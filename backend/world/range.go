@@ -1,6 +1,8 @@
-package util
+package world
 
-import "math/rand/v2"
+import (
+	"math/rand/v2"
+)
 
 type Int32Range struct {
 	Min int32

@@ -42,7 +42,7 @@ const (
 )
 
 type ItemDataConsumable struct {
-	OnUse func(world *World, target *Mob)
+	onUse func(world *World, target *Mob)
 }
 
 type ItemDataSpellScroll struct {
@@ -76,7 +76,6 @@ type ItemDataSpellbook struct {
 type ItemDataRecipe struct {
 	Recipe Recipe
 }
-
 
 type ItemData struct {
 	Name string
@@ -162,7 +161,7 @@ func (item *Item) GetStatRequirements() *StatBlock {
 func (item *Item) GetNameWithCondition() string {
 	itemData := ITEM_DATA[item.Id]
 
-	maxDurability := item.GetMaxDurability()
+	maxDurability := itemData.GetMaxDurability()
 	if maxDurability == 0 {
 		return itemData.Name
 	}
@@ -188,8 +187,7 @@ func (item *Item) GetNameWithAmount() string {
 	return fmt.Sprintf("%d %s", item.Amount, itemName)
 }
 
-func (item *Item) GetMaxDurability() int32 {
-	itemData := ITEM_DATA[item.Id]
+func (itemData *ItemData) GetMaxDurability() int32 {
 	switch itemData.ItemType {
 		case ITEM_TYPE_EQUIPMENT_ONE_HANDED, ITEM_TYPE_EQUIPMENT_TWO_HANDED:
 			weaponData := itemData.Data.(*ItemDataWeapon)

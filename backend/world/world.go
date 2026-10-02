@@ -2,11 +2,7 @@ package world
 
 import (
 	"log"
-	"mud/util"
 )
-
-const WORLD_SECONDS_PER_UPDATE = 3
-const WORLD_MAX_ROOMS int = 1024
 
 // `json:"-"` tells the JSON parser to ignore those fields
 
@@ -73,7 +69,7 @@ func WorldInitNew() *World {
 		Chests: []Chest {
 			{
 				Name: "Chest of Test",
-				DecayTimer: CHEST_DOES_NOT_DECAY,
+				Type: CHEST_TYPE_CHEST,
 				Inventory: Inventory {
 					Items: []Item {
 						{ Id: ITEM_SWORD, Amount: 1, Durability: 1 },
@@ -264,28 +260,30 @@ func WorldInitNew() *World {
 
 	world.Npcs = []Npc {}
 
-	goblinItemDrops := []NpcDrop {
-		{
-			ItemId: ITEM_GOLD,
-			AmountRange: util.Int32Range { Min: 5, Max: 10, },
-			DropChance: 6,
-		},
-		{
-			ItemId: ITEM_POTION_HEALTH,
-			AmountRange: util.Int32Range { Min: 1, Max: 1, },
-			DropChance: 3,
-		},
-		{
-			ItemId: ITEM_SWORD,
-			AmountRange: util.Int32Range { Min: 1, Max: 1, },
-			DurabilityRange: util.Int32Range { Min: 25, Max: 49, },
-			DropChance: 1,
+	goblinDropTable := DropTable {
+		[]DropTableEntry {
+			{
+				ItemId: ITEM_GOLD,
+				AmountRange: Int32Range { Min: 5, Max: 10, },
+				DropChancePercent: 60,
+			},
+			{
+				ItemId: ITEM_POTION_HEALTH,
+				AmountRange: Int32Range { Min: 1, Max: 1, },
+				DropChancePercent: 30,
+			},
+			{
+				ItemId: ITEM_SWORD,
+				AmountRange: Int32Range { Min: 1, Max: 1, },
+				DurabilityPercentRange: Int32Range { Min: 25, Max: 75 },
+				DropChancePercent: 10,
+			},
 		},
 	}
 
 	world.Npcs = append(world.Npcs, Npc {
 		Type: NPC_TYPE_GOLBIN,
-		LevelRange: util.Int32Range { Min: 1, Max: 2 },
+		LevelRange: Int32Range { Min: 1, Max: 2 },
 		StartingDisposition: NPC_DISPOSITION_HOSTILE,
 		MovementType: NPC_MOVEMENT_TYPE_SENTINEL,
 		SpawnRoom: basement,
@@ -293,13 +291,12 @@ func WorldInitNew() *World {
 		SleepDuration: (10 * 60) / WORLD_SECONDS_PER_UPDATE,
 		AwakeDuration: (50 * 60) / WORLD_SECONDS_PER_UPDATE,
 		MovementStepDuration: 0,
-		DropCount: 2,
-		Drops: goblinItemDrops,
+		DropTable: goblinDropTable,
 	})
 
 	world.Npcs = append(world.Npcs, Npc {
 		Type: NPC_TYPE_GOLBIN,
-		LevelRange: util.Int32Range { Min: 1, Max: 2 },
+		LevelRange: Int32Range { Min: 1, Max: 2 },
 		StartingDisposition: NPC_DISPOSITION_HOSTILE,
 		MovementType: NPC_MOVEMENT_TYPE_WANDER,
 		SpawnRoom: basement,
@@ -307,13 +304,12 @@ func WorldInitNew() *World {
 		SleepDuration: (10 * 60) / WORLD_SECONDS_PER_UPDATE,
 		AwakeDuration: (50 * 60) / WORLD_SECONDS_PER_UPDATE,
 		MovementStepDuration: (1 * 60) / WORLD_SECONDS_PER_UPDATE,
-		DropCount: 2,
-		Drops: goblinItemDrops,
+		DropTable: goblinDropTable,
 	})
 
 	world.Npcs = append(world.Npcs, Npc {
 		Type: NPC_TYPE_TROLL,
-		LevelRange: util.Int32Range { Min: 3, Max: 3 },
+		LevelRange: Int32Range { Min: 3, Max: 3 },
 		StartingDisposition: NPC_DISPOSITION_NEUTRAL,
 		MovementType: NPC_MOVEMENT_TYPE_SENTINEL,
 		Behavior: Behavior {
@@ -330,8 +326,9 @@ func WorldInitNew() *World {
 		SleepDuration: 0,
 		AwakeDuration: 0,
 		MovementStepDuration: 0,
-		DropCount: 0,
-		Drops: []NpcDrop {},
+		DropTable: DropTable {
+			Entries: []DropTableEntry{},
+		},
 	})
 
 	return world
@@ -361,7 +358,7 @@ func (world *World) updateRoom(roomIndex int) {
 	room := &world.Rooms[roomIndex]
 
 	// Chest / Corpse decay
-	room.updateChestDecay()
+	room.updateChests()
 
 	// Occupant update / combat
 	occupants := room.sortOccupantsByInitiativeOrder(world)

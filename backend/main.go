@@ -40,6 +40,9 @@ func main() {
 	}
 	mux.HandleFunc("/api/websocket", apiState.HandleGetWebSocket)
 
+	mux.HandleFunc("/api/world/items", apiState.HandleWorldGetItem)
+	mux.HandleFunc("/api/world/spells", apiState.HandleWorldGetSpell)
+
 	// Kick off server in a separate goroutine
 	// Begin server
 	log.Printf("Beginning server on port %d...", env.PORT)

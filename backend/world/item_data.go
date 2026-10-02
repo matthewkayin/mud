@@ -68,7 +68,7 @@ var ITEM_DATA = []*ItemData {
 		Description: "A red tonic that gives health to the drinker",
 		ItemType: ITEM_TYPE_CONSUMABLE,
 		Data: &ItemDataConsumable {
-			OnUse: func(world *World, target *Mob) {
+			onUse: func(world *World, target *Mob) {
 				var healing int32 = 20
 				healingReceived := min(healing, target.Data.MaxHealth() - target.Data.Health)
 				target.Data.Health += healingReceived
@@ -83,7 +83,7 @@ var ITEM_DATA = []*ItemData {
 		Description: "A blue tonic that gives mana to the drinker.",
 		ItemType: ITEM_TYPE_CONSUMABLE,
 		Data: &ItemDataConsumable {
-			OnUse: func(world *World, target *Mob) {
+			onUse: func(world *World, target *Mob) {
 				var mana int32 = 20
 				manaReceived := min(mana, target.Data.MaxMana() - target.Data.Mana)
 				target.Data.Mana += manaReceived

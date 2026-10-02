@@ -1,10 +1,6 @@
 package world
 
-import (
-	"math"
-)
-
-const RECIPE_OUTPUT_MAX_DURABILITY = math.MaxInt32
+const RECIPE_OUTPUT_MAX_DURABILITY = -1
 
 type Recipe int
 const (
@@ -89,8 +85,9 @@ var RECIPE_DATA = map[Recipe]*RecipeData {
 
 func (recipeData *RecipeData) CreateOutput() Item {
 	output := recipeData.Output
+	itemData := ITEM_DATA[output.Id]
 	if output.Durability == RECIPE_OUTPUT_MAX_DURABILITY {
-		output.Durability = output.GetMaxDurability()
+		output.Durability = itemData.GetMaxDurability()
 	}
 
 	return output

@@ -5,7 +5,6 @@ import (
 	"log"
 	"slices"
 	"math/rand/v2"
-	"mud/util"
 )
 
 // Rather than reset the NPC's sleepy timer after combat,
@@ -37,18 +36,10 @@ const (
 	NPC_DISPOSITION_HOSTILE
 )
 
-type NpcDrop struct {
-	ItemId ItemId
-
-	AmountRange util.Int32Range
-	DurabilityRange util.Int32Range
-	DropChance int32
-}
-
 type Npc struct {
 	// NPC "config" variables - These are public and saved to world JSON
 	Type NpcType
-	LevelRange util.Int32Range
+	LevelRange Int32Range
 	StartingDisposition NpcDisposition
 	MovementType NpcMovementType
 	Behavior Behavior
@@ -57,8 +48,7 @@ type Npc struct {
 	SleepDuration int32
 	AwakeDuration int32
 	MovementStepDuration int32
-	DropCount int32
-	Drops []NpcDrop
+	DropTable DropTable
 
 	// NPC "instance" variables - These are private and not saved to world JSON
 	mobHandle MobHandle
@@ -84,7 +74,7 @@ func (npc *Npc) spawnMob(world *World) {
 
 		Stats: stats,
 		Spells: []Spell {},
-		Inventory: npc.determineDrops(),
+		Inventory: npc.DropTable.getLoot(),
 		Equipment: npcData.equipment,
 	}
 
@@ -112,44 +102,6 @@ func (npc *Npc) spawnMob(world *World) {
 	}
 
 	world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s has spawned into this room.", npcMob.GetName()))
-}
-
-func (npc *Npc) determineDrops() Inventory {
-	// Determine total drop chance among all NPC drops
-	var dropChanceTotal int32 = 0
-	for _, drop := range npc.Drops {
-		dropChanceTotal += drop.DropChance
-	}
-
-	inventory := Inventory { Items: []Item {} }
-
-	// Roll for an item and add it to the inventory
-	for _ = range npc.DropCount {
-		roll := rand.Int32N(dropChanceTotal)
-		var dropChance int32 = 0
-		var dropIndex int = 0
-
-		for dropIndex < len(npc.Drops) {
-			dropChance += npc.Drops[dropIndex].DropChance
-			if roll <= dropChance {
-				break
-			}
-			dropIndex++
-		}
-
-		if dropIndex == len(npc.Drops) {
-			panic("Something bad happened during Npc drop determination")
-		}
-
-		drop := &npc.Drops[dropIndex]
-		inventory.AddItem(Item {
-			Id: drop.ItemId,
-			Amount: drop.AmountRange.ChooseRandom(),
-			Durability: drop.DurabilityRange.ChooseRandom(),
-		})
-	}
-
-	return inventory
 }
 
 func (npc *Npc) hasSleepCycle() bool {

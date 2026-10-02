@@ -513,7 +513,7 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 	}
 
 	// If item has become damaged, tell the user
-	maxDurability := item.GetMaxDurability()
+	maxDurability := itemData.GetMaxDurability()
 	itemWasDamaged := (item.Durability + 1) < maxDurability / 2
 	itemIsDamaged := item.Durability < maxDurability / 2
 	if itemIsDamaged && !itemWasDamaged {
@@ -664,7 +664,7 @@ func (mob *Mob) useItem(world *World, targetMob *Mob) {
 	switch itemData.ItemType {
 		case ITEM_TYPE_CONSUMABLE: {
 			consumableData := itemData.Data.(*ItemDataConsumable)
-			consumableData.OnUse(world, targetMob)
+			consumableData.onUse(world, targetMob)
 		}
 		case ITEM_TYPE_SPELL_SCROLL: {
 			scrollData := itemData.Data.(*ItemDataSpellScroll)

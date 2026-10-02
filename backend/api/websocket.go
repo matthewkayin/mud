@@ -4,33 +4,22 @@ import (
 	"context"
 	"log"
 	"strings"
+	"time"
 	"net/http"
 	"mud/game"
 	"github.com/coder/websocket"
 )
 
+const SOCKET_WRITE_TIMEOUT = 5 * time.Second
+
 func (apiState* ApiState) HandleGetWebSocket(writer http.ResponseWriter, request *http.Request) {
 	log.Printf("Invoked /api/websocket")
 
-	// Get the auth token from the query param
-	sessionToken, err := request.Cookie(MUD_SESSION_COOKIE_NAME)
-	if err != nil {
-		http.Error(writer, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
-	// Check the list of active auth tokens
-	// TODO: handle token expiration and clear the cache?
-	apiState.tokenToIdMutex.RLock()
-	userId, authenticated := apiState.tokenToIdMap[sessionToken.Value]
-	apiState.tokenToIdMutex.RUnlock()
-
+	userId, authenticated := apiState.getAuthenticatedUserId(request)
 	if !authenticated {
-		http.Error(writer, err.Error(), http.StatusUnauthorized)
+		http.Error(writer, "User unauthorized.", http.StatusUnauthorized)
 		return
 	}
-
-	log.Printf("Authenticated user %d", userId)
 
 	// Upgrade the HTTP connection to a WebSocket connection
 	connection, acceptError := websocket.Accept(writer, request, &websocket.AcceptOptions {
@@ -50,10 +39,16 @@ func (apiState* ApiState) HandleGetWebSocket(writer http.ResponseWriter, request
 
 	log.Printf("Player %d connected.", userId)
 
-	// Kick off write loop in a separate goroutine
-	writerContext, cancelWriter := context.WithCancel(request.Context())
-	defer cancelWriter()
-	go apiState.runSocketWriteLoop(writerContext, connection, userId)
+	// The game loop owns the inbox and closes it when the player's session ends.
+	// The write loop listens to the inbox it until the inbox is closed by the game loop.
+	inbox := make(chan string, 100)
+	go runSocketWriteLoop(connection, inbox, userId)
+
+	apiState.gamestate.SocketEvents <- game.SocketEvent {
+		Type: game.SOCKET_EVENT_TYPE_CONNECT,
+		PlayerId: userId,
+		Inbox: &inbox,
+	}
 
 	// Run read loop until connection closes
 	readLoop:
@@ -65,36 +60,44 @@ func (apiState* ApiState) HandleGetWebSocket(writer http.ResponseWriter, request
 		}
 
 		if messageType == websocket.MessageText {
-			apiState.gamestate.Commands <- game.Command {
+			apiState.gamestate.SocketEvents <- game.SocketEvent {
+				Type: game.SOCKET_EVENT_TYPE_COMMAND,
 				PlayerId: userId,
-				Payload: strings.TrimSpace(string(messageData)),
+				Command: strings.TrimSpace(string(messageData)),
 			}
 		}
 	}
+
+	apiState.gamestate.SocketEvents <- game.SocketEvent {
+		Type: game.SOCKET_EVENT_TYPE_DISCONNECT,
+		PlayerId: userId,
+		Inbox: &inbox,
+	}
 }
 
+func runSocketWriteLoop(connection *websocket.Conn, inbox chan string, userId int) {
+	connectionOpen := true
 
-func (apiState *ApiState) runSocketWriteLoop(ctx context.Context, connection *websocket.Conn, userId int) {
-	inbox := make(chan string, 100)
-	apiState.gamestate.RegisterPlayer(userId, &inbox)
+	// Keep draining the inbox even after the connection fails,
+	// so that the game loop never blocks sending to a dead connection
+	for message := range inbox {
+		if !connectionOpen {
+			continue
+		}
 
-	writeLoop:
-	for {
-		select {
-			case <- ctx.Done():
-				break writeLoop
-			case message, ok := <- inbox:
-				if !ok {
-					break writeLoop
-				}
-
-				err := connection.Write(ctx, websocket.MessageText, []byte(message))
-				if err != nil {
-					log.Printf("Failed to write to player %d: %s", userId, err.Error())
-					break writeLoop
-				}
+		writeContext, cancel := context.WithTimeout(context.Background(), SOCKET_WRITE_TIMEOUT)
+		err := connection.Write(writeContext, websocket.MessageText, []byte(message))
+		cancel()
+		if err != nil {
+			log.Printf("Failed to write to player %d: %s", userId, err.Error())
+			// Closing the connection ends the read loop, which disconnects the player
+			connection.CloseNow()
+			connectionOpen = false
 		}
 	}
 
-	apiState.gamestate.RemovePlayer(userId)
+	// Inbox was closed by the game loop, so the session is over
+	if connectionOpen {
+		connection.Close(websocket.StatusNormalClosure, "session ended")
+	}
 }
