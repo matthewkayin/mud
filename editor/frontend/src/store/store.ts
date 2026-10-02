@@ -1,5 +1,6 @@
 import { EditorGridCell, editorGridCellToString, EditorState, GRID_INDEX_NONE, ROOM_NONE } from './state';
 import { EditorAction } from './action';
+import { world } from '../../wailsjs/go/models';
 
 const ACTION_HISTORY_MAX_LENGTH = 64;
 
@@ -42,6 +43,7 @@ export class EditorStore {
     }
     this.actionHistory.push(action);
     this.actionHistoryIndex++;
+    this.emitChange();
   }
 
   undoAction = () => {
@@ -52,6 +54,7 @@ export class EditorStore {
     this.actionHistoryIndex--;
     const action = this.actionHistory[this.actionHistoryIndex];
     action.undo(this.state);
+    this.emitChange();
   }
 
   redoAction = () => {
@@ -62,6 +65,7 @@ export class EditorStore {
     const action = this.actionHistory[this.actionHistoryIndex];
     action.do(this.state);
     this.actionHistoryIndex++;
+    this.emitChange();
   }
 
   getRooms = () => {
@@ -82,6 +86,17 @@ export class EditorStore {
   setSelectedGridCell = (cell: EditorGridCell) => {
     this.state.grid.selectedCellKey = editorGridCellToString(cell);
     this.emitChange();
+  }
+
+  getSelectedRoom = (): world.Room | undefined => {
+    if (this.state.grid.selectedCellKey === null) {
+      return undefined;
+    }
+    const roomIndex = this.state.grid.cellToRoomIndex.get(this.state.grid.selectedCellKey);
+    if (roomIndex === undefined) {
+      return;
+    }
+    return this.state.rooms[roomIndex];
   }
 }
 

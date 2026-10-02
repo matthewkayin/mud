@@ -198,7 +198,7 @@ export function Canvas() {
         display: 'block',
         width: '100%',
         height: '100%',
-        backgroundColor: '#ff00ff',
+        backgroundColor: '#f0f0f0',
       }}
     >
       <canvas

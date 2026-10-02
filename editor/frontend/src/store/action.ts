@@ -33,11 +33,15 @@ export class EditorActionAddRoom implements EditorAction {
     }))
 
     state.grid.cellToRoomIndex.set(this.data.cellKey, newRoomIndex);
+    state.grid.selectedCellKey = this.data.cellKey;
   }
 
   undo = (state: EditorState) => {
     state.rooms.pop();
     state.grid.cellToRoomIndex.delete(this.data.cellKey);
+    if (state.grid.selectedCellKey === this.data.cellKey) {
+      state.grid.selectedCellKey = null;
+    }
   }
 }
 
