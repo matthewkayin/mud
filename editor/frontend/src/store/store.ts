@@ -1,16 +1,21 @@
-import { EditorState } from './state';
+import { EditorGridCell, editorGridCellToString, EditorState, GRID_INDEX_NONE, ROOM_NONE } from './state';
+import { EditorAction } from './action';
+
+const ACTION_HISTORY_MAX_LENGTH = 64;
 
 export class EditorStore {
   private listeners = new Set<() => void>();
   private state: EditorState;
 
+  private actionHistory: EditorAction[] = [];
+  private actionHistoryIndex = 0;
+
   constructor() {
     this.state = {
       rooms: [],
       grid: {
-        width: 8,
-        height: 8,
-        roomIndices: new Array(8 * 8).fill(-1),
+        cellToRoomIndex: new Map<string, number>(),
+        selectedCellKey: null,
       }
     };
   }
@@ -26,12 +31,57 @@ export class EditorStore {
     this.listeners.forEach((listener) => listener());
   }
 
+  doAction = (action: EditorAction) => {
+    action.do(this.state);
+
+    while (this.actionHistory.length > this.actionHistoryIndex) {
+      this.actionHistory.pop();
+    }
+    while (this.actionHistory.length > ACTION_HISTORY_MAX_LENGTH) {
+      this.actionHistory.splice(0, 1);
+    }
+    this.actionHistory.push(action);
+    this.actionHistoryIndex++;
+  }
+
+  undoAction = () => {
+    if (this.actionHistoryIndex === 0) {
+      return;
+    }
+
+    this.actionHistoryIndex--;
+    const action = this.actionHistory[this.actionHistoryIndex];
+    action.undo(this.state);
+  }
+
+  redoAction = () => {
+    if (this.actionHistoryIndex === this.actionHistory.length) {
+      return;
+    }
+
+    const action = this.actionHistory[this.actionHistoryIndex];
+    action.do(this.state);
+    this.actionHistoryIndex++;
+  }
+
   getRooms = () => {
     return this.state.rooms;
   }
 
   getGrid = () => {
     return this.state.grid;
+  }
+
+  getSelectedRoomIndex = (): number | undefined => {
+    if (this.state.grid.selectedCellKey === null) {
+      return undefined;
+    }
+    return this.state.grid.cellToRoomIndex.get(this.state.grid.selectedCellKey);
+  }
+
+  setSelectedGridCell = (cell: EditorGridCell) => {
+    this.state.grid.selectedCellKey = editorGridCellToString(cell);
+    this.emitChange();
   }
 }
 

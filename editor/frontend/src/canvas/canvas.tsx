@@ -1,7 +1,8 @@
 import { useRef, useEffect, useSyncExternalStore } from 'react';
 import { Box } from '@mui/material';
-import { editorStore, EditorGrid } from '../store';
+import { editorStore, EditorGrid, ROOM_NONE, type EditorGridCell, editorGridCellToString, editorGridCellFromString } from '../store';
 import { world } from '../../wailsjs/go/models';
+import { EditorActionAddRoom } from '../store/action';
 
 const CAMERA_ZOOM_MIN = 0.25;
 const CAMERA_ZOOM_MAX = 2.0;
@@ -85,7 +86,12 @@ export function Canvas() {
       event.preventDefault();
     };
 
+    // MOUSE SCROLL
     const onMouseScroll = (event: WheelEvent) => {
+      if (event.deltaY === 0) {
+        return;
+      }
+
       const state = stateRef.current;
 
       const canvasRect = canvas.getBoundingClientRect();
@@ -93,7 +99,7 @@ export function Canvas() {
       const mouseY = event.clientY - canvasRect.top;
 
       const worldX = (mouseX - state.cameraOffsetX) / state.cameraZoom;
-      const worldY = (mouseX - state.cameraOffsetY) / state.cameraZoom;
+      const worldY = (mouseY - state.cameraOffsetY) / state.cameraZoom;
 
       if (event.deltaY < 0) {
         state.cameraZoom += state.cameraZoom * 0.1;
@@ -107,14 +113,30 @@ export function Canvas() {
         state.cameraZoom = CAMERA_ZOOM_MAX;
       }
 
-      state.cameraOffsetX = mouseX - worldX * state.cameraZoom;
-      state.cameraOffsetY = mouseY - worldY * state.cameraZoom;
+      state.cameraOffsetX = mouseX - (worldX * state.cameraZoom);
+      state.cameraOffsetY = mouseY - (worldY * state.cameraZoom);
     };
 
+    // MOUSE CLICK
     const onMouseClick = () => {
+      const grid = editorGridRef.current;
 
+      const gridCell = getHoveredGridCell(stateRef.current);
+      if (!gridCell) {
+        return;
+      }
+
+      const cellKey = editorGridCellToString(gridCell);
+      const roomIndex = grid.cellToRoomIndex.get(cellKey);
+
+      if (roomIndex === undefined) {
+        editorStore.doAction(new EditorActionAddRoom(gridCell));
+      } else {
+        editorStore.setSelectedGridCell(gridCell);
+      }
     };
 
+    // MOUSE MOVE
     const onMouseMove = (event: MouseEvent) => {
       const BUTTON_RIGHT = 2;
       const state = stateRef.current;
@@ -209,28 +231,33 @@ function render(context: CanvasRenderingContext2D, canvasState: CanvasState, roo
   context.fillRect(0, 0, context.canvas.width, context.canvas.height);
 
   context.save();
-  context.translate(canvasState.cameraOffsetX, canvasState.cameraOffsetY);
-  context.scale(canvasState.cameraZoom, canvasState.cameraZoom);
+  context.setTransform(canvasState.cameraZoom, 0, 0, canvasState.cameraZoom, canvasState.cameraOffsetX, canvasState.cameraOffsetY);
 
   // Render grid
-  for (let y = 0; y < grid.height; y++) {
-    for (let x = 0; x < grid.width; x++) {
-      // const roomGridIndex = this.roomGridIndex({ x, y });
-      // const roomIndex = this.roomGrid[roomGridIndex];
-      // if (roomIndex === mud.ROOM_NONE) {
-        // continue;
-      // }
+  for (const [cellKey, roomIndex] of grid.cellToRoomIndex) {
+    const cell = editorGridCellFromString(cellKey);
+    const isSelected = cellKey === grid.selectedCellKey
+    renderRoom(context, {
+      x: cell.x,
+      y: cell.y,
+      dashBorder: false,
+      color: isSelected ? '#ffff00' : '#fff',
+      text: rooms[roomIndex].Name,
+    });
+  }
 
-      // const room = this.world.Rooms[roomIndex];
-      // const isSelected = this.selectedRoomGridIndex === roomGridIndex;
+  // New room hover
+  const hoveredCell = getHoveredGridCell(canvasState);
+  if (hoveredCell) {
+    const hoveredCellKey = editorGridCellToString(hoveredCell);
+    const hoveredRoomIndex = grid.cellToRoomIndex.get(hoveredCellKey);
+    if (hoveredRoomIndex === undefined) {
       renderRoom(context, {
-        x,
-        y,
-        dashBorder: false,
+        x: hoveredCell.x,
+        y: hoveredCell.y,
+        dashBorder: true,
         color: '#fff',
-        //color: isSelected ? '#ffff00' : '#fff',
-        // text: room.Name,
-        text: 'hello',
+        text: '+',
       });
     }
   }
@@ -263,11 +290,30 @@ function renderRoom(context: CanvasRenderingContext2D, params: RenderRoomParams)
   context.fillText(params.text, centerX, centerY);
 }
 
-function getRoomRect(x: number, y: number) {
+function getRoomRect(x: number, y: number): Rect {
   return {
     x: x * (ROOM_WIDTH + ROOM_X_SPACING),
     y: y * (ROOM_HEIGHT + ROOM_Y_SPACING),
     width: ROOM_WIDTH,
     height: ROOM_HEIGHT,
   };
+}
+
+function rectHasPoint(rect: Rect, x: number, y: number): boolean {
+  return !(
+    x < rect.x || y < rect.y || x >= rect.x + rect.width || y >= rect.y + rect.height
+  );
+}
+
+function getHoveredGridCell(canvasState: CanvasState): EditorGridCell | undefined {
+  const cell = {
+    x: Math.floor(canvasState.mouseWorldX / (ROOM_WIDTH + ROOM_X_SPACING)),
+    y: Math.floor(canvasState.mouseWorldY / (ROOM_HEIGHT + ROOM_Y_SPACING)),
+  };
+  const rect = getRoomRect(cell.x, cell.y);
+  if (!rectHasPoint(rect, canvasState.mouseWorldX, canvasState.mouseWorldY)) {
+    return undefined;
+  }
+
+  return cell;
 }
