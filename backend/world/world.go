@@ -241,13 +241,19 @@ func WorldInitNew() *World {
 					 Basement
 	 */
 	world.Rooms[kitchen].Exits[DIRECTION_EAST] = presentationSpace
+
 	world.Rooms[presentationSpace].Exits[DIRECTION_WEST] = kitchen
 	world.Rooms[presentationSpace].Exits[DIRECTION_SOUTH] = stairs
+
 	world.Rooms[stairs].Exits[DIRECTION_NORTH] = presentationSpace
 	world.Rooms[stairs].Exits[DIRECTION_EAST] = cliffside
 	world.Rooms[stairs].Exits[DIRECTION_SOUTH] = basement
+
+	world.Rooms[basement].Exits[DIRECTION_NORTH] = stairs
+
 	world.Rooms[cliffside].Exits[DIRECTION_WEST] = stairs
 	world.Rooms[cliffside].Exits[DIRECTION_EAST] = bridge
+
 	world.Rooms[bridge].Exits[DIRECTION_WEST] = cliffside
 
 	// NPCS

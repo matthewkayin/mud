@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
  	"strings"
-  	"strconv"
+  "strconv"
 	"slices"
 	"mud/bitset"
 	"mud/world"
@@ -297,16 +297,79 @@ var MENU_WORLD = Menu {
 
 				// Check if the exit is locked
 				if playerRoom.ExitIsLocked[direction] {
-					*player.inbox <- fmt.Sprintf("The %s exit is locked.", world.DirectionToString(direction))
+					*player.inbox <- fmt.Sprintf("The %s exit is blocked.", world.DirectionToString(direction))
+					return true
+				}
+
+				// If in combat, roll escape check
+				if playerMob.IsInCombat(gamestate.world) && !playerMob.RollForEscape(gamestate.world) {
+					*player.inbox <- "You failed to escape combat!"
 					return true
 				}
 
 				// Move player
+				wasHidden := playerMob.CheckFlag(world.MOB_FLAG_HIDDEN)
 				playerRoom.MoveOccupant(gamestate.world, player.mobHandle, newRoomIndex)
 
+				// Narrate movement
 				playerRoom = &gamestate.world.Rooms[playerMob.Data.Room]
-				*player.inbox <- fmt.Sprintf("You moved into %s.", playerRoom.Name)
+				if playerMob.CheckFlag(world.MOB_FLAG_HIDDEN) {
+					*player.inbox <- fmt.Sprintf("You snuck into %s.", playerRoom.Name)
+				} else if wasHidden {
+					*player.inbox <- fmt.Sprintf("You snuck into %s, but you were detected!", playerRoom.Name)
+				} else {
+					*player.inbox <- fmt.Sprintf("You moved into %s.", playerRoom.Name)
+				}
+
 				describeRoomToPlayer(gamestate, player, playerRoom)
+				return true
+			},
+		},
+
+		"hide": {
+			usage: "hide",
+			description: "Attempt to hide in the current room. Once you are hidden, you will remain hidden as you 'move' from room to room, provided that no one spots you.",
+			handler: func (gamestate *GameState, player *Player, args []string) bool {
+				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+				if !playerMob.Data.HasAbility(world.MOB_ABILITY_SNEAK) {
+					*player.inbox <- "You don't know how to do that."
+					return true
+				}
+
+				// Don't hide if already hidden
+				if playerMob.CheckFlag(world.MOB_FLAG_HIDDEN) {
+					*player.inbox <- "You are already hidden."
+					return true
+				}
+
+				// Roll for stealth
+				hidden := playerMob.RollForStealth(gamestate.world)
+				if !hidden {
+					*player.inbox <- "You failed to stay hidden."
+					return true
+				}
+
+				// Set hidden
+				playerMob.SetFlag(world.MOB_FLAG_HIDDEN, true)
+				*player.inbox <- "You hid into the shadows."
+
+				return true
+			},
+		},
+
+		"reveal": {
+			usage: "reveal",
+			description: "Stop hiding and reveal yourself to the room",
+			handler: func (gamestate *GameState, player *Player, args []string) bool {
+				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+				if !playerMob.CheckFlag(world.MOB_FLAG_HIDDEN) {
+					*player.inbox <- "You cannot reveal yourself because you are not hidden."
+					return true
+				}
+
+				playerMob.SetFlag(world.MOB_FLAG_HIDDEN, false)
+				gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("%s was hiding in the room and has revealed themselves!", playerMob.Data.Name))
+
 				return true
 			},
 		},
@@ -374,6 +437,19 @@ var MENU_WORLD = Menu {
 				*player.inbox <- fmt.Sprintf("Agility: %d (+%d)", playerMob.Data.Stats.Agility, statBonuses.Agility)
 				*player.inbox <- fmt.Sprintf("Intelligence: %d (+%d)", playerMob.Data.Stats.Intelligence, statBonuses.Intelligence)
 				*player.inbox <- fmt.Sprintf("Faith: %d (+%d)", playerMob.Data.Stats.Faith, statBonuses.Faith)
+
+				abilities := playerMob.Data.GetAbilityList()
+				if len(abilities) != 0 {
+					abilityNames := make([]string, 0, len(abilities))
+					for _, ability := range abilities {
+						abilityData := world.MOB_ABILITY_DATA[ability]
+						abilityNames = append(abilityNames, abilityData.Name)
+					}
+
+					*player.inbox <- fmt.Sprintf("\nTalents: %s", combineNames(abilityNames))
+				} else {
+					*player.inbox <- "\nYou have no talents."
+				}
 
 				return true
 			},
@@ -717,10 +793,16 @@ var MENU_WORLD = Menu {
 			usage: "craft [<amount>] <item>",
 			description: "Craft an item for which you know the recipe",
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
+				if len(args) < 1 {
+					return false
+				}
 
-					if len(args) < 1 {
-						return false
-					}
+				// Check if they are in comabt
+				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+				if playerMob.IsInCombat(gamestate.world) {
+					*player.inbox <- "You cannot craft items while you are in combat."
+					return true
+				}
 
 				//check whether they put in a quantity
 				amount, atoiErr := strconv.Atoi(args[0])
@@ -739,7 +821,6 @@ var MENU_WORLD = Menu {
 				recipeData := world.RECIPE_DATA[recipe]
 
 				// Check if the player has the materials
-				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 				for _, ingredient := range recipeData.Materials {
 					amountOfIngredient := playerMob.Data.Inventory.AmountOf(ingredient.Id)
 					if amountOfIngredient < batchAmount * ingredient.Amount {
@@ -829,8 +910,14 @@ var MENU_WORLD = Menu {
 					return false
 				}
 
-				itemWords, slotWords, userSpecifiedSlot := splitArgsBy(args, "in")
+				// Check if they are in combat
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+				if playerMob.IsInCombat(gamestate.world) {
+					*player.inbox <- "You cannot equip items while you are in combat."
+					return true
+				}
+
+				itemWords, slotWords, userSpecifiedSlot := splitArgsBy(args, "in")
 
 				// Determine the item
 				itemIndex := fuzzyFindInventoryItemIndex(&playerMob.Data.Inventory, itemWords)
@@ -909,6 +996,7 @@ var MENU_WORLD = Menu {
 				// If the equipped item is a spellbook, add the spell to their spells equipped
 				if (itemData.ItemType == world.ITEM_TYPE_EQUIPMENT_SPELLBOOK) {
 					spellbookData := itemData.Data.(*world.ItemDataSpellbook)
+					isSpellKnown := player.character.HasSpell(spellbookData.Spell)
 
 					// Increment spell equiped count
 					_, entryExists := player.character.SpellsEquipped[spellbookData.Spell]
@@ -916,12 +1004,11 @@ var MENU_WORLD = Menu {
 						player.character.SpellsEquipped[spellbookData.Spell] = &world.CharacterEquippedSpell {
 							EquipCount: 0,
 							Casts: 0,
-							IsKnown: slices.Contains(player.character.SpellsKnown, spellbookData.Spell),
+							IsKnown: isSpellKnown,
 						}
 					}
 					player.character.SpellsEquipped[spellbookData.Spell].EquipCount++
 
-					isSpellKnown := slices.Contains(player.character.SpellsKnown, spellbookData.Spell)
 					if !isSpellKnown {
 						spellData := world.SPELL_DATA[spellbookData.Spell]
 						*player.inbox <- fmt.Sprintf("You can now prepare the spell %s.", spellData.Name)
@@ -940,7 +1027,13 @@ var MENU_WORLD = Menu {
 				// but there's no reason for them to specify both so I'm not going to
 				// bother writing the code for it
 
+				// Check if they are in combat
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+				if playerMob.IsInCombat(gamestate.world) {
+					*player.inbox <- "You cannot remove items while you are in combat."
+					return true
+				}
+
 				itemWords, slotWords, userSpecifiedSlot := splitArgsBy(args, "from")
 
 				var slot world.EquipmentSlot
@@ -986,32 +1079,37 @@ var MENU_WORLD = Menu {
 
 		"spells": {
 			usage: "spells",
-			description: "Show a list of the spells you have prepared",
+			description: "Show a list of the spells you can cast",
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 
 				*player.inbox <- fmt.Sprintf("Spells Prepared (%d / %d):", len(playerMob.Data.Spells), playerMob.Data.SpellSlots())
+				if len(playerMob.Data.Spells) != 0 {
+					for _, spell := range playerMob.Data.Spells {
+						spellData := world.SPELL_DATA[spell]
 
-				if len(playerMob.Data.Spells) == 0 {
+						masteryStr := "Known"
+
+						equippedSpell, spellIsEquipped := player.character.SpellsEquipped[spell]
+						if spellIsEquipped && !equippedSpell.IsKnown {
+							casts := float32(equippedSpell.Casts)
+							castsToLearn := float32(playerMob.Data.CastsToLearn(spell))
+							mastery := int32((casts / castsToLearn) * 100.0)
+							masteryStr = fmt.Sprintf("Mastery: %d", mastery)
+						}
+
+						*player.inbox <- fmt.Sprintf("%s | Cost: %d | %s | %s",
+							spellData.Name, spellData.ManaCost, masteryStr, spellData.Description)
+					}
+				} else {
 					*player.inbox <- "You haven't prepared any spells."
-					return true
 				}
 
-				for _, spell := range playerMob.Data.Spells {
+				*player.inbox <- "\nClass Spells:"
+				for _, spell := range player.character.ClassSpells {
 					spellData := world.SPELL_DATA[spell]
-
-					masteryStr := "Known"
-
-					equippedSpell, spellIsEquipped := player.character.SpellsEquipped[spell]
-					if spellIsEquipped && !equippedSpell.IsKnown {
-						casts := float32(equippedSpell.Casts)
-						castsToLearn := float32(playerMob.Data.CastsToLearn(spell))
-						mastery := int32((casts / castsToLearn) * 100.0)
-						masteryStr = fmt.Sprintf("Mastery: %d", mastery)
-					}
-
-					*player.inbox <- fmt.Sprintf("%s | Cost: %d | %s | %s",
-						spellData.Name, spellData.ManaCost, masteryStr, spellData.Description)
+					*player.inbox <- fmt.Sprintf("%s - Cost: %d - %s",
+						spellData.Name, spellData.ManaCost, spellData.Description)
 				}
 
 				return true
@@ -1022,10 +1120,18 @@ var MENU_WORLD = Menu {
 			usage: "library",
 			description: "Show a list of all the spells you know",
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
-				if len(player.character.SpellsKnown) == 0 {
+				if len(player.character.SpellsKnown) == 0 && len(player.character.ClassSpells) == 0 {
 					*player.inbox <- "You don't know any spells."
 				}
 
+				*player.inbox <- "Class Spells:"
+				for _, spell := range player.character.ClassSpells {
+					spellData := world.SPELL_DATA[spell]
+					*player.inbox <- fmt.Sprintf("%s - Cost: %d - %s",
+						spellData.Name, spellData.ManaCost, spellData.Description)
+				}
+
+				*player.inbox <- "\nKnown Spells:"
 				for _, spell := range player.character.SpellsKnown {
 					spellData := world.SPELL_DATA[spell]
 					*player.inbox <- fmt.Sprintf("%s - Cost: %d - %s",
@@ -1062,6 +1168,14 @@ var MENU_WORLD = Menu {
 				if isPrepared {
 					spellData := world.SPELL_DATA[spell]
 					*player.inbox <- fmt.Sprintf("You have already prepared %s.", spellData.Name)
+					return true
+				}
+
+				// Check if the spell is a class spell
+				spellIndex := fuzzyFindClassSpellIndex(player, args)
+				if spellIndex >= 0 {
+					spellData := world.SPELL_DATA[player.character.ClassSpells[spellIndex]]
+					*player.inbox <- fmt.Sprintf("You do not need to prepare %s because it is a class spell. You can cast it at any time, and it does not take up a spell slot.", spellData.Name)
 					return true
 				}
 
@@ -1119,7 +1233,7 @@ var MENU_WORLD = Menu {
 				}
 
 				// Find the spell in their spell list
-				spell, err := fuzzyFindPreparedSpell(gamestate, player, spellWords)
+				spell, err := fuzzyFindCastableSpell(gamestate, player, spellWords)
 				if err != nil {
 					*player.inbox <- err.Error()
 					return true
@@ -1392,23 +1506,44 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 				continue
 			}
 
-			// Get a pointer to the mob
+			// Don't tell the player about hidden mobs
 			mob := gamestate.world.Mobs.Get(mobHandle)
+			if mob.CheckFlag(world.MOB_FLAG_HIDDEN) {
+				continue
+			}
+
 			// Add their name to the list
 			otherPlayerNames = append(otherPlayerNames, mob.GetName())
 		}
 
-		otherPlayersStr := combineNames(otherPlayerNames)
-		isString := "are"
-		if otherPlayerCount == 1 {
-			isString = "is"
+		// Re-check the length in case all other occupants are hidden (spooky)
+		if len(otherPlayerNames) != 0 {
+			otherPlayersStr := combineNames(otherPlayerNames)
+
+			isString := "are"
+			if otherPlayerCount == 1 {
+				isString = "is"
+			}
+
+			hiddenString := "."
+			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+			if playerMob.CheckFlag(world.MOB_FLAG_HIDDEN) {
+				hiddenString = ", but they don't see you."
+			}
+
+			*player.inbox <- fmt.Sprintf("%s %s here%s", otherPlayersStr, isString, hiddenString)
 		}
-		*player.inbox <- fmt.Sprintf("%s %s here.", otherPlayersStr, isString)
 	}
 
 	//give urgent descriptions of npc mobs dependent on their current state
 	for _, mobHandle := range room.Occupants {
 		mob := gamestate.world.Mobs.Get(mobHandle)
+
+		// Skip if mob is hidden
+		if mob.CheckFlag(world.MOB_FLAG_HIDDEN) {
+			continue
+		}
+
 		if mob.Npc != nil {
 			msg, urgent := mob.Npc.GetStatusDescription(gamestate.world)
 			if urgent {

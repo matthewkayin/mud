@@ -48,18 +48,34 @@ func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, newRoomIn
 	occupantMob := world.Mobs.Get(occupantHandle)
 	oldRoomIndex := occupantMob.Data.Room
 
-	// Move the occupant
+	// Remove the occupant from the old room
 	room.RemoveOccupant(occupantHandle)
-	world.messageRoom(oldRoomIndex, fmt.Sprintf("%s left the room.", occupantMob.GetName()))
 
+	// If mob not hidden, announce exit
+	if !occupantMob.CheckFlag(MOB_FLAG_HIDDEN) {
+		world.messageRoom(oldRoomIndex, fmt.Sprintf("%s left the room.", occupantMob.GetName()))
+	}
+
+	// Add the occupant to the new room
 	newRoom.AddOccupant(world, occupantHandle)
-	world.messageRoomWithOptions(MessageRoomOptions {
-		roomIndex: newRoomIndex,
-		ignore: []MobHandle { occupantHandle },
-		message: fmt.Sprintf("%s entered the room.", occupantMob.GetName()),
-	})
 
+	// If the mob is hidden, reroll stealth in the new room
 	occupantMob.Data.Room = newRoomIndex
+	if occupantMob.CheckFlag(MOB_FLAG_HIDDEN) {
+		hidden := occupantMob.RollForStealth(world)
+		if !hidden {
+			occupantMob.SetFlag(MOB_FLAG_HIDDEN, false)
+		}
+	}
+
+	// If the mob is not hidden, announce entry
+	if !occupantMob.CheckFlag(MOB_FLAG_HIDDEN) {
+		world.messageRoomWithOptions(MessageRoomOptions {
+			roomIndex: newRoomIndex,
+			ignore: []MobHandle { occupantHandle },
+			message: fmt.Sprintf("%s entered the room.", occupantMob.GetName()),
+		})
+	}
 
 	// Player room discovery
 	if occupantMob.PlayerCharacter != nil {

@@ -13,10 +13,22 @@ const (
 	CLASS_PRIEST
 )
 
+type ClassUnlockType int
+const (
+	CLASS_UNLOCK_TYPE_ABILITY = iota
+	CLASS_UNLOCK_TYPE_SPELL
+)
+
+type ClassUnlock struct {
+	Type ClassUnlockType
+	Data any
+}
+
 type ClassData struct {
 	Name string
 	Stats StatBlock
 	Scaling StatBlock
+	UnlocksAtLevel [MOB_MAX_LEVEL][]ClassUnlock
 }
 
 func ClassIdFromString(name string) (ClassId, error) {
@@ -46,6 +58,7 @@ var CLASS_DATA []*ClassData = []*ClassData {
 			Intelligence: 6,
 			Faith: 8,
 		},
+		UnlocksAtLevel: [MOB_MAX_LEVEL][]ClassUnlock {},
 	},
 
 	CLASS_THIEF: {
@@ -63,6 +76,11 @@ var CLASS_DATA []*ClassData = []*ClassData {
 			Agility: 10,
 			Intelligence: 6,
 			Faith: 6,
+		},
+		UnlocksAtLevel: [MOB_MAX_LEVEL][]ClassUnlock {
+			1: {
+				{ Type: CLASS_UNLOCK_TYPE_ABILITY,  Data: MOB_ABILITY_SNEAK, },
+			},
 		},
 	},
 
@@ -82,6 +100,7 @@ var CLASS_DATA []*ClassData = []*ClassData {
 			Intelligence: 10,
 			Faith: 8,
 		},
+		UnlocksAtLevel: [MOB_MAX_LEVEL][]ClassUnlock {},
 	},
 
 	CLASS_PRIEST: {
@@ -99,6 +118,11 @@ var CLASS_DATA []*ClassData = []*ClassData {
 			Agility: 8,
 			Intelligence: 8,
 			Faith: 10,
+		},
+		UnlocksAtLevel: [MOB_MAX_LEVEL][]ClassUnlock {
+			1: {
+				{ Type: CLASS_UNLOCK_TYPE_SPELL, Data: SPELL_CURE, },
+			},
 		},
 	},
 }

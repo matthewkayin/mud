@@ -174,10 +174,16 @@ func fuzzyFindTarget(gamestate *GameState, player *Player, searchWords []string)
 	room := gamestate.world.Rooms[playerMob.Data.Room]
 
 	// Put all room occupant names into an array
-	mobNames := make([]string, len(room.Occupants))
-	for index, occupantHandle := range room.Occupants {
+	mobNames := make([]string, 0, len(room.Occupants))
+	for _, occupantHandle := range room.Occupants {
 		occupant := gamestate.world.Mobs.Get(occupantHandle)
-		mobNames[index] = occupant.GetName()
+
+		// Skip hidden occupants, except you can still target yourself of course
+		if occupant.CheckFlag(world.MOB_FLAG_HIDDEN) && occupantHandle != player.mobHandle {
+			continue
+		}
+
+		mobNames = append(mobNames, occupant.GetName())
 	}
 
 	// Fuzzy find the target mob
@@ -195,6 +201,48 @@ func fuzzyFindTarget(gamestate *GameState, player *Player, searchWords []string)
 	}
 
 	return room.Occupants[targetIndex], nil
+}
+
+// Chooses either a prepared spell or a class spell
+func fuzzyFindCastableSpell(gamestate *GameState, player *Player, searchWords []string) (world.Spell, error) {
+	// Check that there are any arguments
+	if len(searchWords) == 0 {
+		return 0, errors.New("You must specify a spell.")
+	}
+
+	// Get handle to player mob
+	playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+
+	// Put all spell names into an array
+	spellNames := make([]string, 0, len(playerMob.Data.Spells) + len(player.character.ClassSpells))
+	for _, spell := range playerMob.Data.Spells {
+		spellData := world.SPELL_DATA[spell]
+		spellNames = append(spellNames, spellData.Name)
+	}
+	for _, spell := range player.character.ClassSpells {
+		spellData := world.SPELL_DATA[spell]
+		spellNames = append(spellNames, spellData.Name)
+	}
+
+	// Fuzzy find the spell to cast
+	spellIndex := fuzzyFind(spellNames, searchWords, FUZZY_FIND_NUMBER_NONE)
+
+	// Handle edge cases
+	if spellIndex == FUZZY_FIND_RESULT_NOT_FOUND {
+		return 0, fmt.Errorf("You have no castable spell called '%s'.", strings.Join(searchWords, " "))
+	}
+	if spellIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
+		return 0, fmt.Errorf("The spell name '%s' is ambiguous.", strings.Join(searchWords, " "))
+	}
+	if spellIndex == FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE {
+		panic("Received fuzzy number out of range when no fuzzy number was provided.")
+	}
+
+	if spellIndex < len(playerMob.Data.Spells) {
+		return playerMob.Data.Spells[spellIndex], nil
+	}
+
+	return player.character.ClassSpells[spellIndex - len(playerMob.Data.Spells)], nil
 }
 
 func fuzzyFindPreparedSpell(gamestate *GameState, player *Player, searchWords []string) (world.Spell, error) {
@@ -274,6 +322,23 @@ func fuzzyFindKnownOrEquippedSpell(player *Player, searchWords []string) (world.
 
 	// If the spell is an equipped spell
 	return spellsEquipped[spellIndex - len(player.character.SpellsKnown)], nil
+}
+
+func fuzzyFindClassSpellIndex(player *Player, searchWords []string) int {
+	// Check that there are any arguments
+	if len(searchWords) == 0 {
+		return FUZZY_FIND_RESULT_NOT_FOUND
+	}
+
+	// Put all spell names into an array
+	spellNames := make([]string, 0, len(player.character.ClassSpells))
+	for _, spell := range player.character.ClassSpells {
+		spellData := world.SPELL_DATA[spell]
+		spellNames = append(spellNames, spellData.Name)
+	}
+
+	// Fuzzy find spell
+	return fuzzyFind(spellNames, searchWords, FUZZY_FIND_NUMBER_NONE)
 }
 
 func fuzzyFindInventoryItemIndex(inventory *world.Inventory, searchWords []string) int {

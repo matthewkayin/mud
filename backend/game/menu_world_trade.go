@@ -73,6 +73,13 @@ var MENU_TRADE_ENTRIES = map[string]MenuEntry {
 				return true
 			}
 
+			// Check if player is in combat
+			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+			if playerMob.IsInCombat(gamestate.world) {
+				*player.inbox <- "YOu cannot begin a trade session while you're in combat."
+				return true
+			}
+
 			// If someone is requesting a trade with this player, then reject that
 			// trade session and open up a new one (this prevents players from locking
 			// each other into trade requests)
@@ -102,8 +109,14 @@ var MENU_TRADE_ENTRIES = map[string]MenuEntry {
 				return true
 			}
 
+			// Check if the target is in combat
+			// This is a real edge case, if player is in stealth, they won't be in combat, but another player in the room might be
+			if targetMob.IsInCombat(gamestate.world) {
+				*player.inbox <- fmt.Sprintf("You cannot begin a trade session with %s because they are in comabt.", targetMob.Data.Name)
+				return true
+			}
+
 			// Initiate trade request
-			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			player.tradeSession = &TradeSession {
 				status: TRADE_STATUS_REQUESTED,
 				traderA: Trader {
@@ -509,45 +522,6 @@ func tradeSessionOnMobDeath(gamestate *GameState, event *world.Event) {
 	counterparty := player.getCounterparty()
 
 	*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("Your trade with %s has been cancelled because they died.", trader.name)
-	player.tradeSession.cancel(gamestate)
-}
-
-func tradeSessionOnMobSetTarget(gamestate *GameState, event *world.Event) {
-	eventData := event.Data.(world.EventMobSetTarget)
-
-	attacker := gamestate.world.Mobs.Get(eventData.Attacker)
-	defender := gamestate.world.Mobs.Get(eventData.Defender)
-
-	// Ignore player vs player targeting (such as potion or heals)
-	if attacker.PlayerCharacter == nil && defender.PlayerCharacter == nil {
-		return
-	}
-
-	// Ignore NPC vs NPc targeting
-	if attacker.PlayerCharacter != nil && defender.PlayerCharacter != nil {
-		return
-	}
-
-	// At this point, either the attacker or defender will be a player,
-	// but not both, so get a handle to the player
-	var player *Player
-	if attacker.PlayerCharacter != nil {
-		player = gamestate.getPlayerById(attacker.PlayerCharacter.PlayerId)
-	}
-	if defender.PlayerCharacter != nil {
-		player = gamestate.getPlayerById(defender.PlayerCharacter.PlayerId)
-	}
-
-	// Ignore the event if the player isn't trading
-	if player == nil || player.tradeSession == nil {
-		return
-	}
-
-	trader := player.getTrader()
-	counterparty := player.getCounterparty()
-
-	*player.inbox <- fmt.Sprintf("Your trade with %s has been cancelled because you have entered combat.", counterparty.name)
-	*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("Your trade with %s has been cancelled because they have entered combat.", trader.name)
 	player.tradeSession.cancel(gamestate)
 }
 

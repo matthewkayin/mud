@@ -8,7 +8,7 @@ var SPELL_CAST_TIME_INSTANT int32 = 0
 
 type Spell int32
 const (
-	SPELL_FIREBOLT = iota
+	SPELL_FIREBOLT Spell = iota
 	SPELL_CURE
 )
 
