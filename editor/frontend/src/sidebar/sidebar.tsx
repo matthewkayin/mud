@@ -12,8 +12,9 @@ export function Sidebar() {
     width: '25%',
     minWidth: '25%',
     height: '100%',
-    backgroundColor: '#f0f0f0',
-    borderRight: '2px solid #d6d6d6',
+    backgroundColor: 'background.default',
+    borderRight: '2px solid',
+    borderColor: 'divider',
     padding: '4px',
     overflowY: 'auto'
   };

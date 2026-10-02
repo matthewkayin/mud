@@ -1,5 +1,5 @@
 import { useRef, useEffect, useSyncExternalStore } from 'react';
-import { Box } from '@mui/material';
+import { Box, useTheme } from '@mui/material';
 import { editorStore, EditorGrid, ROOM_NONE, type EditorGridCell, editorGridCellToString, editorGridCellFromString } from '../store';
 import { world } from '../../wailsjs/go/models';
 import { EditorActionAddRoom } from '../store/action';
@@ -28,6 +28,11 @@ type CanvasState = {
   mouseWorldY: number;
 }
 
+type CanvasColors = {
+  background: string;
+  foreground: string;
+}
+
 type RenderRoomParams = {
   x: number;
   y: number;
@@ -47,6 +52,19 @@ export function Canvas() {
     mouseWorldX: 0,
     mouseWorldY: 0,
   });
+
+  // Theme colors
+  const theme = useTheme();
+  const colorsRef = useRef<CanvasColors>({
+    background: theme.palette.background.default,
+    foreground: theme.palette.text.primary,
+  });
+  useEffect(() => {
+    colorsRef.current = {
+      background: theme.palette.background.default,
+      foreground: theme.palette.text.primary,
+    };
+  }, [theme]);
 
   // Event listeners
   useEffect(() => {
@@ -179,7 +197,7 @@ export function Canvas() {
 
     let animationFrameId: number;
     const renderFrame = () => {
-      render(context, stateRef.current, editorRoomsRef.current, editorGridRef.current);
+      render(context, stateRef.current, colorsRef.current, editorRoomsRef.current, editorGridRef.current);
       animationFrameId = requestAnimationFrame(renderFrame);
     };
 
@@ -198,7 +216,7 @@ export function Canvas() {
         display: 'block',
         width: '100%',
         height: '100%',
-        backgroundColor: '#f0f0f0',
+        backgroundColor: 'background.default',
       }}
     >
       <canvas
@@ -213,8 +231,8 @@ export function Canvas() {
   )
 }
 
-function render(context: CanvasRenderingContext2D, canvasState: CanvasState, rooms: world.Room[], grid: EditorGrid) {
-  context.fillStyle = '#f0f0f0';
+function render(context: CanvasRenderingContext2D, canvasState: CanvasState, colors: CanvasColors, rooms: world.Room[], grid: EditorGrid) {
+  context.fillStyle = colors.background;
   context.fillRect(0, 0, context.canvas.width, context.canvas.height);
 
   context.save();
@@ -224,7 +242,7 @@ function render(context: CanvasRenderingContext2D, canvasState: CanvasState, roo
   for (const [cellKey, roomIndex] of grid.cellToRoomIndex) {
     const cell = editorGridCellFromString(cellKey);
     const isSelected = cellKey === grid.selectedCellKey
-    renderRoom(context, {
+    renderRoom(context, colors, {
       x: cell.x,
       y: cell.y,
       dashBorder: false,
@@ -239,7 +257,7 @@ function render(context: CanvasRenderingContext2D, canvasState: CanvasState, roo
     const hoveredCellKey = editorGridCellToString(hoveredCell);
     const hoveredRoomIndex = grid.cellToRoomIndex.get(hoveredCellKey);
     if (hoveredRoomIndex === undefined) {
-      renderRoom(context, {
+      renderRoom(context, colors, {
         x: hoveredCell.x,
         y: hoveredCell.y,
         dashBorder: true,
@@ -252,9 +270,9 @@ function render(context: CanvasRenderingContext2D, canvasState: CanvasState, roo
   context.restore();
 }
 
-function renderRoom(context: CanvasRenderingContext2D, params: RenderRoomParams) {
-  context.strokeStyle = '#000';
-  context.fillStyle = '#000';
+function renderRoom(context: CanvasRenderingContext2D, colors: CanvasColors, params: RenderRoomParams) {
+  context.strokeStyle = colors.foreground;
+  context.fillStyle = colors.foreground;
 
   const rect = getRoomRect(params.x, params.y);
 

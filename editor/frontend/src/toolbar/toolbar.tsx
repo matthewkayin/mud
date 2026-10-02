@@ -1,11 +1,17 @@
 import { useEffect } from 'react';
 import { editorStore } from '../store';
-import { Stack, IconButton, Divider } from '@mui/material';
+import { Box, Stack, IconButton, Divider, useColorScheme } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
 
 export function Toolbar() {
+  const { mode, systemMode, setMode } = useColorScheme();
+  const resolvedMode = mode === 'system' ? systemMode : mode;
+  const isDarkMode = resolvedMode === 'dark';
+
   // Shortcuts
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -30,8 +36,9 @@ export function Toolbar() {
       spacing={2}
       sx={{
         width: '100%',
-        backgroundColor: '#f0f0f0',
-        borderBottom: '2px solid #d6d6d6',
+        backgroundColor: 'background.default',
+        borderBottom: '2px solid',
+        borderColor: 'divider',
       }}
     >
       <IconButton>
@@ -44,6 +51,15 @@ export function Toolbar() {
       </IconButton>
       <IconButton onClick={() => editorStore.redoAction()}>
         <RedoIcon/>
+      </IconButton>
+
+      <Box sx={{ flexGrow: 1 }}/>
+      <IconButton
+        title={isDarkMode ? 'Switch to light theme' : 'Switch to dark theme'}
+        aria-label={isDarkMode ? 'Switch to light theme' : 'Switch to dark theme'}
+        onClick={() => setMode(isDarkMode ? 'light' : 'dark')}
+      >
+        {isDarkMode ? <LightModeIcon/> : <DarkModeIcon/>}
       </IconButton>
     </Stack>
   );
