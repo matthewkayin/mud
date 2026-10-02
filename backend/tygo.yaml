@@ -1,5 +1,0 @@
-packages:
-  - path: "mud/world"
-    output_path: "../frontend/src/mud/types.ts"
-    frontmatter: |
-        /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-empty-interface, @typescript-eslint/no-empty-object-type */

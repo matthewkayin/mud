@@ -11,15 +11,26 @@ import (
 const GAME_UPDATE_INTERVAL = world.WORLD_SECONDS_PER_UPDATE * time.Second
 const GAME_SAVE_INTERVAL = 15 * time.Minute
 
-type Command struct {
+type SocketEventType int
+const (
+	SOCKET_EVENT_TYPE_CONNECT SocketEventType = iota
+	SOCKET_EVENT_TYPE_DISCONNECT
+	SOCKET_EVENT_TYPE_COMMAND
+)
+
+type SocketEvent struct {
+	Type SocketEventType
 	PlayerId int
-	Payload string
+	// Identifies the connection for CONNECT and DISCONNECT events
+	Inbox *chan string
+	// Only used by COMMAND events
+	Command string
 }
 
 type EventListener func (gamestate *GameState, event* world.Event)
 
 type GameState struct {
-	Commands chan Command
+	SocketEvents chan SocketEvent
 	bannerLines []string
 
 	players []Player
@@ -38,7 +49,7 @@ func GameStateInit() *GameState {
 	}
 
 	gamestate := &GameState {
-		Commands: make(chan Command, 1024),
+		SocketEvents: make(chan SocketEvent, 1024),
 		bannerLines: bannerLines,
 
 		players: make([]Player, 0, 64),
@@ -69,8 +80,17 @@ func (gamestate *GameState) Run(ctx context.Context) {
 		select {
 			case <- ctx.Done():
 				break gameloop
-			case command := <- gamestate.Commands:
-				gamestate.handleCommand(command)
+			case event := <- gamestate.SocketEvents:
+				switch event.Type {
+					case SOCKET_EVENT_TYPE_CONNECT:
+						gamestate.registerPlayer(event.PlayerId, event.Inbox)
+					case SOCKET_EVENT_TYPE_DISCONNECT:
+						gamestate.removePlayer(event.PlayerId, event.Inbox)
+					case SOCKET_EVENT_TYPE_COMMAND:
+						gamestate.handleCommand(event.PlayerId, event.Command)
+					default:
+						log.Printf("Socket event type %d not handled!", event.Type)
+				}
 			case <- ticker.C:
 				gamestate.update()
 			case <- saveTicker.C:
@@ -82,7 +102,16 @@ func (gamestate *GameState) Run(ctx context.Context) {
 	gamestate.world.Save()
 }
 
-func (gamestate *GameState) RegisterPlayer(playerId int, playerInbox *chan string) {
+// Must only be called from the game loop
+func (gamestate *GameState) registerPlayer(playerId int, playerInbox *chan string) {
+	// If this player is already connected, kick the old connection
+	existingPlayer := gamestate.getPlayerById(playerId)
+	if existingPlayer != nil && existingPlayer.inbox != playerInbox {
+		log.Printf("Player %d connected from another location. Kicking previous connection.", playerId)
+		*existingPlayer.inbox <- "You have been disconnected because you logged in from another location."
+		gamestate.removePlayer(playerId, existingPlayer.inbox)
+	}
+
 	player := playerInit(playerId, playerInbox)
 	gamestate.players = append(gamestate.players, player)
 	newPlayerIndex := len(gamestate.players) - 1
@@ -95,7 +124,10 @@ func (gamestate *GameState) RegisterPlayer(playerId int, playerInbox *chan strin
 	newPlayer.setMenu(gamestate, PLAYER_MENU_LOGIN)
 }
 
-func (gamestate *GameState) RemovePlayer(playerId int) {
+// Must only be called from the game loop
+// The inbox identifies which connection is being removed. If it doesn't match the
+// registered player's inbox (e.g. a kicked connection disconnecting), this does nothing.
+func (gamestate *GameState) removePlayer(playerId int, playerInbox *chan string) {
 	// Get the player index (and double-check that they even exist)
 	playerIndex, exists := gamestate.playerIdToIndexMap[playerId]
 	if !exists {
@@ -103,17 +135,27 @@ func (gamestate *GameState) RemovePlayer(playerId int) {
 		return
 	}
 
-	// Check if they are logged in
 	player := &gamestate.players[playerIndex]
+	if player.inbox != playerInbox {
+		return
+	}
+
+	// Check if they are logged in
 	if player.isLoggedIn() {
 		// A little hacky, the setMenu() will trigger the world menu on exit
 		player.setMenu(gamestate, PLAYER_MENU_LOGIN)
 	}
 
+	// Closing the inbox tells the connection's write loop that the session has ended
+	close(*player.inbox)
+
 	// Swap and pop them from the array
 	lastIndex := len(gamestate.players) - 1
 	gamestate.players[playerIndex] = gamestate.players[lastIndex]
 	gamestate.players = gamestate.players[:lastIndex]
+	if playerIndex != lastIndex {
+		gamestate.playerIdToIndexMap[gamestate.players[playerIndex].id] = playerIndex
+	}
 
 	// Delete their entry in the map
 	delete(gamestate.playerIdToIndexMap, playerId)
@@ -145,16 +187,16 @@ func (gamestate *GameState) getPlayerByMobHandle(handle world.MobHandle) *Player
 }
 
 // Handles a player command
-func (gamestate *GameState) handleCommand(command Command) {
+func (gamestate *GameState) handleCommand(playerId int, command string) {
 	// Lookup player index
-	playerIndex, playerIndexExists := gamestate.playerIdToIndexMap[command.PlayerId]
+	playerIndex, playerIndexExists := gamestate.playerIdToIndexMap[playerId]
 	if !playerIndexExists {
-		log.Printf("Received command from player %d but they don't exist.", command.PlayerId)
+		log.Printf("Received command from player %d but they don't exist.", playerId)
 		return
 	}
 
 	player := &gamestate.players[playerIndex]
-	player.getMenu().handleCommand(gamestate, player, command.Payload)
+	player.getMenu().handleCommand(gamestate, player, command)
 }
 
 // Sends a message to all player inboxes
