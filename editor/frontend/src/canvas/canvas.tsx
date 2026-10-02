@@ -32,7 +32,7 @@ type RenderRoomParams = {
   x: number;
   y: number;
   dashBorder: boolean;
-  color: string;
+  selected: boolean;
   text: string;
 }
 
@@ -48,37 +48,21 @@ export function Canvas() {
     mouseWorldY: 0,
   });
 
-  // Resize
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const box = canvasBoxRef.current;
-    if (!canvas || !box) {
-      return;
-    }
-
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const { width, height } = entry.contentRect;
-        canvas.width = width;
-        canvas.height = height;
-
-        const context = canvas.getContext('2d');
-        if (!context) {
-          return;
-        }
-      }
-    });
-    resizeObserver.observe(box);
-
-    return () => resizeObserver.disconnect();
-  }, []);
-
   // Event listeners
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) {
       return;
     }
+
+    const onResize = () => {
+      const rect = canvas.getBoundingClientRect();
+      if (canvas.width !== rect.width || canvas.height !== rect.height) {
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+      }
+    };
+    onResize();
 
     // onContextMenu prevents the default right-click menu from popping up, allowing us
     // to use right-click to drag the camera
@@ -152,12 +136,14 @@ export function Canvas() {
       state.mouseWorldY = (event.offsetY - state.cameraOffsetY) / state.cameraZoom;
     };
 
+    window.addEventListener('resize', onResize);
     canvas.addEventListener('contextmenu', onContextMenu);
     canvas.addEventListener('click', onMouseClick);
     canvas.addEventListener('mousemove', onMouseMove);
     canvas.addEventListener('wheel', onMouseScroll);
 
     return () => {
+      window.removeEventListener('resize', onResize);
       canvas.removeEventListener('contextmenu', onContextMenu);
       canvas.removeEventListener('click', onMouseClick);
       canvas.removeEventListener('mousemove', onMouseMove);
@@ -209,15 +195,16 @@ export function Canvas() {
     <Box
       ref={canvasBoxRef}
       sx={{
+        display: 'block',
         width: '100%',
         height: '100%',
-        backgroundColor: '#000',
+        backgroundColor: '#ff00ff',
       }}
     >
       <canvas
         ref={canvasRef}
         style={{
-          width: '100%',
+          width: 'auto',
           height: '100%',
           imageRendering: 'pixelated',
         }}
@@ -227,7 +214,7 @@ export function Canvas() {
 }
 
 function render(context: CanvasRenderingContext2D, canvasState: CanvasState, rooms: world.Room[], grid: EditorGrid) {
-  context.fillStyle = '#000';
+  context.fillStyle = '#f0f0f0';
   context.fillRect(0, 0, context.canvas.width, context.canvas.height);
 
   context.save();
@@ -241,7 +228,7 @@ function render(context: CanvasRenderingContext2D, canvasState: CanvasState, roo
       x: cell.x,
       y: cell.y,
       dashBorder: false,
-      color: isSelected ? '#ffff00' : '#fff',
+      selected: isSelected,
       text: rooms[roomIndex].Name,
     });
   }
@@ -256,7 +243,7 @@ function render(context: CanvasRenderingContext2D, canvasState: CanvasState, roo
         x: hoveredCell.x,
         y: hoveredCell.y,
         dashBorder: true,
-        color: '#fff',
+        selected: false,
         text: '+',
       });
     }
@@ -266,8 +253,8 @@ function render(context: CanvasRenderingContext2D, canvasState: CanvasState, roo
 }
 
 function renderRoom(context: CanvasRenderingContext2D, params: RenderRoomParams) {
-  context.strokeStyle = params.color;
-  context.fillStyle = params.color;
+  context.strokeStyle = '#000';
+  context.fillStyle = '#000';
 
   const rect = getRoomRect(params.x, params.y);
 
@@ -275,7 +262,12 @@ function renderRoom(context: CanvasRenderingContext2D, params: RenderRoomParams)
     context.setLineDash([7, 2]);
   }
   context.strokeRect(rect.x + 0.5, rect.y + 0.5, rect.width, rect.height);
-  if (params.dashBorder) {
+
+  if (params.selected) {
+    context.setLineDash([7, 2]);
+    context.strokeRect(rect.x - 5.5, rect.y - 5.5, rect.width + 11.5, rect.height + 11.5);
+  }
+  if (params.dashBorder || params.selected) {
     // Reset line dash
     context.setLineDash([])
   }
