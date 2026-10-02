@@ -89,6 +89,8 @@ export class EditorState {
       return;
     }
 
+    console.log('Grid realloc');
+
     // Alloc new grid
     const newWidth = this.roomGridWidth + Math.abs(shiftX);
     const newHeight = this.roomGridHeight + Math.abs(shiftY);

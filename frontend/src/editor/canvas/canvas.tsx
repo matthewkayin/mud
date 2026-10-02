@@ -101,9 +101,11 @@ export function Canvas({ onRender, onMouseClick, onMouseMove, onMouseScroll }: C
     };
 
     // start the render loop
+    console.log('effect request animation frame');
     animationFrameId = requestAnimationFrame(render);
 
     return () => {
+      console.log('cancel animation frame');
       cancelAnimationFrame(animationFrameId);
     };
   }, [onRender]);
