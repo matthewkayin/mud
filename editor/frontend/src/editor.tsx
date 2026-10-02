@@ -1,9 +1,17 @@
-import { Box, Stack } from '@mui/material';
+import { useEffect } from 'react';
+import { Box } from '@mui/material';
 import { Canvas } from './canvas';
 import { Toolbar } from './toolbar';
 import { Sidebar } from './sidebar';
+import { editorStore } from './store';
+import { GetItemData } from '../wailsjs/go/main/EditorState';
 
 export function Editor() {
+  // Load item data
+  useEffect(() => {
+    GetItemData().then(editorStore.setItemData);
+  }, []);
+
   return (
     <Box sx={{
       display: 'flex',

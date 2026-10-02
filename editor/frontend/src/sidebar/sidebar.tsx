@@ -1,7 +1,10 @@
-import { Box, Stack, Typography } from '@mui/material';
-import { useEffect, useSyncExternalStore } from 'react';
+import { Box, Stack, Typography, FormControlLabel, Checkbox } from '@mui/material';
+import { useSyncExternalStore } from 'react';
 import { editorStore } from '../store';
+import { world } from '../../wailsjs/go/models';
 import { SubmitTextField } from './components/submit_textfield';
+import { DropTableEditor } from './components/drop_table';
+import { ChestsEditor } from './components/chests';
 import { EditorActionEditRoom } from '../store/action';
 
 export function Sidebar() {
@@ -30,6 +33,17 @@ export function Sidebar() {
     )
   }
 
+  const commitRoomEdit = (edit: (editedRoom: world.Room) => void) => {
+    const editedRoom = structuredClone(room);
+    edit(editedRoom);
+
+    editorStore.doAction(new EditorActionEditRoom({
+      roomIndex: roomIndex,
+      previous: structuredClone(room),
+      value: editedRoom,
+    }));
+  };
+
   return (
     <Box sx={sidebarBoxSx}>
       <Stack spacing={2}>
@@ -38,14 +52,53 @@ export function Sidebar() {
           label="Name"
           value={room.Name}
           onSubmit={(value) => {
-            const editedRoom = structuredClone(room);
-            editedRoom.Name = value;
+            commitRoomEdit((editedRoom) => {
+              editedRoom.Name = value;
+            });
+          }}
+        />
 
-            editorStore.doAction(new EditorActionEditRoom({
-              roomIndex: roomIndex,
-              previous: structuredClone(room),
-              value: editedRoom,
-            }));
+        <SubmitTextField
+          label="Description"
+          value={room.Description}
+          multiline
+          onSubmit={(value) => {
+            commitRoomEdit((editedRoom) => {
+              editedRoom.Description = value;
+            });
+          }}
+        />
+
+        <FormControlLabel
+          label="Safe Zone"
+          control={
+            <Checkbox
+              checked={room.IsSafeZone}
+              onChange={(event) => {
+                commitRoomEdit((editedRoom) => {
+                  editedRoom.IsSafeZone = event.target.checked;
+                });
+              }}
+            />
+          }
+        />
+
+        <DropTableEditor
+          name="Room Items"
+          dropTable={room.DropTable}
+          onEdit={(dropTable) => {
+            commitRoomEdit((editedRoom) => {
+              editedRoom.DropTable = dropTable;
+            });
+          }}
+        />
+
+        <ChestsEditor
+          chests={room.Chests}
+          onEdit={(chests) => {
+            commitRoomEdit((editedRoom) => {
+              editedRoom.Chests = chests;
+            });
           }}
         />
       </Stack>

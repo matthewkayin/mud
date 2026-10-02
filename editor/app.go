@@ -39,3 +39,7 @@ func (state *EditorState) onStartup(ctx context.Context) {
 func (state *EditorState) GetWorld() *world.World {
 	return state.world
 }
+
+func (state *EditorState) GetItemData() []*world.ItemData {
+	return world.ITEM_DATA
+}

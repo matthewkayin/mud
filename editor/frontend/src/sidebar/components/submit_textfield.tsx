@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
-import { TextField } from '@mui/material';
+import { TextField, type SxProps, type Theme } from '@mui/material';
 
 type SubmitTextFieldProps = {
   label: string;
   value: string;
   onSubmit: (value: string) => void;
+  multiline?: boolean;
+  sx?: SxProps<Theme>;
 }
 
-export function SubmitTextField({ label, value, onSubmit }: SubmitTextFieldProps) {
+export function SubmitTextField({ label, value, onSubmit, multiline, sx }: SubmitTextFieldProps) {
   const [draft, setDraft] = useState(value);
 
   useEffect(() => {
@@ -26,10 +28,13 @@ export function SubmitTextField({ label, value, onSubmit }: SubmitTextFieldProps
       label={label}
       size="small"
       value={draft}
+      multiline={multiline}
+      sx={sx}
       onChange={(event) => setDraft(event.target.value)}
       onBlur={submit}
       onKeyDown={(event) => {
-        if (event.key === 'Enter') {
+        // Multiline fields use Enter for newlines, so they only submit on blur
+        if (event.key === 'Enter' && !multiline) {
           event.preventDefault();
           submit();
         }

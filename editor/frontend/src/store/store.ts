@@ -17,7 +17,8 @@ export class EditorStore {
       grid: {
         cellToRoomIndex: new Map<string, number>(),
         selectedCellKey: null,
-      }
+      },
+      itemData: [],
     };
   }
 
@@ -74,6 +75,15 @@ export class EditorStore {
 
   getGrid = () => {
     return this.state.grid;
+  }
+
+  getItemData = () => {
+    return this.state.itemData;
+  }
+
+  setItemData = (itemData: world.ItemData[]) => {
+    this.state.itemData = itemData;
+    this.emitChange();
   }
 
   getSelectedRoomIndex = (): number | undefined => {

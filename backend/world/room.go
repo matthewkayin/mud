@@ -13,6 +13,7 @@ import (
 const ROOM_NONE int = -1
 
 const CHEST_CORPOSE_DECAY_DURATION = 30 / WORLD_SECONDS_PER_UPDATE
+const CHEST_REFRESH_DURATION = 60 * 60 / WORLD_SECONDS_PER_UPDATE // 1 hour
 
 type ChestType int
 const (
@@ -24,7 +25,6 @@ type Chest struct {
 	Name string
 	Type ChestType
 	Timer int32
-	RespawnDuration int32
 	DropTable DropTable
 	Inventory Inventory
 }
@@ -152,7 +152,7 @@ func (room *Room) updateChests() {
 		chest.Timer--
 		if chest.Timer <= 0 && chest.Type == CHEST_TYPE_CHEST {
 			chest.Inventory = chest.DropTable.getLoot()
-			chest.Timer = chest.RespawnDuration
+			chest.Timer = CHEST_REFRESH_DURATION
 		}
 		if chest.Timer <= 0 && chest.Type == CHEST_TYPE_CORPSE {
 			room.Chests[chestIndex] = room.Chests[len(room.Chests) - 1]

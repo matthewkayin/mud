@@ -70,7 +70,6 @@ func WorldInitNew() *World {
 			{
 				Name: "Chest of Test",
 				Type: CHEST_TYPE_CHEST,
-				RespawnDuration: 60 / WORLD_SECONDS_PER_UPDATE,
 				Inventory: Inventory {
 					Items: []Item {
 						{ Id: ITEM_SWORD, Amount: 1, Durability: 1 },

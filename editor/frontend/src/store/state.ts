@@ -3,6 +3,8 @@ import { world } from '../../wailsjs/go/models';
 export const GRID_INDEX_NONE = -1;
 export const ROOM_NONE = -1;
 export const DIRECTION_COUNT = 4;
+export const WORLD_SECONDS_PER_UPDATE = 3;
+export const CHEST_TYPE_CHEST = 0;
 
 export type EditorGridCell = {
   x: number;
@@ -17,6 +19,7 @@ export type EditorGrid = {
 export type EditorState = {
   rooms: world.Room[];
   grid: EditorGrid;
+  itemData: world.ItemData[];
 }
 
 export function editorGridCellToString(cell: EditorGridCell): string {

@@ -309,7 +309,6 @@ export namespace world {
 	    Name: string;
 	    Type: number;
 	    Timer: number;
-	    RespawnDuration: number;
 	    DropTable: DropTable;
 	    Inventory: Inventory;
 	
@@ -322,7 +321,6 @@ export namespace world {
 	        this.Name = source["Name"];
 	        this.Type = source["Type"];
 	        this.Timer = source["Timer"];
-	        this.RespawnDuration = source["RespawnDuration"];
 	        this.DropTable = this.convertValues(source["DropTable"], DropTable);
 	        this.Inventory = this.convertValues(source["Inventory"], Inventory);
 	    }
@@ -365,6 +363,24 @@ export namespace world {
 	
 	
 	
+	export class ItemData {
+	    Name: string;
+	    Description: string;
+	    ItemType: number;
+	    Data: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new ItemData(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Name = source["Name"];
+	        this.Description = source["Description"];
+	        this.ItemType = source["ItemType"];
+	        this.Data = source["Data"];
+	    }
+	}
 	
 	export class MobHandle {
 	    Id: number;
