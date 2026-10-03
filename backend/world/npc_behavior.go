@@ -78,7 +78,8 @@ func (behavior *Behavior) UnmarshalJSON(data []byte) error {
 	}
 
 	switch behaviorJson.Type {
-		case "nil": {
+		// The editor sends behaviors without a type for NPCs that have none
+		case "", "nil": {
 			behavior.Hooks = nil
 			return nil
 		}
@@ -92,7 +93,7 @@ func (behavior *Behavior) UnmarshalJSON(data []byte) error {
 			behavior.Hooks = hooks
 		}
 		default:
-			panic(fmt.Sprintf("Behavior type %s not handled.", behaviorJson.Type))
+			return fmt.Errorf("behavior type %s not handled", behaviorJson.Type)
 	}
 
 	return nil

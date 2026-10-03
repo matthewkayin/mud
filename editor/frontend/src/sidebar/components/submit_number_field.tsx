@@ -19,13 +19,14 @@ type SubmitNumberFieldProps = {
   min?: number;
   max?: number;
   step?: number;
+  disabled?: boolean;
   onSubmit: (value: number) => void;
 }
 
 // A number field that keeps edits as a local draft and only submits once focus leaves
 // the field (or Enter is pressed), so that stepping or typing doesn't create an action
 // per change.
-export function SubmitNumberField({ label, value, min, max, step = 1, onSubmit }: SubmitNumberFieldProps) {
+export function SubmitNumberField({ label, value, min, max, step = 1, disabled = false, onSubmit }: SubmitNumberFieldProps) {
   const id = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState<number | null>(value);
@@ -85,6 +86,7 @@ export function SubmitNumberField({ label, value, min, max, step = 1, onSubmit }
         min={min}
         max={max}
         step={step}
+        disabled={disabled}
         onValueChange={setDraftValue}
         render={(props, state) => (
           <FormControl

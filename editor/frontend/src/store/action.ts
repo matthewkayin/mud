@@ -1,5 +1,13 @@
 import { world } from '../../wailsjs/go/models';
-import { DIRECTION_COUNT, type EditorGridCell, editorGridCellToString, EditorState, ROOM_NONE } from './state';
+import {
+  type EditorCell,
+  EditorConnection,
+  EditorRoom,
+  EditorState,
+  editorStateDeleteRoom,
+  editorStateRemoveConnection,
+} from './state';
+import { getEditorConstants } from './constants';
 
 export interface EditorAction {
   do: (state: EditorState) => void;
@@ -7,21 +15,20 @@ export interface EditorAction {
 }
 
 export class EditorActionAddRoom implements EditorAction {
-  private data: { cellKey: string };
+  private data: { cell: EditorCell };
 
-  constructor(cell: EditorGridCell) {
-    this.data = {
-      cellKey: editorGridCellToString(cell),
-    };
+  constructor(params: typeof this.data) {
+    this.data = params;
   }
 
   do = (state: EditorState) => {
-    const newRoomIndex = state.rooms.length;
-    state.rooms.push(world.Room.createFrom({
+    const key = this.data.cell.toString();
+    const room: EditorRoom = Object.assign(world.Room.createFrom({
       Name: 'New Room',
       Description: 'This is a new room',
-      Exits: new Array(DIRECTION_COUNT).fill(ROOM_NONE),
-      ExitIsLocked: new Array(DIRECTION_COUNT).fill(false),
+      // Exits are filled in when the world is saved
+      Exits: new Array(world.Direction.COUNT).fill(getEditorConstants().RoomNone),
+      ExitIsLocked: new Array(world.Direction.COUNT).fill(false),
       IsSafeZone: false,
       DropTable: {
         Entries: [],
@@ -30,26 +37,26 @@ export class EditorActionAddRoom implements EditorAction {
         Items: [],
       },
       Chests: [],
-    }))
+      EditorPosition: this.data.cell.toPosition(),
+    }), {
+      Npcs: [],
+    });
 
-    state.grid.cellToRoomIndex.set(this.data.cellKey, newRoomIndex);
-    state.grid.selectedCellKey = this.data.cellKey;
+    state.rooms.set(key, room);
+    state.connections.set(key, []);
   }
 
   undo = (state: EditorState) => {
-    state.rooms.pop();
-    state.grid.cellToRoomIndex.delete(this.data.cellKey);
-    if (state.grid.selectedCellKey === this.data.cellKey) {
-      state.grid.selectedCellKey = null;
-    }
+    editorStateDeleteRoom(state, this.data.cell);
   }
 }
 
-export class EditorActionEditRoom implements EditorAction {
+export class EditorActionDeleteRoom implements EditorAction {
   private data: {
-    roomIndex: number;
-    previous: world.Room;
-    value: world.Room;
+    cell: EditorCell;
+    room: EditorRoom;
+    connections: string[];
+    wasStartRoom: boolean;
   };
 
   constructor(params: typeof this.data) {
@@ -57,10 +64,135 @@ export class EditorActionEditRoom implements EditorAction {
   }
 
   do = (state: EditorState) => {
-    state.rooms[this.data.roomIndex] = structuredClone(this.data.value);
+    editorStateDeleteRoom(state, this.data.cell);
   }
 
   undo = (state: EditorState) => {
-    state.rooms[this.data.roomIndex] = structuredClone(this.data.previous);
+    const key = this.data.cell.toString();
+    state.rooms.set(key, structuredClone(this.data.room));
+    state.connections.set(key, structuredClone(this.data.connections));
+
+    // Reconnect all connected rooms to key
+    for (const connKey of this.data.connections) {
+      state.connections.get(connKey)?.push(key);
+    }
+
+    if (this.data.wasStartRoom) {
+      state.startCell = this.data.cell;
+    }
+  }
+}
+
+export class EditorActionEditRoom implements EditorAction {
+  private data: {
+    cell: EditorCell;
+    previous: EditorRoom;
+    value: EditorRoom;
+  };
+
+  constructor(params: typeof this.data) {
+    this.data = params;
+  }
+
+  do = (state: EditorState) => {
+    const key = this.data.cell.toString();
+    state.rooms.set(key, structuredClone(this.data.value));
+  }
+
+  undo = (state: EditorState) => {
+    const key = this.data.cell.toString();
+    state.rooms.set(key, structuredClone(this.data.previous));
+  }
+}
+
+export class EditorActionConnectRooms implements EditorAction {
+  private data: {
+    connection: EditorConnection;
+  };
+
+  constructor(params: typeof this.data) {
+    this.data = params;
+  }
+
+  do = (state: EditorState) => {
+    const fromKey = this.data.connection.from.toString();
+    const toKey = this.data.connection.to.toString();
+
+    state.connections.get(fromKey)?.push(toKey);
+    state.connections.get(toKey)?.push(fromKey);
+  }
+
+  undo = (state: EditorState) => {
+    editorStateRemoveConnection(state, this.data.connection);
+  }
+}
+
+export class EditorActionDisconnectRooms implements EditorAction {
+  private data: {
+    connection: EditorConnection;
+  };
+
+  constructor(params: typeof this.data) {
+    this.data = params;
+  }
+
+  do = (state: EditorState) => {
+    editorStateRemoveConnection(state, this.data.connection);
+  }
+
+  undo = (state: EditorState) => {
+    const fromKey = this.data.connection.from.toString();
+    const toKey = this.data.connection.to.toString();
+
+    state.connections.get(fromKey)?.push(toKey);
+    state.connections.get(toKey)?.push(fromKey);
+  }
+}
+
+export class EditorActionEditConnection implements EditorAction {
+  private data: {
+    connection: EditorConnection;
+    isLocked: boolean;
+  };
+
+  constructor(params: typeof this.data) {
+    this.data = params;
+  }
+
+  do = (state: EditorState) => {
+    this.setConnectionIsLocked(state, this.data.isLocked);
+  }
+
+  undo = (state: EditorState) => {
+    this.setConnectionIsLocked(state, !this.data.isLocked);
+  }
+
+  private setConnectionIsLocked(state: EditorState, value: boolean) {
+    const fromRoom = state.rooms.get(this.data.connection.from.toString());
+    const toRoom = state.rooms.get(this.data.connection.to.toString());
+    const direction = this.data.connection.getDirection();
+    const reverseDirection = (direction + 2) % world.Direction.COUNT;
+
+    fromRoom!.ExitIsLocked[direction] = value;
+    toRoom!.ExitIsLocked[reverseDirection] = value;
+  }
+}
+
+export class EditorActionSetStartRoom implements EditorAction {
+  private data: {
+    cell: EditorCell | null;
+    previous: EditorCell | null;
+  };
+
+  constructor(params: typeof this.data) {
+    this.data = params;
+  }
+
+  do = (state: EditorState) => {
+    state.startCell = this.data.cell;
+  }
+
+  undo = (state: EditorState) => {
+    state.startCell = this.data.previous;
   }
 }

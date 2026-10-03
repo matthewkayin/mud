@@ -1,16 +1,68 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { editorStore } from '../store';
-import { Box, Stack, IconButton, Divider, useColorScheme } from '@mui/material';
+import {
+  Box,
+  Stack,
+  IconButton,
+  Divider,
+  useColorScheme,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
+} from '@mui/material';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import SaveIcon from '@mui/icons-material/Save';
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
+import { main } from '../../wailsjs/go/models';
+import { ConfirmDiscardChanges, OpenWorld, SaveWorld, SaveWorldAs } from '../../wailsjs/go/main/EditorState';
+
+type ErrorDialogState = {
+  title: string;
+  message: string;
+}
 
 export function Toolbar() {
   const { mode, systemMode, setMode } = useColorScheme();
   const resolvedMode = mode === 'system' ? systemMode : mode;
   const isDarkMode = resolvedMode === 'dark';
+
+  const [errorDialog, setErrorDialog] = useState<ErrorDialogState | null>(null);
+
+  const openWorld = useCallback(async () => {
+    try {
+      const shouldDiscard = await ConfirmDiscardChanges();
+      if (!shouldDiscard) {
+        return;
+      }
+
+      // OpenWorld resolves to null if the user cancelled the file dialog
+      const editorWorld: main.EditorWorld | null = await OpenWorld();
+      if (editorWorld) {
+        editorStore.loadEditorWorld(editorWorld);
+      }
+    } catch (error) {
+      setErrorDialog({ title: 'Could not open world', message: String(error) });
+    }
+  }, []);
+
+  const saveWorld = useCallback(async (saveAs: boolean) => {
+    try {
+      const savePoint = editorStore.getTopAction();
+      const editorWorld = editorStore.toEditorWorld();
+      const didSave = saveAs ? await SaveWorldAs(editorWorld) : await SaveWorld(editorWorld);
+      if (didSave) {
+        editorStore.markSaved(savePoint);
+      }
+    } catch (error) {
+      setErrorDialog({ title: 'Could not save world', message: String(error) });
+    }
+  }, []);
 
   // Shortcuts
   useEffect(() => {
@@ -21,6 +73,12 @@ export function Toolbar() {
       } else if (event.ctrlKey && event.code === 'KeyR') {
         event.preventDefault();
         editorStore.redoAction();
+      } else if (event.ctrlKey && event.code === 'KeyO') {
+        event.preventDefault();
+        openWorld();
+      } else if (event.ctrlKey && event.code === 'KeyS') {
+        event.preventDefault();
+        saveWorld(event.shiftKey);
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -28,7 +86,7 @@ export function Toolbar() {
     return () => {
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, []);
+  }, [openWorld, saveWorld]);
 
   return (
     <Stack
@@ -41,7 +99,10 @@ export function Toolbar() {
         borderColor: 'divider',
       }}
     >
-      <IconButton>
+      <IconButton title="Open (Ctrl+O)" aria-label="Open" onClick={openWorld}>
+        <FolderOpenIcon/>
+      </IconButton>
+      <IconButton title="Save (Ctrl+S)" aria-label="Save" onClick={() => saveWorld(false)}>
         <SaveIcon/>
       </IconButton>
 
@@ -61,6 +122,18 @@ export function Toolbar() {
       >
         {isDarkMode ? <LightModeIcon/> : <DarkModeIcon/>}
       </IconButton>
+
+      <Dialog open={errorDialog !== null} onClose={() => setErrorDialog(null)}>
+        <DialogTitle>{errorDialog?.title}</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ whiteSpace: 'pre-line' }}>
+            {errorDialog?.message}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setErrorDialog(null)}>OK</Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 }

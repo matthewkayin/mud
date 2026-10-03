@@ -1,22 +1,35 @@
 import { useRef, useEffect, useSyncExternalStore } from 'react';
 import { Box, useTheme } from '@mui/material';
-import { editorStore, EditorGrid, ROOM_NONE, type EditorGridCell, editorGridCellToString, editorGridCellFromString } from '../store';
-import { world } from '../../wailsjs/go/models';
-import { EditorActionAddRoom } from '../store/action';
+import { editorStore, EditorCell, EditorConnection, type EditorRoom } from '../store';
+import { EditorActionAddRoom, EditorActionConnectRooms, EditorActionDisconnectRooms } from '../store/action';
 
 const CAMERA_ZOOM_MIN = 0.25;
 const CAMERA_ZOOM_MAX = 2.0;
 
-const ROOM_X_SPACING = 20;
-const ROOM_Y_SPACING = 20;
+const ROOM_X_SPACING = 30;
+const ROOM_Y_SPACING = 30;
 const ROOM_WIDTH = 200;
 const ROOM_HEIGHT = 80;
+
+const RenderStyle = {
+  SOLID: 0,
+  DASHED: 1,
+  SELECTED: 2,
+} as const;
+type RenderStyle = typeof RenderStyle[keyof typeof RenderStyle];
 
 type Rect = {
   x: number;
   y: number;
   width: number;
   height: number;
+}
+
+type CellRange = {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
 }
 
 type CanvasState = {
@@ -36,9 +49,9 @@ type CanvasColors = {
 type RenderRoomParams = {
   x: number;
   y: number;
-  dashBorder: boolean;
-  selected: boolean;
+  renderStyle: RenderStyle;
   text: string;
+  isStartRoom: boolean;
 }
 
 export function Canvas() {
@@ -65,6 +78,41 @@ export function Canvas() {
       foreground: theme.palette.text.primary,
     };
   }, [theme]);
+
+  // Editor selected cell slice
+  const editorSelectedCell = useSyncExternalStore(editorStore.subscribe, () => editorStore.getSelectedCell());
+  const editorSelectedCellRef = useRef(editorSelectedCell);
+  useEffect(() => {
+    editorSelectedCellRef.current = editorSelectedCell;
+  }, [editorSelectedCell]);
+
+  // Editor rooms slice
+  const editorRooms = useSyncExternalStore(editorStore.subscribe, () => editorStore.getRooms());
+  const editorRoomsRef = useRef(editorRooms);
+  useEffect(() => {
+    editorRoomsRef.current = editorRooms;
+  }, [editorRooms]);
+
+  // Editor connections slice
+  const editorConnections = useSyncExternalStore(editorStore.subscribe, () => editorStore.getConnections());
+  const editorConnectionsRef = useRef(editorConnections);
+  useEffect(() => {
+    editorConnectionsRef.current = editorConnections;
+  }, [editorConnections]);
+
+  // Editor start cell slice
+  const editorStartCell = useSyncExternalStore(editorStore.subscribe, () => editorStore.getStartCell());
+  const editorStartCellRef = useRef(editorStartCell);
+  useEffect(() => {
+    editorStartCellRef.current = editorStartCell;
+  }, [editorStartCell]);
+
+  // Editor selected connection slice
+  const editorSelectedConnection = useSyncExternalStore(editorStore.subscribe, () => editorStore.getSelectedConnection());
+  const editorSelectedConnectionRef = useRef(editorSelectedConnection);
+  useEffect(() => {
+    editorSelectedConnectionRef.current = editorSelectedConnection;
+  }, [editorSelectedConnection]);
 
   // Event listeners
   useEffect(() => {
@@ -121,20 +169,27 @@ export function Canvas() {
 
     // MOUSE CLICK
     const onMouseClick = () => {
-      const grid = editorGridRef.current;
+      const rooms = editorRoomsRef.current;
 
-      const gridCell = getHoveredGridCell(stateRef.current);
-      if (!gridCell) {
+      const hoveredCell = getHoveredCell(stateRef.current);
+      if (hoveredCell) {
+        const key = hoveredCell.toString();
+        if (!rooms.has(key)) {
+          editorStore.doAction(new EditorActionAddRoom({ cell: hoveredCell }));
+        }
+        editorStore.setSelectedCell(hoveredCell);
+
         return;
       }
 
-      const cellKey = editorGridCellToString(gridCell);
-      const roomIndex = grid.cellToRoomIndex.get(cellKey);
+      const hoveredConnection = getHoveredConnection(stateRef.current, rooms);
+      if (hoveredConnection) {
+        const connections = editorConnectionsRef.current;
 
-      if (roomIndex === undefined) {
-        editorStore.doAction(new EditorActionAddRoom(gridCell));
-      } else {
-        editorStore.setSelectedGridCell(gridCell);
+        if (!connectionExists(connections, hoveredConnection)) {
+          editorStore.doAction(new EditorActionConnectRooms({ connection: hoveredConnection }));
+        }
+        editorStore.setSelectedConnection(hoveredConnection);
       }
     };
 
@@ -169,20 +224,6 @@ export function Canvas() {
     };
   }, []);
 
-  // Editor grid slice
-  const editorGrid = useSyncExternalStore(editorStore.subscribe, () => editorStore.getGrid());
-  const editorGridRef = useRef(editorGrid);
-  useEffect(() => {
-    editorGridRef.current = editorGrid;
-  }, [editorGrid]);
-
-  // Editor rooms slice
-  const editorRooms = useSyncExternalStore(editorStore.subscribe, () => editorStore.getRooms());
-  const editorRoomsRef = useRef(editorRooms);
-  useEffect(() => {
-    editorRoomsRef.current = editorRooms;
-  }, [editorRooms]);
-
   // Draw
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -197,7 +238,7 @@ export function Canvas() {
 
     let animationFrameId: number;
     const renderFrame = () => {
-      render(context, stateRef.current, colorsRef.current, editorRoomsRef.current, editorGridRef.current);
+      render(context, stateRef.current, colorsRef.current, editorRoomsRef.current, editorConnectionsRef.current, editorSelectedCellRef.current, editorSelectedConnectionRef.current, editorStartCellRef.current);
       animationFrameId = requestAnimationFrame(renderFrame);
     };
 
@@ -231,64 +272,102 @@ export function Canvas() {
   )
 }
 
-function render(context: CanvasRenderingContext2D, canvasState: CanvasState, colors: CanvasColors, rooms: world.Room[], grid: EditorGrid) {
+function render(context: CanvasRenderingContext2D, canvasState: CanvasState, colors: CanvasColors, rooms: Map<string, EditorRoom>, connections: Map<string, string[]>, selectedCell: EditorCell | null, selectedConnection: EditorConnection | null, startCell: EditorCell | null) {
   context.fillStyle = colors.background;
   context.fillRect(0, 0, context.canvas.width, context.canvas.height);
 
   context.save();
   context.setTransform(canvasState.cameraZoom, 0, 0, canvasState.cameraZoom, canvasState.cameraOffsetX, canvasState.cameraOffsetY);
 
+  context.strokeStyle = colors.foreground;
+  context.fillStyle = colors.foreground;
+
+  // Only visit the cells that are on screen
+  const visibleCells = getVisibleCellRange(canvasState, context.canvas.width, context.canvas.height);
+
   // Render grid
-  for (const [cellKey, roomIndex] of grid.cellToRoomIndex) {
-    const cell = editorGridCellFromString(cellKey);
-    const isSelected = cellKey === grid.selectedCellKey
-    renderRoom(context, colors, {
-      x: cell.x,
-      y: cell.y,
-      dashBorder: false,
-      selected: isSelected,
-      text: rooms[roomIndex].Name,
-    });
+  for (let y = visibleCells.minY; y <= visibleCells.maxY; y++) {
+    for (let x = visibleCells.minX; x <= visibleCells.maxX; x++) {
+      const cell = new EditorCell(x, y);
+      const room = rooms.get(cell.toString());
+      if (!room) {
+        continue;
+      }
+
+      const isSelected = selectedCell ? selectedCell.isEqual(cell) : false;
+      renderRoom(context, {
+        x: cell.x,
+        y: cell.y,
+        renderStyle: isSelected ? RenderStyle.SELECTED : RenderStyle.SOLID,
+        text: room.Name,
+        isStartRoom: startCell ? startCell.isEqual(cell) : false,
+      });
+    }
+  }
+
+  // Render connections
+  for (let y = visibleCells.minY; y <= visibleCells.maxY; y++) {
+    for (let x = visibleCells.minX; x <= visibleCells.maxX; x++) {
+      const cell = new EditorCell(x, y);
+      const cellConnections = connections.get(cell.toString());
+      if (!cellConnections) {
+        continue;
+      }
+
+      // Iterate through all connections
+      for (const connKey of cellConnections) {
+        const connCell = EditorCell.fromString(connKey);
+
+        // Only render the connection if cell is less than connCell
+        // This ensures that connections are only rendered once
+        if (!cell.isLessThanOrEqualTo(connCell)) {
+          continue;
+        }
+
+        const connection = new EditorConnection(cell, connCell);
+        const isSelected = selectedConnection?.isEqualTo(connection);
+        renderConnection(context, cell, connCell, isSelected ? RenderStyle.SELECTED : RenderStyle.SOLID);
+      }
+    }
   }
 
   // New room hover
-  const hoveredCell = getHoveredGridCell(canvasState);
+  const hoveredCell = getHoveredCell(canvasState);
   if (hoveredCell) {
-    const hoveredCellKey = editorGridCellToString(hoveredCell);
-    const hoveredRoomIndex = grid.cellToRoomIndex.get(hoveredCellKey);
-    if (hoveredRoomIndex === undefined) {
-      renderRoom(context, colors, {
+    const hoveredCellKey = hoveredCell.toString();
+    if (!rooms.has(hoveredCellKey)) {
+      renderRoom(context, {
         x: hoveredCell.x,
         y: hoveredCell.y,
-        dashBorder: true,
-        selected: false,
+        renderStyle: RenderStyle.DASHED,
         text: '+',
+        isStartRoom: false,
       });
     }
+  }
+
+  // Connection hover
+  const hoveredConnection = getHoveredConnection(canvasState, rooms);
+  if (hoveredConnection && !connectionExists(connections, hoveredConnection)) {
+    renderConnection(context, hoveredConnection.from, hoveredConnection.to, RenderStyle.DASHED);
   }
 
   context.restore();
 }
 
-function renderRoom(context: CanvasRenderingContext2D, colors: CanvasColors, params: RenderRoomParams) {
-  context.strokeStyle = colors.foreground;
-  context.fillStyle = colors.foreground;
-
+function renderRoom(context: CanvasRenderingContext2D, params: RenderRoomParams) {
   const rect = getRoomRect(params.x, params.y);
 
-  if (params.dashBorder) {
+  if (params.renderStyle === RenderStyle.DASHED) {
     context.setLineDash([7, 2]);
   }
   context.strokeRect(rect.x + 0.5, rect.y + 0.5, rect.width, rect.height);
 
-  if (params.selected) {
+  if (params.renderStyle === RenderStyle.SELECTED) {
     context.setLineDash([7, 2]);
     context.strokeRect(rect.x - 5.5, rect.y - 5.5, rect.width + 11.5, rect.height + 11.5);
   }
-  if (params.dashBorder || params.selected) {
-    // Reset line dash
-    context.setLineDash([])
-  }
+  context.setLineDash([]);
 
   context.font = '16px sans-serif';
   context.textAlign = 'center';
@@ -298,6 +377,86 @@ function renderRoom(context: CanvasRenderingContext2D, colors: CanvasColors, par
   const centerY = rect.y + (rect.height / 2);
 
   context.fillText(params.text, centerX, centerY);
+
+  if (params.isStartRoom) {
+    context.font = '12px sans-serif';
+    context.textAlign = 'left';
+    context.textBaseline = 'top';
+    context.fillText('START', rect.x + 6, rect.y + 6);
+  }
+}
+
+function renderConnection(context: CanvasRenderingContext2D, fromRoom: EditorCell, toRoom: EditorCell, renderStyle: RenderStyle) {
+  let startX: number;
+  let startY: number;
+  let endX: number;
+  let endY: number;
+
+  const fromRect = getRoomRect(fromRoom.x, fromRoom.y);
+  const toRect = getRoomRect(toRoom.x, toRoom.y);
+  if (fromRoom.x === toRoom.x) {
+    startX = fromRect.x + (fromRect.width / 2) - 0.5;
+    endX = startX;
+
+    if (fromRoom.y < toRoom.y) {
+      startY = fromRect.y + fromRect.height;
+      endY = toRect.y;
+    } else {
+      startY = toRect.y + toRect.height;
+      endY = fromRect.y;
+    }
+  } else {
+    startY = fromRect.y + (fromRect.height / 2) - 0.5;
+    endY = startY;
+
+    if (fromRoom.x < toRoom.x) {
+      startX = fromRect.x + fromRect.width;
+      endX = toRect.x;
+    } else {
+      startX = toRect.x + toRect.width;
+      endX = fromRect.x;
+    }
+  }
+
+  if (renderStyle === RenderStyle.DASHED) {
+    context.setLineDash([7, 2]);
+  }
+  context.beginPath();
+  context.moveTo(startX, startY);
+  context.lineTo(endX, endY);
+  context.stroke();
+
+  if (renderStyle === RenderStyle.SELECTED) {
+    context.setLineDash([7, 2]);
+
+    if (startX === endX) {
+      // Left line
+      context.beginPath();
+      context.moveTo(startX - 5.5, startY);
+      context.lineTo(endX - 5.5, endY);
+      context.stroke();
+
+      // Right line
+      context.beginPath();
+      context.moveTo(startX + 5.5, startY);
+      context.lineTo(endX + 5.5, endY);
+      context.stroke();
+    } else {
+      // Top line
+      context.beginPath();
+      context.moveTo(startX, startY - 5.5);
+      context.lineTo(endX, endY - 5.5);
+      context.stroke();
+
+      // Bottom line
+      context.beginPath();
+      context.moveTo(startX, startY + 5.5);
+      context.lineTo(endX, endY + 5.5);
+      context.stroke();
+    }
+  }
+
+  context.setLineDash([]);
 }
 
 function getRoomRect(x: number, y: number): Rect {
@@ -315,15 +474,89 @@ function rectHasPoint(rect: Rect, x: number, y: number): boolean {
   );
 }
 
-function getHoveredGridCell(canvasState: CanvasState): EditorGridCell | undefined {
-  const cell = {
-    x: Math.floor(canvasState.mouseWorldX / (ROOM_WIDTH + ROOM_X_SPACING)),
-    y: Math.floor(canvasState.mouseWorldY / (ROOM_HEIGHT + ROOM_Y_SPACING)),
-  };
-  const rect = getRoomRect(cell.x, cell.y);
-  if (!rectHasPoint(rect, canvasState.mouseWorldX, canvasState.mouseWorldY)) {
-    return undefined;
+function getHoveredCell(canvasState: CanvasState): EditorCell | null {
+  const x = Math.floor(canvasState.mouseWorldX / (ROOM_WIDTH + ROOM_X_SPACING));
+  const y = Math.floor(canvasState.mouseWorldY / (ROOM_HEIGHT + ROOM_Y_SPACING));
+  const rect = getRoomRect(x, y);
+  if (rectHasPoint(rect, canvasState.mouseWorldX, canvasState.mouseWorldY)) {
+    return new EditorCell(x, y);
   }
 
-  return cell;
+  return null;
+}
+
+// Returns the range of cells that intersect the viewport, padded by one cell on every side
+// so that connections to off-screen rooms and selection outlines at the edges are still drawn
+function getVisibleCellRange(canvasState: CanvasState, canvasWidth: number, canvasHeight: number): CellRange {
+  const worldLeft = -canvasState.cameraOffsetX / canvasState.cameraZoom;
+  const worldTop = -canvasState.cameraOffsetY / canvasState.cameraZoom;
+  const worldRight = (canvasWidth - canvasState.cameraOffsetX) / canvasState.cameraZoom;
+  const worldBottom = (canvasHeight - canvasState.cameraOffsetY) / canvasState.cameraZoom;
+
+  return {
+    minX: Math.floor(worldLeft / (ROOM_WIDTH + ROOM_X_SPACING)) - 1,
+    minY: Math.floor(worldTop / (ROOM_HEIGHT + ROOM_Y_SPACING)) - 1,
+    maxX: Math.floor(worldRight / (ROOM_WIDTH + ROOM_X_SPACING)) + 1,
+    maxY: Math.floor(worldBottom / (ROOM_HEIGHT + ROOM_Y_SPACING)) + 1,
+  };
+}
+
+function getHoveredConnection(canvasState: CanvasState, rooms: Map<string, EditorRoom>): EditorConnection | null {
+  const x = Math.floor(canvasState.mouseWorldX / (ROOM_WIDTH + ROOM_X_SPACING));
+  const y = Math.floor(canvasState.mouseWorldY / (ROOM_HEIGHT + ROOM_Y_SPACING));
+  const cell = new EditorCell(x, y);
+
+  if (!rooms.has(cell.toString())) {
+    return null;
+  }
+
+  const rect = getRoomRect(x, y);
+
+  // North connection
+  if (canvasState.mouseWorldY < rect.y) {
+    const adjacent = new EditorCell(x, y - 1);
+    if (!rooms.has(adjacent.toString())) {
+      return null;
+    }
+
+    return new EditorConnection(cell, adjacent);
+  }
+
+  // East connection
+  if (canvasState.mouseWorldX >= rect.x + rect.width) {
+    const adjacent = new EditorCell(x + 1, y);
+    if (!rooms.has(adjacent.toString())) {
+      return null;
+    }
+
+    return new EditorConnection(cell, adjacent);
+  }
+
+  // South connection
+  if (canvasState.mouseWorldY >= rect.y + rect.height) {
+    const adjacent = new EditorCell(x, y + 1);
+    if (!rooms.has(adjacent.toString())) {
+      return null;
+    }
+
+    return new EditorConnection(cell, adjacent);
+  }
+
+  // West connection
+  if (canvasState.mouseWorldX < rect.x) {
+    const adjacent = new EditorCell(x - 1, y);
+    if (!rooms.has(adjacent.toString())) {
+      return null;
+    }
+
+    return new EditorConnection(cell, adjacent);
+  }
+
+  return null;
+}
+
+function connectionExists(connections: Map<string, string[]>, hoveredConnection: EditorConnection) {
+  const fromKey = hoveredConnection.from.toString();
+  const toKey = hoveredConnection.to.toString();
+  return connections.get(fromKey)?.includes(toKey);
 }

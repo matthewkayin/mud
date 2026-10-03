@@ -11,7 +11,6 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { world } from '../../../wailsjs/go/models';
-import { CHEST_TYPE_CHEST } from '../../store';
 import { SubmitTextField } from './submit_textfield';
 import { DropTableEditor } from './drop_table';
 
@@ -76,7 +75,7 @@ export function ChestsEditor({ chests, onEdit }: ChestsEditorProps) {
             const editedChests = structuredClone(chests);
             editedChests.push(world.Chest.createFrom({
               Name: 'New Chest',
-              Type: CHEST_TYPE_CHEST,
+              Type: world.ChestType.CHEST,
               Timer: 0,
               DropTable: {
                 Entries: [],

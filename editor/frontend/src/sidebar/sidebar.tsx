@@ -1,15 +1,14 @@
-import { Box, Stack, Typography, FormControlLabel, Checkbox } from '@mui/material';
+import { Box, Stack, Typography } from '@mui/material';
 import { useSyncExternalStore } from 'react';
 import { editorStore } from '../store';
-import { world } from '../../wailsjs/go/models';
-import { SubmitTextField } from './components/submit_textfield';
-import { DropTableEditor } from './components/drop_table';
-import { ChestsEditor } from './components/chests';
-import { EditorActionEditRoom } from '../store/action';
+import { RoomEditor } from './room';
+import { ConnectionEditor } from './connection';
 
 export function Sidebar() {
-  const roomIndex = useSyncExternalStore(editorStore.subscribe, () => editorStore.getSelectedRoomIndex());
+  const selectedCell = useSyncExternalStore(editorStore.subscribe, () => editorStore.getSelectedCell());
+  const selectedConnection = useSyncExternalStore(editorStore.subscribe, () => editorStore.getSelectedConnection());
   const room = useSyncExternalStore(editorStore.subscribe, () => editorStore.getSelectedRoom());
+  const connections = useSyncExternalStore(editorStore.subscribe, () => editorStore.getSelectedRoomConnections());
 
   const sidebarBoxSx = {
     width: '25%',
@@ -22,85 +21,29 @@ export function Sidebar() {
     overflowY: 'auto'
   };
 
-  if (!room || roomIndex === undefined) {
+  // Room editor
+  if (selectedCell && room && connections) {
     return (
       <Box sx={sidebarBoxSx}>
-        <Stack spacing={2}>
-          <Typography>Room: </Typography>
-          <Typography>None Selected</Typography>
-        </Stack>
+        <RoomEditor selectedCell={selectedCell} room={room} connections={connections} />
       </Box>
     )
   }
 
-  const commitRoomEdit = (edit: (editedRoom: world.Room) => void) => {
-    const editedRoom = structuredClone(room);
-    edit(editedRoom);
+  // Connection editor
+  if (selectedConnection) {
+    return (
+      <Box sx={sidebarBoxSx}>
+        <ConnectionEditor selectedConnection={selectedConnection} />
+      </Box>
+    );
+  }
 
-    editorStore.doAction(new EditorActionEditRoom({
-      roomIndex: roomIndex,
-      previous: structuredClone(room),
-      value: editedRoom,
-    }));
-  };
-
+  // No selection
   return (
     <Box sx={sidebarBoxSx}>
       <Stack spacing={2}>
-        <Typography>Room: </Typography>
-        <SubmitTextField
-          label="Name"
-          value={room.Name}
-          onSubmit={(value) => {
-            commitRoomEdit((editedRoom) => {
-              editedRoom.Name = value;
-            });
-          }}
-        />
-
-        <SubmitTextField
-          label="Description"
-          value={room.Description}
-          multiline
-          onSubmit={(value) => {
-            commitRoomEdit((editedRoom) => {
-              editedRoom.Description = value;
-            });
-          }}
-        />
-
-        <FormControlLabel
-          label="Safe Zone"
-          control={
-            <Checkbox
-              checked={room.IsSafeZone}
-              onChange={(event) => {
-                commitRoomEdit((editedRoom) => {
-                  editedRoom.IsSafeZone = event.target.checked;
-                });
-              }}
-            />
-          }
-        />
-
-        <DropTableEditor
-          name="Room Items"
-          dropTable={room.DropTable}
-          onEdit={(dropTable) => {
-            commitRoomEdit((editedRoom) => {
-              editedRoom.DropTable = dropTable;
-            });
-          }}
-        />
-
-        <ChestsEditor
-          chests={room.Chests}
-          onEdit={(chests) => {
-            commitRoomEdit((editedRoom) => {
-              editedRoom.Chests = chests;
-            });
-          }}
-        />
+        <Typography>No selection</Typography>
       </Stack>
     </Box>
   )
