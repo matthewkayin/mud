@@ -119,6 +119,7 @@ export namespace world {
 	    Experience: number;
 	    ExperienceToNextLevel: number;
 	    Stats: StatBlock;
+	    Abilities: number;
 	    Health: number;
 	    Mana: number;
 	    Spells: number[];
@@ -137,6 +138,7 @@ export namespace world {
 	        this.Experience = source["Experience"];
 	        this.ExperienceToNextLevel = source["ExperienceToNextLevel"];
 	        this.Stats = this.convertValues(source["Stats"], StatBlock);
+	        this.Abilities = source["Abilities"];
 	        this.Health = source["Health"];
 	        this.Mana = source["Mana"];
 	        this.Spells = source["Spells"];
@@ -185,6 +187,7 @@ export namespace world {
 	    Job: number;
 	    SpellsEquipped: Record<number, CharacterEquippedSpell>;
 	    SpellsKnown: number[];
+	    ClassSpells: number[];
 	    RecipesKnown: number[];
 	    RoomsDiscovered: number[];
 	    Data: MobData;
@@ -201,6 +204,7 @@ export namespace world {
 	        this.Job = source["Job"];
 	        this.SpellsEquipped = this.convertValues(source["SpellsEquipped"], CharacterEquippedSpell, true);
 	        this.SpellsKnown = source["SpellsKnown"];
+	        this.ClassSpells = source["ClassSpells"];
 	        this.RecipesKnown = source["RecipesKnown"];
 	        this.RoomsDiscovered = source["RoomsDiscovered"];
 	        this.Data = this.convertValues(source["Data"], MobData);

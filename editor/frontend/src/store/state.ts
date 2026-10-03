@@ -6,30 +6,31 @@ export const DIRECTION_COUNT = 4;
 export const WORLD_SECONDS_PER_UPDATE = 3;
 export const CHEST_TYPE_CHEST = 0;
 
-export type EditorGridCell = {
+export class EditorCell {
   x: number;
   y: number;
-}
 
-export type EditorGrid = {
-  cellToRoomIndex: Map<string, number>;
-  selectedCellKey: string | null;
+  constructor(paramX: number, paramY: number) {
+    this.x = paramX;
+    this.y = paramY;
+  }
+
+  isEqual = (other: EditorCell): boolean => {
+    return this.x === other.x && this.y === other.y;
+  }
+
+  toString = (): string => {
+    return `${this.x},${this.y}`;
+  }
+
+  static fromString = (cellString: string): EditorCell => {
+    const parts = cellString.split(',');
+    return new EditorCell(Number.parseInt(parts[0]), Number.parseInt(parts[1]));
+  }
 }
 
 export type EditorState = {
-  rooms: world.Room[];
-  grid: EditorGrid;
+  rooms: Map<string, world.Room>;
+  selectedCell: EditorCell | null;
   itemData: world.ItemData[];
-}
-
-export function editorGridCellToString(cell: EditorGridCell): string {
-  return `${cell.x},${cell.y}`;
-}
-
-export function editorGridCellFromString(key: string): EditorGridCell {
-  const parts = key.split(',');
-  return {
-    x: Number.parseInt(parts[0]),
-    y: Number.parseInt(parts[1]),
-  }
 }

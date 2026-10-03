@@ -1,4 +1,4 @@
-import { EditorGridCell, editorGridCellToString, EditorState, GRID_INDEX_NONE, ROOM_NONE } from './state';
+import { EditorCell, EditorState, GRID_INDEX_NONE, ROOM_NONE } from './state';
 import { EditorAction } from './action';
 import { world } from '../../wailsjs/go/models';
 
@@ -13,11 +13,8 @@ export class EditorStore {
 
   constructor() {
     this.state = {
-      rooms: [],
-      grid: {
-        cellToRoomIndex: new Map<string, number>(),
-        selectedCellKey: null,
-      },
+      rooms: new Map<string, world.Room>(),
+      selectedCell: null,
       itemData: [],
     };
   }
@@ -69,14 +66,6 @@ export class EditorStore {
     this.emitChange();
   }
 
-  getRooms = () => {
-    return this.state.rooms;
-  }
-
-  getGrid = () => {
-    return this.state.grid;
-  }
-
   getItemData = () => {
     return this.state.itemData;
   }
@@ -86,27 +75,25 @@ export class EditorStore {
     this.emitChange();
   }
 
-  getSelectedRoomIndex = (): number | undefined => {
-    if (this.state.grid.selectedCellKey === null) {
-      return undefined;
-    }
-    return this.state.grid.cellToRoomIndex.get(this.state.grid.selectedCellKey);
+  getSelectedCell = (): EditorCell | null => {
+    return this.state.selectedCell;
   }
 
-  setSelectedGridCell = (cell: EditorGridCell) => {
-    this.state.grid.selectedCellKey = editorGridCellToString(cell);
+  setSelectedCell = (cell: EditorCell) => {
+    this.state.selectedCell = cell;
     this.emitChange();
   }
 
   getSelectedRoom = (): world.Room | undefined => {
-    if (this.state.grid.selectedCellKey === null) {
+    if (this.state.selectedCell === null) {
       return undefined;
     }
-    const roomIndex = this.state.grid.cellToRoomIndex.get(this.state.grid.selectedCellKey);
-    if (roomIndex === undefined) {
-      return;
-    }
-    return this.state.rooms[roomIndex];
+
+    return this.state.rooms.get(this.state.selectedCell.toString());
+  }
+
+  getRooms = (): Map<string, world.Room> => {
+    return this.state.rooms;
   }
 }
 

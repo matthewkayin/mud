@@ -1,14 +1,15 @@
-import { Box, Stack, Typography, FormControlLabel, Checkbox } from '@mui/material';
+import { Box, Stack, Typography, FormControlLabel, Checkbox, IconButton } from '@mui/material';
 import { useSyncExternalStore } from 'react';
 import { editorStore } from '../store';
 import { world } from '../../wailsjs/go/models';
 import { SubmitTextField } from './components/submit_textfield';
 import { DropTableEditor } from './components/drop_table';
 import { ChestsEditor } from './components/chests';
-import { EditorActionEditRoom } from '../store/action';
+import { EditorActionDeleteRoom, EditorActionEditRoom } from '../store/action';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 export function Sidebar() {
-  const roomIndex = useSyncExternalStore(editorStore.subscribe, () => editorStore.getSelectedRoomIndex());
+  const selectedCell = useSyncExternalStore(editorStore.subscribe, () => editorStore.getSelectedCell());
   const room = useSyncExternalStore(editorStore.subscribe, () => editorStore.getSelectedRoom());
 
   const sidebarBoxSx = {
@@ -22,7 +23,7 @@ export function Sidebar() {
     overflowY: 'auto'
   };
 
-  if (!room || roomIndex === undefined) {
+  if (!room || !selectedCell) {
     return (
       <Box sx={sidebarBoxSx}>
         <Stack spacing={2}>
@@ -38,7 +39,7 @@ export function Sidebar() {
     edit(editedRoom);
 
     editorStore.doAction(new EditorActionEditRoom({
-      roomIndex: roomIndex,
+      cell: selectedCell,
       previous: structuredClone(room),
       value: editedRoom,
     }));
@@ -47,7 +48,20 @@ export function Sidebar() {
   return (
     <Box sx={sidebarBoxSx}>
       <Stack spacing={2}>
-        <Typography>Room: </Typography>
+        <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+          <Typography>Room: </Typography>
+          <Box sx={{ flexGrow: 1 }}/>
+          <IconButton onClick={() => {
+            const action = new EditorActionDeleteRoom({
+              cell: selectedCell,
+              room: structuredClone(room),
+            });
+            editorStore.doAction(action)
+          }}>
+            <DeleteIcon />
+          </IconButton>
+        </Stack>
+
         <SubmitTextField
           label="Name"
           value={room.Name}
