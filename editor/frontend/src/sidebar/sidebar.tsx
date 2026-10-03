@@ -11,6 +11,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 export function Sidebar() {
   const selectedCell = useSyncExternalStore(editorStore.subscribe, () => editorStore.getSelectedCell());
   const room = useSyncExternalStore(editorStore.subscribe, () => editorStore.getSelectedRoom());
+  const connections = useSyncExternalStore(editorStore.subscribe, () => editorStore.getSelectedRoomConnections());
 
   const sidebarBoxSx = {
     width: '25%',
@@ -23,7 +24,7 @@ export function Sidebar() {
     overflowY: 'auto'
   };
 
-  if (!room || !selectedCell) {
+  if (!room || !selectedCell || !connections) {
     return (
       <Box sx={sidebarBoxSx}>
         <Stack spacing={2}>
@@ -55,6 +56,7 @@ export function Sidebar() {
             const action = new EditorActionDeleteRoom({
               cell: selectedCell,
               room: structuredClone(room),
+              connections: structuredClone(connections),
             });
             editorStore.doAction(action)
           }}>

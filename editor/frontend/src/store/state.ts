@@ -19,6 +19,10 @@ export class EditorCell {
     return this.x === other.x && this.y === other.y;
   }
 
+  isLessThanOrEqualTo = (other: EditorCell): boolean => {
+    return this.x <= other.x && this.y <= other.y;
+  }
+
   toString = (): string => {
     return `${this.x},${this.y}`;
   }
@@ -31,6 +35,35 @@ export class EditorCell {
 
 export type EditorState = {
   rooms: Map<string, world.Room>;
+  connections: Map<string, string[]>;
   selectedCell: EditorCell | null;
   itemData: world.ItemData[];
+}
+
+export function editorStateDeleteRoom(state: EditorState, cell: EditorCell) {
+  const key = cell.toString();
+
+  // Remove key from any rooms that are connected to it
+  const connections = state.connections.get(key) ?? [];
+  for (const connKey of connections) {
+    editorStateRemoveConnectionIfExists(state, connKey, key);
+  }
+
+  state.rooms.delete(key);
+  state.connections.delete(key);
+}
+
+export function editorStateRemoveConnectionIfExists(state: EditorState, from: string, to: string) {
+  const connections = state.connections.get(from);
+  if (!connections) {
+    return;
+  }
+
+  const index = connections.indexOf(to);
+  if (index === -1) {
+    return;
+  }
+
+  connections[index] = connections[connections.length - 1];
+  connections.pop();
 }

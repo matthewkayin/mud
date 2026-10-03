@@ -14,6 +14,7 @@ export class EditorStore {
   constructor() {
     this.state = {
       rooms: new Map<string, world.Room>(),
+      connections: new Map<string, string[]>(),
       selectedCell: null,
       itemData: [],
     };
@@ -92,8 +93,20 @@ export class EditorStore {
     return this.state.rooms.get(this.state.selectedCell.toString());
   }
 
+  getSelectedRoomConnections = (): string[] | undefined => {
+    if (this.state.selectedCell === null) {
+      return undefined;
+    }
+
+    return this.state.connections.get(this.state.selectedCell.toString());
+  }
+
   getRooms = (): Map<string, world.Room> => {
     return this.state.rooms;
+  }
+
+  getConnections = (): Map<string, string[]> => {
+    return this.state.connections;
   }
 }
 

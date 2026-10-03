@@ -1,5 +1,5 @@
 import { world } from '../../wailsjs/go/models';
-import { DIRECTION_COUNT, type EditorCell, EditorState, ROOM_NONE } from './state';
+import { DIRECTION_COUNT, type EditorCell, EditorState, editorStateDeleteRoom, editorStateRemoveConnectionIfExists, ROOM_NONE } from './state';
 
 export interface EditorAction {
   do: (state: EditorState) => void;
@@ -29,11 +29,12 @@ export class EditorActionAddRoom implements EditorAction {
       },
       Chests: [],
     }));
+
+    state.connections.set(key, []);
   }
 
   undo = (state: EditorState) => {
-    const key = this.data.cell.toString();
-    state.rooms.delete(key);
+    editorStateDeleteRoom(state, this.data.cell);
   }
 }
 
@@ -41,6 +42,7 @@ export class EditorActionDeleteRoom implements EditorAction {
   private data: {
     cell: EditorCell;
     room: world.Room;
+    connections: string[];
   };
 
   constructor(params: typeof this.data) {
@@ -48,13 +50,18 @@ export class EditorActionDeleteRoom implements EditorAction {
   }
 
   do = (state: EditorState) => {
-    const key = this.data.cell.toString();
-    state.rooms.delete(key);
+    editorStateDeleteRoom(state, this.data.cell);
   }
 
   undo = (state: EditorState) => {
     const key = this.data.cell.toString();
     state.rooms.set(key, structuredClone(this.data.room));
+    state.connections.set(key, structuredClone(this.data.connections));
+
+    // Reconnect all connected rooms to key
+    for (const connKey of this.data.connections) {
+      state.connections.get(connKey)?.push(key);
+    }
   }
 }
 
@@ -77,5 +84,32 @@ export class EditorActionEditRoom implements EditorAction {
   undo = (state: EditorState) => {
     const key = this.data.cell.toString();
     state.rooms.set(key, structuredClone(this.data.previous));
+  }
+}
+
+export class EditorActionConnectRooms implements EditorAction {
+  private data: {
+    from: EditorCell,
+    to: EditorCell
+  };
+
+  constructor(params: typeof this.data) {
+    this.data = params;
+  }
+
+  do = (state: EditorState) => {
+    const fromKey = this.data.from.toString();
+    const toKey = this.data.to.toString();
+
+    state.connections.get(fromKey)?.push(toKey);
+    state.connections.get(toKey)?.push(fromKey);
+  }
+
+  undo = (state: EditorState) => {
+    const fromKey = this.data.from.toString();
+    const toKey = this.data.to.toString();
+
+    editorStateRemoveConnectionIfExists(state, fromKey, toKey);
+    editorStateRemoveConnectionIfExists(state, toKey, fromKey);
   }
 }
