@@ -66,7 +66,7 @@ func (npc *Npc) spawnMob(world *World) {
 	level := npc.LevelRange.ChooseRandom()
 	stats := calculateStatBlockAtLevel(&npcData.baseStats, &npcData.scaling, level)
 	mobData := MobData {
-		Name: npcData.name,
+		Name: npcData.Name,
 		Room: npc.SpawnRoom,
 
 		Level: level,

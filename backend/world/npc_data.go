@@ -7,7 +7,7 @@ const (
 )
 
 type NpcData struct {
-	name string
+	Name string
 	description string
 	experienceWorth int32
 	experienceWorthScaling int32
@@ -18,7 +18,7 @@ type NpcData struct {
 
 var NPC_DATA = []*NpcData {
 	NPC_TYPE_GOLBIN: {
-		name: "Goblin",
+		Name: "Goblin",
 		description: "You see a repulsive, green monster that wants to eat you.",
 
 		experienceWorth: 100,
@@ -41,7 +41,7 @@ var NPC_DATA = []*NpcData {
 		equipment: EquipmentInitEmpty(),
 	},
 	NPC_TYPE_TROLL: {
-		name: "Troll",
+		Name: "Troll",
 		description: "A hairy beast with a large noise and a pallid complexion towers over you.",
 
 		experienceWorth: 100,
