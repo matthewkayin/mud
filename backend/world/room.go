@@ -29,6 +29,13 @@ type Chest struct {
 	Inventory Inventory
 }
 
+// Grid position of the room in the world editor. The server doesn't use it,
+// but it is saved so that the editor can lay out the world.
+type RoomEditorPosition struct {
+	X int
+	Y int
+}
+
 type Room struct {
 	Name string
 	Description string
@@ -38,6 +45,7 @@ type Room struct {
 	DropTable DropTable
 	Inventory Inventory
 	Chests []Chest
+	EditorPosition RoomEditorPosition
 
 	Occupants []MobHandle `json:"-"`
 }

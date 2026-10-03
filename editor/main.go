@@ -25,8 +25,15 @@ func main() {
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup:        state.onStartup,
+		OnBeforeClose:    state.onBeforeClose,
 		Bind: []interface{}{
 			state,
+		},
+		EnumBind: []interface{}{
+			ALL_DIRECTIONS,
+			ALL_NPC_DISPOSITIONS,
+			ALL_NPC_MOVEMENT_TYPES,
+			ALL_CHEST_TYPES,
 		},
 	})
 

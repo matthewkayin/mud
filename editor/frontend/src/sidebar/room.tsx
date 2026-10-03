@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react';
 import { Stack, Typography, Box, IconButton, FormControlLabel, Checkbox } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { SubmitTextField } from './components/submit_textfield';
@@ -5,7 +6,7 @@ import { DropTableEditor } from './components/drop_table';
 import { ChestsEditor } from './components/chests';
 import { NpcsEditor } from './components/npcs';
 import { editorStore, EditorCell, type EditorRoom } from '../store';
-import { EditorActionDeleteRoom, EditorActionEditRoom } from '../store/action';
+import { EditorActionDeleteRoom, EditorActionEditRoom, EditorActionSetStartRoom } from '../store/action';
 
 type RoomEditorProps = {
   selectedCell: EditorCell;
@@ -14,6 +15,9 @@ type RoomEditorProps = {
 }
 
 export function RoomEditor({ selectedCell, room, connections }: RoomEditorProps) {
+  const startCell = useSyncExternalStore(editorStore.subscribe, editorStore.getStartCell);
+  const isStartRoom = startCell?.isEqual(selectedCell) ?? false;
+
   const commitRoomEdit = (edit: (editedRoom: EditorRoom) => void) => {
     const editedRoom = structuredClone(room);
     edit(editedRoom);
@@ -35,6 +39,7 @@ export function RoomEditor({ selectedCell, room, connections }: RoomEditorProps)
             cell: selectedCell,
             room: structuredClone(room),
             connections: structuredClone(connections),
+            wasStartRoom: isStartRoom,
           });
           editorStore.doAction(action)
         }}>
@@ -61,6 +66,21 @@ export function RoomEditor({ selectedCell, room, connections }: RoomEditorProps)
             editedRoom.Description = value;
           });
         }}
+      />
+
+      <FormControlLabel
+        label="Start Room"
+        control={
+          <Checkbox
+            checked={isStartRoom}
+            onChange={(event) => {
+              editorStore.doAction(new EditorActionSetStartRoom({
+                cell: event.target.checked ? selectedCell : null,
+                previous: startCell,
+              }));
+            }}
+          />
+        }
       />
 
       <FormControlLabel

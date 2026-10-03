@@ -1,14 +1,13 @@
 import { world } from '../../wailsjs/go/models';
 import {
-  DIRECTION_COUNT,
   type EditorCell,
   EditorConnection,
   EditorRoom,
   EditorState,
   editorStateDeleteRoom,
   editorStateRemoveConnection,
-  ROOM_NONE
 } from './state';
+import { getEditorConstants } from './constants';
 
 export interface EditorAction {
   do: (state: EditorState) => void;
@@ -27,8 +26,9 @@ export class EditorActionAddRoom implements EditorAction {
     const room: EditorRoom = Object.assign(world.Room.createFrom({
       Name: 'New Room',
       Description: 'This is a new room',
-      Exits: new Array(DIRECTION_COUNT).fill(ROOM_NONE),
-      ExitIsLocked: new Array(DIRECTION_COUNT).fill(false),
+      // Exits are filled in when the world is saved
+      Exits: new Array(world.Direction.COUNT).fill(getEditorConstants().RoomNone),
+      ExitIsLocked: new Array(world.Direction.COUNT).fill(false),
       IsSafeZone: false,
       DropTable: {
         Entries: [],
@@ -37,6 +37,7 @@ export class EditorActionAddRoom implements EditorAction {
         Items: [],
       },
       Chests: [],
+      EditorPosition: this.data.cell.toPosition(),
     }), {
       Npcs: [],
     });
@@ -55,6 +56,7 @@ export class EditorActionDeleteRoom implements EditorAction {
     cell: EditorCell;
     room: EditorRoom;
     connections: string[];
+    wasStartRoom: boolean;
   };
 
   constructor(params: typeof this.data) {
@@ -73,6 +75,10 @@ export class EditorActionDeleteRoom implements EditorAction {
     // Reconnect all connected rooms to key
     for (const connKey of this.data.connections) {
       state.connections.get(connKey)?.push(key);
+    }
+
+    if (this.data.wasStartRoom) {
+      state.startCell = this.data.cell;
     }
   }
 }
@@ -165,9 +171,28 @@ export class EditorActionEditConnection implements EditorAction {
     const fromRoom = state.rooms.get(this.data.connection.from.toString());
     const toRoom = state.rooms.get(this.data.connection.to.toString());
     const direction = this.data.connection.getDirection();
-    const reverseDirection = (direction + 2) % DIRECTION_COUNT;
+    const reverseDirection = (direction + 2) % world.Direction.COUNT;
 
     fromRoom!.ExitIsLocked[direction] = value;
     toRoom!.ExitIsLocked[reverseDirection] = value;
+  }
+}
+
+export class EditorActionSetStartRoom implements EditorAction {
+  private data: {
+    cell: EditorCell | null;
+    previous: EditorCell | null;
+  };
+
+  constructor(params: typeof this.data) {
+    this.data = params;
+  }
+
+  do = (state: EditorState) => {
+    state.startCell = this.data.cell;
+  }
+
+  undo = (state: EditorState) => {
+    state.startCell = this.data.previous;
   }
 }

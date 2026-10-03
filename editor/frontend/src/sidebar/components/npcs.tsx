@@ -19,11 +19,9 @@ import {
   editorStore,
   minutesToTicks,
   NPC_DISPOSITION_NAMES,
-  NPC_DISPOSITION_NEUTRAL,
   NPC_MOVEMENT_TYPE_NAMES,
-  NPC_MOVEMENT_TYPE_SENTINEL,
-  ROOM_NONE,
 } from '../../store';
+import { getEditorConstants } from '../../store/constants';
 import { SubmitRangeNumberPicker } from './submit_range_number_picker';
 import { DropTableEditor } from './drop_table';
 import { DurationField } from './duration_field';
@@ -104,8 +102,8 @@ export function NpcsEditor({ npcs, onEdit }: NpcsEditorProps) {
                   }}
                   sx={{ minWidth: '45%' }}
                 >
-                  {NPC_DISPOSITION_NAMES.map((name, disposition) => (
-                    <MenuItem key={disposition} value={disposition}>{name}</MenuItem>
+                  {Object.entries(NPC_DISPOSITION_NAMES).map(([disposition, name]) => (
+                    <MenuItem key={disposition} value={Number(disposition)}>{name}</MenuItem>
                   ))}
                 </Select>
               </Stack>
@@ -122,13 +120,13 @@ export function NpcsEditor({ npcs, onEdit }: NpcsEditorProps) {
                   }}
                   sx={{ minWidth: '45%' }}
                 >
-                  {NPC_MOVEMENT_TYPE_NAMES.map((name, movementType) => (
-                    <MenuItem key={movementType} value={movementType}>{name}</MenuItem>
+                  {Object.entries(NPC_MOVEMENT_TYPE_NAMES).map(([movementType, name]) => (
+                    <MenuItem key={movementType} value={Number(movementType)}>{name}</MenuItem>
                   ))}
                 </Select>
               </Stack>
 
-              {npc.MovementType !== NPC_MOVEMENT_TYPE_SENTINEL && <DurationField
+              {npc.MovementType !== world.NpcMovementType.SENTINEL && <DurationField
                 label="Movement Step"
                 ticks={npc.MovementStepDuration}
                 onSubmit={(ticks) => {
@@ -189,11 +187,11 @@ export function NpcsEditor({ npcs, onEdit }: NpcsEditorProps) {
             editedNpcs.push(world.Npc.createFrom({
               Type: 0,
               LevelRange: { Min: 1, Max: 1 },
-              StartingDisposition: NPC_DISPOSITION_NEUTRAL,
-              MovementType: NPC_MOVEMENT_TYPE_SENTINEL,
+              StartingDisposition: world.NpcDisposition.NEUTRAL,
+              MovementType: world.NpcMovementType.SENTINEL,
               Behavior: { Hooks: null },
-              // Filled in when the world is exported
-              SpawnRoom: ROOM_NONE,
+              // Filled in when the world is saved
+              SpawnRoom: getEditorConstants().RoomNone,
               RespawnDuration: minutesToTicks(1),
               SleepDuration: 0,
               AwakeDuration: 0,

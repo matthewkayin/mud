@@ -1,24 +1,22 @@
 import { world } from '../../wailsjs/go/models';
+import { getEditorConstants } from './constants';
 
-export const GRID_INDEX_NONE = -1;
-export const ROOM_NONE = -1;
-export const DIRECTION_COUNT = 4;
-export const WORLD_SECONDS_PER_UPDATE = 3;
-export const CHEST_TYPE_CHEST = 0;
-export const WORLD_UPDATES_PER_MINUTE = 60 / WORLD_SECONDS_PER_UPDATE;
-
-// These mirror the NpcDisposition and NpcMovementType enums in backend/world/npc.go
-export const NPC_DISPOSITION_NAMES = ['Neutral', 'Hostile'];
-export const NPC_DISPOSITION_NEUTRAL = 0;
-export const NPC_MOVEMENT_TYPE_NAMES = ['Sentinel', 'Wander'];
-export const NPC_MOVEMENT_TYPE_SENTINEL = 0;
+// Records keyed by the generated enums, so adding an enum value in Go is a compile error here until it gets a name
+export const NPC_DISPOSITION_NAMES: Record<world.NpcDisposition, string> = {
+  [world.NpcDisposition.NEUTRAL]: 'Neutral',
+  [world.NpcDisposition.HOSTILE]: 'Hostile',
+};
+export const NPC_MOVEMENT_TYPE_NAMES: Record<world.NpcMovementType, string> = {
+  [world.NpcMovementType.SENTINEL]: 'Sentinel',
+  [world.NpcMovementType.WANDER]: 'Wander',
+};
 
 export function minutesToTicks(minutes: number): number {
-  return minutes * WORLD_UPDATES_PER_MINUTE;
+  return minutes * (60 / getEditorConstants().WorldSecondsPerUpdate);
 }
 
 export function ticksToMinutes(ticks: number): number {
-  return ticks / WORLD_UPDATES_PER_MINUTE;
+  return ticks / (60 / getEditorConstants().WorldSecondsPerUpdate);
 }
 
 // The world stores NPCs in a world-level list that references rooms by index,
@@ -49,9 +47,17 @@ export class EditorCell {
     return `${this.x},${this.y}`;
   }
 
+  toPosition = (): world.RoomEditorPosition => {
+    return { X: this.x, Y: this.y };
+  }
+
   static fromString = (cellString: string): EditorCell => {
     const parts = cellString.split(',');
     return new EditorCell(Number.parseInt(parts[0]), Number.parseInt(parts[1]));
+  }
+
+  static fromPosition = (position: world.RoomEditorPosition): EditorCell => {
+    return new EditorCell(position.X, position.Y);
   }
 }
 
@@ -92,6 +98,7 @@ export type EditorState = {
   connections: Map<string, string[]>;
   selectedCell: EditorCell | null;
   selectedConnection: EditorConnection | null;
+  startCell: EditorCell | null;
   itemData: world.ItemData[];
   npcData: world.NpcData[];
 }
@@ -110,6 +117,9 @@ export function editorStateDeleteRoom(state: EditorState, cell: EditorCell) {
 
   if (state.selectedCell?.isEqual(cell)) {
     state.selectedCell = null;
+  }
+  if (state.startCell?.isEqual(cell)) {
+    state.startCell = null;
   }
 }
 

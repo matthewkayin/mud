@@ -51,6 +51,7 @@ type RenderRoomParams = {
   y: number;
   renderStyle: RenderStyle;
   text: string;
+  isStartRoom: boolean;
 }
 
 export function Canvas() {
@@ -98,6 +99,13 @@ export function Canvas() {
   useEffect(() => {
     editorConnectionsRef.current = editorConnections;
   }, [editorConnections]);
+
+  // Editor start cell slice
+  const editorStartCell = useSyncExternalStore(editorStore.subscribe, () => editorStore.getStartCell());
+  const editorStartCellRef = useRef(editorStartCell);
+  useEffect(() => {
+    editorStartCellRef.current = editorStartCell;
+  }, [editorStartCell]);
 
   // Editor selected connection slice
   const editorSelectedConnection = useSyncExternalStore(editorStore.subscribe, () => editorStore.getSelectedConnection());
@@ -230,7 +238,7 @@ export function Canvas() {
 
     let animationFrameId: number;
     const renderFrame = () => {
-      render(context, stateRef.current, colorsRef.current, editorRoomsRef.current, editorConnectionsRef.current, editorSelectedCellRef.current, editorSelectedConnectionRef.current);
+      render(context, stateRef.current, colorsRef.current, editorRoomsRef.current, editorConnectionsRef.current, editorSelectedCellRef.current, editorSelectedConnectionRef.current, editorStartCellRef.current);
       animationFrameId = requestAnimationFrame(renderFrame);
     };
 
@@ -264,7 +272,7 @@ export function Canvas() {
   )
 }
 
-function render(context: CanvasRenderingContext2D, canvasState: CanvasState, colors: CanvasColors, rooms: Map<string, EditorRoom>, connections: Map<string, string[]>, selectedCell: EditorCell | null, selectedConnection: EditorConnection | null) {
+function render(context: CanvasRenderingContext2D, canvasState: CanvasState, colors: CanvasColors, rooms: Map<string, EditorRoom>, connections: Map<string, string[]>, selectedCell: EditorCell | null, selectedConnection: EditorConnection | null, startCell: EditorCell | null) {
   context.fillStyle = colors.background;
   context.fillRect(0, 0, context.canvas.width, context.canvas.height);
 
@@ -292,6 +300,7 @@ function render(context: CanvasRenderingContext2D, canvasState: CanvasState, col
         y: cell.y,
         renderStyle: isSelected ? RenderStyle.SELECTED : RenderStyle.SOLID,
         text: room.Name,
+        isStartRoom: startCell ? startCell.isEqual(cell) : false,
       });
     }
   }
@@ -332,6 +341,7 @@ function render(context: CanvasRenderingContext2D, canvasState: CanvasState, col
         y: hoveredCell.y,
         renderStyle: RenderStyle.DASHED,
         text: '+',
+        isStartRoom: false,
       });
     }
   }
@@ -367,6 +377,13 @@ function renderRoom(context: CanvasRenderingContext2D, params: RenderRoomParams)
   const centerY = rect.y + (rect.height / 2);
 
   context.fillText(params.text, centerX, centerY);
+
+  if (params.isStartRoom) {
+    context.font = '12px sans-serif';
+    context.textAlign = 'left';
+    context.textBaseline = 'top';
+    context.fillText('START', rect.x + 6, rect.y + 6);
+  }
 }
 
 function renderConnection(context: CanvasRenderingContext2D, fromRoom: EditorCell, toRoom: EditorCell, renderStyle: RenderStyle) {
