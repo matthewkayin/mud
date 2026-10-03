@@ -4,4 +4,6 @@ import {world} from '../models';
 
 export function GetItemData():Promise<Array<world.ItemData>>;
 
+export function GetNpcData():Promise<Array<world.NpcData>>;
+
 export function GetWorld():Promise<world.World>;

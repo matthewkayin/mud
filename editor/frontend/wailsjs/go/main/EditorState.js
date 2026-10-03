@@ -6,6 +6,10 @@ export function GetItemData() {
   return window['go']['main']['EditorState']['GetItemData']();
 }
 
+export function GetNpcData() {
+  return window['go']['main']['EditorState']['GetNpcData']();
+}
+
 export function GetWorld() {
   return window['go']['main']['EditorState']['GetWorld']();
 }

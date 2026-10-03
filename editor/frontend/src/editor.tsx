@@ -4,12 +4,13 @@ import { Canvas } from './canvas';
 import { Toolbar } from './toolbar';
 import { Sidebar } from './sidebar';
 import { editorStore } from './store';
-import { GetItemData } from '../wailsjs/go/main/EditorState';
+import { GetItemData, GetNpcData } from '../wailsjs/go/main/EditorState';
 
 export function Editor() {
-  // Load item data
+  // Load item and NPC data
   useEffect(() => {
     GetItemData().then(editorStore.setItemData);
+    GetNpcData().then(editorStore.setNpcData);
   }, []);
 
   return (

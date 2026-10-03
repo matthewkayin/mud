@@ -43,3 +43,7 @@ func (state *EditorState) GetWorld() *world.World {
 func (state *EditorState) GetItemData() []*world.ItemData {
 	return world.ITEM_DATA
 }
+
+func (state *EditorState) GetNpcData() []*world.NpcData {
+	return world.NPC_DATA
+}

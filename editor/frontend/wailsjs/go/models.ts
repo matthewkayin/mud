@@ -450,6 +450,18 @@ export namespace world {
 		    return a;
 		}
 	}
+	export class NpcData {
+	    Name: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new NpcData(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Name = source["Name"];
+	    }
+	}
 	export class Room {
 	    Name: string;
 	    Description: string;

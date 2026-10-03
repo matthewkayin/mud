@@ -1,4 +1,4 @@
-import { EditorCell, EditorConnection, EditorState, GRID_INDEX_NONE, ROOM_NONE } from './state';
+import { EditorCell, EditorConnection, EditorRoom, EditorState, GRID_INDEX_NONE, ROOM_NONE } from './state';
 import { EditorAction } from './action';
 import { world } from '../../wailsjs/go/models';
 
@@ -13,11 +13,12 @@ export class EditorStore {
 
   constructor() {
     this.state = {
-      rooms: new Map<string, world.Room>(),
+      rooms: new Map<string, EditorRoom>(),
       connections: new Map<string, string[]>(),
       selectedCell: null,
       selectedConnection: null,
       itemData: [],
+      npcData: [],
     };
   }
 
@@ -77,6 +78,15 @@ export class EditorStore {
     this.emitChange();
   }
 
+  getNpcData = () => {
+    return this.state.npcData;
+  }
+
+  setNpcData = (npcData: world.NpcData[]) => {
+    this.state.npcData = npcData;
+    this.emitChange();
+  }
+
   getSelectedCell = (): EditorCell | null => {
     return this.state.selectedCell;
   }
@@ -97,7 +107,7 @@ export class EditorStore {
     this.emitChange();
   }
 
-  getSelectedRoom = (): world.Room | undefined => {
+  getSelectedRoom = (): EditorRoom | undefined => {
     if (this.state.selectedCell === null) {
       return undefined;
     }
@@ -113,7 +123,7 @@ export class EditorStore {
     return this.state.connections.get(this.state.selectedCell.toString());
   }
 
-  getRooms = (): Map<string, world.Room> => {
+  getRooms = (): Map<string, EditorRoom> => {
     return this.state.rooms;
   }
 

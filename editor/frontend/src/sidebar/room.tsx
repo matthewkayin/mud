@@ -3,18 +3,18 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { SubmitTextField } from './components/submit_textfield';
 import { DropTableEditor } from './components/drop_table';
 import { ChestsEditor } from './components/chests';
-import { editorStore, EditorCell } from '../store';
+import { NpcsEditor } from './components/npcs';
+import { editorStore, EditorCell, type EditorRoom } from '../store';
 import { EditorActionDeleteRoom, EditorActionEditRoom } from '../store/action';
-import { world } from '../../wailsjs/go/models';
 
 type RoomEditorProps = {
   selectedCell: EditorCell;
-  room: world.Room;
+  room: EditorRoom;
   connections: string[];
 }
 
 export function RoomEditor({ selectedCell, room, connections }: RoomEditorProps) {
-  const commitRoomEdit = (edit: (editedRoom: world.Room) => void) => {
+  const commitRoomEdit = (edit: (editedRoom: EditorRoom) => void) => {
     const editedRoom = structuredClone(room);
     edit(editedRoom);
 
@@ -92,6 +92,15 @@ export function RoomEditor({ selectedCell, room, connections }: RoomEditorProps)
         onEdit={(chests) => {
           commitRoomEdit((editedRoom) => {
             editedRoom.Chests = chests;
+          });
+        }}
+      />
+
+      <NpcsEditor
+        npcs={room.Npcs}
+        onEdit={(npcs) => {
+          commitRoomEdit((editedRoom) => {
+            editedRoom.Npcs = npcs;
           });
         }}
       />

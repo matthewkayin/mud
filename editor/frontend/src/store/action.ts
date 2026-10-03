@@ -3,6 +3,7 @@ import {
   DIRECTION_COUNT,
   type EditorCell,
   EditorConnection,
+  EditorRoom,
   EditorState,
   editorStateDeleteRoom,
   editorStateRemoveConnection,
@@ -23,7 +24,7 @@ export class EditorActionAddRoom implements EditorAction {
 
   do = (state: EditorState) => {
     const key = this.data.cell.toString();
-    state.rooms.set(key, world.Room.createFrom({
+    const room: EditorRoom = Object.assign(world.Room.createFrom({
       Name: 'New Room',
       Description: 'This is a new room',
       Exits: new Array(DIRECTION_COUNT).fill(ROOM_NONE),
@@ -36,8 +37,11 @@ export class EditorActionAddRoom implements EditorAction {
         Items: [],
       },
       Chests: [],
-    }));
+    }), {
+      Npcs: [],
+    });
 
+    state.rooms.set(key, room);
     state.connections.set(key, []);
   }
 
@@ -49,7 +53,7 @@ export class EditorActionAddRoom implements EditorAction {
 export class EditorActionDeleteRoom implements EditorAction {
   private data: {
     cell: EditorCell;
-    room: world.Room;
+    room: EditorRoom;
     connections: string[];
   };
 
@@ -76,8 +80,8 @@ export class EditorActionDeleteRoom implements EditorAction {
 export class EditorActionEditRoom implements EditorAction {
   private data: {
     cell: EditorCell;
-    previous: world.Room;
-    value: world.Room;
+    previous: EditorRoom;
+    value: EditorRoom;
   };
 
   constructor(params: typeof this.data) {

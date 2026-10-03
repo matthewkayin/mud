@@ -5,6 +5,28 @@ export const ROOM_NONE = -1;
 export const DIRECTION_COUNT = 4;
 export const WORLD_SECONDS_PER_UPDATE = 3;
 export const CHEST_TYPE_CHEST = 0;
+export const WORLD_UPDATES_PER_MINUTE = 60 / WORLD_SECONDS_PER_UPDATE;
+
+// These mirror the NpcDisposition and NpcMovementType enums in backend/world/npc.go
+export const NPC_DISPOSITION_NAMES = ['Neutral', 'Hostile'];
+export const NPC_DISPOSITION_NEUTRAL = 0;
+export const NPC_MOVEMENT_TYPE_NAMES = ['Sentinel', 'Wander'];
+export const NPC_MOVEMENT_TYPE_SENTINEL = 0;
+
+export function minutesToTicks(minutes: number): number {
+  return minutes * WORLD_UPDATES_PER_MINUTE;
+}
+
+export function ticksToMinutes(ticks: number): number {
+  return ticks / WORLD_UPDATES_PER_MINUTE;
+}
+
+// The world stores NPCs in a world-level list that references rooms by index,
+// but the editor stores them in the room they spawn in. NPC SpawnRoom values
+// are filled in when the world is exported.
+export type EditorRoom = world.Room & {
+  Npcs: world.Npc[];
+};
 
 export class EditorCell {
   x: number;
@@ -66,11 +88,12 @@ export class EditorConnection {
 }
 
 export type EditorState = {
-  rooms: Map<string, world.Room>;
+  rooms: Map<string, EditorRoom>;
   connections: Map<string, string[]>;
   selectedCell: EditorCell | null;
   selectedConnection: EditorConnection | null;
   itemData: world.ItemData[];
+  npcData: world.NpcData[];
 }
 
 export function editorStateDeleteRoom(state: EditorState, cell: EditorCell) {

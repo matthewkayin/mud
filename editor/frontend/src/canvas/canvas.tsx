@@ -1,7 +1,6 @@
 import { useRef, useEffect, useSyncExternalStore } from 'react';
 import { Box, useTheme } from '@mui/material';
-import { editorStore, EditorCell, EditorConnection } from '../store';
-import { world } from '../../wailsjs/go/models';
+import { editorStore, EditorCell, EditorConnection, type EditorRoom } from '../store';
 import { EditorActionAddRoom, EditorActionConnectRooms, EditorActionDisconnectRooms } from '../store/action';
 
 const CAMERA_ZOOM_MIN = 0.25;
@@ -258,7 +257,7 @@ export function Canvas() {
   )
 }
 
-function render(context: CanvasRenderingContext2D, canvasState: CanvasState, colors: CanvasColors, rooms: Map<string, world.Room>, connections: Map<string, string[]>, selectedCell: EditorCell | null, selectedConnection: EditorConnection | null) {
+function render(context: CanvasRenderingContext2D, canvasState: CanvasState, colors: CanvasColors, rooms: Map<string, EditorRoom>, connections: Map<string, string[]>, selectedCell: EditorCell | null, selectedConnection: EditorConnection | null) {
   context.fillStyle = colors.background;
   context.fillRect(0, 0, context.canvas.width, context.canvas.height);
 
@@ -448,7 +447,7 @@ function getHoveredCell(canvasState: CanvasState): EditorCell | null {
   return null;
 }
 
-function getHoveredConnection(canvasState: CanvasState, rooms: Map<string, world.Room>): EditorConnection | null {
+function getHoveredConnection(canvasState: CanvasState, rooms: Map<string, EditorRoom>): EditorConnection | null {
   const x = Math.floor(canvasState.mouseWorldX / (ROOM_WIDTH + ROOM_X_SPACING));
   const y = Math.floor(canvasState.mouseWorldY / (ROOM_HEIGHT + ROOM_Y_SPACING));
   const cell = new EditorCell(x, y);
