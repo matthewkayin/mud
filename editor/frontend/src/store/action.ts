@@ -113,3 +113,30 @@ export class EditorActionConnectRooms implements EditorAction {
     editorStateRemoveConnectionIfExists(state, toKey, fromKey);
   }
 }
+
+export class EditorActionDisconnectRooms implements EditorAction {
+  private data: {
+    from: EditorCell,
+    to: EditorCell
+  };
+
+  constructor(params: typeof this.data) {
+    this.data = params;
+  }
+
+  do = (state: EditorState) => {
+    const fromKey = this.data.from.toString();
+    const toKey = this.data.to.toString();
+
+    editorStateRemoveConnectionIfExists(state, fromKey, toKey);
+    editorStateRemoveConnectionIfExists(state, toKey, fromKey);
+  }
+
+  undo = (state: EditorState) => {
+    const fromKey = this.data.from.toString();
+    const toKey = this.data.to.toString();
+
+    state.connections.get(fromKey)?.push(toKey);
+    state.connections.get(toKey)?.push(fromKey);
+  }
+}

@@ -2,7 +2,7 @@ import { useRef, useEffect, useSyncExternalStore } from 'react';
 import { Box, useTheme } from '@mui/material';
 import { editorStore, EditorCell } from '../store';
 import { world } from '../../wailsjs/go/models';
-import { EditorActionAddRoom, EditorActionConnectRooms } from '../store/action';
+import { EditorActionAddRoom, EditorActionConnectRooms, EditorActionDisconnectRooms } from '../store/action';
 
 const CAMERA_ZOOM_MIN = 0.25;
 const CAMERA_ZOOM_MAX = 2.0;
@@ -163,7 +163,7 @@ export function Canvas() {
         if (!connectionExists(connections, hoveredConnection)) {
           editorStore.doAction(new EditorActionConnectRooms(hoveredConnection));
         } else {
-
+          editorStore.doAction(new EditorActionDisconnectRooms(hoveredConnection));
         }
       }
     };
