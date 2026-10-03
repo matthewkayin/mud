@@ -25,6 +25,13 @@ type Rect = {
   height: number;
 }
 
+type CellRange = {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
 type CanvasState = {
   cameraOffsetX: number;
   cameraOffsetY: number;
@@ -267,37 +274,51 @@ function render(context: CanvasRenderingContext2D, canvasState: CanvasState, col
   context.strokeStyle = colors.foreground;
   context.fillStyle = colors.foreground;
 
+  // Only visit the cells that are on screen
+  const visibleCells = getVisibleCellRange(canvasState, context.canvas.width, context.canvas.height);
+
   // Render grid
-  for (const [cellKey, room] of rooms) {
-    const cell = EditorCell.fromString(cellKey);
-    const isSelected = selectedCell ? selectedCell.isEqual(cell) : false;
-    renderRoom(context, {
-      x: cell.x,
-      y: cell.y,
-      renderStyle: isSelected ? RenderStyle.SELECTED : RenderStyle.SOLID,
-      text: room.Name,
-    });
-  }
-
-  // Render connections
-  for (const [cellKey, cellConnections] of connections) {
-    // Get the cell
-    const cell = EditorCell.fromString(cellKey);
-
-    // Iterate through all connections
-    for (const connKey of cellConnections) {
-      const connCell = EditorCell.fromString(connKey);
-
-      // Only render the connection if cell is less than connCell
-      // This ensures that connections are only rendered once
-      if (!cell.isLessThanOrEqualTo(connCell)) {
+  for (let y = visibleCells.minY; y <= visibleCells.maxY; y++) {
+    for (let x = visibleCells.minX; x <= visibleCells.maxX; x++) {
+      const cell = new EditorCell(x, y);
+      const room = rooms.get(cell.toString());
+      if (!room) {
         continue;
       }
 
-      const connection = new EditorConnection(cell, connCell);
-      const isSelected = selectedConnection?.isEqualTo(connection);
-      console.log('is selected ? ', { isSelected, connection, selectedConnection });
-      renderConnection(context, cell, connCell, isSelected ? RenderStyle.SELECTED : RenderStyle.SOLID);
+      const isSelected = selectedCell ? selectedCell.isEqual(cell) : false;
+      renderRoom(context, {
+        x: cell.x,
+        y: cell.y,
+        renderStyle: isSelected ? RenderStyle.SELECTED : RenderStyle.SOLID,
+        text: room.Name,
+      });
+    }
+  }
+
+  // Render connections
+  for (let y = visibleCells.minY; y <= visibleCells.maxY; y++) {
+    for (let x = visibleCells.minX; x <= visibleCells.maxX; x++) {
+      const cell = new EditorCell(x, y);
+      const cellConnections = connections.get(cell.toString());
+      if (!cellConnections) {
+        continue;
+      }
+
+      // Iterate through all connections
+      for (const connKey of cellConnections) {
+        const connCell = EditorCell.fromString(connKey);
+
+        // Only render the connection if cell is less than connCell
+        // This ensures that connections are only rendered once
+        if (!cell.isLessThanOrEqualTo(connCell)) {
+          continue;
+        }
+
+        const connection = new EditorConnection(cell, connCell);
+        const isSelected = selectedConnection?.isEqualTo(connection);
+        renderConnection(context, cell, connCell, isSelected ? RenderStyle.SELECTED : RenderStyle.SOLID);
+      }
     }
   }
 
@@ -445,6 +466,22 @@ function getHoveredCell(canvasState: CanvasState): EditorCell | null {
   }
 
   return null;
+}
+
+// Returns the range of cells that intersect the viewport, padded by one cell on every side
+// so that connections to off-screen rooms and selection outlines at the edges are still drawn
+function getVisibleCellRange(canvasState: CanvasState, canvasWidth: number, canvasHeight: number): CellRange {
+  const worldLeft = -canvasState.cameraOffsetX / canvasState.cameraZoom;
+  const worldTop = -canvasState.cameraOffsetY / canvasState.cameraZoom;
+  const worldRight = (canvasWidth - canvasState.cameraOffsetX) / canvasState.cameraZoom;
+  const worldBottom = (canvasHeight - canvasState.cameraOffsetY) / canvasState.cameraZoom;
+
+  return {
+    minX: Math.floor(worldLeft / (ROOM_WIDTH + ROOM_X_SPACING)) - 1,
+    minY: Math.floor(worldTop / (ROOM_HEIGHT + ROOM_Y_SPACING)) - 1,
+    maxX: Math.floor(worldRight / (ROOM_WIDTH + ROOM_X_SPACING)) + 1,
+    maxY: Math.floor(worldBottom / (ROOM_HEIGHT + ROOM_Y_SPACING)) + 1,
+  };
 }
 
 function getHoveredConnection(canvasState: CanvasState, rooms: Map<string, EditorRoom>): EditorConnection | null {
