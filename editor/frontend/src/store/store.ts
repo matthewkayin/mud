@@ -1,4 +1,4 @@
-import { EditorCell, EditorState, GRID_INDEX_NONE, ROOM_NONE } from './state';
+import { EditorCell, EditorConnection, EditorState, GRID_INDEX_NONE, ROOM_NONE } from './state';
 import { EditorAction } from './action';
 import { world } from '../../wailsjs/go/models';
 
@@ -16,6 +16,7 @@ export class EditorStore {
       rooms: new Map<string, world.Room>(),
       connections: new Map<string, string[]>(),
       selectedCell: null,
+      selectedConnection: null,
       itemData: [],
     };
   }
@@ -82,6 +83,17 @@ export class EditorStore {
 
   setSelectedCell = (cell: EditorCell) => {
     this.state.selectedCell = cell;
+    this.state.selectedConnection = null;
+    this.emitChange();
+  }
+
+  getSelectedConnection = (): EditorConnection | null => {
+    return this.state.selectedConnection;
+  }
+
+  setSelectedConnection = (connection: EditorConnection) => {
+    this.state.selectedConnection = connection;
+    this.state.selectedCell = null;
     this.emitChange();
   }
 
@@ -107,6 +119,16 @@ export class EditorStore {
 
   getConnections = (): Map<string, string[]> => {
     return this.state.connections;
+  }
+
+  getSelectedConnectionIsLocked = (): boolean => {
+    if (!this.state.selectedConnection) {
+      return false;
+    }
+
+    const fromRoom = this.state.rooms.get(this.state.selectedConnection.from.toString());
+    const direction = this.state.selectedConnection.getDirection();
+    return fromRoom!.ExitIsLocked[direction];
   }
 }
 

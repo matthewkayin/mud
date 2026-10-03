@@ -33,10 +33,43 @@ export class EditorCell {
   }
 }
 
+export class EditorConnection {
+  from: EditorCell;
+  to: EditorCell;
+
+  constructor(paramFrom: EditorCell, paramTo: EditorCell) {
+    this.from = paramFrom;
+    this.to = paramTo;
+  }
+
+  isEqualTo = (other: EditorConnection): boolean => {
+    return (this.from.isEqual(other.from) || this.from.isEqual(other.to)) &&
+      (this.to.isEqual(other.from) || this.to.isEqual(other.to));
+  }
+
+  getDirection = (): number => {
+    if (this.from.x === this.to.x && this.from.y - 1 === this.to.y) {
+      return 0;
+    }
+    if (this.from.x + 1 === this.to.x && this.from.y === this.to.y) {
+      return 1;
+    }
+    if (this.from.x === this.to.x && this.from.y + 1 === this.to.y) {
+      return 2;
+    }
+    if (this.from.x - 1 === this.to.x && this.from.y === this.to.y) {
+      return 3;
+    }
+
+    throw new Error("connection cells are not adjacent");
+  }
+}
+
 export type EditorState = {
   rooms: Map<string, world.Room>;
   connections: Map<string, string[]>;
   selectedCell: EditorCell | null;
+  selectedConnection: EditorConnection | null;
   itemData: world.ItemData[];
 }
 
@@ -51,9 +84,25 @@ export function editorStateDeleteRoom(state: EditorState, cell: EditorCell) {
 
   state.rooms.delete(key);
   state.connections.delete(key);
+
+  if (state.selectedCell?.isEqual(cell)) {
+    state.selectedCell = null;
+  }
 }
 
-export function editorStateRemoveConnectionIfExists(state: EditorState, from: string, to: string) {
+export function editorStateRemoveConnection(state: EditorState, connection: EditorConnection) {
+  const fromKey = connection.from.toString();
+  const toKey = connection.to.toString();
+
+  editorStateRemoveConnectionIfExists(state, fromKey, toKey);
+  editorStateRemoveConnectionIfExists(state, toKey, fromKey);
+
+  if (state.selectedConnection?.isEqualTo(connection)) {
+    state.selectedConnection = null;
+  }
+}
+
+function editorStateRemoveConnectionIfExists(state: EditorState, from: string, to: string) {
   const connections = state.connections.get(from);
   if (!connections) {
     return;

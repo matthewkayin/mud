@@ -1,5 +1,13 @@
 import { world } from '../../wailsjs/go/models';
-import { DIRECTION_COUNT, type EditorCell, EditorState, editorStateDeleteRoom, editorStateRemoveConnectionIfExists, ROOM_NONE } from './state';
+import {
+  DIRECTION_COUNT,
+  type EditorCell,
+  EditorConnection,
+  EditorState,
+  editorStateDeleteRoom,
+  editorStateRemoveConnection,
+  ROOM_NONE
+} from './state';
 
 export interface EditorAction {
   do: (state: EditorState) => void;
@@ -89,8 +97,7 @@ export class EditorActionEditRoom implements EditorAction {
 
 export class EditorActionConnectRooms implements EditorAction {
   private data: {
-    from: EditorCell,
-    to: EditorCell
+    connection: EditorConnection;
   };
 
   constructor(params: typeof this.data) {
@@ -98,26 +105,21 @@ export class EditorActionConnectRooms implements EditorAction {
   }
 
   do = (state: EditorState) => {
-    const fromKey = this.data.from.toString();
-    const toKey = this.data.to.toString();
+    const fromKey = this.data.connection.from.toString();
+    const toKey = this.data.connection.to.toString();
 
     state.connections.get(fromKey)?.push(toKey);
     state.connections.get(toKey)?.push(fromKey);
   }
 
   undo = (state: EditorState) => {
-    const fromKey = this.data.from.toString();
-    const toKey = this.data.to.toString();
-
-    editorStateRemoveConnectionIfExists(state, fromKey, toKey);
-    editorStateRemoveConnectionIfExists(state, toKey, fromKey);
+    editorStateRemoveConnection(state, this.data.connection);
   }
 }
 
 export class EditorActionDisconnectRooms implements EditorAction {
   private data: {
-    from: EditorCell,
-    to: EditorCell
+    connection: EditorConnection;
   };
 
   constructor(params: typeof this.data) {
@@ -125,18 +127,43 @@ export class EditorActionDisconnectRooms implements EditorAction {
   }
 
   do = (state: EditorState) => {
-    const fromKey = this.data.from.toString();
-    const toKey = this.data.to.toString();
-
-    editorStateRemoveConnectionIfExists(state, fromKey, toKey);
-    editorStateRemoveConnectionIfExists(state, toKey, fromKey);
+    editorStateRemoveConnection(state, this.data.connection);
   }
 
   undo = (state: EditorState) => {
-    const fromKey = this.data.from.toString();
-    const toKey = this.data.to.toString();
+    const fromKey = this.data.connection.from.toString();
+    const toKey = this.data.connection.to.toString();
 
     state.connections.get(fromKey)?.push(toKey);
     state.connections.get(toKey)?.push(fromKey);
+  }
+}
+
+export class EditorActionEditConnection implements EditorAction {
+  private data: {
+    connection: EditorConnection;
+    isLocked: boolean;
+  };
+
+  constructor(params: typeof this.data) {
+    this.data = params;
+  }
+
+  do = (state: EditorState) => {
+    this.setConnectionIsLocked(state, this.data.isLocked);
+  }
+
+  undo = (state: EditorState) => {
+    this.setConnectionIsLocked(state, !this.data.isLocked);
+  }
+
+  private setConnectionIsLocked(state: EditorState, value: boolean) {
+    const fromRoom = state.rooms.get(this.data.connection.from.toString());
+    const toRoom = state.rooms.get(this.data.connection.to.toString());
+    const direction = this.data.connection.getDirection();
+    const reverseDirection = (direction + 2) % DIRECTION_COUNT;
+
+    fromRoom!.ExitIsLocked[direction] = value;
+    toRoom!.ExitIsLocked[reverseDirection] = value;
   }
 }
