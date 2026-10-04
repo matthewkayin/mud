@@ -98,7 +98,7 @@ func (world *World) updateRoom(roomIndex int) {
 	room := &world.Rooms[roomIndex]
 
 	// Reset
-	if room.shouldReset && !room.hasPlayerOccupants(world) {
+	if room.shouldReset && room.canReset(world) {
 		room.reset()
 	}
 
