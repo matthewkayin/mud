@@ -60,7 +60,7 @@ func (world *World) loadCharacters() {
 		path := fmt.Sprintf("%s/%s", WORLD_CHARACTER_SAVES_FOLDER, fileEntry.Name())
 
 		if !strings.HasSuffix(path, ".json") {
-			log.Printf("Ignoring non-JSON file %s...", path)
+			log.Printf("Ignoring non-JSON file %s.", path)
 			continue
 		}
 
