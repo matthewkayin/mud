@@ -48,3 +48,17 @@ Since this is a realtime multiplayer game, good concurrency is an important part
   - The WebSocket Reader routine listens for messages from the client and sends them to the game
   - The WebSocket Writer routine listens for messages from the game and sends them to the client
   - Go's channels feature is used to facilitate this communication. Messages can be sent between the game and the client's web socket connection without explicit synchronization on the application side
+
+## World Editor
+
+![World Editor Screenshot](./readme/editor.png)
+
+The world editor allows developers to edit the game world without manually typing out the world JSON. The editor is a separate self-contained full stack web app that lives inside the `./editor` folder. The editor should not be run at the same time as the backend or frontend.
+
+The easiest way to run the editor is to run `just dev` (which requires that you have [Just](https://github.com/casey/just) installed). This will 1. start the backend, 2. start the frontend, and 3. open up the frontend in a separate Chrome window. When you close the Chrome window, the frontend and backend will also shutdown.
+
+If you don't have Just or Chrome, you can also run each piece manually:
+
+1. Start the backend: `cd editor && go run .`
+2. In a separate terminal, start the frontend: `cd editor/frontend && npm run dev`
+3. Navigate to `localhost:5173` in your browser.
