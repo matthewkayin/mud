@@ -59,7 +59,7 @@ var CLASS_DATA []*ClassData = []*ClassData {
 			Faith: 8,
 		},
 		UnlocksAtLevel: [MOB_MAX_LEVEL][]ClassUnlock {
-			1: {
+			2: {
 				{ Type: CLASS_UNLOCK_TYPE_ABILITY,  Data: MOB_ABILITY_TAUNT, },
 			},
 		},
