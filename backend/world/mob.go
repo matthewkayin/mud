@@ -38,6 +38,9 @@ const MOB_ESCAPE_CHANCE_RECOVERY_RATE float32 = 0.1
 const MOB_ALERTNESS_MAX float32 = 1.0
 const MOB_ALERTNESS_COOLDOWN_RATE float32 = 0.05
 
+const MOB_TAUNT_COOLDOWN_MAX float32 = 1.0
+const MOB_TAUNT_COOLDOWN_RATE float32 = 0.05
+
 type MobFlag uint32
 const (
 	MOB_FLAG_HIDDEN MobFlag = 1 << iota
@@ -73,6 +76,7 @@ type Mob struct {
 
 	escapeChance float32
 	alertness float32
+	tauntCooldown float32
 	fuzzyNumber int
 }
 
@@ -225,6 +229,7 @@ func (mob *Mob) Update(world *World) {
 
 	mob.escapeChance = min(mob.escapeChance + MOB_ESCAPE_CHANCE_RECOVERY_RATE, MOB_ESCAPE_CHANCE_MAX)
 	mob.alertness = max(mob.alertness - MOB_ALERTNESS_COOLDOWN_RATE, 0.0)
+	mob.tauntCooldown = max(mob.tauntCooldown - MOB_TAUNT_COOLDOWN_RATE, 0.0)
 
 	switch mob.Mode {
 		case MOB_MODE_IDLE:
@@ -300,9 +305,21 @@ func (mob *Mob) Update(world *World) {
 				break
 			}
 
-			mob.Mode = MOB_MODE_IDLE
-			targetMob.SetModeAttack(world, mob.Target, mob.Handle)
 			world.messageRoom(mob.Data.Room, fmt.Sprintf("%s taunted %s!", mob.Data.Name, targetMob.Data.Name))
+			success := mob.rollForTaunt(targetMob)
+			if success {
+				targetMob.SetModeAttack(world, mob.Target, mob.Handle)
+				if targetMob.Npc != nil {
+					targetMob.Npc.disposition = NPC_DISPOSITION_HOSTILE
+				}
+
+				world.messageRoom(mob.Data.Room, fmt.Sprintf("%s grew angry and is now attacking %s!", targetMob.Data.Name, mob.Data.Name))
+			} else {
+				world.messageRoom(mob.Data.Room, fmt.Sprintf("%s ignored the taunt.", targetMob.Data.Name))
+			}
+
+			mob.Mode = MOB_MODE_IDLE
+			mob.tauntCooldown = MOB_TAUNT_COOLDOWN_MAX
 		}
 	}
 }
@@ -492,7 +509,7 @@ func (mob *Mob) RollForStealth(world *World) bool {
 
 	// Roll to hide
 	mobAgility := float32(mob.Data.Agility())
-	stealthChance := (mobAgility / (mobAgility + (MOB_STEALTH_K * enemyIntelligence)))
+	stealthChance := mobAgility / (mobAgility + (MOB_STEALTH_K * enemyIntelligence))
 	stealthChance *= mob.escapeChance
 	stealthChance *= (1.0 - enemyAlertness)
 	hidden := rand.Float32() < stealthChance
@@ -503,6 +520,19 @@ func (mob *Mob) RollForStealth(world *World) bool {
 	}
 
 	return hidden
+}
+
+func (mob *Mob) rollForTaunt(targetMob *Mob) bool {
+	mobStrength := float32(mob.Data.Strength())
+	targetIntelligence := float32(targetMob.Data.Intelligence())
+	tauntChance := mobStrength / targetIntelligence
+	tauntChance *= (1.0 - mob.tauntCooldown)
+
+	if targetMob.Npc != nil && targetMob.Npc.disposition == NPC_DISPOSITION_FRIENDLY {
+		tauntChance = 0.0
+	}
+
+	return rand.Float32() < tauntChance
 }
 
 func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot) {

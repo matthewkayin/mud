@@ -34,6 +34,7 @@ type NpcDisposition int
 const (
 	NPC_DISPOSITION_NEUTRAL = iota
 	NPC_DISPOSITION_HOSTILE
+	NPC_DISPOSITION_FRIENDLY
 )
 
 type Npc struct {
