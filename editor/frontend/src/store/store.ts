@@ -1,7 +1,7 @@
 import { EditorCell, EditorConnection, EditorRoom, EditorState } from './state';
 import { EditorAction } from './action';
-import { main, world } from '../../wailsjs/go/models';
-import { SetIsDirty } from '../../wailsjs/go/main/EditorState';
+import { main, world } from '../api/models';
+import { SetIsDirty } from '../api/editor_api';
 
 const ACTION_HISTORY_MAX_LENGTH = 64;
 

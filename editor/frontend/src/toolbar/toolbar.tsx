@@ -19,8 +19,8 @@ import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
-import { main } from '../../wailsjs/go/models';
-import { ConfirmDiscardChanges, OpenWorld, SaveWorld, SaveWorldAs } from '../../wailsjs/go/main/EditorState';
+import { main } from '../api/models';
+import { ConfirmDiscardChanges, OpenWorld, SaveWorld, SaveWorldAs } from '../api/editor_api';
 
 type ErrorDialogState = {
   title: string;

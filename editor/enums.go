@@ -4,7 +4,7 @@ import (
 	"mud/world"
 )
 
-// These are passed to Wails EnumBind so that the frontend gets TypeScript enums
+// These are passed to the model generator (models_gen.go) so that the frontend gets TypeScript enums
 // generated from the world package instead of hand-copied constants.
 
 var ALL_DIRECTIONS = []struct {

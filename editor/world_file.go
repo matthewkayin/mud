@@ -1,12 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"cmp"
 	"encoding/json"
 	"fmt"
 	"mud/world"
-	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 )
@@ -148,14 +147,9 @@ func problemsToError(problems []string) error {
 	return fmt.Errorf("The world is invalid:\n%s", strings.Join(problems, "\n"))
 }
 
-func readWorldFile(path string) (EditorWorld, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return EditorWorld{}, err
-	}
-
+func decodeWorld(data []byte) (EditorWorld, error) {
 	loadedWorld := &world.World{}
-	err = json.Unmarshal(data, loadedWorld)
+	err := json.Unmarshal(data, loadedWorld)
 	if err != nil {
 		return EditorWorld{}, fmt.Errorf("Error reading world JSON: %w", err)
 	}
@@ -168,38 +162,19 @@ func readWorldFile(path string) (EditorWorld, error) {
 	return editorWorld, nil
 }
 
-func writeWorldFile(path string, editorWorld EditorWorld) error {
+func encodeWorld(editorWorld EditorWorld) ([]byte, error) {
 	savedWorld, problems := editorWorldToWorld(editorWorld)
 	if len(problems) != 0 {
-		return problemsToError(problems)
+		return nil, problemsToError(problems)
 	}
 
-	// Write to a temp file first so that a failed save doesn't destroy the existing file
-	file, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path) + ".tmp")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(file.Name())
-
-	// CreateTemp makes the file private, so match the permissions the server saves with
-	err = file.Chmod(0644)
-	if err != nil {
-		file.Close()
-		return err
-	}
-
-	encoder := json.NewEncoder(file)
+	var buffer bytes.Buffer
+	encoder := json.NewEncoder(&buffer)
 	encoder.SetIndent("", "  ")
-	err = encoder.Encode(savedWorld)
+	err := encoder.Encode(savedWorld)
 	if err != nil {
-		file.Close()
-		return err
+		return nil, err
 	}
 
-	err = file.Close()
-	if err != nil {
-		return err
-	}
-
-	return os.Rename(file.Name(), path)
+	return buffer.Bytes(), nil
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"mud/world"
-	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -89,15 +88,14 @@ func TestEditorWorldClearsLocksWithoutExits(t *testing.T) {
 }
 
 func TestEditorWorldRoundTrip(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "world.json")
-	err := writeWorldFile(path, testEditorWorld())
+	data, err := encodeWorld(testEditorWorld())
 	if err != nil {
-		t.Fatalf("Error writing world: %s", err.Error())
+		t.Fatalf("Error encoding world: %s", err.Error())
 	}
 
-	loadedWorld, err := readWorldFile(path)
+	loadedWorld, err := decodeWorld(data)
 	if err != nil {
-		t.Fatalf("Error reading world: %s", err.Error())
+		t.Fatalf("Error decoding world: %s", err.Error())
 	}
 
 	// Saving assigns room indices and SpawnRooms, so compare the result of saving each

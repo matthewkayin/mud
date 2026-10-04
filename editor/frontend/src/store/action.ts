@@ -1,4 +1,4 @@
-import { world } from '../../wailsjs/go/models';
+import { world } from '../api/models';
 import {
   type EditorCell,
   EditorConnection,

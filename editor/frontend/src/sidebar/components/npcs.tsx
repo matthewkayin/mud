@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { world } from '../../../wailsjs/go/models';
+import { world } from '../../api/models';
 import {
   editorStore,
   minutesToTicks,
@@ -41,7 +41,7 @@ export function NpcsEditor({ npcs, onEdit }: NpcsEditorProps) {
   };
 
   return (
-    <Accordion>
+    <Accordion slotProps={{ transition: { unmountOnExit: true } }}>
       <AccordionSummary expandIcon={<ExpandMoreIcon/>}>
         <Typography>NPCs</Typography>
       </AccordionSummary>

@@ -10,7 +10,7 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { world } from '../../../wailsjs/go/models';
+import { world } from '../../api/models';
 import { SubmitTextField } from './submit_textfield';
 import { DropTableEditor } from './drop_table';
 
@@ -27,7 +27,7 @@ export function ChestsEditor({ chests, onEdit }: ChestsEditorProps) {
   };
 
   return (
-    <Accordion>
+    <Accordion slotProps={{ transition: { unmountOnExit: true } }}>
       <AccordionSummary expandIcon={<ExpandMoreIcon/>}>
         <Typography>Chests</Typography>
       </AccordionSummary>
