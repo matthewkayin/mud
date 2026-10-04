@@ -12,6 +12,7 @@ const (
 	ACTION_TYPE_CAST
 	ACTION_TYPE_USE_ITEM
 	ACTION_TYPE_CRAFT_ITEM
+	ACTION_TYPE_TAUNT
 )
 
 type Action struct {
@@ -38,6 +39,10 @@ type ActionCraftItem struct {
 	target world.Recipe
 }
 
+type ActionTaunt struct {
+	target world.MobHandle
+}
+
 func (player *Player) doAction(gamestate *GameState) {
 	switch player.nextAction.actionType {
 		case ACTION_TYPE_NONE:
@@ -58,11 +63,19 @@ func (player *Player) doAction(gamestate *GameState) {
 
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			playerMob.SetModeUseItem(gamestate.world, player.mobHandle, actionData.itemId, actionData.target)
-		case  ACTION_TYPE_CRAFT_ITEM:
+		case ACTION_TYPE_CRAFT_ITEM:
 			actionData := player.nextAction.data.(ActionCraftItem)
 
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			playerMob.SetModeCraftItem(gamestate.world, player.mobHandle, actionData.target, actionData.amount)
+
+		case ACTION_TYPE_TAUNT: {
+			actionData := player.nextAction.data.(ActionTaunt)
+
+			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+			playerMob.SetModeTaunt(gamestate.world, player.mobHandle, actionData.target)
+		}
+
 		default:
 			log.Printf("Action type %d not handled!", player.nextAction.actionType)
 	}

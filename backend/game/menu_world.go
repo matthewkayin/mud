@@ -1458,6 +1458,40 @@ var MENU_WORLD = Menu {
 				return true
 			},
 		},
+
+		"taunt": {
+			usage: "taunt <target>",
+			description: "Taunt an enemy in the room",
+			handler: func (gamestate *GameState, player *Player, args []string) bool {
+				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+				if !playerMob.Data.HasAbility(world.MOB_ABILITY_TAUNT) {
+					*player.inbox <- "You don't know how to do that."
+					return true
+				}
+
+				targetHandle, err := fuzzyFindTarget(gamestate, player, args)
+				if err != nil {
+					*player.inbox <- err.Error()
+					return true
+				}
+
+				// Check for PvP
+				targetMob := gamestate.world.Mobs.Get(targetHandle)
+				if targetMob.PlayerCharacter != nil {
+					*player.inbox <- "You cannot taunt other adventurers!"
+					return true
+				}
+
+				player.nextAction = Action {
+					actionType: ACTION_TYPE_TAUNT,
+					data: ActionTaunt {
+						target: targetHandle,
+					},
+				}
+
+				return true
+			},
+		},
 	},
 }
 
