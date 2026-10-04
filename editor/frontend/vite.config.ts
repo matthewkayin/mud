@@ -5,8 +5,9 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    watch: {
-      ignored: ['**/wailsjs/**']
+    proxy: {
+      // The editor's Go server (go run . in editor/)
+      '/api': 'http://127.0.0.1:7373',
     }
   }
 })

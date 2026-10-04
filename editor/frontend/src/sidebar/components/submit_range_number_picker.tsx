@@ -1,5 +1,5 @@
 import { Stack, Typography } from '@mui/material';
-import { world } from '../../../wailsjs/go/models';
+import { world } from '../../api/models';
 import { SubmitNumberField } from './submit_number_field';
 
 type SubmitRangeNumberPickerProps = {

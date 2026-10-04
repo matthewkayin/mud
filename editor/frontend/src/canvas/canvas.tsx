@@ -1,7 +1,7 @@
-import { useRef, useEffect, useSyncExternalStore } from 'react';
+import { useRef, useEffect } from 'react';
 import { Box, useTheme } from '@mui/material';
 import { editorStore, EditorCell, EditorConnection, type EditorRoom } from '../store';
-import { EditorActionAddRoom, EditorActionConnectRooms, EditorActionDisconnectRooms } from '../store/action';
+import { EditorActionAddRoom, EditorActionConnectRooms } from '../store/action';
 
 const CAMERA_ZOOM_MIN = 0.25;
 const CAMERA_ZOOM_MAX = 2.0;
@@ -37,8 +37,12 @@ type CanvasState = {
   cameraOffsetY: number;
   cameraZoom: number;
 
+  isMouseOver: boolean;
   mouseWorldX: number;
   mouseWorldY: number;
+
+  // Identifies what the mouse is hovering, so mouse moves only redraw when it changes
+  hoverKey: string;
 }
 
 type CanvasColors = {
@@ -54,17 +58,27 @@ type RenderRoomParams = {
   isStartRoom: boolean;
 }
 
+const ROOM_FONT = '16px sans-serif';
+const START_LABEL_FONT = '12px sans-serif';
+
 export function Canvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const canvasBoxRef = useRef(null);
+  const canvasBoxRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef<CanvasState>({
     cameraOffsetX: 0,
     cameraOffsetY: 0,
     cameraZoom: 1.0,
 
+    isMouseOver: false,
     mouseWorldX: 0,
     mouseWorldY: 0,
+
+    hoverKey: '',
   });
+
+  // The canvas only redraws when something changes, so anything that affects
+  // the picture must call this
+  const requestRenderRef = useRef<(() => void) | null>(null);
 
   // Theme colors
   const theme = useTheme();
@@ -77,57 +91,63 @@ export function Canvas() {
       background: theme.palette.background.default,
       foreground: theme.palette.text.primary,
     };
+    requestRenderRef.current?.();
   }, [theme]);
 
-  // Editor selected cell slice
-  const editorSelectedCell = useSyncExternalStore(editorStore.subscribe, () => editorStore.getSelectedCell());
-  const editorSelectedCellRef = useRef(editorSelectedCell);
-  useEffect(() => {
-    editorSelectedCellRef.current = editorSelectedCell;
-  }, [editorSelectedCell]);
-
-  // Editor rooms slice
-  const editorRooms = useSyncExternalStore(editorStore.subscribe, () => editorStore.getRooms());
-  const editorRoomsRef = useRef(editorRooms);
-  useEffect(() => {
-    editorRoomsRef.current = editorRooms;
-  }, [editorRooms]);
-
-  // Editor connections slice
-  const editorConnections = useSyncExternalStore(editorStore.subscribe, () => editorStore.getConnections());
-  const editorConnectionsRef = useRef(editorConnections);
-  useEffect(() => {
-    editorConnectionsRef.current = editorConnections;
-  }, [editorConnections]);
-
-  // Editor start cell slice
-  const editorStartCell = useSyncExternalStore(editorStore.subscribe, () => editorStore.getStartCell());
-  const editorStartCellRef = useRef(editorStartCell);
-  useEffect(() => {
-    editorStartCellRef.current = editorStartCell;
-  }, [editorStartCell]);
-
-  // Editor selected connection slice
-  const editorSelectedConnection = useSyncExternalStore(editorStore.subscribe, () => editorStore.getSelectedConnection());
-  const editorSelectedConnectionRef = useRef(editorSelectedConnection);
-  useEffect(() => {
-    editorSelectedConnectionRef.current = editorSelectedConnection;
-  }, [editorSelectedConnection]);
-
-  // Event listeners
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) {
+    const canvasBox = canvasBoxRef.current;
+    if (!canvas || !canvasBox) {
       return;
     }
 
-    const onResize = () => {
-      const rect = canvas.getBoundingClientRect();
-      if (canvas.width !== rect.width || canvas.height !== rect.height) {
-        canvas.width = rect.width;
-        canvas.height = rect.height;
+    const context = canvas.getContext('2d');
+    if (!context) {
+      return;
+    }
+
+    // Draw
+    let animationFrameId = 0;
+    let isFrameRequested = false;
+    const requestRender = () => {
+      if (isFrameRequested) {
+        return;
+      }
+
+      isFrameRequested = true;
+      animationFrameId = requestAnimationFrame(() => {
+        isFrameRequested = false;
+        render(context, stateRef.current, colorsRef.current);
+      });
+    };
+    requestRenderRef.current = requestRender;
+
+    // Redraw whenever the editor state changes
+    const unsubscribe = editorStore.subscribe(requestRender);
+
+    // The hover preview depends on the rooms, so the hover key is refreshed on every
+    // mouse event and a redraw is only needed when it changes
+    const updateHover = () => {
+      const state = stateRef.current;
+      const hoverKey = getHoverKey(state, editorStore.getRooms());
+      if (hoverKey !== state.hoverKey) {
+        state.hoverKey = hoverKey;
+        requestRender();
       }
     };
+
+    // Resizing the canvas clears it, so it always needs a redraw
+    const onResize = () => {
+      const width = canvasBox.clientWidth;
+      const height = canvasBox.clientHeight;
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+      requestRender();
+    };
+    const resizeObserver = new ResizeObserver(onResize);
+    resizeObserver.observe(canvasBox);
     onResize();
 
     // onContextMenu prevents the default right-click menu from popping up, allowing us
@@ -165,11 +185,13 @@ export function Canvas() {
 
       state.cameraOffsetX = mouseX - (worldX * state.cameraZoom);
       state.cameraOffsetY = mouseY - (worldY * state.cameraZoom);
+
+      requestRender();
     };
 
     // MOUSE CLICK
     const onMouseClick = () => {
-      const rooms = editorRoomsRef.current;
+      const rooms = editorStore.getRooms();
 
       const hoveredCell = getHoveredCell(stateRef.current);
       if (hoveredCell) {
@@ -184,7 +206,7 @@ export function Canvas() {
 
       const hoveredConnection = getHoveredConnection(stateRef.current, rooms);
       if (hoveredConnection) {
-        const connections = editorConnectionsRef.current;
+        const connections = editorStore.getConnections();
 
         if (!connectionExists(connections, hoveredConnection)) {
           editorStore.doAction(new EditorActionConnectRooms({ connection: hoveredConnection }));
@@ -202,51 +224,39 @@ export function Canvas() {
       if ((event.buttons & BUTTON_RIGHT) === BUTTON_RIGHT) {
         state.cameraOffsetX += event.movementX;
         state.cameraOffsetY += event.movementY;
+        requestRender();
       }
 
       // Determine mouse world pos
+      state.isMouseOver = true;
       state.mouseWorldX = (event.offsetX - state.cameraOffsetX) / state.cameraZoom;
       state.mouseWorldY = (event.offsetY - state.cameraOffsetY) / state.cameraZoom;
+
+      updateHover();
     };
 
-    window.addEventListener('resize', onResize);
+    // MOUSE LEAVE
+    const onMouseLeave = () => {
+      stateRef.current.isMouseOver = false;
+      updateHover();
+    };
+
     canvas.addEventListener('contextmenu', onContextMenu);
     canvas.addEventListener('click', onMouseClick);
     canvas.addEventListener('mousemove', onMouseMove);
+    canvas.addEventListener('mouseleave', onMouseLeave);
     canvas.addEventListener('wheel', onMouseScroll);
 
     return () => {
-      window.removeEventListener('resize', onResize);
+      requestRenderRef.current = null;
+      cancelAnimationFrame(animationFrameId);
+      unsubscribe();
+      resizeObserver.disconnect();
       canvas.removeEventListener('contextmenu', onContextMenu);
       canvas.removeEventListener('click', onMouseClick);
       canvas.removeEventListener('mousemove', onMouseMove);
+      canvas.removeEventListener('mouseleave', onMouseLeave);
       canvas.removeEventListener('wheel', onMouseScroll);
-    };
-  }, []);
-
-  // Draw
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) {
-      return;
-    }
-
-    const context = canvas.getContext('2d');
-    if (!context) {
-      return;
-    }
-
-    let animationFrameId: number;
-    const renderFrame = () => {
-      render(context, stateRef.current, colorsRef.current, editorRoomsRef.current, editorConnectionsRef.current, editorSelectedCellRef.current, editorSelectedConnectionRef.current, editorStartCellRef.current);
-      animationFrameId = requestAnimationFrame(renderFrame);
-    };
-
-    // start the render loop
-    animationFrameId = requestAnimationFrame(renderFrame);
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
     };
   }, []);
 
@@ -257,13 +267,16 @@ export function Canvas() {
         display: 'block',
         width: '100%',
         height: '100%',
+        minWidth: 0,
+        overflow: 'hidden',
         backgroundColor: 'background.default',
       }}
     >
       <canvas
         ref={canvasRef}
         style={{
-          width: 'auto',
+          display: 'block',
+          width: '100%',
           height: '100%',
           imageRendering: 'pixelated',
         }}
@@ -272,7 +285,13 @@ export function Canvas() {
   )
 }
 
-function render(context: CanvasRenderingContext2D, canvasState: CanvasState, colors: CanvasColors, rooms: Map<string, EditorRoom>, connections: Map<string, string[]>, selectedCell: EditorCell | null, selectedConnection: EditorConnection | null, startCell: EditorCell | null) {
+function render(context: CanvasRenderingContext2D, canvasState: CanvasState, colors: CanvasColors) {
+  const rooms = editorStore.getRooms();
+  const connections = editorStore.getConnections();
+  const selectedConnection = editorStore.getSelectedConnection();
+  const selectedKey = editorStore.getSelectedCell()?.toString();
+  const startKey = editorStore.getStartCell()?.toString();
+
   context.fillStyle = colors.background;
   context.fillRect(0, 0, context.canvas.width, context.canvas.height);
 
@@ -281,40 +300,39 @@ function render(context: CanvasRenderingContext2D, canvasState: CanvasState, col
 
   context.strokeStyle = colors.foreground;
   context.fillStyle = colors.foreground;
+  context.setLineDash([]);
+  context.font = ROOM_FONT;
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
 
   // Only visit the cells that are on screen
   const visibleCells = getVisibleCellRange(canvasState, context.canvas.width, context.canvas.height);
 
-  // Render grid
+  // Render rooms, collecting their connections so they are drawn after all the rooms
+  const visibleConnections: EditorConnection[] = [];
   for (let y = visibleCells.minY; y <= visibleCells.maxY; y++) {
     for (let x = visibleCells.minX; x <= visibleCells.maxX; x++) {
-      const cell = new EditorCell(x, y);
-      const room = rooms.get(cell.toString());
+      // Matches EditorCell.toString(), without allocating a cell for every empty spot
+      const key = `${x},${y}`;
+      const room = rooms.get(key);
       if (!room) {
         continue;
       }
 
-      const isSelected = selectedCell ? selectedCell.isEqual(cell) : false;
       renderRoom(context, {
-        x: cell.x,
-        y: cell.y,
-        renderStyle: isSelected ? RenderStyle.SELECTED : RenderStyle.SOLID,
+        x: x,
+        y: y,
+        renderStyle: key === selectedKey ? RenderStyle.SELECTED : RenderStyle.SOLID,
         text: room.Name,
-        isStartRoom: startCell ? startCell.isEqual(cell) : false,
+        isStartRoom: key === startKey,
       });
-    }
-  }
 
-  // Render connections
-  for (let y = visibleCells.minY; y <= visibleCells.maxY; y++) {
-    for (let x = visibleCells.minX; x <= visibleCells.maxX; x++) {
-      const cell = new EditorCell(x, y);
-      const cellConnections = connections.get(cell.toString());
-      if (!cellConnections) {
+      const cellConnections = connections.get(key);
+      if (!cellConnections || cellConnections.length === 0) {
         continue;
       }
 
-      // Iterate through all connections
+      const cell = new EditorCell(x, y);
       for (const connKey of cellConnections) {
         const connCell = EditorCell.fromString(connKey);
 
@@ -324,11 +342,15 @@ function render(context: CanvasRenderingContext2D, canvasState: CanvasState, col
           continue;
         }
 
-        const connection = new EditorConnection(cell, connCell);
-        const isSelected = selectedConnection?.isEqualTo(connection);
-        renderConnection(context, cell, connCell, isSelected ? RenderStyle.SELECTED : RenderStyle.SOLID);
+        visibleConnections.push(new EditorConnection(cell, connCell));
       }
     }
+  }
+
+  // Render connections
+  for (const connection of visibleConnections) {
+    const isSelected = selectedConnection?.isEqualTo(connection);
+    renderConnection(context, connection.from, connection.to, isSelected ? RenderStyle.SELECTED : RenderStyle.SOLID);
   }
 
   // New room hover
@@ -355,6 +377,7 @@ function render(context: CanvasRenderingContext2D, canvasState: CanvasState, col
   context.restore();
 }
 
+// Expects the line dash, font and text alignment that render() sets up, and leaves them as it found them
 function renderRoom(context: CanvasRenderingContext2D, params: RenderRoomParams) {
   const rect = getRoomRect(params.x, params.y);
 
@@ -367,11 +390,9 @@ function renderRoom(context: CanvasRenderingContext2D, params: RenderRoomParams)
     context.setLineDash([7, 2]);
     context.strokeRect(rect.x - 5.5, rect.y - 5.5, rect.width + 11.5, rect.height + 11.5);
   }
-  context.setLineDash([]);
-
-  context.font = '16px sans-serif';
-  context.textAlign = 'center';
-  context.textBaseline = 'middle';
+  if (params.renderStyle !== RenderStyle.SOLID) {
+    context.setLineDash([]);
+  }
 
   const centerX = rect.x + (rect.width / 2);
   const centerY = rect.y + (rect.height / 2);
@@ -379,10 +400,14 @@ function renderRoom(context: CanvasRenderingContext2D, params: RenderRoomParams)
   context.fillText(params.text, centerX, centerY);
 
   if (params.isStartRoom) {
-    context.font = '12px sans-serif';
+    context.font = START_LABEL_FONT;
     context.textAlign = 'left';
     context.textBaseline = 'top';
     context.fillText('START', rect.x + 6, rect.y + 6);
+
+    context.font = ROOM_FONT;
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
   }
 }
 
@@ -475,6 +500,10 @@ function rectHasPoint(rect: Rect, x: number, y: number): boolean {
 }
 
 function getHoveredCell(canvasState: CanvasState): EditorCell | null {
+  if (!canvasState.isMouseOver) {
+    return null;
+  }
+
   const x = Math.floor(canvasState.mouseWorldX / (ROOM_WIDTH + ROOM_X_SPACING));
   const y = Math.floor(canvasState.mouseWorldY / (ROOM_HEIGHT + ROOM_Y_SPACING));
   const rect = getRoomRect(x, y);
@@ -502,6 +531,10 @@ function getVisibleCellRange(canvasState: CanvasState, canvasWidth: number, canv
 }
 
 function getHoveredConnection(canvasState: CanvasState, rooms: Map<string, EditorRoom>): EditorConnection | null {
+  if (!canvasState.isMouseOver) {
+    return null;
+  }
+
   const x = Math.floor(canvasState.mouseWorldX / (ROOM_WIDTH + ROOM_X_SPACING));
   const y = Math.floor(canvasState.mouseWorldY / (ROOM_HEIGHT + ROOM_Y_SPACING));
   const cell = new EditorCell(x, y);
@@ -553,6 +586,21 @@ function getHoveredConnection(canvasState: CanvasState, rooms: Map<string, Edito
   }
 
   return null;
+}
+
+// Returns a string that changes whenever the hovered cell or connection changes
+function getHoverKey(canvasState: CanvasState, rooms: Map<string, EditorRoom>): string {
+  const hoveredCell = getHoveredCell(canvasState);
+  if (hoveredCell) {
+    return hoveredCell.toString();
+  }
+
+  const hoveredConnection = getHoveredConnection(canvasState, rooms);
+  if (hoveredConnection) {
+    return `${hoveredConnection.from.toString()}|${hoveredConnection.to.toString()}`;
+  }
+
+  return '';
 }
 
 function connectionExists(connections: Map<string, string[]>, hoveredConnection: EditorConnection) {

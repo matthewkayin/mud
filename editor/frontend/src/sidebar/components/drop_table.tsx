@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { world } from '../../../wailsjs/go/models';
+import { world } from '../../api/models';
 import { editorStore } from '../../store';
 import { SubmitNumberField } from './submit_number_field';
 import { SubmitRangeNumberPicker } from './submit_range_number_picker';
@@ -35,7 +35,7 @@ export function DropTableEditor({ name, dropTable, onEdit }: DropTableEditorProp
   };
 
   return (
-    <Accordion>
+    <Accordion slotProps={{ transition: { unmountOnExit: true } }}>
       <AccordionSummary expandIcon={<ExpandMoreIcon/>}>
         <Typography>{name}</Typography>
       </AccordionSummary>

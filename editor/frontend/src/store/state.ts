@@ -1,4 +1,4 @@
-import { world } from '../../wailsjs/go/models';
+import { world } from '../api/models';
 import { getEditorConstants } from './constants';
 
 // Records keyed by the generated enums, so adding an enum value in Go is a compile error here until it gets a name

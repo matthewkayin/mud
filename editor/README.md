@@ -1,19 +1,20 @@
-# README
+# World Editor
 
-## About
+A world editor for the MUD. A small Go server (this directory) serves a React app (`frontend/`) and converts world files using the `mud/world` package. The browser opens and saves world files itself with the File System Access API, so use Chrome or Chromium.
 
-This is the official Wails React-TS template.
+## Running
 
-You can configure the project by editing `wails.json`. More information about the project settings can be found
-here: https://wails.io/docs/reference/project-config
+```
+cd frontend && npm install && npm run build && cd ..
+go run .
+```
 
-## Live Development
+Then open http://localhost:7373. For a standalone window, run `chromium --app=http://localhost:7373`.
 
-To run in live development mode, run `wails dev` in the project directory. This will run a Vite development
-server that will provide very fast hot reload of your frontend changes. If you want to develop in a browser
-and have access to your Go methods, there is also a dev server that runs on http://localhost:34115. Connect
-to this in your browser, and you can call your Go code from devtools.
+## Development
 
-## Building
+`just dev` starts the server and Vite and opens the editor in a Chromium app window; closing the window stops everything. It uses its own Chromium profile (in `~/.cache/mud-editor-chromium`) so it runs separately from your normal browser. Set `CHROMIUM` to choose the browser binary.
 
-To build a redistributable, production mode package, use `wails build`.
+To run the pieces yourself, run `go run .` here, then `npm run dev` in `frontend/` and open http://localhost:5173. Vite hot-reloads the frontend and proxies `/api` to the Go server.
+
+After changing any Go type the editor sends to the frontend (`EditorWorld`, `world.Room`, the enums in `enums.go`, ...), run `go generate` to regenerate `frontend/src/api/models.ts`.

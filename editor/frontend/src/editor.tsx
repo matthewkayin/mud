@@ -4,7 +4,7 @@ import { Canvas } from './canvas';
 import { Toolbar } from './toolbar';
 import { Sidebar } from './sidebar';
 import { editorStore } from './store';
-import { GetItemData, GetNpcData } from '../wailsjs/go/main/EditorState';
+import { GetItemData, GetNpcData } from './api/editor_api';
 
 export function Editor() {
   // Load item and NPC data
