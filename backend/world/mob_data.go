@@ -10,8 +10,6 @@ const MOB_EXP_PER_LEVEL int32 = 300
 // Higher intelligence therefore reduces the number of casts it takes to learn the spell
 const MOB_CASTS_TO_LEARN_K float32 = 0.75 / 50.0
 
-// 0101
-
 type MobData struct {
 	Name string
 	Room int
