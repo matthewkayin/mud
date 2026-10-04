@@ -55,6 +55,27 @@ type Room struct {
 	shouldReset bool
 }
 
+// Returns true when a room is able to be reset
+func (room *Room) canReset(world *World) bool {
+	if room.hasPlayerOccupants(world) {
+		return false
+	}
+
+	// If the room has any exits that will be locked, only reset the room if the exit-rooms are also free of players
+	for direction := range DIRECTION_COUNT {
+		if !room.ExitIsLockedOnReset[direction] {
+			continue
+		}
+
+		adjacentRoom := &world.Rooms[room.Exits[direction]]
+		if adjacentRoom.hasPlayerOccupants(world) {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (room *Room) reset() {
 	// Reset locked doors
 	for direction := range DIRECTION_COUNT {
