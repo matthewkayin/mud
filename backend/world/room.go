@@ -13,7 +13,8 @@ import (
 const ROOM_NONE int = -1
 
 const CHEST_CORPOSE_DECAY_DURATION = 30 / WORLD_SECONDS_PER_UPDATE
-const CHEST_REFRESH_DURATION = 60 * 60 / WORLD_SECONDS_PER_UPDATE // 1 hour
+// const CHEST_REFRESH_DURATION = 60 * 60 / WORLD_SECONDS_PER_UPDATE // 1 hour
+const CHEST_REFRESH_DURATION = 30 / WORLD_SECONDS_PER_UPDATE
 
 type ChestType int
 const (
@@ -48,6 +49,7 @@ type Room struct {
 	EditorPosition RoomEditorPosition
 
 	Occupants []MobHandle `json:"-"`
+	inventoryRefreshTimer int
 }
 
 func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, newRoomIndex int) {
