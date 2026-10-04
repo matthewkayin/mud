@@ -84,6 +84,7 @@ var MENU_WORLD = Menu {
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 				room := &gamestate.world.Rooms[playerMob.Data.Room]
+				*player.inbox <- fmt.Sprintf("You are in %s.", room.Name)
 				describeRoomToPlayer(gamestate, player, room)
 				return true
 			},

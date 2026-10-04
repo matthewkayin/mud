@@ -40,16 +40,49 @@ type RoomEditorPosition struct {
 type Room struct {
 	Name string
 	Description string
-	Exits [DIRECTION_COUNT]int
-	ExitIsLocked [DIRECTION_COUNT]bool
 	IsSafeZone bool
+	EditorPosition RoomEditorPosition
+
+	Exits [DIRECTION_COUNT]int
+	ExitIsLockedOnReset [DIRECTION_COUNT]bool
+	ExitIsLocked [DIRECTION_COUNT]bool `json:"-"`
+
 	DropTable DropTable
 	Inventory Inventory
 	Chests []Chest
-	EditorPosition RoomEditorPosition
 
 	Occupants []MobHandle `json:"-"`
-	inventoryRefreshTimer int
+	shouldReset bool
+}
+
+func (room *Room) reset() {
+	// Reset locked doors
+	for direction := range DIRECTION_COUNT {
+		room.ExitIsLocked[direction] = room.ExitIsLockedOnReset[direction]
+	}
+
+	// Remove corpses
+	chestIndex := 0
+	for chestIndex < len(room.Chests) {
+		chest := &room.Chests[chestIndex]
+		if chest.Type == CHEST_TYPE_CORPSE {
+			room.Chests[chestIndex] = room.Chests[len(room.Chests) - 1]
+			room.Chests = room.Chests[:len(room.Chests) - 1]
+			continue
+		}
+
+		chestIndex++
+	}
+
+	// Regen inventory
+	room.Inventory = room.DropTable.getLoot()
+
+	// Regen chests
+	for chestIndex := range len(room.Chests) {
+		room.Chests[chestIndex].Inventory = room.Chests[chestIndex].DropTable.getLoot()
+	}
+
+	room.shouldReset = false
 }
 
 func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, newRoomIndex int) {
@@ -280,6 +313,7 @@ func (room *Room) removeDeadOccupants(world *World) {
 		// Create corpse in room
 		room.Chests = append(room.Chests, Chest {
 			Name: fmt.Sprintf("%s's Corpse", occupantMob.GetName()),
+			Type: CHEST_TYPE_CORPSE,
 			Timer: CHEST_CORPOSE_DECAY_DURATION,
 			Inventory: occupantMob.Data.Inventory,
 		})
@@ -287,4 +321,15 @@ func (room *Room) removeDeadOccupants(world *World) {
 		// Remove from mob array
 		world.Mobs.Remove(occupantHandle)
 	}
+}
+
+func (room *Room) hasPlayerOccupants(world *World) bool {
+	for _, handle := range room.Occupants {
+		mob := world.Mobs.Get(handle)
+		if mob.PlayerCharacter != nil {
+			return true
+		}
+	}
+
+	return false
 }

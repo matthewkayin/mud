@@ -8,28 +8,6 @@ import (
 	"strings"
 )
 
-const WORLD_SAVES_FOLDER string = "./saves"
-const WORLD_CHARACTER_SAVES_FOLDER string = WORLD_SAVES_FOLDER + "/characters"
-const WORLD_SAVE_PATH string = WORLD_SAVES_FOLDER + "/world.json"
-
-type WorldSavePlayerData struct {
-	Characters []string
-}
-
-func worldCreateSaveFolders() {
-	err := os.MkdirAll(WORLD_SAVES_FOLDER, 0755)
-	if err != nil {
-		log.Fatalf("Failed to create saves folder: %s", err.Error())
-	}
-
-	err = os.MkdirAll(WORLD_CHARACTER_SAVES_FOLDER, 0755)
-	if err != nil {
-		log.Fatalf("Failed to create character saves folder: %s", err.Error())
-	}
-
-	log.Print("Created world saves folders.")
-}
-
 func characterSavePath(character *Character) string {
 	return fmt.Sprintf("%s/%s.json",
 		WORLD_CHARACTER_SAVES_FOLDER,
@@ -95,50 +73,4 @@ func (world *World) loadCharacters() {
 
 		world.AddCharacter(character.PlayerId, character)
 	}
-}
-
-func (world *World) Save() {
-	for _, character := range world.Characters {
-		SaveCharacter(character)
-	}
-
-	flags := os.O_CREATE | os.O_WRONLY | os.O_TRUNC
-	file, err := os.OpenFile(WORLD_SAVE_PATH, flags, 0644)
-	if err != nil {
-		log.Printf("Failed to open world file %s for saving: %s.", WORLD_SAVE_PATH, err.Error())
-		return
-	}
-	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	encoder.SetIndent("", "  ")
-
-	err = encoder.Encode(world)
-	if err != nil {
-		log.Printf("Failed to write world JSON: %s.", err.Error())
-		return
-	}
-
-	log.Printf("Saved world to %s.", WORLD_SAVE_PATH)
-}
-
-func loadWorld() *World {
-	file, err := os.Open(WORLD_SAVE_PATH)
-	if err != nil {
-		log.Printf("Error opening world JSON: %s", err.Error())
-		return nil
-	}
-	defer file.Close()
-
-	world := &World{}
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(world)
-	if err != nil {
-		log.Fatalf("Error reading world JSON: %s.", err.Error())
-	}
-
-	world.loadCharacters()
-
-	log.Printf("Loaded World JSON.")
-	return world
 }

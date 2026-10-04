@@ -48,7 +48,7 @@ func (world *World) Validate() []string {
 			if exitRoom.Exits[oppositeDirection] != roomIndex {
 				addProblem("%s has a %s exit to room %d, but room %d has no %s exit back.",
 					roomName, DirectionToString(direction), exitRoomIndex, exitRoomIndex, DirectionToString(oppositeDirection))
-			} else if exitRoom.ExitIsLocked[oppositeDirection] != room.ExitIsLocked[direction] {
+			} else if exitRoom.ExitIsLockedOnReset[oppositeDirection] != room.ExitIsLockedOnReset[direction] {
 				addProblem("%s %s exit and room %d %s exit disagree on whether they are locked.",
 					roomName, DirectionToString(direction), exitRoomIndex, DirectionToString(oppositeDirection))
 			}

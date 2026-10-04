@@ -398,13 +398,13 @@ export namespace world {
 	export class Room {
 	    Name: string;
 	    Description: string;
-	    Exits: number[];
-	    ExitIsLocked: boolean[];
 	    IsSafeZone: boolean;
+	    EditorPosition: RoomEditorPosition;
+	    Exits: number[];
+	    ExitIsLockedOnReset: boolean[];
 	    DropTable: DropTable;
 	    Inventory: Inventory;
 	    Chests: Chest[];
-	    EditorPosition: RoomEditorPosition;
 	
 	    static createFrom(source: any = {}) {
 	        return new Room(source);
@@ -414,13 +414,13 @@ export namespace world {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Name = source["Name"];
 	        this.Description = source["Description"];
-	        this.Exits = source["Exits"];
-	        this.ExitIsLocked = source["ExitIsLocked"];
 	        this.IsSafeZone = source["IsSafeZone"];
+	        this.EditorPosition = this.convertValues(source["EditorPosition"], RoomEditorPosition);
+	        this.Exits = source["Exits"];
+	        this.ExitIsLockedOnReset = source["ExitIsLockedOnReset"];
 	        this.DropTable = this.convertValues(source["DropTable"], DropTable);
 	        this.Inventory = this.convertValues(source["Inventory"], Inventory);
 	        this.Chests = this.convertValues(source["Chests"], Chest);
-	        this.EditorPosition = this.convertValues(source["EditorPosition"], RoomEditorPosition);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
