@@ -93,7 +93,7 @@ func editorWorldToWorld(editorWorld EditorWorld) (*world.World, []string) {
 		for direction := range world.Direction(world.DIRECTION_COUNT) {
 			if !isConnected[direction] {
 				room.Exits[direction] = world.ROOM_NONE
-				room.ExitIsLocked[direction] = false
+				room.ExitIsLockedOnReset[direction] = false
 			}
 		}
 		result.Rooms = append(result.Rooms, room)

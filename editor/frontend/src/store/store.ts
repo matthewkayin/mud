@@ -215,7 +215,7 @@ export class EditorStore {
 
     const fromRoom = this.state.rooms.get(this.state.selectedConnection.from.toString());
     const direction = this.state.selectedConnection.getDirection();
-    return fromRoom!.ExitIsLocked[direction];
+    return fromRoom!.ExitIsLockedOnReset[direction];
   }
 }
 

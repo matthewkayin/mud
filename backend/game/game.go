@@ -93,12 +93,12 @@ func (gamestate *GameState) Run(ctx context.Context) {
 			case <- ticker.C:
 				gamestate.update()
 			case <- saveTicker.C:
-				gamestate.world.Save()
+				gamestate.saveAllLoggedInPlayers()
 		}
 	}
 
 	log.Printf("Shutdown signal received. Shutting down server...")
-	gamestate.world.Save()
+	gamestate.saveAllLoggedInPlayers()
 }
 
 // Must only be called from the game loop
@@ -183,6 +183,19 @@ func (gamestate *GameState) getPlayerByMobHandle(handle world.MobHandle) *Player
 	}
 
 	return &gamestate.players[playerIndex]
+}
+
+func (gamestate *GameState) saveAllLoggedInPlayers() {
+	for index := range len(gamestate.players) {
+		player := &gamestate.players[index]
+		if !player.isLoggedIn() {
+			continue
+		}
+
+		world.SaveCharacter(player.character)
+	}
+
+	log.Printf("Saved all logged in player characters.")
 }
 
 // Handles a player command

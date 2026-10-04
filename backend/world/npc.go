@@ -56,10 +56,40 @@ type Npc struct {
 	disposition NpcDisposition
 	timer int32
 	sleepyTimer int32
+	shouldReset bool
+}
+
+func (npc *Npc) tryReset(world *World) {
+	// If NPC is not dead, try to despawn mob
+	if npc.mode != NPC_MODE_DEAD {
+		npcMob, npcMobExists := world.Mobs.GetIfExists(npc.mobHandle)
+		if npcMobExists {
+			// If players are still in the room, then don't despawn
+			npcRoom := &world.Rooms[npcMob.Data.Room]
+			if npcRoom.hasPlayerOccupants(world) {
+				return
+			}
+
+			// Otherwise, despawn
+			npcRoom.RemoveOccupant(npc.mobHandle)
+			npc.mode = NPC_MODE_DEAD
+			npc.timer = 0 // Trigger a respawn
+		}
+	} else {
+		npc.timer = 0
+	}
+
+	npc.shouldReset = false
 }
 
 //spawns the mob associated with the npc
 func (npc *Npc) spawnMob(world *World) {
+	// Check if the room is empty of players before spawning
+	npcRoom := &world.Rooms[npc.SpawnRoom]
+	if npcRoom.hasPlayerOccupants(world) {
+		return
+	}
+
 	npcData := NPC_DATA[npc.Type]
 
 	// Create mob data
@@ -87,7 +117,6 @@ func (npc *Npc) spawnMob(world *World) {
 
 	// Add mob to world
 	npc.mobHandle = world.Mobs.Push(npcMob)
-	npcRoom := &world.Rooms[npcMob.Data.Room]
 	npcRoom.AddOccupant(world, npc.mobHandle)
 
 	// Init behavior
@@ -100,8 +129,6 @@ func (npc *Npc) spawnMob(world *World) {
 	if npc.Behavior.Hooks != nil {
 		npc.Behavior.Hooks.init(npc, world)
 	}
-
-	world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s has spawned into this room.", npcMob.GetName()))
 }
 
 func (npc *Npc) hasSleepCycle() bool {
@@ -122,6 +149,12 @@ func (npc *Npc) setModeSurprise(world *World) {
 }
 
 func (npc *Npc) update(world *World) {
+	// Try reset
+	if npc.shouldReset {
+		npc.tryReset(world)
+	}
+
+	// Respawn
 	if npc.mode == NPC_MODE_DEAD {
 		npc.timer--
 		if npc.timer <= 0 {

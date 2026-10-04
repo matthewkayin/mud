@@ -28,9 +28,9 @@ func testEditorWorld() EditorWorld {
 	c := world.RoomEditorPosition{ X: 0, Y: 1 }
 
 	roomB := testEditorRoom("B", 0, 0, a, c)
-	roomB.Room.ExitIsLocked[world.DIRECTION_SOUTH] = true
+	roomB.Room.ExitIsLockedOnReset[world.DIRECTION_SOUTH] = true
 	roomC := testEditorRoom("C", 0, 1, b)
-	roomC.Room.ExitIsLocked[world.DIRECTION_NORTH] = true
+	roomC.Room.ExitIsLockedOnReset[world.DIRECTION_NORTH] = true
 	roomC.Npcs = []world.Npc {
 		{
 			Type: world.NPC_TYPE_TROLL,
@@ -76,13 +76,13 @@ func TestEditorWorldToWorld(t *testing.T) {
 
 func TestEditorWorldClearsLocksWithoutExits(t *testing.T) {
 	editorWorld := testEditorWorld()
-	editorWorld.Rooms[2].Room.ExitIsLocked[world.DIRECTION_NORTH] = true
+	editorWorld.Rooms[2].Room.ExitIsLockedOnReset[world.DIRECTION_NORTH] = true
 
 	savedWorld, problems := editorWorldToWorld(editorWorld)
 	if len(problems) != 0 {
 		t.Fatalf("Expected no problems, got %v", problems)
 	}
-	if savedWorld.Rooms[0].ExitIsLocked[world.DIRECTION_NORTH] {
+	if savedWorld.Rooms[0].ExitIsLockedOnReset[world.DIRECTION_NORTH] {
 		t.Errorf("Expected lock on a missing exit to be cleared")
 	}
 }

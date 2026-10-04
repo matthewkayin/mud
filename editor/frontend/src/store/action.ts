@@ -173,8 +173,8 @@ export class EditorActionEditConnection implements EditorAction {
     const direction = this.data.connection.getDirection();
     const reverseDirection = (direction + 2) % world.Direction.COUNT;
 
-    fromRoom!.ExitIsLocked[direction] = value;
-    toRoom!.ExitIsLocked[reverseDirection] = value;
+    fromRoom!.ExitIsLockedOnReset[direction] = value;
+    toRoom!.ExitIsLockedOnReset[reverseDirection] = value;
   }
 }
 

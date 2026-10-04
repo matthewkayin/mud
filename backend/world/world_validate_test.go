@@ -64,7 +64,7 @@ func TestValidateProblems(t *testing.T) {
 			world.Rooms[1].Exits[DIRECTION_WEST] = ROOM_NONE
 		}, "no west exit back" },
 		{ "mismatched lock", func(world *World) {
-			world.Rooms[0].ExitIsLocked[DIRECTION_EAST] = true
+			world.Rooms[0].ExitIsLockedOnReset[DIRECTION_EAST] = true
 		}, "disagree on whether they are locked" },
 		{ "exit not adjacent", func(world *World) {
 			world.Rooms[1].EditorPosition = RoomEditorPosition{ X: 2, Y: 0 }
