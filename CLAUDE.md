@@ -26,6 +26,7 @@ npm run lint
 
 World editor (Go server runs from `editor/`, frontend from `editor/frontend/`). Open it in Chrome/Chromium, since opening and saving world files uses the File System Access API:
 ```
+just dev                      # starts the server and Vite, opens a Chromium app window; closing it stops both
 go run .                      # editor server on 127.0.0.1:7373 (-port to change); serves the built frontend/dist
 npm run dev                   # (in editor/frontend) Vite on :5173 with hot reload, proxies /api to :7373
 npm run build                 # (in editor/frontend) must be run before go run . serves the latest frontend

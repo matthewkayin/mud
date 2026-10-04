@@ -1,0 +1,65 @@
+# Run the editor server and Vite, and open the editor in a Chromium app window (closing it stops both)
+dev:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Use $CHROMIUM if set, otherwise the first Chromium-based browser found
+    browser="${CHROMIUM:-}"
+    if [ -z "$browser" ]; then
+        for candidate in chromium chromium-browser google-chrome google-chrome-stable; do
+            if command -v "$candidate" > /dev/null; then
+                browser="$candidate"
+                break
+            fi
+        done
+    fi
+    if [ -z "$browser" ]; then
+        echo "No Chromium-based browser found. Set CHROMIUM to its path." >&2
+        exit 1
+    fi
+
+    if [ ! -d frontend/node_modules ]; then
+        npm --prefix frontend install
+    fi
+    # The server embeds frontend/dist, so it won't compile until the frontend has been built once
+    if [ ! -d frontend/dist ]; then
+        npm --prefix frontend run build
+    fi
+
+    for port in 7373 5173; do
+        if curl -s "http://127.0.0.1:$port" > /dev/null; then
+            echo "Something is already running on port $port. Stop it first." >&2
+            exit 1
+        fi
+    done
+
+    # Build the server binary and start Vite directly rather than through go run and npm run,
+    # so the background jobs are the servers themselves and killing them doesn't orphan anything
+    build_dir="$(mktemp -d)"
+    trap 'kill $(jobs -p) 2> /dev/null || true; rm -rf "$build_dir"' EXIT
+    go build -o "$build_dir/editor" .
+
+    "$build_dir/editor" &
+    server_pid=$!
+    (cd frontend && exec ./node_modules/.bin/vite --port 5173 --strictPort) &
+    vite_pid=$!
+
+    # Fail instead of waiting forever if a server exits, e.g. because its port is already in use
+    wait_for() {
+        local name="$1" pid="$2" url="$3"
+        until curl -sf "$url" > /dev/null; do
+            if ! kill -0 "$pid" 2> /dev/null; then
+                echo "The $name exited before it was ready." >&2
+                exit 1
+            fi
+            sleep 0.5
+        done
+    }
+    echo "Waiting for the editor server and Vite..."
+    wait_for "editor server" "$server_pid" http://127.0.0.1:7373/api/constants
+    wait_for "Vite dev server" "$vite_pid" http://localhost:5173
+
+    # A separate profile makes this its own Chromium process, so the command blocks until the
+    # window is closed instead of handing off to an already-running browser. It also keeps
+    # the editor's file permissions separate from your normal profile.
+    "$browser" --app=http://localhost:5173 --user-data-dir="${XDG_CACHE_HOME:-$HOME/.cache}/mud-editor-chromium"

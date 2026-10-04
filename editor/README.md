@@ -13,6 +13,8 @@ Then open http://localhost:7373. For a standalone window, run `chromium --app=ht
 
 ## Development
 
-Run `go run .` here, then `npm run dev` in `frontend/` and open http://localhost:5173. Vite hot-reloads the frontend and proxies `/api` to the Go server.
+`just dev` starts the server and Vite and opens the editor in a Chromium app window; closing the window stops everything. It uses its own Chromium profile (in `~/.cache/mud-editor-chromium`) so it runs separately from your normal browser. Set `CHROMIUM` to choose the browser binary.
+
+To run the pieces yourself, run `go run .` here, then `npm run dev` in `frontend/` and open http://localhost:5173. Vite hot-reloads the frontend and proxies `/api` to the Go server.
 
 After changing any Go type the editor sends to the frontend (`EditorWorld`, `world.Room`, the enums in `enums.go`, ...), run `go generate` to regenerate `frontend/src/api/models.ts`.
