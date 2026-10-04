@@ -58,6 +58,12 @@ func (world *World) loadCharacters() {
 
 	for _, fileEntry := range files {
 		path := fmt.Sprintf("%s/%s", WORLD_CHARACTER_SAVES_FOLDER, fileEntry.Name())
+
+		if !strings.HasSuffix(path, ".json") {
+			log.Printf("Ignoring non-JSON file %s.", path)
+			continue
+		}
+
 		file, err := os.Open(path)
 		if err != nil {
 			log.Fatalf("Failed opening character file %s: %s.", path, err.Error())
