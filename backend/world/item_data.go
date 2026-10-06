@@ -9,6 +9,7 @@ var ITEM_DATA = []*ItemData {
 		Name: "Gold",
 		Description: "Gold coins, currency of the land",
 		ItemType: ITEM_TYPE_MISC,
+		Size: 0,
 		Data: nil,
 	},
 
@@ -16,6 +17,7 @@ var ITEM_DATA = []*ItemData {
 		Name: "Dummy Material",
 		Description: "Generic resource used to make all things",
 		ItemType: ITEM_TYPE_MISC,
+		Size: 1,
 		Data: nil,
 	},
 
@@ -23,11 +25,14 @@ var ITEM_DATA = []*ItemData {
 		Name: "Sword",
 		Description: "A pointy metal stick with a handle.",
 		ItemType: ITEM_TYPE_EQUIPMENT_ONE_HANDED,
+		Size: 10,
 		Data: &ItemDataWeapon {
 			Damage: 5,
 			MaxDurability: 100,
 			StatBonuses: StatBlock {
-				Strength: 2,
+				Values: [STAT_COUNT]int32 {
+					STAT_STR: 2,
+				},
 			},
 		},
 	},
@@ -36,6 +41,7 @@ var ITEM_DATA = []*ItemData {
 		Name: "Axe",
 		Description: "Cleaver? I barely know her!",
 		ItemType: ITEM_TYPE_EQUIPMENT_ONE_HANDED,
+		Size: 10,
 		Data: &ItemDataWeapon {
 			Damage: 6,
 			MaxDurability: 100,
@@ -43,10 +49,29 @@ var ITEM_DATA = []*ItemData {
 		},
 	},
 
+	ITEM_ARMOR_CHAINMAIL: {
+		Name: "Chainmail Armor",
+		Description: "Armor made of interlocking link of metal",
+		ItemType: ITEM_TYPE_EQUIPMENT_OUTFIT,
+		Size: 20,
+		Data: &ItemDataOutfit {
+			Armor: 5,
+			MaxDurability: 200,
+			StealthPenality: 0.25,
+			StatBonuses: StatBlock {},
+			StatRequirements: StatBlock {
+				Values: [STAT_COUNT]int32 {
+					STAT_STR: 10,
+				},
+			},
+		},
+	},
+
 	ITEM_SPELLBOOK_FIREBOLT: {
 		Name: "Spellbook of Firebolt",
 		Description: "A dark red tome holding the secrets of magic flames",
 		ItemType: ITEM_TYPE_EQUIPMENT_SPELLBOOK,
+		Size: 10,
 		Data: &ItemDataSpellbook {
 			Spell: SPELL_FIREBOLT,
 			StatRequirements: StatBlock {},
@@ -57,6 +82,7 @@ var ITEM_DATA = []*ItemData {
 		Name: "Spellbook of Cure",
 		Description: "A weathered tome passed from priest to priest",
 		ItemType: ITEM_TYPE_EQUIPMENT_SPELLBOOK,
+		Size: 10,
 		Data: &ItemDataSpellbook {
 			Spell: SPELL_CURE,
 			StatRequirements: StatBlock {},
@@ -67,6 +93,7 @@ var ITEM_DATA = []*ItemData {
 		Name: "Potion of Health",
 		Description: "A red tonic that gives health to the drinker",
 		ItemType: ITEM_TYPE_CONSUMABLE,
+		Size: 5,
 		Data: &ItemDataConsumable {
 			onUse: func(world *World, target *Mob) {
 				var healing int32 = 20
@@ -82,6 +109,7 @@ var ITEM_DATA = []*ItemData {
 		Name: "Potion of Mana",
 		Description: "A blue tonic that gives mana to the drinker.",
 		ItemType: ITEM_TYPE_CONSUMABLE,
+		Size: 5,
 		Data: &ItemDataConsumable {
 			onUse: func(world *World, target *Mob) {
 				var mana int32 = 20
@@ -97,6 +125,7 @@ var ITEM_DATA = []*ItemData {
 		Name: "Potion of Health Recipe",
 		Description: "The recipe for a Potion of Health. Useable by Alchemists of level 1 or higher.",
 		ItemType: ITEM_TYPE_RECIPE,
+		Size: 1,
 		Data: &ItemDataRecipe {
 			Recipe: RECIPE_HEALTH_POTION,
 		},
@@ -106,6 +135,7 @@ var ITEM_DATA = []*ItemData {
 		Name: "Potion of Mana Recipe",
 		Description: "The recipe for a Poition of Mana. Useable by Alchemists of level 2 or higher.",
 		ItemType: ITEM_TYPE_RECIPE,
+		Size: 1,
 		Data: &ItemDataRecipe {
 			Recipe: RECIPE_MANA_POTION,
 		},
@@ -115,6 +145,7 @@ var ITEM_DATA = []*ItemData {
 		Name: "Sword Schematic",
 		Description: "The schematic for a sword. Useable by Blacksmiths of level 1 or higher.",
 		ItemType: ITEM_TYPE_RECIPE,
+		Size: 1,
 		Data: &ItemDataRecipe {
 			Recipe: RECIPE_SWORD,
 		},
@@ -124,6 +155,7 @@ var ITEM_DATA = []*ItemData {
 		Name: "Axe Schematic",
 		Description: "The schematic for an axe. Useable by Blacksmiths of level 1 or higher.",
 		ItemType: ITEM_TYPE_RECIPE,
+		Size: 1,
 		Data: &ItemDataRecipe {
 			Recipe: RECIPE_AXE,
 		},

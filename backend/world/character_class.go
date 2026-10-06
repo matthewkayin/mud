@@ -45,18 +45,22 @@ var CLASS_DATA []*ClassData = []*ClassData {
 	CLASS_WARRIOR: {
 		Name: "Warrior",
 		Stats: StatBlock {
-			Vitality: 8,
-			Strength: 10,
-			Agility: 6,
-			Intelligence: 6,
-			Faith: 8,
+			Values: [STAT_COUNT]int32 {
+				STAT_VIT: 8,
+				STAT_STR: 10,
+				STAT_AGI: 6,
+				STAT_INT: 6,
+				STAT_FTH: 8,
+			},
 		},
 		Scaling: StatBlock {
-			Vitality: 8,
-			Strength: 10,
-			Agility: 6,
-			Intelligence: 6,
-			Faith: 8,
+			Values: [STAT_COUNT]int32 {
+				STAT_VIT: 8,
+				STAT_STR: 10,
+				STAT_AGI: 6,
+				STAT_INT: 6,
+				STAT_FTH: 8,
+			},
 		},
 		UnlocksAtLevel: [MOB_MAX_LEVEL][]ClassUnlock {
 			2: {
@@ -68,18 +72,22 @@ var CLASS_DATA []*ClassData = []*ClassData {
 	CLASS_THIEF: {
 		Name: "Thief",
 		Stats: StatBlock {
-			Vitality: 8,
-			Strength: 8,
-			Agility: 10,
-			Intelligence: 6,
-			Faith: 6,
+			Values: [STAT_COUNT]int32 {
+				STAT_VIT: 8,
+				STAT_STR: 8,
+				STAT_AGI: 10,
+				STAT_INT: 6,
+				STAT_FTH: 8,
+			},
 		},
 		Scaling: StatBlock {
-			Vitality: 8,
-			Strength: 8,
-			Agility: 10,
-			Intelligence: 6,
-			Faith: 6,
+			Values: [STAT_COUNT]int32 {
+				STAT_VIT: 8,
+				STAT_STR: 8,
+				STAT_AGI: 10,
+				STAT_INT: 6,
+				STAT_FTH: 8,
+			},
 		},
 		UnlocksAtLevel: [MOB_MAX_LEVEL][]ClassUnlock {
 			1: {
@@ -91,18 +99,22 @@ var CLASS_DATA []*ClassData = []*ClassData {
 	CLASS_WIZARD: {
 		Name: "Wizard",
 		Stats: StatBlock {
-			Vitality: 6,
-			Strength: 6,
-			Agility: 8,
-			Intelligence: 10,
-			Faith: 8,
+			Values: [STAT_COUNT]int32 {
+				STAT_VIT: 6,
+				STAT_STR: 6,
+				STAT_AGI: 8,
+				STAT_INT: 10,
+				STAT_FTH: 8,
+			},
 		},
 		Scaling: StatBlock {
-			Vitality: 6,
-			Strength: 6,
-			Agility: 8,
-			Intelligence: 10,
-			Faith: 8,
+			Values: [STAT_COUNT]int32 {
+				STAT_VIT: 6,
+				STAT_STR: 6,
+				STAT_AGI: 8,
+				STAT_INT: 10,
+				STAT_FTH: 8,
+			},
 		},
 		UnlocksAtLevel: [MOB_MAX_LEVEL][]ClassUnlock {},
 	},
@@ -110,18 +122,22 @@ var CLASS_DATA []*ClassData = []*ClassData {
 	CLASS_PRIEST: {
 		Name: "Priest",
 		Stats: StatBlock {
-			Vitality: 6,
-			Strength: 6,
-			Agility: 8,
-			Intelligence: 8,
-			Faith: 10,
+			Values: [STAT_COUNT]int32 {
+				STAT_VIT: 6,
+				STAT_STR: 6,
+				STAT_AGI: 8,
+				STAT_INT: 8,
+				STAT_FTH: 10,
+			},
 		},
 		Scaling: StatBlock {
-			Vitality: 6,
-			Strength: 6,
-			Agility: 8,
-			Intelligence: 8,
-			Faith: 10,
+			Values: [STAT_COUNT]int32 {
+				STAT_VIT: 6,
+				STAT_STR: 6,
+				STAT_AGI: 8,
+				STAT_INT: 8,
+				STAT_FTH: 10,
+			},
 		},
 		UnlocksAtLevel: [MOB_MAX_LEVEL][]ClassUnlock {
 			1: {

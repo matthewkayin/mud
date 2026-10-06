@@ -34,52 +34,64 @@ var RACE_DATA []*RaceData = []*RaceData {
 	RACE_HUMAN: {
 		Name: "Human",
 		Stats: StatBlock {
-			Vitality: 1,
-			Faith: 2,
+			Values: [STAT_COUNT]int32 {
+				STAT_VIT: 1,
+				STAT_FTH: 2,
+			},
 		},
 	},
 
 	RACE_ELF: {
 		Name: "Elf",
 		Stats: StatBlock {
-			Agility: 1,
-			Intelligence: 2,
+			Values: [STAT_COUNT]int32 {
+				STAT_AGI: 1,
+				STAT_INT: 2,
+			},
 		},
 	},
 
 	RACE_DWARF: {
 		Name: "Dwarf",
 		Stats: StatBlock {
-			Vitality: 2,
-			Strength: 2,
-			Agility: -1,
+			Values: [STAT_COUNT]int32 {
+				STAT_VIT: 2,
+				STAT_STR: 2,
+				STAT_AGI: -1,
+			},
 		},
 	},
 
 	RACE_HOBBIT: {
 		Name: "Hobbit",
 		Stats: StatBlock {
-			Vitality: 2,
-			Strength: -1,
-			Faith: 2,
+			Values: [STAT_COUNT]int32 {
+				STAT_VIT: 2,
+				STAT_STR: -1,
+				STAT_FTH: 2,
+			},
 		},
 	},
 
 	RACE_ORC: {
 		Name: "Orc",
 		Stats: StatBlock {
-			Vitality: 2,
-			Strength: 2,
-			Intelligence: -1,
+			Values: [STAT_COUNT]int32 {
+				STAT_VIT: 2,
+				STAT_STR: 2,
+				STAT_INT: -1,
+			},
 		},
 	},
 
 	RACE_GREMLIN: {
 		Name: "Gremlin",
 		Stats: StatBlock {
-			Strength: -1,
-			Agility: 2,
-			Intelligence: 2,
+			Values: [STAT_COUNT]int32 {
+				STAT_STR: -1,
+				STAT_AGI: 2,
+				STAT_INT: 2,
+			},
 		},
 	},
 }

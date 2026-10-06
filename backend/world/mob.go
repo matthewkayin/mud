@@ -2,7 +2,6 @@ package world
 
 import (
 	"fmt"
-	"log"
 	"math/rand/v2"
 	"slices"
 )
@@ -505,13 +504,22 @@ func (mob *Mob) RollForStealth(world *World) bool {
 		enemyAlertness = max(enemyAlertness, occupant.alertness)
 	}
 
-	// TODO: Armor Penalty and Room Brightness modifier
+	// TODO: Room Brightness modifier
+
+	// Determine armor stealth penalty
+	var armorStealthPenalty float32 = 0.0
+	outfit := mob.Data.Equipment.Get(EQUIPMENT_SLOT_OUTFIT)
+	if outfit != nil {
+		outfitData := ITEM_DATA[outfit.Id].Data.(*ItemDataOutfit)
+		armorStealthPenalty = outfitData.StealthPenality
+	}
 
 	// Roll to hide
 	mobAgility := float32(mob.Data.Agility())
 	stealthChance := mobAgility / (mobAgility + (MOB_STEALTH_K * enemyIntelligence))
 	stealthChance *= mob.escapeChance
 	stealthChance *= (1.0 - enemyAlertness)
+	stealthChance *= (1.0 - armorStealthPenalty)
 	hidden := rand.Float32() < stealthChance
 
 	// On failed roll, drop escape chance to 0.0
@@ -546,9 +554,8 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 	item.Durability--
 	if item.Durability == 0 {
 		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s's %s broke!", mob.GetName(), itemData.Name))
-		item, _ := mob.Data.Equipment.Unequip(slot)
-		message := mob.OnPlayerItemUnequipped(item)
-		if message != "" {
+		_, messages, _ := mob.unequip(slot)
+		for _, message := range messages {
 			world.messagePlayer(mob.PlayerCharacter.PlayerId, message)
 		}
 
@@ -581,37 +588,6 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 		} else {
 			world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("Your %s has lost its fortification.", itemData.Name)) }
 	}
-}
-
-func (mob *Mob) OnPlayerItemUnequipped(item Item) string {
-	if mob.PlayerCharacter == nil {
-		log.Printf("Warn - onPlayerItemUnequipped was called on a non-player mob.")
-		return ""
-	}
-
-	itemData := ITEM_DATA[item.Id]
-	if itemData.ItemType == ITEM_TYPE_EQUIPMENT_SPELLBOOK {
-		spellbookData := itemData.Data.(*ItemDataSpellbook)
-
-		// Decrement the equip count for this spell
-		mob.PlayerCharacter.SpellsEquipped[spellbookData.Spell].EquipCount--
-
-		// If the equip count is now 0, delete the entry and remove the spell
-		if mob.PlayerCharacter.SpellsEquipped[spellbookData.Spell].EquipCount == 0 {
-			delete(mob.PlayerCharacter.SpellsEquipped, spellbookData.Spell)
-
-			isSpellPrepared := slices.Contains(mob.Data.Spells, spellbookData.Spell)
-			isSpellKnown := slices.Contains(mob.PlayerCharacter.SpellsKnown, spellbookData.Spell)
-			if isSpellPrepared && !isSpellKnown {
-				mob.Data.RemoveSpell(spellbookData.Spell)
-				spellData := SPELL_DATA[spellbookData.Spell]
-
-				return fmt.Sprintf("You lost the spell %s.", spellData.Name)
-			}
-		}
-	}
-
-	return ""
 }
 
 func (mob *Mob) spellcast(world *World, targetMob *Mob) {
@@ -724,24 +700,43 @@ func (mob *Mob) useItem(world *World, targetMob *Mob) {
 	}
 }
 
+// Returns an error if the mob is unable to craft batchAmount of the recipe
+func (mob *Mob) CanCraft(recipe Recipe, batchAmount int32) error {
+	recipeData := RECIPE_DATA[recipe]
+
+	// Check for the materials
+	for _, ingredient := range recipeData.Materials {
+		amountOfIngredient := mob.Data.Inventory.AmountOf(ingredient.Id)
+		if amountOfIngredient < batchAmount * ingredient.Amount {
+			return fmt.Errorf("You lack the ingredients to craft %s.", recipeData.Name)
+		}
+	}
+
+	// Check for inventory space
+	if !mob.Data.Inventory.HasSpaceFor(recipeData.NetItemSize(batchAmount), mob.InventoryCapacity()) {
+		return fmt.Errorf("You don't have enough space in your inventory to craft %s.", recipeData.Name)
+	}
+
+	return nil
+}
+
+func (mob *Mob) InventoryCapacity() int32 {
+	if mob.PlayerCharacter == nil {
+		return INVENTORY_CAPACITY_UNLIMITED
+	}
+
+	return INVENTORY_CAPACITY_PLAYER
+}
+
 func (mob *Mob) CraftItem(world *World, recipe Recipe) bool {
 	recipeData := RECIPE_DATA[recipe]
 
-	//check if a player is crafting so we know to send them messages
-	isPlayer := false
-	if mob.PlayerCharacter != nil {
-		isPlayer = true
-	}
-
-	//check for the materials
-	for _, ingredient := range recipeData.Materials {
-		amountOfIngredient := mob.Data.Inventory.AmountOf(ingredient.Id)
-		if amountOfIngredient < ingredient.Amount {
-			if isPlayer {
-				world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You lack the ingredients to craft %s", recipeData.Name))
-			}
-			return false
+	err := mob.CanCraft(recipe, 1)
+	if err != nil {
+		if mob.PlayerCharacter != nil {
+			world.messagePlayer(mob.PlayerCharacter.PlayerId, err.Error())
 		}
+		return false
 	}
 
 	// Remove the materials from the player's inventory
@@ -757,8 +752,8 @@ func (mob *Mob) CraftItem(world *World, recipe Recipe) bool {
 	// Add the crafted item to the player's inventory
 	recipeOutput := recipeData.CreateOutput()
 	mob.Data.Inventory.AddItem(recipeOutput)
-	if isPlayer {
-	world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You crafted %s.", recipeOutput.GetNameWithAmount()))
+	if mob.PlayerCharacter != nil {
+		world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You crafted %s.", recipeOutput.GetNameWithAmount()))
 	}
 	return true
 }

@@ -1,28 +1,63 @@
 package world
 
+type StatName int
+const (
+	STAT_VIT = iota
+	STAT_STR
+	STAT_AGI
+	STAT_INT
+	STAT_FTH
+	STAT_COUNT
+)
+
 type StatBlock struct {
-	Vitality int32
-	Strength int32
-	Agility int32
-	Intelligence int32
-	Faith int32
+	Values [STAT_COUNT]int32
+}
+
+type StatData struct {
+	Name string
+	Abbreviation string
+}
+
+var STAT_DATA []*StatData = []*StatData {
+	STAT_VIT: {
+		Name: "Vitality",
+		Abbreviation: "VIT",
+	},
+	STAT_STR: {
+		Name: "Strength",
+		Abbreviation: "STR",
+	},
+	STAT_AGI: {
+		Name: "Agility",
+		Abbreviation: "AGI",
+	},
+	STAT_INT: {
+		Name: "Intelligence",
+		Abbreviation: "INT",
+	},
+	STAT_FTH: {
+		Name: "Faith",
+		Abbreviation: "FTH",
+	},
 }
 
 func (stats *StatBlock) Add(other *StatBlock) StatBlock {
-	return StatBlock {
-		Vitality: stats.Vitality + other.Vitality,
-		Strength: stats.Strength + other.Strength,
-		Agility: stats.Agility + other.Agility,
-		Intelligence: stats.Intelligence + other.Intelligence,
-		Faith: stats.Faith + other.Faith,
+	result := *stats
+	for index := range STAT_COUNT {
+		result.Values[index] += other.Values[index]
 	}
+
+	return result
 }
 
 // Returns true if stats >= other
 func (stats *StatBlock) Meets(other *StatBlock) bool {
-	return !(stats.Vitality < other.Vitality ||
-			stats.Strength < other.Strength ||
-			stats.Agility < other.Agility ||
-			stats.Intelligence < other.Intelligence ||
-			stats.Faith < other.Faith)
+	for index := range STAT_COUNT {
+		if stats.Values[index] < other.Values[index] {
+			return false
+		}
+	}
+
+	return true
 }

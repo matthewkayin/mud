@@ -342,7 +342,7 @@ func fuzzyFindClassSpellIndex(player *Player, searchWords []string) int {
 }
 
 func fuzzyFindInventoryItemIndex(inventory *world.Inventory, searchWords []string) int {
-	if len(searchWords) == 0 {
+	if len(searchWords) == 0 || inventory.Length() == 0 {
 		return FUZZY_FIND_RESULT_NOT_FOUND
 	}
 
@@ -358,6 +358,23 @@ func fuzzyFindInventoryItemIndex(inventory *world.Inventory, searchWords []strin
 
 	// Fuzzy find the item
 	return fuzzyFind(itemNames, searchWords, fuzzyNumber)
+}
+
+// inventoryName is used in error messages, e.g. "your inventory" or "the room"
+func fuzzyFindInventoryItem(inventory *world.Inventory, inventoryName string, searchWords []string) (int, error) {
+	itemIndex := fuzzyFindInventoryItemIndex(inventory, searchWords)
+	switch itemIndex {
+		case FUZZY_FIND_RESULT_ITEM_NOT_SPECIFIED:
+			return 0, errors.New("You must specify an item.")
+		case FUZZY_FIND_RESULT_NOT_FOUND:
+			return 0, fmt.Errorf("There is no item called '%s' in %s.", strings.Join(searchWords, " "), inventoryName)
+		case FUZZY_FIND_RESULT_AMBIGUOUS:
+			return 0, fmt.Errorf("There are multiple items matching '%s' in %s.", strings.Join(searchWords, " "), inventoryName)
+		case FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE:
+			return 0, fmt.Errorf("There is no item matching that number in %s.", inventoryName)
+	}
+
+	return itemIndex, nil
 }
 
 func fuzzyFindEquipmentSlotByItem(equipment *world.Equipment, searchWords []string) (world.EquipmentSlot, error) {

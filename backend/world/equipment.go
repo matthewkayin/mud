@@ -82,16 +82,37 @@ func EquipmentInitEmpty() Equipment {
 }
 
 // Returns nil if the user has no item in this slot
+// A two-handed item lives in the main hand slot, so the off hand returns nil while one is held
 func (equipment *Equipment) Get(slot EquipmentSlot) *Item {
 	if !equipment.IsSlotInUse[slot] {
+		return nil
+	}
+	if slot == EQUIPMENT_SLOT_OFF_HAND && equipment.isTwoHandedWeaponEquipped() {
 		return nil
 	}
 	return &equipment.SlotItem[slot]
 }
 
+func (equipment *Equipment) isTwoHandedWeaponEquipped() bool {
+	item := equipment.Get(EQUIPMENT_SLOT_MAIN_HAND)
+	if item == nil {
+		return false
+	}
+
+	return ITEM_DATA[item.Id].ItemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED
+}
+
 func (equipment *Equipment) Unequip(slot EquipmentSlot) (Item, bool) {
 	if !equipment.IsSlotInUse[slot] {
 		return Item{}, false
+	}
+
+	// Unequipping the off hand while holding a two-handed item unequips the two-handed item
+	isUnequippingTwoHandedWeapon :=
+		equipment.isTwoHandedWeaponEquipped() &&
+		(slot == EQUIPMENT_SLOT_MAIN_HAND || slot == EQUIPMENT_SLOT_OFF_HAND)
+	if isUnequippingTwoHandedWeapon {
+		slot = EQUIPMENT_SLOT_MAIN_HAND
 	}
 
 	item := equipment.SlotItem[slot]
@@ -107,6 +128,34 @@ func (equipment *Equipment) Unequip(slot EquipmentSlot) (Item, bool) {
 	return item, true
 }
 
+// If equipping two handed weapon, we need to remove main and offhand
+// Otherwise we just need to remove the passed-in slot
+func slotsDisplacedBy(slot EquipmentSlot, itemType ItemType) []EquipmentSlot {
+	if itemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED {
+		return []EquipmentSlot {
+			EQUIPMENT_SLOT_MAIN_HAND,
+			EQUIPMENT_SLOT_OFF_HAND,
+		}
+	}
+
+	return []EquipmentSlot { slot }
+}
+
+// Returns the items which would be unequipped by equipping item into slot
+func (equipment *Equipment) ItemsDisplacedBy(slot EquipmentSlot, item Item) []Item {
+	displacedItems := make([]Item, 0, 2)
+
+	displacedSlots := slotsDisplacedBy(slot, ITEM_DATA[item.Id].ItemType)
+	for _, displacedSlot := range displacedSlots {
+		displacedItem := equipment.Get(displacedSlot)
+		if displacedItem != nil {
+			displacedItems = append(displacedItems, *displacedItem)
+		}
+	}
+
+	return displacedItems
+}
+
 // Returns an array of items which were unequipped
 func (equipment *Equipment) Equip(slot EquipmentSlot, item Item) ([]Item, bool) {
 	unequippedItems := make([]Item, 0, 2)
@@ -117,22 +166,8 @@ func (equipment *Equipment) Equip(slot EquipmentSlot, item Item) ([]Item, bool) 
 		return unequippedItems, false
 	}
 
-	// If equipping two handed weapon, we need to remove main and offhand
-	// Otherwise we just need to remove the passed-in slot
-	var slotsToUnequip []EquipmentSlot
-	if itemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED {
-		slotsToUnequip = []EquipmentSlot {
-			EQUIPMENT_SLOT_MAIN_HAND,
-			EQUIPMENT_SLOT_OFF_HAND,
-		}
-	} else {
-		slotsToUnequip = []EquipmentSlot {
-			slot,
-		}
-	}
-
 	// For each slot to unequip, unequip the item
-	for _, slotToUnequip := range slotsToUnequip {
+	for _, slotToUnequip := range slotsDisplacedBy(slot, itemType) {
 		unequippedItem, wasUnequipped := equipment.Unequip(slotToUnequip)
 		if wasUnequipped {
 			unequippedItems = append(unequippedItems, unequippedItem)

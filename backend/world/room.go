@@ -313,9 +313,12 @@ func (room *Room) removeDeadOccupants(world *World) {
 		if occupantMob.PlayerCharacter != nil {
 			for slotIndex := range EQUIPMENT_SLOT_COUNT {
 				slot := EquipmentSlot(slotIndex)
-				item, success := occupantMob.Data.Equipment.Unequip(slot)
+				item, messages, success := occupantMob.unequip(slot)
 				if !success {
 					continue
+				}
+				for _, message := range messages {
+					world.messagePlayer(occupantMob.PlayerCharacter.PlayerId, message)
 				}
 
 				// Perform random durability damage to the player's equipped items on death
