@@ -2,124 +2,99 @@ package game
 
 import (
 	"fmt"
-	"strings"
 	"strconv"
 	"mud/world"
 )
 
-type InventoryFindResult int
-const (
-	INVENTORY_FIND_RESULT_NOT_FOUND = iota
-	INVENTORY_FIND_RESULT_AMBIGUOUS
-	INVENTORY_FIND_RESULT_FOUND
-)
-
 const INVENTORY_TRANSFER_AMOUNT_ALL = -1
 
-type InventoryTransferStatus int
-const (
-	INVENTORY_TRANSFER_STATUS_OK = iota
-	INVENTORY_TRANSFER_STATUS_PARTIAL
-	INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED
-	INVENTORY_TRANSFER_STATUS_ITEM_NOT_FOUND
-	INVENTORY_TRANSFER_STATUS_ITEM_NAME_AMBIGUOUS
-	INVENTORY_TRANSFER_STATUS_ITEM_NUMBER_OUT_OF_RANGE
-	INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK
-)
-
-type InventoryTransferResult struct {
-	status InventoryTransferStatus
-	amount int32
-	itemName string
-	addedToIndex int
+type InventoryTransferLocation struct {
+	inventory *world.Inventory
+	// Used in messages, e.g. "your inventory", "the room", or a chest name
+	name string
+	capacity int32
 }
 
-func inventoryTransfer(fromInventory *world.Inventory, toInventory *world.Inventory, itemWords []string) InventoryTransferResult {
-	// Check for 0 item words
-	if len(itemWords) == 0 {
-		return InventoryTransferResult {
-			status: INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED,
-		}
-	}
+type InventoryTransferParams struct {
+	from InventoryTransferLocation
+	to InventoryTransferLocation
+	verb string
+	itemWords []string
+}
 
-	// Get amount from args
-	var amount int32 = 1
+type InventoryTransferResult struct {
+	// The item that was moved. item.Amount is the amount that was actually moved
+	item world.Item
+	addedToIndex int
+	// A message sent to the user on partial success
+	notice string
+}
+
+// Parses an optional leading "all" or number from the item words
+func parseItemAmount(itemWords []string) (int32, []string) {
+	if len(itemWords) == 0 {
+		return 1, itemWords
+	}
 	if itemWords[0] == "all" {
-		amount = INVENTORY_TRANSFER_AMOUNT_ALL
-		itemWords = itemWords[1:]
-	} else {
-		parsedAmount, err := strconv.Atoi(itemWords[0])
-		if err == nil {
-			amount = int32(parsedAmount)
-			itemWords = itemWords[1:]
-		}
+		return INVENTORY_TRANSFER_AMOUNT_ALL, itemWords[1:]
 	}
 
-	// Check for 0 item words once again
+	parsedAmount, err := strconv.Atoi(itemWords[0])
+	if err != nil {
+		return 1, itemWords
+	}
+	return int32(parsedAmount), itemWords[1:]
+}
+
+// Moves the item described by itemWords (e.g. "2 health potion", "all gold", "sword 2")
+// from one inventory to another. The verb is used in error messages, e.g. "drop".
+// The returned error is a message ready to be shown to the player.
+func inventoryTransfer(params InventoryTransferParams) (InventoryTransferResult, error) {
+	amount, itemWords := parseItemAmount(params.itemWords)
 	if len(itemWords) == 0 {
-		return InventoryTransferResult {
-			status: INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED,
-		}
+		return InventoryTransferResult{}, fmt.Errorf("You must specify an item to %s.", params.verb)
 	}
 
 	// Find item
-	itemIndex := fuzzyFindInventoryItemIndex(fromInventory, itemWords)
-
-	// Handle edge cases on item index
-	if itemIndex == FUZZY_FIND_RESULT_ITEM_NOT_SPECIFIED {
-		return InventoryTransferResult {
-			status: INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED,
-		}
+	itemIndex, err := fuzzyFindInventoryItem(params.from.inventory, params.from.name, itemWords)
+	if err != nil {
+		return InventoryTransferResult{}, err
 	}
-	if itemIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
-		return InventoryTransferResult {
-			status: INVENTORY_TRANSFER_STATUS_ITEM_NAME_AMBIGUOUS,
-			itemName: strings.Join(itemWords, " "),
-		}
-	}
-	if itemIndex == FUZZY_FIND_RESULT_NOT_FOUND {
-		return InventoryTransferResult {
-			status: INVENTORY_TRANSFER_STATUS_ITEM_NOT_FOUND,
-			itemName: strings.Join(itemWords, " "),
-		}
-	}
-	if itemIndex == FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE {
-		return InventoryTransferResult {
-			status: INVENTORY_TRANSFER_STATUS_ITEM_NUMBER_OUT_OF_RANGE,
-			itemName: strings.Join(itemWords, " "),
-		}
-	}
+	item := &params.from.inventory.Items[itemIndex]
 
 	// Prevent user from transfering multiple of a non-stacking item
-	itemData := world.ITEM_DATA[fromInventory.Items[itemIndex].Id]
-	if amount != 1 && !itemData.ItemCanStack() {
-		return InventoryTransferResult {
-			status: INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK,
-			itemName: fromInventory.Items[itemIndex].GetNameWithCondition(),
-		}
+	if amount != 1 && !world.ITEM_DATA[item.Id].ItemCanStack() {
+		return InventoryTransferResult{}, fmt.Errorf("You can only %s 1 %s at once.", params.verb, item.GetNameWithCondition())
 	}
 
-	// Handle item amount "all"
+	// Limit the amount to what the source has
+	notice := ""
 	if amount == INVENTORY_TRANSFER_AMOUNT_ALL {
-		amount = fromInventory.Items[itemIndex].Amount
+		amount = item.Amount
+	} else if amount > item.Amount {
+		notice = fmt.Sprintf("There is only %s in %s.", item.GetNameWithAmount(), params.from.name)
+		amount = item.Amount
+	}
+
+	// Limit the amount to what fits in the destination
+	amountThatFits := params.to.inventory.AmountThatFits(item.Id, amount, params.to.capacity)
+	if amountThatFits == 0 {
+		return InventoryTransferResult{}, fmt.Errorf("There is not enough space in %s for %s.", params.to.name, item.GetNameWithCondition())
 	}
 
 	// Transfer item
-	removedItem := fromInventory.RemoveItems(itemIndex, amount)
-	addedToIndex := toInventory.AddItem(removedItem)
+	removedItem := params.from.inventory.RemoveItems(itemIndex, amountThatFits)
+	addedToIndex := params.to.inventory.AddItem(removedItem)
 
-	// Determine result status
-	resultStatus := INVENTORY_TRANSFER_STATUS_OK
-	if removedItem.Amount < amount {
-		resultStatus = INVENTORY_TRANSFER_STATUS_PARTIAL
+	if amountThatFits < amount {
+		notice = fmt.Sprintf("There was only enough space in %s for %s.", params.to.name, removedItem.GetNameWithAmount())
 	}
 
 	return InventoryTransferResult {
-		status: InventoryTransferStatus(resultStatus),
-		amount: removedItem.Amount,
-		itemName: removedItem.GetNameWithCondition(),
+		item: removedItem,
 		addedToIndex: addedToIndex,
-	}
+		notice: notice,
+	}, nil
 }
 
 func itemNameWithAmount(itemName string, amount int32) string {

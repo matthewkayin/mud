@@ -57,23 +57,23 @@ func (mobData *MobData) Armor() int32 {
 }
 
 func (mobData *MobData) Vitality() int32 {
-	return mobData.Stats.Vitality + mobData.Equipment.StatBonuses.Vitality
+	return mobData.Stats.Values[STAT_VIT] + mobData.Equipment.StatBonuses.Values[STAT_VIT]
 }
 
 func (mobData *MobData) Strength() int32 {
-	return mobData.Stats.Strength + mobData.Equipment.StatBonuses.Strength
+	return mobData.Stats.Values[STAT_STR] + mobData.Equipment.StatBonuses.Values[STAT_STR]
 }
 
 func (mobData *MobData) Agility() int32 {
-	return mobData.Stats.Agility + mobData.Equipment.StatBonuses.Agility
+	return mobData.Stats.Values[STAT_AGI] + mobData.Equipment.StatBonuses.Values[STAT_AGI]
 }
 
 func (mobData *MobData) Intelligence() int32 {
-	return mobData.Stats.Intelligence + mobData.Equipment.StatBonuses.Intelligence
+	return mobData.Stats.Values[STAT_INT] + mobData.Equipment.StatBonuses.Values[STAT_INT]
 }
 
 func (mobData *MobData) Faith() int32 {
-	return mobData.Stats.Faith + mobData.Equipment.StatBonuses.Faith
+	return mobData.Stats.Values[STAT_FTH] + mobData.Equipment.StatBonuses.Values[STAT_FTH]
 }
 
 func (mobData *MobData) SpellSlots() int32 {
@@ -84,7 +84,7 @@ func (mobData *MobData) SpellSlots() int32 {
 	// There is a case to be made that spell slots should be class determined
 	// and separate from the int stat entirely
 
-	return int32(float32(mobData.Stats.Intelligence) / 3.0)
+	return int32(float32(mobData.Stats.Values[STAT_INT]) / 3.0)
 }
 
 func (mobData *MobData) CastsToLearn(spell Spell) int32 {

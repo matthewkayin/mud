@@ -158,13 +158,12 @@ func (character *Character) recalculateStats() {
 }
 
 func calculateStatBlockAtLevel(base *StatBlock, scaling *StatBlock, level int32) StatBlock {
-	return StatBlock {
-		Vitality: calculateStatAtLevel(base.Vitality, scaling.Vitality, level),
-		Strength: calculateStatAtLevel(base.Strength, scaling.Strength, level),
-		Agility: calculateStatAtLevel(base.Agility, scaling.Agility, level),
-		Intelligence: calculateStatAtLevel(base.Intelligence, scaling.Intelligence, level),
-		Faith: calculateStatAtLevel(base.Faith, scaling.Faith, level),
+	stats := StatBlock { Values: [STAT_COUNT]int32{} }
+	for index := range STAT_COUNT {
+		stats.Values[index] = calculateStatAtLevel(base.Values[index], scaling.Values[index], level)
 	}
+
+	return stats
 }
 
 func calculateStatAtLevel(base int32, scaling int32, level int32) int32 {

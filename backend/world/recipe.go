@@ -83,6 +83,21 @@ var RECIPE_DATA = map[Recipe]*RecipeData {
 	},
 }
 
+func (recipeData *RecipeData) NetItemSize(batchAmount int32) int32 {
+	var netSize int32 = 0
+
+	// Subtract from net size for each material
+	for index := range len(recipeData.Materials) {
+		material := &recipeData.Materials[index]
+		netSize -= ITEM_DATA[material.Id].Size * material.Amount * batchAmount
+	}
+
+	// Add to net size for each output
+	netSize += ITEM_DATA[recipeData.Output.Id].Size * recipeData.Output.Amount * batchAmount
+
+	return netSize
+}
+
 func (recipeData *RecipeData) CreateOutput() Item {
 	output := recipeData.Output
 	itemData := ITEM_DATA[output.Id]

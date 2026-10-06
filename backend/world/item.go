@@ -10,6 +10,7 @@ const (
 	ITEM_DUMMY_MATERIAL
 	ITEM_SWORD
 	ITEM_AXE
+	ITEM_ARMOR_CHAINMAIL
 	ITEM_SPELLBOOK_FIREBOLT
 	ITEM_SPELLBOOK_CURE
 	ITEM_POTION_HEALTH
@@ -59,6 +60,7 @@ type ItemDataWeapon struct {
 type ItemDataOutfit struct {
 	Armor int32
 	MaxDurability int32
+	StealthPenality float32
 	StatBonuses StatBlock
 	StatRequirements StatBlock
 }
@@ -81,6 +83,7 @@ type ItemData struct {
 	Name string
 	Description string
 	ItemType ItemType
+	Size int32
 	Data any
 }
 
@@ -119,6 +122,10 @@ func ItemTypeToString(itemType ItemType) string {
 		default:
 			panic(fmt.Sprintf("Item type %d not handled", itemType))
 	}
+}
+
+func (item *Item) Size() int32 {
+	return ITEM_DATA[item.Id].Size * item.Amount
 }
 
 func (item *Item) GetStatBonuses() *StatBlock {

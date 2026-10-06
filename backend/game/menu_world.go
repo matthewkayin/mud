@@ -3,11 +3,11 @@ package game
 import (
 	"fmt"
 	"log"
- 	"strings"
-  	"strconv"
-	"slices"
 	"mud/bitset"
 	"mud/world"
+	"slices"
+	"strconv"
+	"strings"
 )
 
 var MENU_WORLD = Menu {
@@ -128,9 +128,108 @@ var MENU_WORLD = Menu {
 		},
 
 		"inspect": {
-			usage: "inspect <mob>",
-			description: "Get information about a player or monster in the room",
+			usage: "inspect <target> [in <container>]",
+			description: "Get information about a player, monster, or item",
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
+				if len(args) == 0 {
+					return false
+				}
+
+				// Get mob and room handle
+				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+				playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
+
+				// Check for in keyword
+				targetWords, containerWords, userSpecifiedIn := splitArgsBy(args, "in")
+
+				// Check container
+				targetInventory := &playerMob.Data.Inventory
+				chestName := "your inventory"
+				if userSpecifiedIn {
+					var err error
+					targetInventory, chestName, err = fuzzyFindChestInventory(playerRoom, containerWords)
+					if err != nil {
+						*player.inbox <- err.Error()
+					}
+				}
+
+				// Get item
+				itemIndex := fuzzyFindInventoryItemIndex(targetInventory, targetWords)
+
+				// Handle errors, but only if user specifically specified "in" (i.e. they are inspecting an item and not a target)
+				if itemIndex < 0 && userSpecifiedIn {
+					switch itemIndex {
+						case FUZZY_FIND_RESULT_ITEM_NOT_SPECIFIED:
+							*player.inbox <- "You must specify an item to inspect."
+						case FUZZY_FIND_RESULT_AMBIGUOUS:
+							*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' in %s.",
+								strings.Join(targetWords, " "), chestName)
+						case FUZZY_FIND_RESULT_NOT_FOUND:
+							*player.inbox <- fmt.Sprintf("There is no item named '%s' in %s.",
+								strings.Join(targetWords, " "), chestName)
+						case FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE:
+							*player.inbox <- fmt.Sprintf("There is no item matching that number in %s.", chestName)
+					}
+
+					return true
+				}
+
+				// Inspect item
+				if itemIndex >= 0 {
+					item := &targetInventory.Items[itemIndex]
+					itemData := world.ITEM_DATA[item.Id]
+
+					*player.inbox <- fmt.Sprintf("Item: %s", itemData.Name)
+					*player.inbox <- fmt.Sprintf("Description: %s", itemData.Description)
+					*player.inbox <- fmt.Sprintf("Type: %s", world.ItemTypeToString(itemData.ItemType))
+					*player.inbox <- fmt.Sprintf("Size: %d", itemData.Size)
+
+					// Stat requirements
+					stats := item.GetStatRequirements()
+					if stats != nil {
+						parts := make([]string, 0, world.STAT_COUNT)
+						for index := range world.STAT_COUNT {
+							if stats.Values[index] != 0 {
+								parts = append(parts, fmt.Sprintf("%d %s", stats.Values[index], world.STAT_DATA[index].Abbreviation))
+							}
+						}
+
+						if len(parts) != 0 {
+							*player.inbox <- fmt.Sprintf("Requires: %s", combineNames(parts))
+						}
+					}
+
+					// Stat bonuses
+					stats = item.GetStatBonuses()
+					if stats != nil {
+						parts := make([]string, 0, world.STAT_COUNT)
+						for index := range world.STAT_COUNT {
+							if stats.Values[index] != 0 {
+								parts = append(parts, fmt.Sprintf("%s %s", statBonusStr(stats.Values[index]), world.STAT_DATA[index].Abbreviation))
+	 						}
+						}
+
+						if len(parts) != 0 {
+							*player.inbox <- fmt.Sprintf("Requires: %s", combineNames(parts))
+						}
+					}
+
+					// Item type specific description
+					switch itemData.ItemType {
+						case world.ITEM_TYPE_EQUIPMENT_OUTFIT: {
+							outfitData := itemData.Data.(*world.ItemDataOutfit)
+							*player.inbox <- fmt.Sprintf("Armor: %d", outfitData.Armor)
+							*player.inbox <- fmt.Sprintf("Stealth Penalty: %d%%", int(outfitData.StealthPenality * 100))
+						}
+						case world.ITEM_TYPE_EQUIPMENT_ONE_HANDED, world.ITEM_TYPE_EQUIPMENT_TWO_HANDED: {
+							weaponData := itemData.Data.(*world.ItemDataWeapon)
+							*player.inbox <- fmt.Sprintf("Damage: %d", weaponData.Damage)
+						}
+					}
+
+					return true
+				}
+
 				// Get target handle
 				targetHandle, err := fuzzyFindTarget(gamestate, player, args)
 				if err != nil {
@@ -433,11 +532,10 @@ var MENU_WORLD = Menu {
 				*player.inbox <- fmt.Sprintf("MP: %d / %d", playerMob.Data.Mana, playerMob.Data.MaxMana())
 
 				statBonuses := &playerMob.Data.Equipment.StatBonuses
-				*player.inbox <- fmt.Sprintf("\nVitality: %d (+%d)", playerMob.Data.Stats.Vitality, statBonuses.Vitality)
-				*player.inbox <- fmt.Sprintf("Strength: %d (+%d)", playerMob.Data.Stats.Strength, statBonuses.Strength)
-				*player.inbox <- fmt.Sprintf("Agility: %d (+%d)", playerMob.Data.Stats.Agility, statBonuses.Agility)
-				*player.inbox <- fmt.Sprintf("Intelligence: %d (+%d)", playerMob.Data.Stats.Intelligence, statBonuses.Intelligence)
-				*player.inbox <- fmt.Sprintf("Faith: %d (+%d)", playerMob.Data.Stats.Faith, statBonuses.Faith)
+				*player.inbox <- ""
+				for index := range world.STAT_COUNT {
+					*player.inbox <- fmt.Sprintf("%s: %d (%s)", world.STAT_DATA[index].Name, playerMob.Data.Stats.Values[index], statBonusStr(statBonuses.Values[index]))
+				}
 
 				abilities := playerMob.Data.GetAbilityList()
 				if len(abilities) != 0 {
@@ -522,51 +620,68 @@ var MENU_WORLD = Menu {
 			description: "List the items in your inventory",
 			handler: func(gamestate *GameState, player *Player, args []string) bool {
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-				inventorySize := len(playerMob.Data.Inventory.Items)
 
 				if playerMob.Data.Inventory.Length() == 0 {
 					*player.inbox <- "There is nothing in your inventory."
 					return true
 				}
 
-				for index := range inventorySize {
+				// Inventory table headers
+				inventoryHeaders := []string {
+					"Item",
+					"Amount",
+					fmt.Sprintf("Size (%d / %d)", playerMob.Data.Inventory.Size(), playerMob.InventoryCapacity()),
+				}
+				inventoryRows := make([]string, 0, 3 * playerMob.Data.Inventory.Length())
+
+				// Inventory table rows
+				for index := range playerMob.Data.Inventory.Length() {
 					item := &playerMob.Data.Inventory.Items[index]
 					itemData := world.ITEM_DATA[item.Id]
-					itemStatRequirements := item.GetStatRequirements()
 
-					typeStr := world.ItemTypeToString(itemData.ItemType)
-					if itemStatRequirements != nil {
-						statStrings := make([]string, 0, 5)
-						if itemStatRequirements.Vitality != 0 {
-							statStrings = append(statStrings, fmt.Sprintf("VIT %d", itemStatRequirements.Vitality))
-						}
-						if itemStatRequirements.Strength != 0 {
-							statStrings = append(statStrings, fmt.Sprintf("STR %d", itemStatRequirements.Strength))
-						}
-						if itemStatRequirements.Agility != 0 {
-							statStrings = append(statStrings, fmt.Sprintf("AGI %d", itemStatRequirements.Agility))
-						}
-						if itemStatRequirements.Intelligence != 0 {
-							statStrings = append(statStrings, fmt.Sprintf("INT %d", itemStatRequirements.Intelligence))
-						}
-						if itemStatRequirements.Faith != 0 {
-							statStrings = append(statStrings, fmt.Sprintf("FTH %d", itemStatRequirements.Faith))
-						}
-						if len(statStrings) != 0 {
-							typeStr += fmt.Sprintf(" (Requires %s)", strings.Join(statStrings, ", "))
-						}
-					}
+					inventoryRows = append(inventoryRows, itemData.Name)
+					inventoryRows = append(inventoryRows, fmt.Sprintf("x%d", item.Amount))
 
-					itemName := item.GetNameWithCondition()
-					if item.Amount > 1 {
-						itemName = fmt.Sprintf("%s (x%d)", itemName, item.Amount)
+					if item.Amount == 1 || itemData.Size == 0 {
+						inventoryRows = append(inventoryRows, fmt.Sprintf("%d", itemData.Size))
+					} else {
+						inventoryRows = append(inventoryRows, fmt.Sprintf("%d (%dx%d)", itemData.Size * item.Amount, itemData.Size, item.Amount))
 					}
-					*player.inbox <- fmt.Sprintf("%s | Type: %s | Description: %s", itemName, typeStr, itemData.Description)
 				}
-				itemNames := make([]string, 0, inventorySize)
-				for _, item := range playerMob.Data.Inventory.Items {
-					itemNames = append(itemNames, world.ITEM_DATA[item.Id].Name)
+
+				// Determine inventory table column size
+				columnWidth := []int {
+					len(inventoryHeaders[0]),
+					len(inventoryHeaders[1]),
+					len(inventoryHeaders[2]),
 				}
+				for index := 0; index < len(inventoryRows); index += 3 {
+					columnWidth[0] = max(columnWidth[0], len(inventoryRows[index + 0]))
+					columnWidth[1] = max(columnWidth[1], len(inventoryRows[index + 1]))
+					columnWidth[2] = max(columnWidth[2], len(inventoryRows[index + 2]))
+				}
+
+				// Print table headers
+				*player.inbox <- fmt.Sprintf("| %-*s | %-*s | %-*s |",
+					columnWidth[0], inventoryHeaders[0],
+					columnWidth[1], inventoryHeaders[1],
+					columnWidth[2], inventoryHeaders[2])
+
+				// Print table divider
+				*player.inbox <- fmt.Sprintf("| %s | %s | %s | ",
+					strings.Repeat("-", columnWidth[0]),
+					strings.Repeat("-", columnWidth[1]),
+					strings.Repeat("-", columnWidth[2]))
+
+				// Print inventory table
+				for index := 0; index < len(inventoryRows); index += 3 {
+					*player.inbox <- fmt.Sprintf("| %-*s | %-*s | %-*s |",
+						columnWidth[0], inventoryRows[index + 0],
+						columnWidth[1], inventoryRows[index + 1],
+						columnWidth[2], inventoryRows[index + 2])
+				}
+
+				*player.inbox <- "\nType 'inspect <item>' to see more details about an item."
 				return true
 			},
 		},
@@ -578,26 +693,28 @@ var MENU_WORLD = Menu {
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 				playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
 
-				result := inventoryTransfer(&playerMob.Data.Inventory, &playerRoom.Inventory, args)
-				switch result.status {
-					case INVENTORY_TRANSFER_STATUS_PARTIAL:
-						*player.inbox <- fmt.Sprintf("You only have %d %s in your inventory.", result.amount, result.itemName)
-						fallthrough
-					case INVENTORY_TRANSFER_STATUS_OK:
-						*player.inbox <- fmt.Sprintf("You dropped %s.", itemNameWithAmount(result.itemName, result.amount))
-					case INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED:
-						*player.inbox <- "You must specify an item to drop."
-					case INVENTORY_TRANSFER_STATUS_ITEM_NOT_FOUND:
-						*player.inbox <- fmt.Sprintf("You have no item named '%s' in your inventory.", result.itemName)
-					case INVENTORY_TRANSFER_STATUS_ITEM_NAME_AMBIGUOUS:
-						*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' in your inventory.", result.itemName)
-					case INVENTORY_TRANSFER_STATUS_ITEM_NUMBER_OUT_OF_RANGE:
-						*player.inbox <- "There is no item matching that number in your inventory."
-					case INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK:
-						*player.inbox <- fmt.Sprintf("You can only drop 1 %s at once.", result.itemName)
-					default:
-						panic(fmt.Sprintf("Transfer result status %d not handled.", result.status))
+				result, err := inventoryTransfer(InventoryTransferParams {
+					from: InventoryTransferLocation {
+						inventory: &playerMob.Data.Inventory,
+						name: "your inventory",
+						capacity: playerMob.InventoryCapacity(),
+					},
+					to: InventoryTransferLocation {
+						inventory: &playerRoom.Inventory,
+						name: "the room",
+						capacity: world.INVENTORY_CAPACITY_UNLIMITED,
+					},
+					verb: "drop",
+					itemWords: args,
+				})
+				if err != nil {
+					*player.inbox <- err.Error()
+					return true
 				}
+				if result.notice != "" {
+					*player.inbox <- result.notice
+				}
+				*player.inbox <- fmt.Sprintf("You dropped %s.", result.item.GetNameWithAmount())
 
 				return true
 			},
@@ -624,26 +741,28 @@ var MENU_WORLD = Menu {
 				}
 
 				// Transfer
-				result := inventoryTransfer(&playerMob.Data.Inventory, targetInventory, itemWords)
-				switch result.status {
-					case INVENTORY_TRANSFER_STATUS_PARTIAL:
-						*player.inbox <- fmt.Sprintf("You only have %d %s in your inventory.", result.amount, result.itemName)
-						fallthrough
-					case INVENTORY_TRANSFER_STATUS_OK:
-						*player.inbox <- fmt.Sprintf("You put %s into %s.", itemNameWithAmount(result.itemName, result.amount), chestName)
-					case INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED:
-						*player.inbox <- "You must specify an item to put."
-					case INVENTORY_TRANSFER_STATUS_ITEM_NOT_FOUND:
-						*player.inbox <- fmt.Sprintf("You have no item named '%s' in your inventory.", result.itemName)
-					case INVENTORY_TRANSFER_STATUS_ITEM_NAME_AMBIGUOUS:
-						*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' in your inventory.", result.itemName)
-					case INVENTORY_TRANSFER_STATUS_ITEM_NUMBER_OUT_OF_RANGE:
-						*player.inbox <- "There is no item matching that number in your inventory."
-					case INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK:
-						*player.inbox <- fmt.Sprintf("You can only put 1 %s at once.", result.itemName)
-					default:
-						panic(fmt.Sprintf("Transfer result status %d not handled.", result.status))
+				result, err := inventoryTransfer(InventoryTransferParams {
+					from: InventoryTransferLocation {
+						inventory: &playerMob.PlayerCharacter.Data.Inventory,
+						name: "your inventory",
+						capacity: playerMob.InventoryCapacity(),
+					},
+					to: InventoryTransferLocation {
+						inventory: targetInventory,
+						name: chestName,
+						capacity: world.INVENTORY_CAPACITY_UNLIMITED,
+					},
+					verb: "put",
+					itemWords: itemWords,
+				})
+				if err != nil {
+					*player.inbox <- err.Error()
+					return true
 				}
+				if result.notice != "" {
+					*player.inbox <- result.notice
+				}
+				*player.inbox <- fmt.Sprintf("You put %s into %s.", result.item.GetNameWithAmount(), chestName)
 
 				return true
 			},
@@ -651,7 +770,7 @@ var MENU_WORLD = Menu {
 
 		"give": {
 			usage: "give <item> to <target>",
-			description: "Gives an item to a player",
+			description: "Gives an item to the target",
 			handler: func(gamestate *GameState, player *Player, args []string) bool {
 				// Split args
 				itemWords, targetWords, userSpecifiedTo := splitArgsBy(args, "to")
@@ -666,41 +785,49 @@ var MENU_WORLD = Menu {
 					return true
 				}
 
+				// Don't allow give to player because players could maliciously fill up another player's inventory
+				// This makes me think we should drop the "give" command entirely, but it's used for troll behavior
 				targetMob := gamestate.world.Mobs.Get(targetHandle)
+				if targetMob.PlayerCharacter != nil {
+					*player.inbox <- fmt.Sprintf("You cannot give items to %s because they are a player. Request to 'trade' with them instead.", targetMob.Data.Name)
+					return true
+				}
+
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 
-				result := inventoryTransfer(&playerMob.Data.Inventory, &targetMob.Data.Inventory, itemWords)
-				switch result.status {
-					case INVENTORY_TRANSFER_STATUS_PARTIAL:
-						*player.inbox <- fmt.Sprintf("You only have %d %s in your inventory.", result.amount, result.itemName)
-						fallthrough
-					case INVENTORY_TRANSFER_STATUS_OK: {
-						gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("%s gave %s to %s.",
-							playerMob.Data.Name, itemNameWithAmount(result.itemName, result.amount), targetMob.Data.Name))
+				result, err := inventoryTransfer(InventoryTransferParams {
+					from: InventoryTransferLocation {
+						inventory: &playerMob.Data.Inventory,
+						name: "your inventory",
+						capacity: playerMob.InventoryCapacity(),
+					},
+					to: InventoryTransferLocation {
+						inventory: &targetMob.Data.Inventory,
+						name: targetMob.Data.Name,
+						capacity: targetMob.InventoryCapacity(),
+					},
+					verb: "give",
+					itemWords: itemWords,
+				})
+				if err != nil {
+					*player.inbox <- err.Error()
+					return true
+				}
+				if result.notice != "" {
+					*player.inbox <- result.notice
+				}
+				gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("%s gave %s to %s.",
+					playerMob.Data.Name, result.item.GetNameWithAmount(), targetMob.Data.Name))
 
-						if targetMob.Npc != nil {
-							targetMob.Npc.OnEvent(gamestate.world, world.BehaviorEvent {
-								Type: world.BEHAVIOR_EVENT_TYPE_ITEM_GIVEN,
-								Data: world.BehaviorEventItemGiven {
-									PlayerHandle: player.mobHandle,
-									AddedToIndex: result.addedToIndex,
-									Amount: result.amount,
-								},
-							})
-						}
-					}
-					case INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED:
-						*player.inbox <- "You must specify an item to give."
-					case INVENTORY_TRANSFER_STATUS_ITEM_NOT_FOUND:
-						*player.inbox <- fmt.Sprintf("You have no item named '%s' in your inventory.", result.itemName)
-					case INVENTORY_TRANSFER_STATUS_ITEM_NAME_AMBIGUOUS:
-						*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' in your inventory.", result.itemName)
-					case INVENTORY_TRANSFER_STATUS_ITEM_NUMBER_OUT_OF_RANGE:
-						*player.inbox <- "There is no item matching that number in your inventory."
-					case INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK:
-						*player.inbox <- fmt.Sprintf("You can only give 1 %s at once.", result.itemName)
-					default:
-						panic(fmt.Sprintf("Transfer result status %d not handled.", result.status))
+				if targetMob.Npc != nil {
+					targetMob.Npc.OnEvent(gamestate.world, world.BehaviorEvent {
+						Type: world.BEHAVIOR_EVENT_TYPE_ITEM_GIVEN,
+						Data: world.BehaviorEventItemGiven {
+							PlayerHandle: player.mobHandle,
+							AddedToIndex: result.addedToIndex,
+							Amount: result.item.Amount,
+						},
+					})
 				}
 
 				return true
@@ -733,26 +860,28 @@ var MENU_WORLD = Menu {
 				}
 
 				// Inventory transfer
-				result := inventoryTransfer(targetInventory, &playerMob.Data.Inventory, itemWords)
-				switch result.status {
-					case INVENTORY_TRANSFER_STATUS_PARTIAL:
-						*player.inbox <- fmt.Sprintf("There is only %d %s in %s", result.amount, result.itemName, chestName)
-						fallthrough
-					case INVENTORY_TRANSFER_STATUS_OK:
-						*player.inbox <- fmt.Sprintf("You took %s from %s.", itemNameWithAmount(result.itemName, result.amount), chestName)
-					case INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED:
-						*player.inbox <- "You must specify an item to take."
-					case INVENTORY_TRANSFER_STATUS_ITEM_NOT_FOUND:
-						*player.inbox <- fmt.Sprintf("There is no item called '%s' in %s.", result.itemName, chestName)
-					case INVENTORY_TRANSFER_STATUS_ITEM_NAME_AMBIGUOUS:
-						*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' in %s.", result.itemName, chestName)
-					case INVENTORY_TRANSFER_STATUS_ITEM_NUMBER_OUT_OF_RANGE:
-						*player.inbox <- fmt.Sprintf("There is no item matching that number in %s.", chestName)
-					case INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK:
-						*player.inbox <- fmt.Sprintf("You can only take 1 %s at once.", result.itemName)
-					default:
-						panic(fmt.Sprintf("Transfer result status %d not handled.", result.status))
+				result, err := inventoryTransfer(InventoryTransferParams {
+					from: InventoryTransferLocation {
+						inventory: targetInventory,
+						name: chestName,
+						capacity: world.INVENTORY_CAPACITY_UNLIMITED,
+					},
+					to: InventoryTransferLocation {
+						inventory: &playerMob.Data.Inventory,
+						name: "your inventory",
+						capacity: playerMob.InventoryCapacity(),
+					},
+					verb: "take",
+					itemWords: itemWords,
+				})
+				if err != nil {
+					*player.inbox <- err.Error()
+					return true
 				}
+				if result.notice != "" {
+					*player.inbox <- result.notice
+				}
+				*player.inbox <- fmt.Sprintf("You took %s from %s.", result.item.GetNameWithAmount(), chestName)
 
 				return true
 			},
@@ -774,6 +903,11 @@ var MENU_WORLD = Menu {
 
 				if len(targetInventory.Items) == 0 {
 					*player.inbox <- fmt.Sprintf("%s is empty.", chestName)
+					return true
+				}
+
+				if !playerMob.Data.Inventory.HasSpaceFor(targetInventory.Size(), playerMob.InventoryCapacity()) {
+					*player.inbox <- "You don't have enough space in your inventory for all that."
 					return true
 				}
 
@@ -819,16 +953,10 @@ var MENU_WORLD = Menu {
 					return true
 				}
 
-				recipeData := world.RECIPE_DATA[recipe]
-
-				// Check if the player has the materials
-				for _, ingredient := range recipeData.Materials {
-					amountOfIngredient := playerMob.Data.Inventory.AmountOf(ingredient.Id)
-					if amountOfIngredient < batchAmount * ingredient.Amount {
-						*player.inbox <- fmt.Sprintf("You lack the ingredients to craft %s", itemNameWithAmount(recipeData.Name, batchAmount))
-
-						return true
-					}
+				err := playerMob.CanCraft(recipe, batchAmount)
+				if err != nil {
+					*player.inbox <- err.Error()
+					return true
 				}
 
 				player.nextAction = Action {
@@ -921,31 +1049,13 @@ var MENU_WORLD = Menu {
 				itemWords, slotWords, userSpecifiedSlot := splitArgsBy(args, "in")
 
 				// Determine the item
-				itemIndex := fuzzyFindInventoryItemIndex(&playerMob.Data.Inventory, itemWords)
-
-				// Handle edge cases
-				if itemIndex == FUZZY_FIND_RESULT_ITEM_NOT_SPECIFIED {
-					*player.inbox <- "You must specify an item to equip."
+				itemIndex, err := fuzzyFindInventoryItem(&playerMob.Data.Inventory, "your inventory", itemWords)
+				if err != nil {
+					*player.inbox <- err.Error()
 					return true
 				}
-				if itemIndex == FUZZY_FIND_RESULT_NOT_FOUND {
-					*player.inbox <- fmt.Sprintf("You have no item called '%s' in your inventory.",
-						strings.Join(itemWords, " "))
-					return true
-				}
-				if itemIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
-					*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' in your inventory.",
-						strings.Join(itemWords, " "))
-					return true
-				}
-
-				// Check stat requirements
 				item := &playerMob.Data.Inventory.Items[itemIndex]
 				itemData := world.ITEM_DATA[item.Id]
-				if !playerMob.Data.Stats.Meets(item.GetStatRequirements()) {
-					*player.inbox <- fmt.Sprintf("You do not meet the stat requirements to equip %s.", item.GetNameWithCondition())
-					return true
-				}
 
 				// Determine the equipment slot
 				var slot world.EquipmentSlot
@@ -955,7 +1065,6 @@ var MENU_WORLD = Menu {
 						return false
 					}
 
-					var err error
 					slot, err = fuzzyFindEquipmentSlot(slotWords)
 					if err != nil {
 						*player.inbox <- err.Error()
@@ -976,44 +1085,14 @@ var MENU_WORLD = Menu {
 				}
 
 				// Try to equip item
-				unequippedItems, success := playerMob.Data.Equipment.Equip(slot, *item)
-				if !success {
-					*player.inbox <- fmt.Sprintf("%s cannot be equipped to slot %s.", item.GetNameWithCondition(), world.EquipmentSlotToString(slot))
+				equippedItem, messages, err := playerMob.EquipFromInventory(itemIndex, slot)
+				if err != nil {
+					*player.inbox <- err.Error()
 					return true
 				}
-				*player.inbox <- fmt.Sprintf("You equipped %s.", item.GetNameWithCondition())
-
-				// Remove item from player inventory
-				playerMob.Data.Inventory.RemoveItem(itemIndex)
-
-				// Add unequipped items to inventory
-				for _, unequippedItem := range unequippedItems {
-					message := playerMob.OnPlayerItemUnequipped(unequippedItem)
-					if message != "" {
-						*player.inbox <- fmt.Sprintf("%s was unequipped and added to your inventory", unequippedItem.GetNameWithCondition())
-					}
-				}
-
-				// If the equipped item is a spellbook, add the spell to their spells equipped
-				if (itemData.ItemType == world.ITEM_TYPE_EQUIPMENT_SPELLBOOK) {
-					spellbookData := itemData.Data.(*world.ItemDataSpellbook)
-					isSpellKnown := player.character.HasSpell(spellbookData.Spell)
-
-					// Increment spell equiped count
-					_, entryExists := player.character.SpellsEquipped[spellbookData.Spell]
-					if !entryExists {
-						player.character.SpellsEquipped[spellbookData.Spell] = &world.CharacterEquippedSpell {
-							EquipCount: 0,
-							Casts: 0,
-							IsKnown: isSpellKnown,
-						}
-					}
-					player.character.SpellsEquipped[spellbookData.Spell].EquipCount++
-
-					if !isSpellKnown {
-						spellData := world.SPELL_DATA[spellbookData.Spell]
-						*player.inbox <- fmt.Sprintf("You can now prepare the spell %s.", spellData.Name)
-					}
+				*player.inbox <- fmt.Sprintf("You equipped %s.", equippedItem.GetNameWithCondition())
+				for _, message := range messages {
+					*player.inbox <- message
 				}
 
 				return true
@@ -1066,13 +1145,15 @@ var MENU_WORLD = Menu {
 				}
 
 				// Unequip the item
-				item, _ := playerMob.Data.Equipment.Unequip(slot)
-				message := playerMob.OnPlayerItemUnequipped(item)
-				playerMob.Data.Inventory.AddItem(item)
-				if message != "" {
-					*player.inbox <- message
+				item, messages, err := playerMob.UnequipToInventory(slot)
+				if err != nil {
+					*player.inbox <- err.Error()
+					return true
 				}
 				*player.inbox <- fmt.Sprintf("You unequipped %s.", item.GetNameWithCondition())
+				for _, message := range messages {
+					*player.inbox <- message
+				}
 
 				return true
 			},
@@ -1286,21 +1367,9 @@ var MENU_WORLD = Menu {
 				}
 
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-				itemIndex := fuzzyFindInventoryItemIndex(&playerMob.Data.Inventory, itemWords)
-
-				// Handle edge cases
-				if itemIndex == FUZZY_FIND_RESULT_ITEM_NOT_SPECIFIED {
-					*player.inbox <- "You must specify an item to use."
-					return true
-				}
-				if itemIndex == FUZZY_FIND_RESULT_NOT_FOUND {
-					*player.inbox <- fmt.Sprintf("You have no item called '%s' in your inventory.",
-						strings.Join(itemWords, " "))
-					return true
-				}
-				if itemIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
-					*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' in your inventory.",
-						strings.Join(itemWords, " "))
+				itemIndex, err := fuzzyFindInventoryItem(&playerMob.Data.Inventory, "your inventory", itemWords)
+				if err != nil {
+					*player.inbox <- err.Error()
 					return true
 				}
 
@@ -1599,7 +1668,7 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 func printMobEquipmentList(player *Player, mob *world.Mob) {
 	// Determine if we should skip the offhand item slot
 	mainHandItem := mob.Data.Equipment.Get(world.EQUIPMENT_SLOT_MAIN_HAND)
-	shouldSkipOffhand := mainHandItem != nil && world.ITEM_DATA[mainHandItem.Id].ItemType == world.EQUIPMENT_SLOT_MAIN_HAND
+	shouldSkipOffhand := mainHandItem != nil && world.ITEM_DATA[mainHandItem.Id].ItemType == world.ITEM_TYPE_EQUIPMENT_TWO_HANDED
 
 	for index := range world.EQUIPMENT_SLOT_COUNT {
 		slot := world.EquipmentSlot(index)
@@ -1636,4 +1705,12 @@ func printMobHp(player *Player, mob *world.Mob) {
 	*player.inbox <- fmt.Sprintf("%s:", mob.Data.Name)
 	*player.inbox <- fmt.Sprintf("HP: %d / %d", mob.Data.Health, mob.Data.MaxHealth())
 	*player.inbox <- fmt.Sprintf("MP: %d / %d", mob.Data.Mana, mob.Data.MaxMana())
+}
+
+func statBonusStr(value int32) string {
+	valueStr := strconv.Itoa(int(value))
+	if value >= 0 {
+		valueStr = "+" + valueStr
+	}
+	return valueStr
 }

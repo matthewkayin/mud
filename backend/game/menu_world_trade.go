@@ -221,28 +221,32 @@ var MENU_TRADE_ENTRIES = map[string]MenuEntry {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			trader := player.getTrader()
 
-			result := inventoryTransfer(&playerMob.Data.Inventory, &trader.offer, args)
-			switch result.status {
-				case INVENTORY_TRANSFER_STATUS_PARTIAL:
-					*player.inbox <- fmt.Sprintf("You only have %d %s in your inventory.", result.amount, result.itemName)
-					fallthrough
-				case INVENTORY_TRANSFER_STATUS_OK:
-					counterparty := player.getCounterparty()
-					itemName := itemNameWithAmount(result.itemName, result.amount)
-
-					*player.inbox <- fmt.Sprintf("You offerred %s to the trade.", itemName)
-					*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("%s offerred %s to the trade.", trader.name, itemName)
-				case INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED:
-					*player.inbox <- "You must specify an item to offer."
-				case INVENTORY_TRANSFER_STATUS_ITEM_NOT_FOUND:
-					*player.inbox <- fmt.Sprintf("You have no item called '%s' in your inventory.", result.itemName)
-				case INVENTORY_TRANSFER_STATUS_ITEM_NAME_AMBIGUOUS:
-					*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' in your inventory.", result.itemName)
-				case INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK:
-					*player.inbox <- fmt.Sprintf("You can only offer 1 %s at once.", result.itemName)
-				default:
-					panic(fmt.Sprintf("Transfer result status %d not handled.", result.status))
+			result, err := inventoryTransfer(InventoryTransferParams {
+				from: InventoryTransferLocation {
+					inventory: &playerMob.Data.Inventory,
+					name: "your inventory",
+					capacity: playerMob.InventoryCapacity(),
+				},
+				to: InventoryTransferLocation {
+					inventory: &trader.offer,
+					name: "your trade offer",
+					capacity: world.INVENTORY_CAPACITY_UNLIMITED,
+				},
+				verb: "offer",
+				itemWords: args,
+			})
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
 			}
+			if result.notice != "" {
+				*player.inbox <- result.notice
+			}
+
+			counterparty := player.getCounterparty()
+			itemName := result.item.GetNameWithAmount()
+			*player.inbox <- fmt.Sprintf("You offered %s to the trade.", itemName)
+			*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("%s offered %s to the trade.", trader.name, itemName)
 
 			player.tradeSession.traderA.isLockedIn = false
 			player.tradeSession.traderB.isLockedIn = false
@@ -277,28 +281,32 @@ var MENU_TRADE_ENTRIES = map[string]MenuEntry {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			trader := player.getTrader()
 
-			result := inventoryTransfer(&trader.offer, &playerMob.Data.Inventory, args)
-			switch result.status {
-				case INVENTORY_TRANSFER_STATUS_PARTIAL:
-					*player.inbox <- fmt.Sprintf("You only have %d %s up for offer.", result.amount, result.itemName)
-					fallthrough
-				case INVENTORY_TRANSFER_STATUS_OK:
-					counterparty := player.getCounterparty()
-					itemName := itemNameWithAmount(result.itemName, result.amount)
-
-					*player.inbox <- fmt.Sprintf("You withdrew %s from the trade.", itemName)
-					*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("%s withdraw %s from the trade.", trader.name, itemName)
-				case INVENTORY_TRANSFER_STATUS_ITEM_NOT_SPECIFIED:
-					*player.inbox <- "You must specify an item to withdraw."
-				case INVENTORY_TRANSFER_STATUS_ITEM_NOT_FOUND:
-					*player.inbox <- fmt.Sprintf("You have no item called '%s' up for offer.", result.itemName)
-				case INVENTORY_TRANSFER_STATUS_ITEM_NAME_AMBIGUOUS:
-					*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' up for offer.", result.itemName)
-				case INVENTORY_TRANSFER_STATUS_ITEM_DOES_NOT_STACK:
-					*player.inbox <- fmt.Sprintf("You can only withdraw 1 %s at once.", result.itemName)
-				default:
-					panic(fmt.Sprintf("Transfer result status %d not handled.", result.status))
+			result, err := inventoryTransfer(InventoryTransferParams {
+				from: InventoryTransferLocation {
+					inventory: &trader.offer,
+					name: "your trade offer",
+					capacity: world.INVENTORY_CAPACITY_UNLIMITED,
+				},
+				to: InventoryTransferLocation {
+					inventory: &playerMob.Data.Inventory,
+					name: "your inventory",
+					capacity: playerMob.InventoryCapacity(),
+				},
+				verb: "withdraw",
+				itemWords: args,
+			})
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
 			}
+			if result.notice != "" {
+				*player.inbox <- result.notice
+			}
+
+			counterparty := player.getCounterparty()
+			itemName := result.item.GetNameWithAmount()
+			*player.inbox <- fmt.Sprintf("You withdrew %s from the trade.", itemName)
+			*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("%s withdrew %s from the trade.", trader.name, itemName)
 
 			player.tradeSession.traderA.isLockedIn = false
 			player.tradeSession.traderB.isLockedIn = false
@@ -426,8 +434,28 @@ func (trader *Trader) cancelTrade(gamestate *GameState) {
 	}
 
 	playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+	playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
+	droppedItemNames := make([]string, 0, 1)
+	droppedItemAmount := int32(0)
 	for _, item := range trader.offer.Items {
+		// Rare edge case, but if they happened to pick up a bunch of items while a trade offer is open
+		// then their inventory will fill up, so in that case we just drop the offered items on the floor
+		if !playerMob.Data.Inventory.HasSpaceFor(item.Size(), playerMob.InventoryCapacity()) {
+			droppedItemNames = append(droppedItemNames, item.GetNameWithAmount())
+			droppedItemAmount += item.Amount
+			playerRoom.Inventory.AddItem(item)
+			continue
+		}
+
 		playerMob.Data.Inventory.AddItem(item)
+	}
+
+	if droppedItemAmount > 0 {
+		itString := "it"
+		if droppedItemAmount > 1 {
+			itString = "them"
+		}
+		*player.inbox <- fmt.Sprintf("You dropped %s because you don't have enough space for %s in your inventory.", combineNames(droppedItemNames), itString)
 	}
 
 	player.tradeSession = nil
@@ -460,6 +488,18 @@ func (session *TradeSession) complete(gamestate *GameState) {
 	mobA := gamestate.world.Mobs.Get(playerA.mobHandle)
 	mobB := gamestate.world.Mobs.Get(playerB.mobHandle)
 
+	// Check if each player has enough space for their offer
+	playerAHasSpace := mobA.Data.Inventory.HasSpaceFor(session.traderB.offer.Size(), mobA.InventoryCapacity())
+	playerBHasSpace := mobB.Data.Inventory.HasSpaceFor(session.traderA.offer.Size(), mobB.InventoryCapacity())
+	if !playerAHasSpace || !playerBHasSpace {
+		session.traderA.isLockedIn = false
+		session.traderB.isLockedIn = false
+
+		*playerA.inbox <- tradeSpaceFailureMessage(playerAHasSpace)
+		*playerB.inbox <- tradeSpaceFailureMessage(playerBHasSpace)
+		return
+	}
+
 	*playerA.inbox <- fmt.Sprintf("Your trade with %s has been finalized!", session.traderB.name)
 	*playerB.inbox <- fmt.Sprintf("Your trade with %s has been finalized!", session.traderA.name)
 
@@ -477,6 +517,13 @@ func (session *TradeSession) complete(gamestate *GameState) {
 
 	playerA.tradeSession = nil
 	playerB.tradeSession = nil
+}
+
+func tradeSpaceFailureMessage(playerHasSpace bool) string {
+	if playerHasSpace {
+		return "The trade could not be finalized because the other player does not have enough inventory space."
+	}
+	return "The trade could not be finalized because you do not have enough inventory space."
 }
 
 func (session *TradeSession) reject(gamestate *GameState) {
