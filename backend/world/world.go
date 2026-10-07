@@ -3,11 +3,13 @@ package world
 import (
 	"log"
 	"os"
+	"strings"
 	"encoding/json"
 	"github.com/mmcdole/lunar"
 )
 
 const WORLD_DATA_FOLDER = "./data"
+const WORLD_SPELLS_FOLDER = WORLD_DATA_FOLDER + "/spells"
 const WORLD_CHARACTER_SAVES_FOLDER = "./saves"
 const WORLD_JSON_PATH = WORLD_DATA_FOLDER + "/world.json"
 
@@ -71,15 +73,37 @@ func WorldInit() *World {
 	world.loadCharacters()
 
 	// Test script
-	spellData, err := world.scriptLoadSpell("spells/firebolt.lua")
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
-
-	log.Printf("Spell name: %s", spellData.Name)
+	world.LoadData()
 
 	log.Printf("World initialized.")
 	return world
+}
+
+func (world *World) LoadData() {
+	// Spells
+	log.Printf("Loading spell data...")
+	files, err := os.ReadDir(WORLD_SPELLS_FOLDER)
+	if err != nil {
+		log.Fatalf("Error opening spells folder: %s", err.Error())
+	}
+	SPELL_DATA = make([]*SpellData, 0, len(files))
+	for _, file := range files {
+		if !strings.HasSuffix(file.Name(), ".lua") {
+			log.Printf("Skipping non-lua file %s in spells folder.", file.Name())
+			continue
+		}
+
+		path := WORLD_SPELLS_FOLDER + "/" + file.Name()
+		path = path[len(WORLD_DATA_FOLDER) + 1:]
+		spellData, err := world.scriptLoadSpell(path)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+
+		SPELL_DATA = append(SPELL_DATA, spellData)
+		log.Printf("Loaded spell %s.", file.Name())
+	}
+	log.Printf("All spell data has been loaded.\n")
 }
 
 func (world *World) Update() {

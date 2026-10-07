@@ -2,8 +2,10 @@ package world
 
 import (
 	"fmt"
+	"log"
 	"math/rand/v2"
 	"slices"
+	"github.com/mmcdole/lunar"
 )
 
 const MOB_PLAYER_NONE = -1
@@ -253,6 +255,21 @@ func (mob *Mob) Update(world *World) {
 			// Check if target exists
 			targetMob, targetExists := mob.getTargetIfExists(world)
 			if !targetExists {
+				break
+			}
+
+			// Check if caster has enough mana
+			spellData := SPELL_DATA[mob.castSpell]
+			if mob.Data.Mana < spellData.ManaCost {
+				mob.Mode = MOB_MODE_IDLE
+				world.messageRoom(mob.Data.Room, fmt.Sprintf("%s tried to cast %s, but they don't have enough mana.", mob.GetName(), spellData.Name))
+				break
+			}
+
+			// Check spell timer
+			if mob.castTimer > 0 {
+				mob.castTimer--
+				world.messageRoom(mob.Data.Room, fmt.Sprintf("%s is charging a spell...", mob.GetName()))
 				break
 			}
 
@@ -591,25 +608,18 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 }
 
 func (mob *Mob) spellcast(world *World, targetMob *Mob) {
-	// Check if caster has enough mana
 	spellData := SPELL_DATA[mob.castSpell]
-	if mob.Data.Mana < spellData.ManaCost {
-		mob.Mode = MOB_MODE_IDLE
-		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s tried to cast %s, but they don't have enough mana.", mob.GetName(), spellData.Name))
-		return
-	}
-
-	// Check spell timer
-	if mob.castTimer > 0 {
-		mob.castTimer--
-		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s is charging a spell...", mob.GetName()))
-		return
-	}
 
 	// Cast spell
 	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s cast %s!", mob.GetName(), spellData.Name))
 	mob.Data.Mana -= spellData.ManaCost
-	spellData.onHit(world, mob, targetMob)
+
+	// TODO: wrap a context around this to timeout calls?
+	// spellData.onHit(world, mob, targetMob)
+	_, err := world.luaState.Call(spellData.OnHit.Value(), lua.Nil(), lua.Nil())
+	if err != nil {
+		log.Printf("Warn - Error during spell OnHit: %s", err.Error())
+	}
 
 	if mob.PlayerCharacter != nil {
 		equippedSpell, spellIsEquipped := mob.PlayerCharacter.SpellsEquipped[mob.castSpell]

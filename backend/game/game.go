@@ -247,6 +247,10 @@ func (gamestate *GameState) addEventListener(eventType world.EventType, listener
 
 func (gamestate *GameState) createCharacter(playerId int, characterSheet *world.CharacterSheet) {
 	character := world.CharacterInitEmpty(playerId, characterSheet)
+
+	// TEMP DEBUG DELETE ME
+	character.SpellsKnown = append(character.SpellsKnown, 0)
+
 	gamestate.world.AddCharacter(playerId, character)
 	world.SaveCharacter(character)
 }

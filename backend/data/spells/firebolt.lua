@@ -10,7 +10,7 @@ spell.CanTargetPlayers = false
 
 spell.OnHit = function(caster, target)
 	world.log("{target} took {damage} damage from the firebolt", {
-		target = "target",
+		target = "Friend",
 		damage = 5,
 	})
 end
