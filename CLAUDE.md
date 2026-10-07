@@ -42,7 +42,7 @@ go test ./...
 - The game loop owns each inbox and closes it in `removePlayer`. The write loop keeps draining until then, even after a write failure, so sends from the game loop never block on a dead socket. The inbox pointer identifies the connection: a new connection for an already-connected user kicks the old one, and the old connection's later DISCONNECT is ignored.
 
 ### Layers
-- `api/` — HTTP endpoints, OAuth (Recurse Center) + optional debug auth, token→user ID map, read-only world data endpoints (`/api/world/items`, `/api/world/spells`).
+- `api/` — HTTP endpoints, OAuth (Recurse Center) + optional debug auth, token→user ID map
 - `game/` — players and command handling. Each player is in one menu (`PLAYER_MENU_LOGIN`, `_CREATE`, `_WORLD`); a `Menu` is a map of verb → `MenuEntry{usage, description, handler}` plus `onEnter`/`onExit`. Handlers return `false` to print usage. `help` is handled generically. Most gameplay commands live in `menu_world*.go`. Players queue a `nextAction` that is applied at the next tick (`action.go`).
 - `world/` — pure simulation: rooms, mobs, NPCs, items, spells, recipes. `World.Update()` advances the simulation and appends `world.Event`s; `game` subscribes via `addEventListener(eventType, fn)` and dispatches after each update, then clears events. Keep `world` free of player/networking concerns and communicate outward through events.
 

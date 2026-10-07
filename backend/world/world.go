@@ -10,6 +10,8 @@ const WORLD_DATA_FOLDER = "./data"
 const WORLD_CHARACTER_SAVES_FOLDER = "./saves"
 const WORLD_JSON_PATH = WORLD_DATA_FOLDER + "/world.json"
 
+const WORLD_SECONDS_PER_UPDATE = 3
+const WORLD_MAX_ROOMS int = 1024
 const WORLD_RESET_INTERVAL = (60 * 60) / WORLD_SECONDS_PER_UPDATE
 
 // `json:"-"` tells the JSON parser to ignore those fields

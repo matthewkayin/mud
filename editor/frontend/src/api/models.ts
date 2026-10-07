@@ -291,6 +291,7 @@ export namespace world {
 	    Name: string;
 	    Description: string;
 	    ItemType: number;
+	    Size: number;
 	    Data: any;
 	
 	    static createFrom(source: any = {}) {
@@ -302,6 +303,7 @@ export namespace world {
 	        this.Name = source["Name"];
 	        this.Description = source["Description"];
 	        this.ItemType = source["ItemType"];
+	        this.Size = source["Size"];
 	        this.Data = source["Data"];
 	    }
 	}

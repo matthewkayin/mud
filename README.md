@@ -62,3 +62,20 @@ If you don't have Just or Chrome, you can also run each piece manually:
 1. Start the backend: `cd editor && go run .`
 2. In a separate terminal, start the frontend: `cd editor/frontend && npm run dev`
 3. Navigate to `localhost:5173` in your browser.
+
+### Generating TypeScript Types
+
+The editor frontend uses TypeScript versions of the Go types that the editor server sends to it (`EditorWorld`, `world.Room`, the enums in `editor/enums.go`, etc). These live in `editor/frontend/src/api/models.ts`, which is generated, so don't edit it by hand. After changing any of those Go types, regenerate it:
+
+```
+cd editor
+go generate
+```
+
+`go generate` is a built-in Go tool command. It scans the package's source files for comments of the form `//go:generate <command>` and runs each command. `editor/main.go` contains:
+
+```go
+//go:generate go run . -generate-types frontend/src/api/models.ts
+```
+
+So `go generate` just runs the editor program with the `-generate-types` flag. When `main()` sees that flag, it calls `generateModels()` (in `editor/models_gen.go`) instead of starting the server. `generateModels()` uses reflection to walk the registered Go types, converts them to TypeScript with a copy of Wails' typescriptify (`editor/internal/typescriptify`), writes the result to the given path, and exits.

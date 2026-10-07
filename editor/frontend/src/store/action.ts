@@ -29,6 +29,7 @@ export class EditorActionAddRoom implements EditorAction {
       // Exits are filled in when the world is saved
       Exits: new Array(world.Direction.COUNT).fill(getEditorConstants().RoomNone),
       ExitIsLocked: new Array(world.Direction.COUNT).fill(false),
+      ExitIsLockedOnReset: new Array(world.Direction.COUNT).fill(false),
       IsSafeZone: false,
       DropTable: {
         Entries: [],
