@@ -99,6 +99,7 @@ func (gamestate *GameState) Run(ctx context.Context) {
 
 	log.Printf("Shutdown signal received. Shutting down server...")
 	gamestate.saveAllLoggedInPlayers()
+	gamestate.world.ScriptQuit()
 }
 
 // Must only be called from the game loop

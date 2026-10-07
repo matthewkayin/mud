@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"encoding/json"
+	"github.com/mmcdole/lunar"
 )
 
 const WORLD_DATA_FOLDER = "./data"
@@ -18,6 +19,7 @@ const WORLD_RESET_INTERVAL = (60 * 60) / WORLD_SECONDS_PER_UPDATE
 
 type World struct {
 	Events []Event `json:"-"`
+	luaState *lua.State
 
 	Characters map[string]*Character `json:"-"`
 	PlayerCharacters map[int][]string `json:"-"`
@@ -65,7 +67,16 @@ func WorldInit() *World {
 	world.Events = make([]Event, 0, 64)
 	world.Mobs = MobArrayInit()
 
+	world.scriptInit()
 	world.loadCharacters()
+
+	// Test script
+	spellData, err := world.scriptLoadSpell("spells/firebolt.lua")
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	log.Printf("Spell name: %s", spellData.Name)
 
 	log.Printf("World initialized.")
 	return world

@@ -2,6 +2,7 @@ package world
 
 import (
 	"fmt"
+	"github.com/mmcdole/lunar"
 )
 
 var SPELL_CAST_TIME_INSTANT int32 = 0
@@ -21,7 +22,9 @@ type SpellData struct {
 	CastTime int32
 	CanTargetPlayers bool
 
+	// TODO: remove once scripted OnHit is called by spellcast
 	onHit func(world *World, caster *Mob, target *Mob)
+	OnHit *lua.Function
 }
 
 var SPELL_DATA = []*SpellData {
