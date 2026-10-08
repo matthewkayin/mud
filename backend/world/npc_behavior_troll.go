@@ -58,7 +58,7 @@ func (behavior *BehaviorTroll) onEvent(npc *Npc, world *World, event BehaviorEve
 			eventData := event.Data.(BehaviorEventPlayerEntered)
 
 			playerMob := world.Mobs.Get(eventData.PlayerHandle)
-			if playerMob.PlayerCharacter == nil {
+			if playerMob.IsNpc() {
 				log.Printf("Warn - Behavior troll was given player entered event with a non-player mob.")
 				return false
 			}

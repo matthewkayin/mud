@@ -187,7 +187,7 @@ func (npc *Npc) update(world *World) {
 					if mob.CheckFlag(MOB_FLAG_HIDDEN) {
 						return false
 					}
-					if mob.PlayerCharacter == nil {
+					if !mob.IsPlayer() {
 						return false
 					}
 					return true
@@ -248,7 +248,7 @@ func (npc *Npc) update(world *World) {
 
 				// For now, only attack players
 				targetMob := world.Mobs.Get(targetHandle)
-				if targetMob.PlayerCharacter == nil {
+				if !targetMob.IsPlayer() {
 					continue
 				}
 
@@ -385,7 +385,7 @@ func (npc *Npc) GetStatusDescription(world *World) (string, bool) {
 
 	npcMob := world.Mobs.Get(npc.mobHandle)
 	if npc.mode == NPC_MODE_SLEEP {
-		return fmt.Sprintf("%s is taking a nap.", npcMob.Data.Name), true
+		return fmt.Sprintf("%s is taking a nap.", npcMob.GetNameWithInjury()), true
 	}
 	return "", false
 }

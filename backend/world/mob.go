@@ -101,7 +101,7 @@ func MobInitFromCharacter(character *Character) Mob {
 }
 
 func (mob *Mob) GetPlayerId() int {
-	if mob.PlayerCharacter == nil {
+	if !mob.IsPlayer() {
 		return MOB_PLAYER_NONE
 	}
 
@@ -113,6 +113,20 @@ func (mob *Mob) GetName() string {
 		return mob.Data.Name
 	}
 	return fmt.Sprintf("%s %d", mob.Data.Name, mob.fuzzyNumber)
+}
+
+func (mob *Mob) GetNameWithInjury() string {
+	name := mob.GetName()
+
+	if (2 * mob.Data.Health) < mob.Data.MaxHealth() {
+		return name + " (Badly Injured)"
+	}
+
+	if mob.Data.Health < mob.Data.MaxHealth() {
+		return name + " (Injured)"
+	}
+
+	return name
 }
 
 func (mob *Mob) IsDead() bool {
@@ -148,7 +162,7 @@ func (mob *Mob) SetFlag(flag MobFlag, value bool) {
 
 func (mob *Mob) GrantExperience(world *World, experience int32) {
 	// This function is only meant for player mobs at this time
-	if mob.PlayerCharacter == nil {
+	if !mob.IsPlayer() {
 		return
 	}
 
@@ -323,6 +337,22 @@ func (mob *Mob) Update(world *World) {
 	}
 }
 
+func (mob *Mob) IsNpc() bool {
+	if mob.Npc == nil {
+		return false
+	}
+
+	return true
+}
+
+func (mob *Mob) IsPlayer() bool {
+	if mob.PlayerCharacter == nil {
+		return false
+	}
+
+	return true
+}
+
 func (mob *Mob) getTargetIfExists(world *World) (*Mob, bool) {
 	targetMob, targetExists := world.Mobs.GetIfExists(mob.Target)
 	targetIsInvalid :=
@@ -376,7 +406,7 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	evasionChance := targetAgility / (targetAgility + (mobAgility * MOB_EVASION_K))
 	evasionRoll := rand.Float32()
 	if evasionRoll < evasionChance {
-		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s dodged %s's attack!", targetMob.GetName(), mob.GetName()))
+		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s dodged %s's attack!", targetMob.GetNameWithInjury(), mob.GetNameWithInjury()))
 		return
 	}
 
@@ -468,8 +498,8 @@ func (mob *Mob) RollForEscape(world *World) bool {
 	room := &world.Rooms[mob.Data.Room]
 	for _, handle := range room.Occupants {
 		occupant := world.Mobs.Get(handle)
-		// TODO: change to !occupant.isNpc()
-		if occupant.Npc == nil || occupant.Npc.disposition != NPC_DISPOSITION_HOSTILE {
+
+		if !occupant.IsNpc() || occupant.Npc.disposition != NPC_DISPOSITION_HOSTILE {
 			continue
 		}
 
@@ -496,7 +526,7 @@ func (mob *Mob) RollForStealth(world *World) bool {
 	room := &world.Rooms[mob.Data.Room]
 	for _, handle := range room.Occupants {
 		occupant := world.Mobs.Get(handle)
-		if occupant.Npc == nil || occupant.Npc.disposition != NPC_DISPOSITION_HOSTILE {
+		if !occupant.IsNpc() || occupant.Npc.disposition != NPC_DISPOSITION_HOSTILE {
 			continue
 		}
 
@@ -563,7 +593,7 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 	}
 
 	// The rest of these messages are only sent to players holding the item
-	if mob.PlayerCharacter == nil {
+	if !mob.IsPlayer() {
 		return
 	}
 
@@ -721,7 +751,7 @@ func (mob *Mob) CanCraft(recipe Recipe, batchAmount int32) error {
 }
 
 func (mob *Mob) InventoryCapacity() int32 {
-	if mob.PlayerCharacter == nil {
+	if !mob.IsPlayer() {
 		return INVENTORY_CAPACITY_UNLIMITED
 	}
 
