@@ -143,7 +143,13 @@ func (parser *ScriptParser) parseItem(table *lua.Table) *ItemData {
 	itemData.Name = parser.getString(table, "name")
 	itemData.Description = parser.getString(table, "description")
 	itemData.Size = parser.getInt32(table, "size")
-	itemData.Kind = ItemKind(parser.getInt(table, "kind"))
+
+	kindString := parser.getString(table, "kind")
+	var ok bool
+	itemData.Kind, ok = ItemKindFromString(kindString)
+	if !ok {
+		parser.addProblem(fmt.Errorf("'%s' is not a valid item kind.", kindString))
+	}
 
 	switch itemData.Kind {
 		case ITEM_KIND_CONSUMABLE: {
@@ -250,6 +256,41 @@ func (itemData *ItemData) ItemCanStack() bool {
 		itemData.Kind == ITEM_KIND_MISC
 }
 
+func itemKindToScriptEnum(kind ItemKind) string {
+	switch kind {
+		case ITEM_KIND_CONSUMABLE:
+			return "CONSUMABLE"
+		case ITEM_KIND_EQUIPMENT_ONE_HANDED:
+			return "EQUIPMENT_ONE_HANDED"
+		case ITEM_KIND_EQUIPMENT_TWO_HANDED:
+			return "EQUIPMENT_TWO_HANDED"
+		case ITEM_KIND_EQUIPMENT_OUTFIT:
+			return "EQUIPMENT_OUTFIT"
+		case ITEM_KIND_EQUIPMENT_ACCESSORY:
+			return "EQUIPMENT_ACCESSORY"
+		case ITEM_KIND_EQUIPMENT_SPELLBOOK:
+			return "EQUIPMENT_SPELLBOOK"
+		case ITEM_KIND_SPELL_SCROLL:
+			return "SPELL_SCROLL"
+		case ITEM_KIND_RECIPE:
+			return "RECIPE"
+		case ITEM_KIND_MISC:
+			return "MISC"
+		default:
+			panic(fmt.Sprintf("Item kind %d not handled", kind))
+	}
+}
+
+func ItemKindFromString(kindString string) (ItemKind, bool) {
+	for index := range ITEM_KIND_COUNT {
+		if kindString == ItemKindToString(ItemKind(index)) {
+			return ItemKind(index), true
+		}
+	}
+
+	return 0, false
+}
+
 func ItemKindToString(kind ItemKind) string {
 	switch kind {
 		case ITEM_KIND_CONSUMABLE:
@@ -260,6 +301,8 @@ func ItemKindToString(kind ItemKind) string {
 			return "Two-handed Weapon"
 		case ITEM_KIND_EQUIPMENT_OUTFIT:
 			return "Outfit"
+		case ITEM_KIND_EQUIPMENT_ACCESSORY:
+			return "Accessory"
 		case ITEM_KIND_EQUIPMENT_SPELLBOOK:
 			return "Spellbook"
 		case ITEM_KIND_SPELL_SCROLL:

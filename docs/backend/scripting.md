@@ -81,3 +81,33 @@ This poses a challenge for saved game data such as the world JSON and player sav
 Taking a player inventory for example. Currently each player inventory will have an Item such as Item { ItemId: 0, Amount: 25 }, and this represents that the player has 25 of ItemId 0. When saving the player's inventory, we will need to say that, if ItemId 0 is "Gold", that the saved JSON for this Item will be { ItemId: "Gold", Amount: 25 }.
 
 Then when loading the player's inventory JSON, we will need to walk back using a string->int mapping which tells us that ItemId: "Gold" has the ID 0. This way if the item IDs get re-arranged during re-runs of the server, the player's data will stay consistent. This also ensures that comparisons between items remains fast during gameplay runtime, because ItemId, SpellId, etc. can all just be numbers.
+
+## Script API
+
+Scripts reach the backend through the global `world` table, which `scriptInit` (`backend/world/script.go`) builds when the Lua state is created. It contains:
+
+- **Functions** from `SCRIPT_LIBRARY` in `backend/world/script_library.go`. Each entry maps a Lua name to a `lua.NativeFunc`, so `"log"` becomes `world.log`.
+- **Constant tables** from `ScriptConstantTables()` in `backend/world/script.go`. Each `ScriptConstantTable` becomes `world.<Name>`, with string values. For example, an item script sets `item.kind = world.ItemKind.CONSUMABLE`, and the parser maps that string back to the Go enum. To add a table, append it to the slice that `ScriptConstantTables()` returns.
+
+### Language server definitions
+
+The `world` table only exists at runtime, so `backend/data/world.d.lua` describes it to the Lua language server (LuaLS). It is generated, so don't edit it by hand. After changing `SCRIPT_LIBRARY` or `ScriptConstantTables()`, regenerate it from `backend/`:
+
+```
+go generate
+```
+
+The generator (`backend/luadefs_gen.go`, run through the `-generate-lua-defs` flag in `backend/main.go`) writes:
+- each constant table as a LuaLS `---@enum`, in the order it's declared
+- a stub `function world.<name>(...) end` for each `SCRIPT_LIBRARY` entry, sorted by name
+
+Each stub is documented with the `//` comment directly above its `SCRIPT_LIBRARY` entry, and generation fails if an entry has no comment. Plain comment lines become `---` description lines. Lines that start with `@` are copied through as LuaLS annotations, and the stub's parameter list comes from the `@param` lines in order. Mark optional parameters with `?`:
+
+```go
+// Sends a message to the specified room
+//
+// @param room integer
+// @param message string
+// @param args? table
+"messageRoom": func(frame lua.Frame) lua.Outcome {
+```

@@ -13,6 +13,7 @@ Backend (run from `backend/`, since it reads `./env.json`, `./banner.txt` and wr
 go run .                      # start server (port comes from env.json, normally 7272)
 go test ./...                 # all tests
 go test ./world -run TestName # single test
+go generate                   # regenerates data/world.d.lua (Lua language server defs for the script API)
 ```
 `backend/env.json` is not in git and is required (fields: `PORT`, `ENABLE_DEBUG_AUTH`, `RC_*` OAuth settings — see `backend/api/env.go`).
 
@@ -59,4 +60,12 @@ go test ./...
 - `editor/` is the world editor (active work on branch `kayin/editor`); it replaced the old in-browser editor that lived in `frontend/`. It was a Wails desktop app until WebKitGTK's rendering performance on Linux made it too laggy, so it now runs in Chromium. Its state lives in an external store (`src/store/store.ts`) consumed via subscribe/emitChange; every mutation is an `EditorAction` with `do`/`undo` pushed through `editorStore.doAction` to support undo/redo. Add new edits as new `EditorAction` classes rather than mutating state directly.
 
 ## Style
-Go code uses long descriptive camelCase names, `SCREAMING_SNAKE_CASE` constants/enums declared with `iota`, and `log.Printf("Warn - ...")` for recoverable problems.
+Go code uses long descriptive camelCase names, `SCREAMING_SNAKE_CASE` constants/enums declared with `iota`, and `log.Printf("Warn - ...")` for recoverable problems. Types should be defined at the top of the file and should not be interleved with function definitions (excepting types which are defined only within the scope of a function).
+
+## Documentation
+
+Documentation lives in the `docs/` folder of this repo. When making plans, always check if documentation updates should be made as a part of the work. 
+
+All documentation updates should be relevant to the work being done alongside them. If the documentation that would be updated is missing, then that documentation should be added as a part of the work (for example, if you are updating the Lua scripting on the backend but find that there is no documentation for backend Lua scripts at all, then your plan should include creating a baseline set of documentation surrounding scripting).
+
+Documentation should not contain a history or log of decisions and changes made in the repo. Documentation should contain relevant info for developers and agents to update and understand the code in the repo.

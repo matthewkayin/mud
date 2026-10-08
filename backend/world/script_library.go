@@ -20,7 +20,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	// Output: "Bufo cast firebolt at Hodor."
 	//
 	// @param message string
-	// @param args table
+	// @param args? table
 	"log": func(frame lua.Frame) lua.Outcome {
 		// Get message from args
 		message, ok := frame.String(0)
@@ -51,9 +51,9 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	// Example: messageRoom(0, "{caster} cast firebolt at {target}.", { "caster": "Bufo", "target": "Hodor" })
 	// Output: "Bufo cast firebolt at Hodor."
 	//
-	// @param room number
+	// @param room integer
 	// @param message string
-	// @param args table
+	// @param args? table
 	"messageRoom": func(frame lua.Frame) lua.Outcome {
 		// Get room from args
 		room, ok := frame.Number(0)
