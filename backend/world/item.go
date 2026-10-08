@@ -190,6 +190,24 @@ func (parser *ScriptParser) parseItem(table *lua.Table) *ItemData {
 			itemData.Data = data
 		}
 
+		case ITEM_KIND_SPELL_SCROLL: {
+			data := &ItemDataSpellScroll{}
+
+			spellName := parser.getString(table, "spell")
+
+			var exists bool
+			data.Spell, exists = SPELL_NAME_TO_ID[spellName]
+			if !exists {
+				parser.addProblem(fmt.Errorf("Spellbook spell '%s' does not exist.", spellName))
+			}
+
+			itemData.Data = data
+		}
+
+		case ITEM_KIND_RECIPE: {
+
+		}
+
 		default: {
 			parser.addProblem(fmt.Errorf("Unrecognized item kind %d", itemData.Kind))
 		}
