@@ -119,11 +119,11 @@ func (mob *Mob) GetNameWithInjury() string {
 	name := mob.GetName()
 
 	if (2 * mob.Data.Health) < mob.Data.MaxHealth() {
-		return name + " (Badly Injured)"
+		return name + " <r>(Badly Injured)</r>"
 	}
 
 	if mob.Data.Health < mob.Data.MaxHealth() {
-		return name + " (Injured)"
+		return name + " <r>(Injured)</r>"
 	}
 
 	return name
@@ -446,9 +446,9 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	if crit {
 		critStr = "Critical hit! "
 	}
-	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s%s struck %s for %d damage.", critStr, mob.GetName(), targetMob.GetName(), damage))
+	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s%s struck %s for <r>%d</r> damage.", critStr, mob.GetName(), targetMob.GetName(), damage))
 	if targetMob.IsDead() {
-		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s has slain %s.", mob.GetName(), targetMob.GetName()))
+		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s has <r>slain</r> %s.", mob.GetName(), targetMob.GetName()))
 	} else {
 		targetMob.rollForConcentration(world, damage)
 	}
