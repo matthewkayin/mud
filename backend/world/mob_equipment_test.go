@@ -22,6 +22,8 @@ func mobForEquipmentTest(items ...Item) *Mob {
 }
 
 func TestEquipTwoHandedDisplacesBothHands(t *testing.T) {
+	primeTestData()
+
 	// There is no two-handed item in the data yet, so temporarily treat the axe as one
 	originalAxeData := ITEM_DATA[TEST_ITEM_AXE]
 	twoHandedAxeData := *originalAxeData
@@ -74,6 +76,8 @@ func TestEquipTwoHandedDisplacesBothHands(t *testing.T) {
 }
 
 func TestEquipSpellbookTracksEquippedSpell(t *testing.T) {
+	primeTestData()
+
 	mob := mobForEquipmentTest(Item { Id: TEST_ITEM_SPELLBOOK_FIREBOLT, Amount: 1 })
 	spell := ITEM_DATA[TEST_ITEM_SPELLBOOK_FIREBOLT].Data.(*ItemDataSpellbook).Spell
 
@@ -98,6 +102,8 @@ func TestEquipSpellbookTracksEquippedSpell(t *testing.T) {
 }
 
 func TestEquipRefusedWhenSwapOverflowsInventory(t *testing.T) {
+	primeTestData()
+
 	originalAxeData := ITEM_DATA[TEST_ITEM_AXE]
 	twoHandedAxeData := *originalAxeData
 	twoHandedAxeData.Kind = ITEM_KIND_EQUIPMENT_TWO_HANDED

@@ -1,6 +1,10 @@
 package world
 
 const (
+	TEST_SPELL_FIREBOLT SpellId = iota
+)
+
+const (
 	TEST_ITEM_SWORD ItemId = iota
 	TEST_ITEM_POTION_HEALTH
 	TEST_ITEM_GOLD
@@ -9,6 +13,18 @@ const (
 )
 
 func primeTestData() {
+	SPELL_DATA = []*SpellData {
+		TEST_SPELL_FIREBOLT: {
+			Name: "Firebolt",
+			Description: "",
+			CastsToLearn: 50,
+			ManaCost: 5,
+			CastTime: 1,
+			CanTargetPlayers: false,
+			OnHit: nil,
+		},
+	}
+
 	ITEM_DATA = []*ItemData {
 		TEST_ITEM_SWORD: {
 			Name: "Sword",
@@ -32,7 +48,7 @@ func primeTestData() {
 			Kind: ITEM_KIND_EQUIPMENT_SPELLBOOK,
 			Size: 10,
 			Data: &ItemDataSpellbook {
-
+				Spell: TEST_SPELL_FIREBOLT,
 			},
 		},
 		TEST_ITEM_POTION_HEALTH: {

@@ -82,6 +82,53 @@ Taking a player inventory for example. Currently each player inventory will have
 
 Then when loading the player's inventory JSON, we will need to walk back using a string->int mapping which tells us that ItemId: "Gold" has the ID 0. This way if the item IDs get re-arranged during re-runs of the server, the player's data will stay consistent. This also ensures that comparisons between items remains fast during gameplay runtime, because ItemId, SpellId, etc. can all just be numbers.
 
+## Data scripts
+
+Each folder under `backend/data/` holds one kind of data, and every `.lua` file in it returns a single table of that kind. `WorldInit` (`backend/world/world.go`) loads the folders in this order. A script can only refer to data that was loaded before it, and those references are names that are checked during parsing:
+
+| Order | Folder | Go type | Loader | References |
+| --- | --- | --- | --- | --- |
+| 1 | `races/` | `RaceData` | `loadRaceData` (`character_race.go`) | |
+| 2 | `jobs/` | `JobData` | `loadJobData` (`character_job.go`) | |
+| 3 | `spells/` | `SpellData` | `loadSpellData` (`spell.go`) | |
+| 4 | `recipes/` | `RecipeData` | `loadRecipeTables` + `loadRecipeData` (`recipe.go`) | jobs, items |
+| 5 | `items/` | `ItemData` | `loadItemData` (`item.go`) | spells, recipes |
+| 6 | `classes/` | `ClassData` | `loadClassData` (`character_class.go`) | spells, items |
+
+Recipes are loaded in two passes. `loadRecipeTables` registers recipe names first so that items can refer to them. `loadRecipeData` parses the rest of each recipe once items exist. Classes load last so they can refer to items.
+
+Each ID is the entry's position in load order, and files load in alphabetical order. Names must be unique within a kind, and the player-facing lookups (`RaceIdFromString` etc.) ignore case.
+
+Stat blocks are tables keyed by stat abbreviation (`VIT`, `STR`, `AGI`, `INT`, `FTH`), and missing stats are 0. Race stats can be negative. All other stat blocks must not be.
+
+```lua
+-- races/dwarf.lua
+local race = {}
+race.name = "Dwarf"
+race.stats = { VIT = 2, STR = 2, AGI = -1 }
+return race
+
+-- jobs/blacksmith.lua
+local job = {}
+job.name = "Blacksmith"
+job.stats = {}
+job.scaling = {}
+return job
+
+-- classes/warrior.lua
+local class = {}
+class.name = "Warrior"
+class.stats = { VIT = 8, STR = 10, AGI = 6, INT = 6, FTH = 8 }
+class.scaling = { VIT = 8, STR = 10, AGI = 6, INT = 6, FTH = 8 }
+-- Each unlock sets a level (1 to MOB_MAX_LEVEL - 1) and exactly one of `ability` (a MOB_ABILITY_DATA name) or `spell`
+class.unlocks = {
+	{ level = 2, ability = "Taunt" },
+}
+return class
+```
+
+Character saves (`saves/<Name>.json`, `CharacterJson` in `character.go`) store race, class, job, spell and recipe names instead of IDs. If a save names something that no longer exists, startup fails.
+
 ## Script API
 
 Scripts reach the backend through the global `world` table, which `scriptInit` (`backend/world/script.go`) builds when the Lua state is created. It contains:
