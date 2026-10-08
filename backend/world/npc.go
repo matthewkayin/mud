@@ -104,7 +104,7 @@ func (npc *Npc) spawnMob(world *World) {
 		Experience: npcData.experienceWorth + (npcData.experienceWorthScaling * (level - 1)),
 
 		Stats: stats,
-		Spells: []Spell {},
+		Spells: []SpellId {},
 		Inventory: npc.DropTable.getLoot(),
 		Equipment: npcData.equipment,
 	}

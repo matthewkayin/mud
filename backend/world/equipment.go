@@ -213,7 +213,7 @@ func (equipment *Equipment) CalculateStatBonuses() {
 	}
 }
 
-func (equipment *Equipment) IsHoldingSpellbookOf(spell Spell) bool {
+func (equipment *Equipment) IsHoldingSpellbookOf(spell SpellId) bool {
 	heldItems := []*Item{
 		equipment.Get(EQUIPMENT_SLOT_MAIN_HAND),
 		equipment.Get(EQUIPMENT_SLOT_OFF_HAND),

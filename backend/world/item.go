@@ -47,7 +47,7 @@ type ItemDataConsumable struct {
 }
 
 type ItemDataSpellScroll struct {
-	Spell Spell
+	Spell SpellId
 }
 
 type ItemDataWeapon struct {
@@ -71,7 +71,7 @@ type ItemDataAccessory struct {
 }
 
 type ItemDataSpellbook struct {
-	Spell Spell
+	Spell SpellId
 	StatRequirements StatBlock
 }
 

@@ -24,7 +24,7 @@ type MobData struct {
 	Health int32
 	Mana int32
 
-	Spells []Spell
+	Spells []SpellId
 	Inventory Inventory
 	Equipment Equipment
 }
@@ -87,7 +87,7 @@ func (mobData *MobData) SpellSlots() int32 {
 	return int32(float32(mobData.Stats.Values[STAT_INT]) / 3.0)
 }
 
-func (mobData *MobData) CastsToLearn(spell Spell) int32 {
+func (mobData *MobData) CastsToLearn(spell SpellId) int32 {
 	spellData := SPELL_DATA[spell]
 	spellCastsToLearn := float32(spellData.CastsToLearn)
 	mobInt := float32(mobData.Intelligence())
@@ -95,7 +95,7 @@ func (mobData *MobData) CastsToLearn(spell Spell) int32 {
 	return int32(spellCastsToLearn * (1.0 - (mobInt * MOB_CASTS_TO_LEARN_K)))
 }
 
-func (mobData *MobData) RemoveSpell(toRemove Spell) {
+func (mobData *MobData) RemoveSpell(toRemove SpellId) {
 	for index, spell := range mobData.Spells {
 		if spell == toRemove {
 			lastIndex := len(mobData.Spells) - 1

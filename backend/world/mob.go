@@ -68,7 +68,7 @@ type Mob struct {
 
 	flags MobFlag
 
-	castSpell Spell
+	castSpell SpellId
 	castTimer int32
 	useItemId ItemId
 
@@ -199,7 +199,7 @@ func (mob *Mob) SetModeAttack(world *World, mobHandle MobHandle, targetHandle Mo
 	mob.Target = targetHandle
 }
 
-func (mob *Mob) SetModeCast(world *World, mobHandle MobHandle, spell Spell, targetHandle MobHandle) {
+func (mob *Mob) SetModeCast(world *World, mobHandle MobHandle, spell SpellId, targetHandle MobHandle) {
 	mob.Mode = MOB_MODE_CAST
 	mob.Target = targetHandle
 	mob.castSpell = spell
@@ -618,7 +618,7 @@ func (mob *Mob) spellcast(world *World, targetMob *Mob) {
 	// spellData.onHit(world, mob, targetMob)
 	_, err := world.luaState.Call(spellData.OnHit.Value(), lua.Nil(), lua.Nil())
 	if err != nil {
-		log.Printf("Warn - Error during spell OnHit: %s", err.Error())
+		log.Printf("Warn - Error during spell %s onHit: %s", spellData.Name, err.Error())
 	}
 
 	if mob.PlayerCharacter != nil {
@@ -644,7 +644,7 @@ func (mob *Mob) calculateMagicDamage(baseDamage int32, target *Mob) int32 {
 	return baseDamage + (mob.Data.Faith() / 2) + (target.Data.Faith() / 4)
 }
 
-func (mob *Mob) getEquipmentWhichProvidesSpell(spell Spell) (EquipmentSlot, bool) {
+func (mob *Mob) getEquipmentWhichProvidesSpell(spell SpellId) (EquipmentSlot, bool) {
 	slots := []EquipmentSlot { EQUIPMENT_SLOT_MAIN_HAND, EQUIPMENT_SLOT_OFF_HAND }
 	for _, slot := range slots {
 		slotSpell, slotProvidesSpell := mob.getSpellProvidedBySlot(slot)
@@ -656,7 +656,7 @@ func (mob *Mob) getEquipmentWhichProvidesSpell(spell Spell) (EquipmentSlot, bool
 	return 0, false
 }
 
-func (mob *Mob) getSpellProvidedBySlot(slot EquipmentSlot) (Spell, bool) {
+func (mob *Mob) getSpellProvidedBySlot(slot EquipmentSlot) (SpellId, bool) {
 	item := mob.Data.Equipment.Get(slot)
 	if item == nil {
 		return 0, false
@@ -703,7 +703,11 @@ func (mob *Mob) useItem(world *World, targetMob *Mob) {
 		case ITEM_TYPE_SPELL_SCROLL: {
 			scrollData := itemData.Data.(*ItemDataSpellScroll)
 			spellData := SPELL_DATA[scrollData.Spell]
-			spellData.onHit(world, mob, targetMob)
+
+			_, err := world.luaState.Call(spellData.OnHit.Value(), lua.Nil(), lua.Nil())
+			if err != nil {
+				log.Printf("Warn - Error during spell %s onHit: %s", spellData.Name, err.Error())
+			}
 		}
 		default:
 			panic(fmt.Sprintf("Unhandled item type %s. This item type should never have been allowed to be used here.", ItemTypeToString(itemData.ItemType)))

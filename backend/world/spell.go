@@ -17,7 +17,8 @@ type SpellData struct {
 	CastTime int32
 	CanTargetPlayers bool
 
-	onHit *lua.Function
+	OnHit *lua.Function
 }
 
 var SPELL_DATA []*SpellData
+var SPELL_NAME_TO_ID map[string]SpellId

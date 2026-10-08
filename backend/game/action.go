@@ -25,7 +25,7 @@ type ActionAttack struct {
 }
 
 type ActionCast struct {
-	spell world.Spell
+	spell world.SpellId
 	target world.MobHandle
 }
 

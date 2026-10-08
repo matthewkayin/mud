@@ -72,10 +72,6 @@ var ITEM_DATA = []*ItemData {
 		Description: "A dark red tome holding the secrets of magic flames",
 		ItemType: ITEM_TYPE_EQUIPMENT_SPELLBOOK,
 		Size: 10,
-		Data: &ItemDataSpellbook {
-			Spell: SPELL_FIREBOLT,
-			StatRequirements: StatBlock {},
-		},
 	},
 
 	ITEM_SPELLBOOK_CURE: {
@@ -83,10 +79,6 @@ var ITEM_DATA = []*ItemData {
 		Description: "A weathered tome passed from priest to priest",
 		ItemType: ITEM_TYPE_EQUIPMENT_SPELLBOOK,
 		Size: 10,
-		Data: &ItemDataSpellbook {
-			Spell: SPELL_CURE,
-			StatRequirements: StatBlock {},
-		},
 	},
 
 	ITEM_POTION_HEALTH: {

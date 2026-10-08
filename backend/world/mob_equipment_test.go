@@ -6,15 +6,15 @@ import (
 
 func mobForEquipmentTest(items ...Item) *Mob {
 	character := &Character {
-		SpellsEquipped: make(map[Spell]*CharacterEquippedSpell),
-		SpellsKnown: []Spell{},
+		SpellsEquipped: make(map[SpellId]*CharacterEquippedSpell),
+		SpellsKnown: []SpellId{},
 	}
 	mob := &Mob {
 		PlayerCharacter: character,
 		Data: MobData {
 			Inventory: Inventory { Items: items },
 			Equipment: EquipmentInitEmpty(),
-			Spells: []Spell{},
+			Spells: []SpellId{},
 		},
 	}
 

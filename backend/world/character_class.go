@@ -141,7 +141,6 @@ var CLASS_DATA []*ClassData = []*ClassData {
 		},
 		UnlocksAtLevel: [MOB_MAX_LEVEL][]ClassUnlock {
 			1: {
-				{ Type: CLASS_UNLOCK_TYPE_SPELL, Data: SPELL_CURE, },
 			},
 		},
 	},

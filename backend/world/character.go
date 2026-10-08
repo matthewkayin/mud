@@ -6,6 +6,7 @@ import (
 	"strings"
 	"slices"
 	"mud/bitset"
+	"encoding/json"
 )
 
 const CHARACTER_ROOMS_DISCOVERED_BYTE_SIZE int = WORLD_MAX_ROOMS / 8
@@ -29,9 +30,24 @@ type Character struct {
 	Class ClassId
 	Job JobId
 
-	SpellsEquipped map[Spell]*CharacterEquippedSpell
-	SpellsKnown []Spell
-	ClassSpells []Spell
+	SpellsEquipped map[SpellId]*CharacterEquippedSpell
+	SpellsKnown []SpellId
+	ClassSpells []SpellId
+	RecipesKnown []Recipe
+	RoomsDiscovered []byte
+	Data MobData
+}
+
+// CharacterJson represents how Character is stored when saved to a file
+type CharacterJson struct {
+	PlayerId int
+	Race RaceId
+	Class ClassId
+	Job JobId
+
+	SpellsEquipped map[string]*CharacterEquippedSpell
+	SpellsKnown []string
+	ClassSpells []string
 	RecipesKnown []Recipe
 	RoomsDiscovered []byte
 	Data MobData
@@ -67,10 +83,10 @@ func CharacterInitEmpty(playerId int, characterSheet *CharacterSheet) *Character
 	character.Data.Mana = character.Data.MaxMana()
 
 	// Init spell list
-	character.Data.Spells = make([]Spell, 0, 1)
-	character.SpellsEquipped = make(map[Spell]*CharacterEquippedSpell)
-	character.SpellsKnown = make([]Spell, 0, 1)
-	character.ClassSpells = make([]Spell, 0, 1)
+	character.Data.Spells = make([]SpellId, 0, 1)
+	character.SpellsEquipped = make(map[SpellId]*CharacterEquippedSpell)
+	character.SpellsKnown = make([]SpellId, 0, 1)
+	character.ClassSpells = make([]SpellId, 0, 1)
 	character.RecipesKnown = make([]Recipe, 0, 1)
 
 	// Init inventory
@@ -91,6 +107,75 @@ func CharacterInitEmpty(playerId int, characterSheet *CharacterSheet) *Character
 	}
 
 	return character
+}
+
+func (character *Character) MarshalJSON() ([]byte, error) {
+	characterJson := CharacterJson {
+		PlayerId: character.PlayerId,
+		Race: character.Race,
+		Class: character.Class,
+		Job: character.Job,
+
+		SpellsEquipped: make(map[string]*CharacterEquippedSpell),
+		SpellsKnown: spellsToStringArray(character.SpellsKnown),
+		ClassSpells: spellsToStringArray(character.ClassSpells),
+		RecipesKnown: character.RecipesKnown,
+		RoomsDiscovered: character.RoomsDiscovered,
+		Data: character.Data,
+	}
+	return json.Marshal(&characterJson)
+}
+
+func (character *Character) UnmarshalJSON(data []byte) error {
+	var characterJson CharacterJson
+	err := json.Unmarshal(data, &characterJson)
+	if err != nil {
+		return err
+	}
+
+	character.PlayerId = characterJson.PlayerId
+	character.Race = characterJson.Race
+	character.Class = characterJson.Class
+	character.Job = characterJson.Job
+
+	character.SpellsEquipped = make(map[SpellId]*CharacterEquippedSpell)
+	for spellName, equippedSpell := range characterJson.SpellsEquipped {
+		spellId, exists := SPELL_NAME_TO_ID[spellName]
+		if !exists {
+			log.Fatalf("No spell ID matches the spell '%s'.", spellName)
+		}
+
+		character.SpellsEquipped[spellId] = equippedSpell
+	}
+
+	character.SpellsKnown = spellsFromStringArray(characterJson.SpellsKnown)
+	character.ClassSpells = spellsFromStringArray(characterJson.ClassSpells)
+	character.RoomsDiscovered = characterJson.RoomsDiscovered
+	character.Data = characterJson.Data
+
+	return nil
+}
+
+func spellsToStringArray(spellIds []SpellId) []string {
+	result := make([]string, len(spellIds))
+	for index := range len(spellIds) {
+		result[index] = SPELL_DATA[spellIds[index]].Name
+	}
+
+	return result
+}
+
+func spellsFromStringArray(spellNames []string) []SpellId {
+	result := make([]SpellId, len(spellNames))
+	for index := range len(spellNames) {
+		spellId, exists := SPELL_NAME_TO_ID[spellNames[index]]
+		if !exists {
+			log.Fatalf("No spell ID matches spell '%s'.", spellNames[index])
+		}
+		result[index] = spellId
+	}
+
+	return result
 }
 
 func (world *World) GetCharacterIfExists(name string) (*Character, bool) {
@@ -137,7 +222,7 @@ func (world *World) RemoveCharacter(character *Character) {
 	deleteCharacter(character)
 }
 
-func (character *Character) HasSpell(spell Spell) bool {
+func (character *Character) HasSpell(spell SpellId) bool {
 	return slices.Contains(character.SpellsKnown, spell) ||
 		slices.Contains(character.ClassSpells, spell)
 }
@@ -181,7 +266,7 @@ func (character *Character) grantClassUnlock(unlock ClassUnlock) string {
 		}
 
 		case CLASS_UNLOCK_TYPE_SPELL: {
-			spell := unlock.Data.(Spell)
+			spell := unlock.Data.(SpellId)
 			spellData := SPELL_DATA[spell]
 
 			character.ClassSpells = append(character.ClassSpells, spell)
