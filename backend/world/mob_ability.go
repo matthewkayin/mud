@@ -24,3 +24,13 @@ var MOB_ABILITY_DATA = []*MobAbilityData {
 		Description: "Allows you to taunt an enemy using the 'taunt <enemy>' command.",
 	},
 }
+
+func MobAbilityFromName(name string) (MobAbility, bool) {
+	for ability, abilityData := range MOB_ABILITY_DATA {
+		if abilityData.Name == name {
+			return MobAbility(ability), true
+		}
+	}
+
+	return 0, false
+}

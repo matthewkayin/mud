@@ -15,9 +15,10 @@ var MENU_CREATE = Menu {
 	onEnter: func(gamestate *GameState, player *Player) {
 		player.characterSheet = &world.CharacterSheet {
 			Name: "",
-			Race: world.RACE_HUMAN,
-			Class: world.CLASS_WARRIOR,
-			Job: world.JOB_BLACKSMITH,
+			// Default to the first loaded race, class and job
+			Race: world.RaceId(0),
+			Class: world.ClassId(0),
+			Job: world.JobId(0),
 		}
 
 		*player.inbox <- "You are in the character creator."

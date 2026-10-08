@@ -48,10 +48,13 @@ func WorldInit() *World {
 	// Load script data. This must happen before validation, which checks references to it
 	world := &World{}
 	world.scriptInit()
+	world.loadRaceData()
+	world.loadJobData()
 	world.loadSpellData()
 	recipeTables := world.loadRecipeTables()
 	world.loadItemData()
 	world.loadRecipeData(recipeTables)
+	world.loadClassData()
 
 	// Decode JSON into world object
 	decoder := json.NewDecoder(file)

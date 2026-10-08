@@ -41,9 +41,9 @@ type Character struct {
 // CharacterJson represents how Character is stored when saved to a file
 type CharacterJson struct {
 	PlayerId int
-	Race RaceId
-	Class ClassId
-	Job JobId
+	Race string
+	Class string
+	Job string
 
 	SpellsEquipped map[string]*CharacterEquippedSpell
 	SpellsKnown []string
@@ -112,9 +112,9 @@ func CharacterInitEmpty(playerId int, characterSheet *CharacterSheet) *Character
 func (character *Character) MarshalJSON() ([]byte, error) {
 	characterJson := CharacterJson {
 		PlayerId: character.PlayerId,
-		Race: character.Race,
-		Class: character.Class,
-		Job: character.Job,
+		Race: RACE_DATA[character.Race].Name,
+		Class: CLASS_DATA[character.Class].Name,
+		Job: JOB_DATA[character.Job].Name,
 
 		SpellsEquipped: make(map[string]*CharacterEquippedSpell),
 		SpellsKnown: spellsToStringArray(character.SpellsKnown),
@@ -134,9 +134,19 @@ func (character *Character) UnmarshalJSON(data []byte) error {
 	}
 
 	character.PlayerId = characterJson.PlayerId
-	character.Race = characterJson.Race
-	character.Class = characterJson.Class
-	character.Job = characterJson.Job
+	var exists bool
+	character.Race, exists = RACE_NAME_TO_ID[characterJson.Race]
+	if !exists {
+		log.Fatalf("No race ID matches race '%s'.", characterJson.Race)
+	}
+	character.Class, exists = CLASS_NAME_TO_ID[characterJson.Class]
+	if !exists {
+		log.Fatalf("No class ID matches class '%s'.", characterJson.Class)
+	}
+	character.Job, exists = JOB_NAME_TO_ID[characterJson.Job]
+	if !exists {
+		log.Fatalf("No job ID matches job '%s'.", characterJson.Job)
+	}
 
 	character.SpellsEquipped = make(map[SpellId]*CharacterEquippedSpell)
 	for spellName, equippedSpell := range characterJson.SpellsEquipped {

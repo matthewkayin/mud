@@ -7,21 +7,6 @@ import (
 )
 
 type ItemId int32
-const (
-	ITEM_GOLD = iota
-	ITEM_DUMMY_MATERIAL
-	ITEM_SWORD
-	ITEM_AXE
-	ITEM_ARMOR_CHAINMAIL
-	ITEM_SPELLBOOK_FIREBOLT
-	ITEM_SPELLBOOK_CURE
-	ITEM_POTION_HEALTH
-	ITEM_POTION_MANA
-	ITEM_RECIPE_HEALTH_POT
-	ITEM_RECIPE_MANA_POT
-	ITEM_RECIPE_SWORD
-	ITEM_RECIPE_AXE
-)
 
 type Item struct {
 	Id ItemId
@@ -162,8 +147,8 @@ func (parser *ScriptParser) parseItem(table *lua.Table) *ItemData {
 			data := &ItemDataWeapon{}
 			data.Damage = parser.getInt32(table, "damage")
 			data.MaxDurability = parser.getInt32(table, "max_durability")
-			data.StatBonuses = parser.getStatBlock(table, "stat_bonuses")
-			data.StatRequirements = parser.getStatBlock(table, "stat_requirements")
+			data.StatBonuses = parser.getStatBlock(table, "stat_bonuses", false)
+			data.StatRequirements = parser.getStatBlock(table, "stat_requirements", false)
 			itemData.Data = data
 		}
 
@@ -172,15 +157,15 @@ func (parser *ScriptParser) parseItem(table *lua.Table) *ItemData {
 			data.Armor = parser.getInt32(table, "armor")
 			data.MaxDurability = parser.getInt32(table, "max_durability")
 			data.StealthPenality = parser.getFloat32(table, "stealth_penalty")
-			data.StatBonuses = parser.getStatBlock(table, "stat_bonuses")
-			data.StatRequirements = parser.getStatBlock(table, "stat_requirements")
+			data.StatBonuses = parser.getStatBlock(table, "stat_bonuses", false)
+			data.StatRequirements = parser.getStatBlock(table, "stat_requirements", false)
 			itemData.Data = data
 		}
 
 		case ITEM_KIND_EQUIPMENT_ACCESSORY: {
 			data := &ItemDataAccessory{}
-			data.StatBonuses = parser.getStatBlock(table, "stat_bonuses")
-			data.StatRequirements = parser.getStatBlock(table, "stat_requirements")
+			data.StatBonuses = parser.getStatBlock(table, "stat_bonuses", false)
+			data.StatRequirements = parser.getStatBlock(table, "stat_requirements", false)
 			itemData.Data = data
 		}
 
@@ -195,7 +180,7 @@ func (parser *ScriptParser) parseItem(table *lua.Table) *ItemData {
 				parser.addProblem(fmt.Errorf("Spellbook spell '%s' does not exist.", spellName))
 			}
 
-			data.StatRequirements = parser.getStatBlock(table, "stat_requirements")
+			data.StatRequirements = parser.getStatBlock(table, "stat_requirements", false)
 			itemData.Data = data
 		}
 

@@ -85,7 +85,7 @@ func TestValidateProblems(t *testing.T) {
 		}, "invalid item id" },
 		{ "invalid drop chance", func(world *World) {
 			world.Npcs[0].DropTable.Entries = []DropTableEntry {
-				{ ItemId: ITEM_SWORD, DropChancePercent: 101 },
+				{ ItemId: TEST_ITEM_SWORD, DropChancePercent: 101 },
 			}
 		}, "invalid drop chance" },
 		{ "invalid amount range", func(world *World) {
@@ -94,7 +94,7 @@ func TestValidateProblems(t *testing.T) {
 					Name: "Chest",
 					DropTable: DropTable {
 						Entries: []DropTableEntry {
-							{ ItemId: ITEM_SWORD, AmountRange: Int32Range{ Min: 2, Max: 1 } },
+							{ ItemId: TEST_ITEM_SWORD, AmountRange: Int32Range{ Min: 2, Max: 1 } },
 						},
 					},
 				},

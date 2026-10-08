@@ -108,7 +108,8 @@ func (parser *ScriptParser) getTable(table *lua.Table, key string) *lua.Table {
 	return result
 }
 
-func (parser *ScriptParser) getStatBlock(table *lua.Table, key string) StatBlock {
+// Negative stat values are only accepted when allowNegative is true, e.g. for stat modifiers
+func (parser *ScriptParser) getStatBlock(table *lua.Table, key string, allowNegative bool) StatBlock {
 	stats := StatBlock{}
 
 	value := parser.getValue(table, key, lua.TableKind)
@@ -132,7 +133,7 @@ func (parser *ScriptParser) getStatBlock(table *lua.Table, key string) StatBlock
 		if math.Trunc(valueNumber) != valueNumber {
 			parser.addProblem(fmt.Errorf("Stat %s has non-integer value %v.", STAT_DATA[index].Abbreviation, valueNumber))
 		}
-		if valueNumber < 0 {
+		if !allowNegative && valueNumber < 0 {
 			parser.addProblem(fmt.Errorf("Stat %s has negative value %v.", STAT_DATA[index].Abbreviation, valueNumber))
 		}
 

@@ -53,7 +53,7 @@ func statAbbreviationToEnum(abbreviation string) (StatName, error) {
 		}
 	}
 
-	return 0, fmt.Errorf("%s is not a valid stat abbreviation.")
+	return 0, fmt.Errorf("%s is not a valid stat abbreviation.", abbreviation)
 }
 
 func (stats *StatBlock) Add(other *StatBlock) StatBlock {
