@@ -142,7 +142,7 @@ func (mob *Mob) IsInCombat(world *World) bool {
 	// A mob is in combat if at least one occupant in the room is a hostile, non-sleeping NPC
 	return slices.ContainsFunc(world.Rooms[mob.Data.Room].Occupants, func(handle MobHandle) bool {
 		occupant := world.Mobs.Get(handle)
-		return occupant.Npc != nil &&
+		return occupant.IsNpc() &&
 			occupant.Npc.mode != NPC_MODE_SLEEP &&
 			occupant.Npc.disposition == NPC_DISPOSITION_HOSTILE
 	})
@@ -322,7 +322,7 @@ func (mob *Mob) Update(world *World) {
 			success := mob.rollForTaunt(targetMob)
 			if success {
 				targetMob.SetModeAttack(world, mob.Target, mob.Handle)
-				if targetMob.Npc != nil {
+				if targetMob.IsNpc() {
 					targetMob.Npc.disposition = NPC_DISPOSITION_HOSTILE
 				}
 
@@ -373,7 +373,7 @@ func (mob *Mob) damage(world *World, attackerHandle MobHandle, damage int32) {
 	mob.Data.Health -= damage
 	mob.alertness = MOB_ALERTNESS_MAX
 
-	if mob.Npc != nil {
+	if mob.IsNpc() {
 		mob.Npc.OnEvent(world, BehaviorEvent {
 			Type: BEHAVIOR_EVENT_TYPE_ATTACKED,
 			Data: BehaviorEventAttacked {
@@ -566,7 +566,7 @@ func (mob *Mob) rollForTaunt(targetMob *Mob) bool {
 	tauntChance := mobStrength / targetIntelligence
 	tauntChance *= (1.0 - mob.tauntCooldown)
 
-	if targetMob.Npc != nil && targetMob.Npc.disposition == NPC_DISPOSITION_FRIENDLY {
+	if targetMob.IsNpc() && targetMob.Npc.disposition == NPC_DISPOSITION_FRIENDLY {
 		tauntChance = 0.0
 	}
 
@@ -641,7 +641,7 @@ func (mob *Mob) spellcast(world *World, targetMob *Mob) {
 	mob.Data.Mana -= spellData.ManaCost
 	spellData.onHit(world, mob, targetMob)
 
-	if mob.PlayerCharacter != nil {
+	if mob.IsPlayer() {
 		equippedSpell, spellIsEquipped := mob.PlayerCharacter.SpellsEquipped[mob.castSpell]
 		if spellIsEquipped && !equippedSpell.IsKnown {
 
@@ -782,7 +782,7 @@ func (mob *Mob) CraftItem(world *World, recipe Recipe) bool {
 	// Add the crafted item to the player's inventory
 	recipeOutput := recipeData.CreateOutput()
 	mob.Data.Inventory.AddItem(recipeOutput)
-	if mob.PlayerCharacter != nil {
+	if mob.IsPlayer() {
 		world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You crafted %s.", recipeOutput.GetNameWithAmount()))
 	}
 	return true
