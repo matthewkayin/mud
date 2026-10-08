@@ -80,8 +80,9 @@ func scriptGetFilesFrom(dir string) ([]string, error) {
 	paths := make([]string, 0, len(files))
 	for _, file := range files {
 		// Skip non-lua files
-		if strings.HasSuffix(file.Name(), ".lua") {
+		if !strings.HasSuffix(file.Name(), ".lua") {
 			log.Printf("Skipping non-lua file %s.", file.Name())
+			continue
 		}
 
 		// Determine path relative to the world data folder

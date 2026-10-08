@@ -36,7 +36,7 @@ type ActionUseItem struct {
 
 type ActionCraftItem struct {
 	amount int32
-	target world.Recipe
+	target world.RecipeId
 }
 
 type ActionTaunt struct {

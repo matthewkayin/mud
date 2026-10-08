@@ -80,7 +80,7 @@ func (parser *ScriptParser) getInt(table *lua.Table, key string) int {
 	if number != math.Trunc(number) {
 		parser.addProblem(fmt.Errorf("field '%s' must be an integer, got %v", key, number))
 	}
-	if number < math.MaxInt || number > math.MaxInt {
+	if number < math.MinInt || number > math.MaxInt {
 		parser.addProblem(fmt.Errorf("field '%s' must be between %d and %d, got %v", key, math.MinInt, math.MaxInt, number))
 	}
 
@@ -96,6 +96,15 @@ func (parser *ScriptParser) getBool(table *lua.Table, key string) bool {
 func (parser *ScriptParser) getFunction(table *lua.Table, key string) *lua.Function {
 	value := parser.getValue(table, key, lua.FunctionKind)
 	result, _ := value.AsFunction()
+	return result
+}
+
+func (parser *ScriptParser) getTable(table *lua.Table, key string) *lua.Table {
+	value := parser.getValue(table, key, lua.TableKind)
+	result, ok := value.AsTable()
+	if !ok {
+		return nil
+	}
 	return result
 }
 
@@ -121,10 +130,10 @@ func (parser *ScriptParser) getStatBlock(table *lua.Table, key string) StatBlock
 		}
 
 		if math.Trunc(valueNumber) != valueNumber {
-			parser.addProblem(fmt.Errorf("Stat %s has non-integer value %d.", STAT_DATA[index].Abbreviation, valueNumber))
+			parser.addProblem(fmt.Errorf("Stat %s has non-integer value %v.", STAT_DATA[index].Abbreviation, valueNumber))
 		}
 		if valueNumber < 0 {
-			parser.addProblem(fmt.Errorf("Stat %s has negative value %d.", STAT_DATA[index].Abbreviation, valueNumber))
+			parser.addProblem(fmt.Errorf("Stat %s has negative value %v.", STAT_DATA[index].Abbreviation, valueNumber))
 		}
 
 		stats.Values[index] = int32(valueNumber)

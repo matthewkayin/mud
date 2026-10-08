@@ -487,7 +487,7 @@ func fuzzyFindChestInventory(room *world.Room, searchWords []string) (*world.Inv
 	return &room.Chests[chestIndex].Inventory, room.Chests[chestIndex].Name, nil
 }
 
-func fuzzyFindKnownRecipe(character *world.Character, searchWords []string) (world.Recipe, error) {
+func fuzzyFindKnownRecipe(character *world.Character, searchWords []string) (world.RecipeId, error) {
 	if len(searchWords) == 0 {
 		return 0, errors.New("You must specify a recipe.")
 	}

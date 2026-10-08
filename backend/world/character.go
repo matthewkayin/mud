@@ -33,7 +33,7 @@ type Character struct {
 	SpellsEquipped map[SpellId]*CharacterEquippedSpell
 	SpellsKnown []SpellId
 	ClassSpells []SpellId
-	RecipesKnown []Recipe
+	RecipesKnown []RecipeId
 	RoomsDiscovered []byte
 	Data MobData
 }
@@ -48,7 +48,7 @@ type CharacterJson struct {
 	SpellsEquipped map[string]*CharacterEquippedSpell
 	SpellsKnown []string
 	ClassSpells []string
-	RecipesKnown []Recipe
+	RecipesKnown []string
 	RoomsDiscovered []byte
 	Data MobData
 }
@@ -87,7 +87,7 @@ func CharacterInitEmpty(playerId int, characterSheet *CharacterSheet) *Character
 	character.SpellsEquipped = make(map[SpellId]*CharacterEquippedSpell)
 	character.SpellsKnown = make([]SpellId, 0, 1)
 	character.ClassSpells = make([]SpellId, 0, 1)
-	character.RecipesKnown = make([]Recipe, 0, 1)
+	character.RecipesKnown = make([]RecipeId, 0, 1)
 
 	// Init inventory
 	character.Data.Inventory = Inventory {
@@ -119,7 +119,7 @@ func (character *Character) MarshalJSON() ([]byte, error) {
 		SpellsEquipped: make(map[string]*CharacterEquippedSpell),
 		SpellsKnown: spellsToStringArray(character.SpellsKnown),
 		ClassSpells: spellsToStringArray(character.ClassSpells),
-		RecipesKnown: character.RecipesKnown,
+		RecipesKnown: recipesToStringArray(character.RecipesKnown),
 		RoomsDiscovered: character.RoomsDiscovered,
 		Data: character.Data,
 	}
@@ -150,6 +150,7 @@ func (character *Character) UnmarshalJSON(data []byte) error {
 
 	character.SpellsKnown = spellsFromStringArray(characterJson.SpellsKnown)
 	character.ClassSpells = spellsFromStringArray(characterJson.ClassSpells)
+	character.RecipesKnown = recipesFromStringArray(characterJson.RecipesKnown)
 	character.RoomsDiscovered = characterJson.RoomsDiscovered
 	character.Data = characterJson.Data
 
@@ -173,6 +174,28 @@ func spellsFromStringArray(spellNames []string) []SpellId {
 			log.Fatalf("No spell ID matches spell '%s'.", spellNames[index])
 		}
 		result[index] = spellId
+	}
+
+	return result
+}
+
+func recipesToStringArray(recipeIds []RecipeId) []string {
+	result := make([]string, len(recipeIds))
+	for index := range len(recipeIds) {
+		result[index] = RECIPE_DATA[recipeIds[index]].Name
+	}
+
+	return result
+}
+
+func recipesFromStringArray(recipeNames []string) []RecipeId {
+	result := make([]RecipeId, len(recipeNames))
+	for index := range len(recipeNames) {
+		recipeId, exists := RECIPE_NAME_TO_ID[recipeNames[index]]
+		if !exists {
+			log.Fatalf("No recipe ID matches recipe '%s'.", recipeNames[index])
+		}
+		result[index] = recipeId
 	}
 
 	return result

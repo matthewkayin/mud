@@ -72,7 +72,7 @@ type Mob struct {
 	castTimer int32
 	useItemId ItemId
 
-	craftItemRecipe Recipe
+	craftItemRecipe RecipeId
 	craftItemAmount int32
 
 	escapeChance float32
@@ -212,7 +212,7 @@ func (mob *Mob) SetModeUseItem(world *World, mobHandle MobHandle, itemId ItemId,
 	mob.useItemId = itemId
 }
 
-func (mob *Mob) SetModeCraftItem(world *World, mobHandle MobHandle, recipe Recipe, amount int32) {
+func (mob *Mob) SetModeCraftItem(world *World, mobHandle MobHandle, recipe RecipeId, amount int32) {
 	mob.Mode = MOB_MODE_CRAFT_ITEM
 	mob.craftItemRecipe = recipe
 	mob.craftItemAmount = amount
@@ -698,7 +698,10 @@ func (mob *Mob) useItem(world *World, targetMob *Mob) {
 	switch itemData.Kind {
 		case ITEM_KIND_CONSUMABLE: {
 			consumableData := itemData.Data.(*ItemDataConsumable)
-			consumableData.onUse(world, targetMob)
+			_, err := world.luaState.Call(consumableData.onUse.Value(), lua.Nil(), lua.Nil())
+			if err != nil {
+				log.Printf("Warn - Error during item %s onUse: %s", itemData.Name, err.Error())
+			}
 		}
 		case ITEM_KIND_SPELL_SCROLL: {
 			scrollData := itemData.Data.(*ItemDataSpellScroll)
@@ -715,7 +718,7 @@ func (mob *Mob) useItem(world *World, targetMob *Mob) {
 }
 
 // Returns an error if the mob is unable to craft batchAmount of the recipe
-func (mob *Mob) CanCraft(recipe Recipe, batchAmount int32) error {
+func (mob *Mob) CanCraft(recipe RecipeId, batchAmount int32) error {
 	recipeData := RECIPE_DATA[recipe]
 
 	// Check for the materials
@@ -742,7 +745,7 @@ func (mob *Mob) InventoryCapacity() int32 {
 	return INVENTORY_CAPACITY_PLAYER
 }
 
-func (mob *Mob) CraftItem(world *World, recipe Recipe) bool {
+func (mob *Mob) CraftItem(world *World, recipe RecipeId) bool {
 	recipeData := RECIPE_DATA[recipe]
 
 	err := mob.CanCraft(recipe, 1)

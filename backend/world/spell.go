@@ -49,6 +49,9 @@ func (world *World) loadSpellData() {
 		// Parse spell data
 		parser := ScriptParser{}
 		spellData := parser.parseSpell(table)
+		if spellData == nil {
+			log.Fatalf("%s: %s", path, parser.getError().Error())
+		}
 
 		// Check for duplicates
 		_, duplicateSpellName := SPELL_NAME_TO_ID[spellData.Name]
@@ -59,7 +62,7 @@ func (world *World) loadSpellData() {
 		// Store spell in SPELL_DATA
 		SPELL_NAME_TO_ID[spellData.Name] = SpellId(len(SPELL_DATA))
 		SPELL_DATA = append(SPELL_DATA, spellData)
-		log.Printf("Loaded spell %s.", path)
+		log.Printf("Loaded spell '%s'.", spellData.Name)
 	}
 
 	log.Printf("All spell data has been loaded.")

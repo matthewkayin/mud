@@ -79,7 +79,7 @@ type ItemDataSpellbook struct {
 }
 
 type ItemDataRecipe struct {
-	Recipe Recipe
+	Recipe RecipeId
 }
 
 type ItemData struct {
@@ -95,7 +95,7 @@ type ItemData struct {
 var ITEM_DATA []*ItemData
 var ITEM_NAME_TO_ID map[string]ItemId
 
-const ITEM_DATA_FOLDER = WORLD_DATA_FOLDER + "/spells"
+const ITEM_DATA_FOLDER = WORLD_DATA_FOLDER + "/items"
 
 func (world *World) loadItemData() {
 	// Read item folder
@@ -118,6 +118,9 @@ func (world *World) loadItemData() {
 		// Parse item data
 		parser := ScriptParser{}
 		itemData := parser.parseItem(table)
+		if itemData == nil {
+			log.Fatalf("%s: %s", path, parser.getError().Error())
+		}
 
 		// Check for duplicates
 		_, duplicateItemName := ITEM_NAME_TO_ID[itemData.Name]
@@ -128,7 +131,7 @@ func (world *World) loadItemData() {
 		// Store item in ITEM_DATA
 		ITEM_NAME_TO_ID[itemData.Name] = ItemId(len(ITEM_DATA))
 		ITEM_DATA = append(ITEM_DATA, itemData)
-		log.Printf("Loaded item %s.", path)
+		log.Printf("Loaded item '%s'.", itemData.Name)
 	}
 
 	log.Printf("All item data has been loaded.")
@@ -205,7 +208,21 @@ func (parser *ScriptParser) parseItem(table *lua.Table) *ItemData {
 		}
 
 		case ITEM_KIND_RECIPE: {
+			data := &ItemDataRecipe{}
 
+			recipeName := parser.getString(table, "recipe")
+
+			var exists bool
+			data.Recipe, exists = RECIPE_NAME_TO_ID[recipeName]
+			if !exists {
+				parser.addProblem(fmt.Errorf("Recipe '%s' does not exist.", recipeName))
+			}
+
+			itemData.Data = data
+		}
+
+		case ITEM_KIND_MISC: {
+			// Misc items have no item-specific data
 		}
 
 		default: {

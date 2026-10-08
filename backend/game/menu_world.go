@@ -1426,7 +1426,7 @@ var MENU_WORLD = Menu {
 
 						return true
 					case world.ITEM_KIND_RECIPE:
-						var recipe world.Recipe = itemData.Data.(*world.ItemDataRecipe).Recipe
+						var recipe world.RecipeId = itemData.Data.(*world.ItemDataRecipe).Recipe
 						recipeData := world.RECIPE_DATA[recipe]
 
 						if recipeData.Job != player.character.Job {

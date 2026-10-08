@@ -45,8 +45,15 @@ func WorldInit() *World {
 	}
 	defer file.Close()
 
-	// Decode JSON into world object
+	// Load script data. This must happen before validation, which checks references to it
 	world := &World{}
+	world.scriptInit()
+	world.loadSpellData()
+	recipeTables := world.loadRecipeTables()
+	world.loadItemData()
+	world.loadRecipeData(recipeTables)
+
+	// Decode JSON into world object
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(world)
 	if err != nil {
@@ -57,7 +64,7 @@ func WorldInit() *World {
 	problems := world.Validate()
 	if len(problems) != 0 {
 		log.Printf("World validation encountered problems:")
-		for problem := range problems {
+		for _, problem := range problems {
 			log.Print(problem)
 		}
 		log.Fatalf("Unable to load world because of validation issues.")
@@ -67,8 +74,6 @@ func WorldInit() *World {
 	world.Events = make([]Event, 0, 64)
 	world.Mobs = MobArrayInit()
 
-	world.scriptInit()
-	world.loadSpellData()
 	world.loadCharacters()
 
 	log.Printf("World initialized.")
