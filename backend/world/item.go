@@ -3,6 +3,7 @@ package world
 import (
 	"fmt"
 	"log"
+	"encoding/json"
 	"github.com/mmcdole/lunar"
 )
 
@@ -12,6 +13,39 @@ type Item struct {
 	Id ItemId
 	Amount int32
 	Durability int32
+}
+
+type ItemJson struct {
+	Id string
+	Amount int32
+	Durability int32
+}
+
+func (item *Item) MarshalJSON() ([]byte, error) {
+	itemJson := ItemJson {
+		Id: ITEM_DATA[item.Id].Name,
+		Amount: item.Amount,
+		Durability: item.Durability,
+	}
+	return json.Marshal(&itemJson)
+}
+
+func (item *Item) UnmarshalJSON(data []byte) error {
+	var itemJson ItemJson
+	err := json.Unmarshal(data, &itemJson)
+	if err != nil {
+		return err
+	}
+
+	var exists bool
+	item.Id, exists = ITEM_NAME_TO_ID[itemJson.Id]
+	if !exists {
+		log.Fatalf("No item ID matches '%s'.", itemJson.Id)
+	}
+	item.Amount = itemJson.Amount
+	item.Durability = itemJson.Durability
+
+	return nil
 }
 
 // ITEM DATA

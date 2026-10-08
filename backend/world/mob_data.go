@@ -1,5 +1,10 @@
 package world
 
+import (
+	"log"
+	"encoding/json"
+)
+
 const MOB_MAX_LEVEL int32 = 3
 const MOB_EXP_PER_LEVEL int32 = 300
 
@@ -27,6 +32,106 @@ type MobData struct {
 	Spells []SpellId
 	Inventory Inventory
 	Equipment Equipment
+}
+
+type MobDataJson struct {
+	Name string
+	Room int
+
+	Level int32
+	Experience int32
+	ExperienceToNextLevel int32
+
+	Stats StatBlock
+	Abilities []string
+
+	Health int32
+	Mana int32
+
+	Spells []string
+	Inventory Inventory
+	Equipment Equipment
+}
+
+func (mobData *MobData) MarshalJSON() ([]byte, error) {
+	mobDataJson := MobDataJson {
+		Name: mobData.Name,
+		Room: mobData.Room,
+
+		Level: mobData.Level,
+		Experience: mobData.Experience,
+		ExperienceToNextLevel: mobData.ExperienceToNextLevel,
+
+		Stats: mobData.Stats,
+		Abilities: mobData.abilitiesToStringArray(),
+
+		Health: mobData.Health,
+		Mana: mobData.Mana,
+
+		Spells: spellsToStringArray(mobData.Spells),
+		Inventory: mobData.Inventory,
+		Equipment: mobData.Equipment,
+	}
+	return json.Marshal(&mobDataJson)
+}
+
+func (mobData *MobData) UnmarshalJSON(data []byte) error {
+	var mobDataJson MobDataJson
+	err := json.Unmarshal(data, &mobDataJson)
+	if err != nil {
+		return err
+	}
+
+	mobData.Name = mobDataJson.Name
+	mobData.Room = mobDataJson.Room
+
+	mobData.Level = mobDataJson.Level
+	mobData.Experience = mobDataJson.Experience
+	mobData.ExperienceToNextLevel = mobDataJson.ExperienceToNextLevel
+
+	mobData.Stats = mobDataJson.Stats
+	mobData.setAbilitiesFromStringArray(mobDataJson.Abilities)
+
+	mobData.Health = mobDataJson.Health
+	mobData.Mana = mobDataJson.Mana
+
+	mobData.Spells = spellsFromStringArray(mobDataJson.Spells)
+	mobData.Inventory = mobDataJson.Inventory
+	mobData.Equipment = mobDataJson.Equipment
+
+	return nil
+}
+
+func (mobData *MobData) abilitiesToStringArray() []string {
+	results := make([]string, 0, 1)
+
+	for index := range MOB_ABILITY_COUNT {
+		if !mobData.HasAbility(MobAbility(index)) {
+			continue
+		}
+
+		results = append(results, MOB_ABILITY_DATA[index].Name)
+	}
+
+	return results
+}
+
+func (mobData *MobData) setAbilitiesFromStringArray(abilities []string) {
+	for _, abilityName := range abilities {
+		var abilityIndex int = -1
+		for index := range MOB_ABILITY_COUNT {
+			if abilityName == MOB_ABILITY_DATA[index].Name {
+				abilityIndex = int(index)
+				break
+			}
+		}
+
+		if abilityIndex == -1 {
+			log.Fatalf("No mob ability exists with name '%s'.", abilityName)
+		}
+
+		mobData.SetHasAbility(MobAbility(abilityIndex), true)
+	}
 }
 
 func (mobData *MobData) GetExpToNextLevel() int32 {
