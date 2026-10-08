@@ -24,15 +24,15 @@ type Equipment struct {
 	StatBonuses StatBlock
 }
 
-func ItemTypeMatchesEquipmentSlot(itemType ItemType, slot EquipmentSlot) bool {
-	switch itemType {
-		case ITEM_TYPE_EQUIPMENT_ONE_HANDED, ITEM_TYPE_EQUIPMENT_SPELLBOOK:
+func ItemTypeMatchesEquipmentSlot(kind ItemKind, slot EquipmentSlot) bool {
+	switch kind {
+		case ITEM_KIND_EQUIPMENT_ONE_HANDED, ITEM_KIND_EQUIPMENT_SPELLBOOK:
 			return slot == EQUIPMENT_SLOT_MAIN_HAND || slot == EQUIPMENT_SLOT_OFF_HAND
-		case ITEM_TYPE_EQUIPMENT_TWO_HANDED:
+		case ITEM_KIND_EQUIPMENT_TWO_HANDED:
 			return slot == EQUIPMENT_SLOT_MAIN_HAND
-		case ITEM_TYPE_EQUIPMENT_OUTFIT:
+		case ITEM_KIND_EQUIPMENT_OUTFIT:
 			return slot == EQUIPMENT_SLOT_OUTFIT
-		case ITEM_TYPE_EQUIPMENT_ACCESSORY:
+		case ITEM_KIND_EQUIPMENT_ACCESSORY:
 			return slot == EQUIPMENT_SLOT_ACCESSORY
 		// For all other items types, return false because they are not equipment
 		default:
@@ -40,11 +40,11 @@ func ItemTypeMatchesEquipmentSlot(itemType ItemType, slot EquipmentSlot) bool {
 	}
 }
 
-func EquipmentSlotForItemType(itemType ItemType) (EquipmentSlot, bool) {
-	switch itemType {
-		case ITEM_TYPE_EQUIPMENT_OUTFIT:
+func EquipmentSlotForItemType(kind ItemKind) (EquipmentSlot, bool) {
+	switch kind {
+		case ITEM_KIND_EQUIPMENT_OUTFIT:
 			return EQUIPMENT_SLOT_OUTFIT, true
-		case ITEM_TYPE_EQUIPMENT_ACCESSORY:
+		case ITEM_KIND_EQUIPMENT_ACCESSORY:
 			return EQUIPMENT_SLOT_ACCESSORY, true
 		default:
 			return EQUIPMENT_SLOT_COUNT, false
@@ -99,7 +99,7 @@ func (equipment *Equipment) isTwoHandedWeaponEquipped() bool {
 		return false
 	}
 
-	return ITEM_DATA[item.Id].ItemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED
+	return ITEM_DATA[item.Id].Kind == ITEM_KIND_EQUIPMENT_TWO_HANDED
 }
 
 func (equipment *Equipment) Unequip(slot EquipmentSlot) (Item, bool) {
@@ -116,7 +116,7 @@ func (equipment *Equipment) Unequip(slot EquipmentSlot) (Item, bool) {
 	}
 
 	item := equipment.SlotItem[slot]
-	if ITEM_DATA[item.Id].ItemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED {
+	if ITEM_DATA[item.Id].Kind == ITEM_KIND_EQUIPMENT_TWO_HANDED {
 		equipment.IsSlotInUse[EQUIPMENT_SLOT_MAIN_HAND] = false
 		equipment.IsSlotInUse[EQUIPMENT_SLOT_OFF_HAND] = false
 	} else {
@@ -130,8 +130,8 @@ func (equipment *Equipment) Unequip(slot EquipmentSlot) (Item, bool) {
 
 // If equipping two handed weapon, we need to remove main and offhand
 // Otherwise we just need to remove the passed-in slot
-func slotsDisplacedBy(slot EquipmentSlot, itemType ItemType) []EquipmentSlot {
-	if itemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED {
+func slotsDisplacedBy(slot EquipmentSlot, kind ItemKind) []EquipmentSlot {
+	if kind == ITEM_KIND_EQUIPMENT_TWO_HANDED {
 		return []EquipmentSlot {
 			EQUIPMENT_SLOT_MAIN_HAND,
 			EQUIPMENT_SLOT_OFF_HAND,
@@ -145,7 +145,7 @@ func slotsDisplacedBy(slot EquipmentSlot, itemType ItemType) []EquipmentSlot {
 func (equipment *Equipment) ItemsDisplacedBy(slot EquipmentSlot, item Item) []Item {
 	displacedItems := make([]Item, 0, 2)
 
-	displacedSlots := slotsDisplacedBy(slot, ITEM_DATA[item.Id].ItemType)
+	displacedSlots := slotsDisplacedBy(slot, ITEM_DATA[item.Id].Kind)
 	for _, displacedSlot := range displacedSlots {
 		displacedItem := equipment.Get(displacedSlot)
 		if displacedItem != nil {
@@ -161,7 +161,7 @@ func (equipment *Equipment) Equip(slot EquipmentSlot, item Item) ([]Item, bool) 
 	unequippedItems := make([]Item, 0, 2)
 
 	// Check item type against equipment slot
-	itemType := ITEM_DATA[item.Id].ItemType
+	itemType := ITEM_DATA[item.Id].Kind
 	if !ItemTypeMatchesEquipmentSlot(itemType, slot) {
 		return unequippedItems, false
 	}
@@ -175,7 +175,7 @@ func (equipment *Equipment) Equip(slot EquipmentSlot, item Item) ([]Item, bool) 
 	}
 
 	// Set the slot as in use
-	if itemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED {
+	if itemType == ITEM_KIND_EQUIPMENT_TWO_HANDED {
 		equipment.IsSlotInUse[EQUIPMENT_SLOT_MAIN_HAND] = true
 		equipment.IsSlotInUse[EQUIPMENT_SLOT_OFF_HAND] = true
 	} else {
@@ -223,7 +223,7 @@ func (equipment *Equipment) IsHoldingSpellbookOf(spell SpellId) bool {
 			continue
 		}
 		heldItemData := ITEM_DATA[heldItem.Id]
-		if heldItemData.ItemType != ITEM_TYPE_EQUIPMENT_SPELLBOOK {
+		if heldItemData.Kind != ITEM_KIND_EQUIPMENT_SPELLBOOK {
 			continue
 		}
 

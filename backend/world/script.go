@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
+
 	"github.com/mmcdole/lunar"
 )
 
@@ -69,14 +71,25 @@ func (world *World) scriptLoadTable(path string) (*lua.Table, error) {
 	return table, nil
 }
 
-func (world *World) scriptLoadSpell(path string) (*SpellData, error) {
-	table, err := world.scriptLoadTable(path)
+func scriptGetFilesFrom(dir string) ([]string, error) {
+	files, err := os.ReadDir(dir)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %s", path, err.Error())
+		return []string{}, err
 	}
 
-	parser := ScriptParser{}
-	spellData := parser.parseSpell(table)
+	paths := make([]string, 0, len(files))
+	for _, file := range files {
+		// Skip non-lua files
+		if strings.HasSuffix(file.Name(), ".lua") {
+			log.Printf("Skipping non-lua file %s.", file.Name())
+		}
 
-	return spellData, parser.getError()
+		// Determine path relative to the world data folder
+		path := dir + "/" + file.Name()
+		path = path[len(WORLD_DATA_FOLDER) + 1:]
+
+		paths = append(paths, path)
+	}
+
+	return paths, nil
 }

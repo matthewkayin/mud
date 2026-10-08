@@ -25,7 +25,7 @@ func TestEquipTwoHandedDisplacesBothHands(t *testing.T) {
 	// There is no two-handed item in the data yet, so temporarily treat the axe as one
 	originalAxeData := ITEM_DATA[ITEM_AXE]
 	twoHandedAxeData := *originalAxeData
-	twoHandedAxeData.ItemType = ITEM_TYPE_EQUIPMENT_TWO_HANDED
+	twoHandedAxeData.Kind = ITEM_KIND_EQUIPMENT_TWO_HANDED
 	ITEM_DATA[ITEM_AXE] = &twoHandedAxeData
 	defer func() { ITEM_DATA[ITEM_AXE] = originalAxeData }()
 
@@ -100,7 +100,7 @@ func TestEquipSpellbookTracksEquippedSpell(t *testing.T) {
 func TestEquipRefusedWhenSwapOverflowsInventory(t *testing.T) {
 	originalAxeData := ITEM_DATA[ITEM_AXE]
 	twoHandedAxeData := *originalAxeData
-	twoHandedAxeData.ItemType = ITEM_TYPE_EQUIPMENT_TWO_HANDED
+	twoHandedAxeData.Kind = ITEM_KIND_EQUIPMENT_TWO_HANDED
 	ITEM_DATA[ITEM_AXE] = &twoHandedAxeData
 	defer func() { ITEM_DATA[ITEM_AXE] = originalAxeData }()
 

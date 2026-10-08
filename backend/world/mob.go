@@ -378,8 +378,8 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	if weapon != nil {
 		itemData = ITEM_DATA[weapon.Id]
 		heldItemIsWeapon =
-			itemData.ItemType == ITEM_TYPE_EQUIPMENT_ONE_HANDED ||
-			itemData.ItemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED
+			itemData.Kind == ITEM_KIND_EQUIPMENT_ONE_HANDED ||
+			itemData.Kind == ITEM_KIND_EQUIPMENT_TWO_HANDED
 	}
 
 	// Don't attack with off-hand unless there is a weapon in off-hand
@@ -598,8 +598,8 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 	itemIsSharp := item.Durability > maxDurability
 	if itemWasSharp && !itemIsSharp {
 		itemIsWeapon :=
-			itemData.ItemType == ITEM_TYPE_EQUIPMENT_ONE_HANDED ||
-			itemData.ItemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED
+			itemData.Kind == ITEM_KIND_EQUIPMENT_ONE_HANDED ||
+			itemData.Kind == ITEM_KIND_EQUIPMENT_TWO_HANDED
 		if itemIsWeapon {
 			world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("Your %s has lost its sharpness.", itemData.Name))
 		} else {
@@ -663,7 +663,7 @@ func (mob *Mob) getSpellProvidedBySlot(slot EquipmentSlot) (SpellId, bool) {
 	}
 
 	itemData := ITEM_DATA[item.Id]
-	if itemData.ItemType != ITEM_TYPE_EQUIPMENT_SPELLBOOK {
+	if itemData.Kind != ITEM_KIND_EQUIPMENT_SPELLBOOK {
 		return 0, false
 	}
 
@@ -695,12 +695,12 @@ func (mob *Mob) useItem(world *World, targetMob *Mob) {
 	itemData := ITEM_DATA[item.Id]
 	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s used %s!", mob.GetName(), itemData.Name))
 
-	switch itemData.ItemType {
-		case ITEM_TYPE_CONSUMABLE: {
+	switch itemData.Kind {
+		case ITEM_KIND_CONSUMABLE: {
 			consumableData := itemData.Data.(*ItemDataConsumable)
 			consumableData.onUse(world, targetMob)
 		}
-		case ITEM_TYPE_SPELL_SCROLL: {
+		case ITEM_KIND_SPELL_SCROLL: {
 			scrollData := itemData.Data.(*ItemDataSpellScroll)
 			spellData := SPELL_DATA[scrollData.Spell]
 
@@ -710,7 +710,7 @@ func (mob *Mob) useItem(world *World, targetMob *Mob) {
 			}
 		}
 		default:
-			panic(fmt.Sprintf("Unhandled item type %s. This item type should never have been allowed to be used here.", ItemTypeToString(itemData.ItemType)))
+			panic(fmt.Sprintf("Unhandled item type %s. This item type should never have been allowed to be used here.", ItemKindToString(itemData.Kind)))
 	}
 }
 

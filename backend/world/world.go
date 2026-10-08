@@ -8,7 +8,6 @@ import (
 )
 
 const WORLD_DATA_FOLDER = "./data"
-const WORLD_SPELLS_FOLDER = WORLD_DATA_FOLDER + "/spells"
 const WORLD_CHARACTER_SAVES_FOLDER = "./saves"
 const WORLD_JSON_PATH = WORLD_DATA_FOLDER + "/world.json"
 
@@ -69,7 +68,7 @@ func WorldInit() *World {
 	world.Mobs = MobArrayInit()
 
 	world.scriptInit()
-	world.loadSpells()
+	world.loadSpellData()
 	world.loadCharacters()
 
 	log.Printf("World initialized.")

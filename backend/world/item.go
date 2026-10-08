@@ -2,6 +2,8 @@ package world
 
 import (
 	"fmt"
+	"log"
+	"github.com/mmcdole/lunar"
 )
 
 type ItemId int32
@@ -29,21 +31,22 @@ type Item struct {
 
 // ITEM DATA
 
-type ItemType int
+type ItemKind int
 const (
-	ITEM_TYPE_CONSUMABLE = iota
-	ITEM_TYPE_EQUIPMENT_ONE_HANDED
-	ITEM_TYPE_EQUIPMENT_TWO_HANDED
-	ITEM_TYPE_EQUIPMENT_OUTFIT
-	ITEM_TYPE_EQUIPMENT_ACCESSORY
-	ITEM_TYPE_EQUIPMENT_SPELLBOOK
-	ITEM_TYPE_SPELL_SCROLL
-	ITEM_TYPE_RECIPE
-	ITEM_TYPE_MISC // Indicates an item which has no special properties, like gold or a material
+	ITEM_KIND_CONSUMABLE = iota
+	ITEM_KIND_EQUIPMENT_ONE_HANDED
+	ITEM_KIND_EQUIPMENT_TWO_HANDED
+	ITEM_KIND_EQUIPMENT_OUTFIT
+	ITEM_KIND_EQUIPMENT_ACCESSORY
+	ITEM_KIND_EQUIPMENT_SPELLBOOK
+	ITEM_KIND_SPELL_SCROLL
+	ITEM_KIND_RECIPE
+	ITEM_KIND_MISC // Indicates an item which has no special properties, like gold or a material
+	ITEM_KIND_COUNT
 )
 
 type ItemDataConsumable struct {
-	onUse func(world *World, target *Mob)
+	onUse *lua.Function
 }
 
 type ItemDataSpellScroll struct {
@@ -82,45 +85,156 @@ type ItemDataRecipe struct {
 type ItemData struct {
 	Name string
 	Description string
-	ItemType ItemType
+	Kind ItemKind
 	Size int32
 	Data any
+}
+
+// LOAD
+
+var ITEM_DATA []*ItemData
+var ITEM_NAME_TO_ID map[string]ItemId
+
+const ITEM_DATA_FOLDER = WORLD_DATA_FOLDER + "/spells"
+
+func (world *World) loadItemData() {
+	// Read item folder
+	log.Printf("Loading item data...")
+	paths, err := scriptGetFilesFrom(ITEM_DATA_FOLDER)
+	if err != nil {
+		log.Fatalf("Error opening item data folder: %s", err.Error())
+	}
+
+	ITEM_DATA = make([]*ItemData, 0, len(paths))
+	ITEM_NAME_TO_ID = make(map[string]ItemId)
+
+	for _, path := range paths {
+		// Open script
+		table, err := world.scriptLoadTable(path)
+		if err != nil {
+			log.Fatalf("%s: %s", path, err.Error())
+		}
+
+		// Parse item data
+		parser := ScriptParser{}
+		itemData := parser.parseItem(table)
+
+		// Check for duplicates
+		_, duplicateItemName := ITEM_NAME_TO_ID[itemData.Name]
+		if duplicateItemName {
+			log.Fatalf("Item %s has name '%s' which is a duplicate of another item.", path, itemData.Name)
+		}
+
+		// Store item in ITEM_DATA
+		ITEM_NAME_TO_ID[itemData.Name] = ItemId(len(ITEM_DATA))
+		ITEM_DATA = append(ITEM_DATA, itemData)
+		log.Printf("Loaded item %s.", path)
+	}
+
+	log.Printf("All item data has been loaded.")
+}
+
+func (parser *ScriptParser) parseItem(table *lua.Table) *ItemData {
+	itemData := &ItemData{}
+
+	itemData.Name = parser.getString(table, "name")
+	itemData.Description = parser.getString(table, "description")
+	itemData.Size = parser.getInt32(table, "size")
+	itemData.Kind = ItemKind(parser.getInt(table, "kind"))
+
+	switch itemData.Kind {
+		case ITEM_KIND_CONSUMABLE: {
+			data := &ItemDataConsumable{}
+			data.onUse = parser.getFunction(table, "on_use")
+			itemData.Data = data
+		}
+
+		case ITEM_KIND_EQUIPMENT_ONE_HANDED, ITEM_KIND_EQUIPMENT_TWO_HANDED: {
+			data := &ItemDataWeapon{}
+			data.Damage = parser.getInt32(table, "damage")
+			data.MaxDurability = parser.getInt32(table, "max_durability")
+			data.StatBonuses = parser.getStatBlock(table, "stat_bonuses")
+			data.StatRequirements = parser.getStatBlock(table, "stat_requirements")
+			itemData.Data = data
+		}
+
+		case ITEM_KIND_EQUIPMENT_OUTFIT: {
+			data := &ItemDataOutfit{}
+			data.Armor = parser.getInt32(table, "armor")
+			data.MaxDurability = parser.getInt32(table, "max_durability")
+			data.StealthPenality = parser.getFloat32(table, "stealth_penalty")
+			data.StatBonuses = parser.getStatBlock(table, "stat_bonuses")
+			data.StatRequirements = parser.getStatBlock(table, "stat_requirements")
+			itemData.Data = data
+		}
+
+		case ITEM_KIND_EQUIPMENT_ACCESSORY: {
+			data := &ItemDataAccessory{}
+			data.StatBonuses = parser.getStatBlock(table, "stat_bonuses")
+			data.StatRequirements = parser.getStatBlock(table, "stat_requirements")
+			itemData.Data = data
+		}
+
+		case ITEM_KIND_EQUIPMENT_SPELLBOOK: {
+			data := &ItemDataSpellbook{}
+
+			spellName := parser.getString(table, "spell")
+
+			var exists bool
+			data.Spell, exists = SPELL_NAME_TO_ID[spellName]
+			if !exists {
+				parser.addProblem(fmt.Errorf("Spellbook spell '%s' does not exist.", spellName))
+			}
+
+			data.StatRequirements = parser.getStatBlock(table, "stat_requirements")
+			itemData.Data = data
+		}
+
+		default: {
+			parser.addProblem(fmt.Errorf("Unrecognized item kind %d", itemData.Kind))
+		}
+	}
+
+	if len(parser.problems) != 0 {
+		return nil
+	}
+
+	return itemData
 }
 
 // HELPERS
 
 func (itemData *ItemData) ItemIsOneHanded() bool {
-	return itemData.ItemType == ITEM_TYPE_EQUIPMENT_ONE_HANDED ||
-		itemData.ItemType == ITEM_TYPE_EQUIPMENT_SPELLBOOK
+	return itemData.Kind == ITEM_KIND_EQUIPMENT_ONE_HANDED ||
+		itemData.Kind == ITEM_KIND_EQUIPMENT_SPELLBOOK
 }
 
 func (itemData *ItemData) ItemCanStack() bool {
-	return itemData.ItemType == ITEM_TYPE_CONSUMABLE ||
-		itemData.ItemType == ITEM_TYPE_SPELL_SCROLL ||
-		itemData.ItemType == ITEM_TYPE_MISC
+	return itemData.Kind == ITEM_KIND_CONSUMABLE ||
+		itemData.Kind == ITEM_KIND_SPELL_SCROLL ||
+		itemData.Kind == ITEM_KIND_MISC
 }
 
-func ItemTypeToString(itemType ItemType) string {
-	switch itemType {
-		case ITEM_TYPE_CONSUMABLE:
+func ItemKindToString(kind ItemKind) string {
+	switch kind {
+		case ITEM_KIND_CONSUMABLE:
 			return "Consumable"
-		case ITEM_TYPE_EQUIPMENT_ONE_HANDED:
+		case ITEM_KIND_EQUIPMENT_ONE_HANDED:
 			return "One-Handed Weapon"
-		case ITEM_TYPE_EQUIPMENT_TWO_HANDED:
+		case ITEM_KIND_EQUIPMENT_TWO_HANDED:
 			return "Two-handed Weapon"
-		case ITEM_TYPE_EQUIPMENT_OUTFIT:
+		case ITEM_KIND_EQUIPMENT_OUTFIT:
 			return "Outfit"
-		case ITEM_TYPE_EQUIPMENT_SPELLBOOK:
+		case ITEM_KIND_EQUIPMENT_SPELLBOOK:
 			return "Spellbook"
-		case ITEM_TYPE_SPELL_SCROLL:
+		case ITEM_KIND_SPELL_SCROLL:
 			return "Spell Scroll"
-		case ITEM_TYPE_RECIPE:
+		case ITEM_KIND_RECIPE:
 			return "Recipe"
-		case ITEM_TYPE_MISC:
-			// TODO: better name?
+		case ITEM_KIND_MISC:
 			return "Misc"
 		default:
-			panic(fmt.Sprintf("Item type %d not handled", itemType))
+			panic(fmt.Sprintf("Item kind %d not handled", kind))
 	}
 }
 
@@ -130,14 +244,14 @@ func (item *Item) Size() int32 {
 
 func (item *Item) GetStatBonuses() *StatBlock {
 	itemData := ITEM_DATA[item.Id]
-	switch itemData.ItemType {
-		case ITEM_TYPE_EQUIPMENT_ONE_HANDED, ITEM_TYPE_EQUIPMENT_TWO_HANDED:
+	switch itemData.Kind {
+		case ITEM_KIND_EQUIPMENT_ONE_HANDED, ITEM_KIND_EQUIPMENT_TWO_HANDED:
 			weaponData := itemData.Data.(*ItemDataWeapon)
 			return &weaponData.StatBonuses
-		case ITEM_TYPE_EQUIPMENT_OUTFIT:
+		case ITEM_KIND_EQUIPMENT_OUTFIT:
 			outfitData := itemData.Data.(*ItemDataOutfit)
 			return &outfitData.StatBonuses
-		case ITEM_TYPE_EQUIPMENT_ACCESSORY:
+		case ITEM_KIND_EQUIPMENT_ACCESSORY:
 			accessoryData := itemData.Data.(*ItemDataAccessory)
 			return &accessoryData.StatBonuses
 		default:
@@ -147,17 +261,17 @@ func (item *Item) GetStatBonuses() *StatBlock {
 
 func (item *Item) GetStatRequirements() *StatBlock {
 	itemData := ITEM_DATA[item.Id]
-	switch itemData.ItemType {
-		case ITEM_TYPE_EQUIPMENT_ONE_HANDED, ITEM_TYPE_EQUIPMENT_TWO_HANDED:
+	switch itemData.Kind {
+		case ITEM_KIND_EQUIPMENT_ONE_HANDED, ITEM_KIND_EQUIPMENT_TWO_HANDED:
 			weaponData := itemData.Data.(*ItemDataWeapon)
 			return &weaponData.StatRequirements
-		case ITEM_TYPE_EQUIPMENT_OUTFIT:
+		case ITEM_KIND_EQUIPMENT_OUTFIT:
 			outfitData := itemData.Data.(*ItemDataOutfit)
 			return &outfitData.StatRequirements
-		case ITEM_TYPE_EQUIPMENT_ACCESSORY:
+		case ITEM_KIND_EQUIPMENT_ACCESSORY:
 			accessoryData := itemData.Data.(*ItemDataAccessory)
 			return &accessoryData.StatRequirements
-		case ITEM_TYPE_EQUIPMENT_SPELLBOOK:
+		case ITEM_KIND_EQUIPMENT_SPELLBOOK:
 			spellbookData := itemData.Data.(*ItemDataSpellbook)
 			return &spellbookData.StatRequirements
 		default:
@@ -173,7 +287,7 @@ func (item *Item) GetNameWithCondition() string {
 		return itemData.Name
 	}
 
-	itemIsWeapon := itemData.ItemType == ITEM_TYPE_EQUIPMENT_ONE_HANDED || itemData.ItemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED
+	itemIsWeapon := itemData.Kind == ITEM_KIND_EQUIPMENT_ONE_HANDED || itemData.Kind == ITEM_KIND_EQUIPMENT_TWO_HANDED
 	if item.Durability < maxDurability / 2 {
 		return "Damaged " + itemData.Name
 	} else if item.Durability > maxDurability && itemIsWeapon {
@@ -195,14 +309,14 @@ func (item *Item) GetNameWithAmount() string {
 }
 
 func (itemData *ItemData) GetMaxDurability() int32 {
-	switch itemData.ItemType {
-		case ITEM_TYPE_EQUIPMENT_ONE_HANDED, ITEM_TYPE_EQUIPMENT_TWO_HANDED:
+	switch itemData.Kind {
+		case ITEM_KIND_EQUIPMENT_ONE_HANDED, ITEM_KIND_EQUIPMENT_TWO_HANDED:
 			weaponData := itemData.Data.(*ItemDataWeapon)
 			return weaponData.MaxDurability
-		case ITEM_TYPE_EQUIPMENT_OUTFIT:
+		case ITEM_KIND_EQUIPMENT_OUTFIT:
 			outfitData := itemData.Data.(*ItemDataOutfit)
 			return outfitData.MaxDurability
-		case ITEM_TYPE_EQUIPMENT_SPELLBOOK:
+		case ITEM_KIND_EQUIPMENT_SPELLBOOK:
 			spellbookData := itemData.Data.(*ItemDataSpellbook)
 			spellData := SPELL_DATA[spellbookData.Spell]
 			return spellData.CastsToLearn

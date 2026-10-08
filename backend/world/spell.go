@@ -1,9 +1,9 @@
 package world
 
 import (
+	"fmt"
 	"log"
-	"os"
-	"strings"
+
 	"github.com/mmcdole/lunar"
 )
 
@@ -26,38 +26,72 @@ type SpellData struct {
 var SPELL_DATA []*SpellData
 var SPELL_NAME_TO_ID map[string]SpellId
 
-func (world *World) loadSpells() {
-	// Spells
+const SPELL_DATA_FOLDER = WORLD_DATA_FOLDER + "/spells"
+
+func (world *World) loadSpellData() {
+	// Read spell folder
 	log.Printf("Loading spell data...")
-	files, err := os.ReadDir(WORLD_SPELLS_FOLDER)
+	paths, err := scriptGetFilesFrom(SPELL_DATA_FOLDER)
 	if err != nil {
-		log.Fatalf("Error opening spells folder: %s", err.Error())
+		log.Fatalf("Error opening spell data folder: %s", err.Error())
 	}
 
-	SPELL_DATA = make([]*SpellData, 0, len(files))
+	SPELL_DATA = make([]*SpellData, 0, len(paths))
 	SPELL_NAME_TO_ID = make(map[string]SpellId)
 
-	for _, file := range files {
-		if !strings.HasSuffix(file.Name(), ".lua") {
-			log.Printf("Skipping non-lua file %s in spells folder.", file.Name())
-			continue
-		}
-
-		path := WORLD_SPELLS_FOLDER + "/" + file.Name()
-		path = path[len(WORLD_DATA_FOLDER) + 1:]
-		spellData, err := world.scriptLoadSpell(path)
+	for _, path := range paths {
+		// Open script
+		table, err := world.scriptLoadTable(path)
 		if err != nil {
-			log.Fatal(err.Error())
+			log.Fatalf("%s: %s", path, err.Error())
 		}
 
+		// Parse spell data
+		parser := ScriptParser{}
+		spellData := parser.parseSpell(table)
+
+		// Check for duplicates
 		_, duplicateSpellName := SPELL_NAME_TO_ID[spellData.Name]
 		if duplicateSpellName {
 			log.Fatalf("Spell %s has name '%s' which is a duplicate of another spell.", path, spellData.Name)
 		}
 
+		// Store spell in SPELL_DATA
 		SPELL_NAME_TO_ID[spellData.Name] = SpellId(len(SPELL_DATA))
 		SPELL_DATA = append(SPELL_DATA, spellData)
-		log.Printf("Loaded spell %s.", file.Name())
+		log.Printf("Loaded spell %s.", path)
 	}
-	log.Printf("All spell data has been loaded.\n")
+
+	log.Printf("All spell data has been loaded.")
+}
+
+func (parser *ScriptParser) parseSpell(table *lua.Table) *SpellData {
+	spellData := &SpellData{}
+
+	spellData.Name = parser.getString(table, "name")
+	spellData.Description = parser.getString(table, "description")
+
+	spellData.CastsToLearn = parser.getInt32(table, "casts_to_learn")
+	if spellData.CastsToLearn <= 0 {
+		parser.addProblem(fmt.Errorf("field 'CastsToLearn' must be greater than 0, got %d", spellData.CastsToLearn))
+	}
+
+	spellData.ManaCost = parser.getInt32(table, "mana_cost")
+	if spellData.ManaCost < 0 {
+		parser.addProblem(fmt.Errorf("field 'ManaCost' must not be negative, got %d", spellData.ManaCost))
+	}
+
+	spellData.CastTime = parser.getInt32(table, "cast_time")
+	if spellData.CastTime < 0 {
+		parser.addProblem(fmt.Errorf("field 'CastTime' must not be negative, got %d", spellData.CastTime))
+	}
+
+	spellData.CanTargetPlayers = parser.getBool(table, "can_target_players")
+	spellData.OnHit = parser.getFunction(table, "on_hit")
+
+	if len(parser.problems) != 0 {
+		return nil
+	}
+
+	return spellData
 }

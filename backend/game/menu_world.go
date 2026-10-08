@@ -181,7 +181,7 @@ var MENU_WORLD = Menu {
 
 					*player.inbox <- fmt.Sprintf("Item: %s", itemData.Name)
 					*player.inbox <- fmt.Sprintf("Description: %s", itemData.Description)
-					*player.inbox <- fmt.Sprintf("Type: %s", world.ItemTypeToString(itemData.ItemType))
+					*player.inbox <- fmt.Sprintf("Type: %s", world.ItemKindToString(itemData.Kind))
 					*player.inbox <- fmt.Sprintf("Size: %d", itemData.Size)
 
 					// Stat requirements
@@ -215,13 +215,13 @@ var MENU_WORLD = Menu {
 					}
 
 					// Item type specific description
-					switch itemData.ItemType {
-						case world.ITEM_TYPE_EQUIPMENT_OUTFIT: {
+					switch itemData.Kind {
+						case world.ITEM_KIND_EQUIPMENT_OUTFIT: {
 							outfitData := itemData.Data.(*world.ItemDataOutfit)
 							*player.inbox <- fmt.Sprintf("Armor: %d", outfitData.Armor)
 							*player.inbox <- fmt.Sprintf("Stealth Penalty: %d%%", int(outfitData.StealthPenality * 100))
 						}
-						case world.ITEM_TYPE_EQUIPMENT_ONE_HANDED, world.ITEM_TYPE_EQUIPMENT_TWO_HANDED: {
+						case world.ITEM_KIND_EQUIPMENT_ONE_HANDED, world.ITEM_KIND_EQUIPMENT_TWO_HANDED: {
 							weaponData := itemData.Data.(*world.ItemDataWeapon)
 							*player.inbox <- fmt.Sprintf("Damage: %d", weaponData.Damage)
 						}
@@ -1077,7 +1077,7 @@ var MENU_WORLD = Menu {
 					}
 
 					var slotFound bool
-					slot, slotFound = world.EquipmentSlotForItemType(itemData.ItemType)
+					slot, slotFound = world.EquipmentSlotForItemType(itemData.Kind)
 					if !slotFound {
 						*player.inbox <- fmt.Sprintf("%s cannot be equipped.", item.GetNameWithCondition())
 						return true
@@ -1390,8 +1390,8 @@ var MENU_WORLD = Menu {
 				item := &playerMob.Data.Inventory.Items[itemIndex]
 				itemData := world.ITEM_DATA[item.Id]
 
-				switch itemData.ItemType {
-					case world.ITEM_TYPE_CONSUMABLE:
+				switch itemData.Kind {
+					case world.ITEM_KIND_CONSUMABLE:
 						if targetHandle != player.mobHandle {
 							*player.inbox <- "That item can only be used on yourself."
 							return true
@@ -1406,7 +1406,7 @@ var MENU_WORLD = Menu {
 						}
 
 						return true
-					case world.ITEM_TYPE_SPELL_SCROLL:
+					case world.ITEM_KIND_SPELL_SCROLL:
 						scrollData := itemData.Data.(*world.ItemDataSpellScroll)
 						spellInfo := world.SPELL_DATA[scrollData.Spell]
 
@@ -1425,7 +1425,7 @@ var MENU_WORLD = Menu {
 						}
 
 						return true
-					case world.ITEM_TYPE_RECIPE:
+					case world.ITEM_KIND_RECIPE:
 						var recipe world.Recipe = itemData.Data.(*world.ItemDataRecipe).Recipe
 						recipeData := world.RECIPE_DATA[recipe]
 
@@ -1668,7 +1668,7 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 func printMobEquipmentList(player *Player, mob *world.Mob) {
 	// Determine if we should skip the offhand item slot
 	mainHandItem := mob.Data.Equipment.Get(world.EQUIPMENT_SLOT_MAIN_HAND)
-	shouldSkipOffhand := mainHandItem != nil && world.ITEM_DATA[mainHandItem.Id].ItemType == world.ITEM_TYPE_EQUIPMENT_TWO_HANDED
+	shouldSkipOffhand := mainHandItem != nil && world.ITEM_DATA[mainHandItem.Id].Kind == world.ITEM_KIND_EQUIPMENT_TWO_HANDED
 
 	for index := range world.EQUIPMENT_SLOT_COUNT {
 		slot := world.EquipmentSlot(index)
@@ -1691,7 +1691,7 @@ func printMobEquipmentList(player *Player, mob *world.Mob) {
 
 		// Determine slot name
 		var slotName string
-		if slot == world.EQUIPMENT_SLOT_MAIN_HAND && item != nil && itemData.ItemType == world.ITEM_TYPE_EQUIPMENT_TWO_HANDED {
+		if slot == world.EQUIPMENT_SLOT_MAIN_HAND && item != nil && itemData.Kind == world.ITEM_KIND_EQUIPMENT_TWO_HANDED {
 			slotName = "Both Hands"
 		} else {
 			slotName = world.EquipmentSlotToString(slot)

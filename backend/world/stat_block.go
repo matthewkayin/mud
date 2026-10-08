@@ -1,5 +1,9 @@
 package world
 
+import (
+	"fmt"
+)
+
 type StatName int
 const (
 	STAT_VIT = iota
@@ -40,6 +44,16 @@ var STAT_DATA []*StatData = []*StatData {
 		Name: "Faith",
 		Abbreviation: "FTH",
 	},
+}
+
+func statAbbreviationToEnum(abbreviation string) (StatName, error) {
+	for index := range STAT_COUNT {
+		if abbreviation == STAT_DATA[index].Abbreviation {
+			return StatName(index), nil
+		}
+	}
+
+	return 0, fmt.Errorf("%s is not a valid stat abbreviation.")
 }
 
 func (stats *StatBlock) Add(other *StatBlock) StatBlock {
