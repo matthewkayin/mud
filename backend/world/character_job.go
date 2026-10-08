@@ -19,7 +19,7 @@ type JobData struct {
 var JOB_DATA []*JobData
 var JOB_NAME_TO_ID map[string]JobId
 
-const JOB_DATA_FOLDER = WORLD_DATA_FOLDER + "/jobs"
+const JOB_DATA_FOLDER = "jobs"
 
 func JobIdFromString(jobName string) (JobId, error) {
 	for jobId, jobData := range JOB_DATA {
@@ -36,7 +36,7 @@ func JobIdFromString(jobName string) (JobId, error) {
 func (world *World) loadJobData() {
 	// Read job folder
 	log.Printf("Loading job data...")
-	paths, err := scriptGetFilesFrom(JOB_DATA_FOLDER)
+	paths, err := scriptGetFilesFrom(world.dataFolder, JOB_DATA_FOLDER)
 	if err != nil {
 		log.Fatalf("Error opening job data folder: %s", err.Error())
 	}

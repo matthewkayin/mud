@@ -1,0 +1,201 @@
+{
+  "Rooms": [
+    {
+      "Name": "Presentation Space",
+      "Description": "This is a new room",
+      "IsSafeZone": true,
+      "EditorPosition": {
+        "X": 1,
+        "Y": 2
+      },
+      "Exits": [
+        2,
+        3,
+        -1,
+        -1
+      ],
+      "ExitIsLockedOnReset": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "DropTable": {
+        "Entries": [
+          {
+            "ItemId": "Chainmail Armor",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 1
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 100
+          },
+          {
+            "ItemId": "Gold",
+            "AmountRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 100
+          },
+          {
+            "ItemId": "Potion of Health",
+            "AmountRange": {
+              "Min": 2,
+              "Max": 2
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 100
+          },
+          {
+            "ItemId": "Sword",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 1
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 100
+          }
+        ]
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "West Wing",
+      "Description": "hey man what's up?",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 0,
+        "Y": 1
+      },
+      "Exits": [
+        -1,
+        2,
+        -1,
+        -1
+      ],
+      "ExitIsLockedOnReset": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Kitchen",
+      "Description": "This is a new room",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 1,
+        "Y": 1
+      },
+      "Exits": [
+        -1,
+        -1,
+        0,
+        1
+      ],
+      "ExitIsLockedOnReset": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "DropTable": {
+        "Entries": [
+          {
+            "ItemId": "Gold",
+            "AmountRange": {
+              "Min": 25,
+              "Max": 25
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 100
+          }
+        ]
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Sammet",
+      "Description": "This is a new room",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 2,
+        "Y": 2
+      },
+      "Exits": [
+        -1,
+        -1,
+        -1,
+        0
+      ],
+      "ExitIsLockedOnReset": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    }
+  ],
+  "Npcs": [
+    {
+      "Type": 0,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "StartingDisposition": 0,
+      "MovementType": 0,
+      "Behavior": {
+        "Type": "nil",
+        "Data": null
+      },
+      "SpawnRoom": 2,
+      "RespawnDuration": 20,
+      "SleepDuration": 0,
+      "AwakeDuration": 0,
+      "MovementStepDuration": 0,
+      "DropTable": {
+        "Entries": []
+      }
+    }
+  ]
+}

@@ -19,14 +19,15 @@ type ScriptConstantTable struct {
 	Constants []ScriptConstant
 }
 
-func (world *World) scriptInit() {
+func (world *World) scriptInit(dataFolder string) {
+	world.dataFolder = dataFolder
+
 	var err error
 	world.luaState, err = lua.New(lua.Options {
 		Libraries: lua.LibrarySet {
 			lua.BaseLibrary,
 		},
-		// Scripts can only be loaded from inside the data folder
-		ScriptLoader: lua.FSLoader(os.DirFS(WORLD_DATA_FOLDER)),
+		ScriptLoader: lua.FSLoader(os.DirFS(dataFolder)),
 	})
 	if err != nil {
 		log.Fatalf("Error initializing lua state: %s", err.Error())
@@ -113,8 +114,9 @@ func (world *World) scriptLoadTable(path string) (*lua.Table, error) {
 	return table, nil
 }
 
-func scriptGetFilesFrom(dir string) ([]string, error) {
-	files, err := os.ReadDir(dir)
+// Returns the paths of the scripts in a subfolder of the data folder, relative to the data folder
+func scriptGetFilesFrom(dataFolder string, subfolder string) ([]string, error) {
+	files, err := os.ReadDir(dataFolder + "/" + subfolder)
 	if err != nil {
 		return []string{}, err
 	}
@@ -127,11 +129,7 @@ func scriptGetFilesFrom(dir string) ([]string, error) {
 			continue
 		}
 
-		// Determine path relative to the world data folder
-		path := dir + "/" + file.Name()
-		path = path[len(WORLD_DATA_FOLDER) + 1:]
-
-		paths = append(paths, path)
+		paths = append(paths, subfolder + "/" + file.Name())
 	}
 
 	return paths, nil

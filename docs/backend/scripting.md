@@ -84,7 +84,7 @@ Then when loading the player's inventory JSON, we will need to walk back using a
 
 ## Data scripts
 
-Each folder under `backend/data/` holds one kind of data, and every `.lua` file in it returns a single table of that kind. `WorldInit` (`backend/world/world.go`) loads the folders in this order. A script can only refer to data that was loaded before it, and those references are names that are checked during parsing:
+Each folder under `backend/data/` holds one kind of data, and every `.lua` file in it returns a single table of that kind. `WorldLoadData(dataFolder)` (`backend/world/world.go`) loads the folders in this order. `WorldInit` calls it with `./data`, and the world editor calls it with the backend's data folder so it can read world files. A script can only refer to data that was loaded before it, and those references are names that are checked during parsing:
 
 | Order | Folder | Go type | Loader | References |
 | --- | --- | --- | --- | --- |
@@ -127,7 +127,7 @@ class.unlocks = {
 return class
 ```
 
-Character saves (`saves/<Name>.json`, `CharacterJson` in `character.go`) store race, class, job, spell and recipe names instead of IDs. If a save names something that no longer exists, startup fails.
+Character saves (`saves/<Name>.json`, `CharacterJson` in `character.go`) store race, class, job, spell and recipe names instead of IDs. World files (`data/world.json`) store item names in drop tables (`DropTableEntry` in `drop_table.go`) and inventories (`Item` in `item.go`). If a save names something that no longer exists, decoding returns an error and startup fails.
 
 ## Script API
 

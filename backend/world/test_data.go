@@ -43,7 +43,7 @@ func primeTestData() {
 			},
 		},
 		TEST_ITEM_SPELLBOOK_FIREBOLT: {
-			Name: "Axe",
+			Name: "Spellbook of Firebolt",
 			Description: "",
 			Kind: ITEM_KIND_EQUIPMENT_SPELLBOOK,
 			Size: 10,
@@ -65,5 +65,10 @@ func primeTestData() {
 			Size: 0,
 			Data: nil,
 		},
+	}
+
+	ITEM_NAME_TO_ID = make(map[string]ItemId)
+	for itemId, itemData := range ITEM_DATA {
+		ITEM_NAME_TO_ID[itemData.Name] = ItemId(itemId)
 	}
 }

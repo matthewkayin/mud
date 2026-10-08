@@ -31,7 +31,7 @@ type ClassData struct {
 var CLASS_DATA []*ClassData
 var CLASS_NAME_TO_ID map[string]ClassId
 
-const CLASS_DATA_FOLDER = WORLD_DATA_FOLDER + "/classes"
+const CLASS_DATA_FOLDER = "classes"
 
 func ClassIdFromString(name string) (ClassId, error) {
 	for classId, classData := range CLASS_DATA {
@@ -49,7 +49,7 @@ func ClassIdFromString(name string) (ClassId, error) {
 func (world *World) loadClassData() {
 	// Read class folder
 	log.Printf("Loading class data...")
-	paths, err := scriptGetFilesFrom(CLASS_DATA_FOLDER)
+	paths, err := scriptGetFilesFrom(world.dataFolder, CLASS_DATA_FOLDER)
 	if err != nil {
 		log.Fatalf("Error opening class data folder: %s", err.Error())
 	}

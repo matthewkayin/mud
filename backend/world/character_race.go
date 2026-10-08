@@ -18,7 +18,7 @@ type RaceData struct {
 var RACE_DATA []*RaceData
 var RACE_NAME_TO_ID map[string]RaceId
 
-const RACE_DATA_FOLDER = WORLD_DATA_FOLDER + "/races"
+const RACE_DATA_FOLDER = "races"
 
 func RaceIdFromString(raceName string) (RaceId, error) {
 	for raceId, raceData := range RACE_DATA {
@@ -35,7 +35,7 @@ func RaceIdFromString(raceName string) (RaceId, error) {
 func (world *World) loadRaceData() {
 	// Read race folder
 	log.Printf("Loading race data...")
-	paths, err := scriptGetFilesFrom(RACE_DATA_FOLDER)
+	paths, err := scriptGetFilesFrom(world.dataFolder, RACE_DATA_FOLDER)
 	if err != nil {
 		log.Fatalf("Error opening race data folder: %s", err.Error())
 	}

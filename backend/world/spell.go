@@ -26,12 +26,12 @@ type SpellData struct {
 var SPELL_DATA []*SpellData
 var SPELL_NAME_TO_ID map[string]SpellId
 
-const SPELL_DATA_FOLDER = WORLD_DATA_FOLDER + "/spells"
+const SPELL_DATA_FOLDER = "spells"
 
 func (world *World) loadSpellData() {
 	// Read spell folder
 	log.Printf("Loading spell data...")
-	paths, err := scriptGetFilesFrom(SPELL_DATA_FOLDER)
+	paths, err := scriptGetFilesFrom(world.dataFolder, SPELL_DATA_FOLDER)
 	if err != nil {
 		log.Fatalf("Error opening spell data folder: %s", err.Error())
 	}

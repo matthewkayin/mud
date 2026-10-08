@@ -20,6 +20,7 @@ const WORLD_RESET_INTERVAL = (60 * 60) / WORLD_SECONDS_PER_UPDATE
 type World struct {
 	Events []Event `json:"-"`
 	luaState *lua.State
+	dataFolder string
 
 	Characters map[string]*Character `json:"-"`
 	PlayerCharacters map[int][]string `json:"-"`
@@ -45,16 +46,9 @@ func WorldInit() *World {
 	}
 	defer file.Close()
 
-	// Load script data. This must happen before validation, which checks references to it
+	// Load script data. This must happen before decoding, since saved data references it by name
 	world := &World{}
-	world.scriptInit()
-	world.loadRaceData()
-	world.loadJobData()
-	world.loadSpellData()
-	recipeTables := world.loadRecipeTables()
-	world.loadItemData()
-	world.loadRecipeData(recipeTables)
-	world.loadClassData()
+	world.LoadData(WORLD_DATA_FOLDER)
 
 	// Decode JSON into world object
 	decoder := json.NewDecoder(file)
@@ -81,6 +75,19 @@ func WorldInit() *World {
 
 	log.Printf("World initialized.")
 	return world
+}
+
+// Creates a world with only the script data loaded from the data folder. WorldInit uses this before
+// loading the world JSON, and the world editor uses it to read and validate world files.
+func (world *World) LoadData(dataFolder string) {
+	world.scriptInit(dataFolder)
+	world.loadRaceData()
+	world.loadJobData()
+	world.loadSpellData()
+	recipeTables := world.loadRecipeTables()
+	world.loadItemData()
+	world.loadRecipeData(recipeTables)
+	world.loadClassData()
 }
 
 func (world *World) Update() {

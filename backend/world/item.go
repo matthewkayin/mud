@@ -10,7 +10,7 @@ import (
 type ItemId int32
 
 type Item struct {
-	Id ItemId
+	Id ItemId `ts_type:"string"`
 	Amount int32
 	Durability int32
 }
@@ -22,6 +22,10 @@ type ItemJson struct {
 }
 
 func (item *Item) MarshalJSON() ([]byte, error) {
+	if !itemIdIsValid(item.Id) {
+		return nil, fmt.Errorf("Cannot save item with invalid item id %d.", item.Id)
+	}
+
 	itemJson := ItemJson {
 		Id: ITEM_DATA[item.Id].Name,
 		Amount: item.Amount,
@@ -40,7 +44,7 @@ func (item *Item) UnmarshalJSON(data []byte) error {
 	var exists bool
 	item.Id, exists = ITEM_NAME_TO_ID[itemJson.Id]
 	if !exists {
-		log.Fatalf("No item ID matches '%s'.", itemJson.Id)
+		return fmt.Errorf("No item ID matches '%s'.", itemJson.Id)
 	}
 	item.Amount = itemJson.Amount
 	item.Durability = itemJson.Durability
@@ -114,12 +118,13 @@ type ItemData struct {
 var ITEM_DATA []*ItemData
 var ITEM_NAME_TO_ID map[string]ItemId
 
-const ITEM_DATA_FOLDER = WORLD_DATA_FOLDER + "/items"
+// Relative to the world data folder
+const ITEM_DATA_FOLDER = "items"
 
 func (world *World) loadItemData() {
 	// Read item folder
 	log.Printf("Loading item data...")
-	paths, err := scriptGetFilesFrom(ITEM_DATA_FOLDER)
+	paths, err := scriptGetFilesFrom(world.dataFolder, ITEM_DATA_FOLDER)
 	if err != nil {
 		log.Fatalf("Error opening item data folder: %s", err.Error())
 	}

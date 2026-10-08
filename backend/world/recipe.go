@@ -27,7 +27,8 @@ type RecipeData struct {
 var RECIPE_DATA []*RecipeData
 var RECIPE_NAME_TO_ID map[string]RecipeId
 
-const RECIPE_DATA_FOLDER = WORLD_DATA_FOLDER + "/recipes"
+// Relative to the world data folder
+const RECIPE_DATA_FOLDER = "recipes"
 
 // LOAD
 
@@ -37,7 +38,7 @@ const RECIPE_DATA_FOLDER = WORLD_DATA_FOLDER + "/recipes"
 func (world *World) loadRecipeTables() []*lua.Table {
 	// Read recipe folder
 	log.Printf("Loading recipe tables...")
-	paths, err := scriptGetFilesFrom(RECIPE_DATA_FOLDER)
+	paths, err := scriptGetFilesFrom(world.dataFolder, RECIPE_DATA_FOLDER)
 	if err != nil {
 		log.Fatalf("Error opening recipe data folder: %s", err.Error())
 	}

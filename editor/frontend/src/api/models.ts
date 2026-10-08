@@ -119,7 +119,7 @@ export namespace world {
 	    }
 	}
 	export class Item {
-	    Id: number;
+	    Id: string;
 	    Amount: number;
 	    Durability: number;
 	
@@ -179,7 +179,7 @@ export namespace world {
 	    }
 	}
 	export class DropTableEntry {
-	    ItemId: number;
+	    ItemId: string;
 	    AmountRange: Int32Range;
 	    DurabilityPercentRange: Int32Range;
 	    DropChancePercent: number;
@@ -290,7 +290,7 @@ export namespace world {
 	export class ItemData {
 	    Name: string;
 	    Description: string;
-	    ItemType: number;
+	    Kind: number;
 	    Size: number;
 	    Data: any;
 	
@@ -302,7 +302,7 @@ export namespace world {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Name = source["Name"];
 	        this.Description = source["Description"];
-	        this.ItemType = source["ItemType"];
+	        this.Kind = source["Kind"];
 	        this.Size = source["Size"];
 	        this.Data = source["Data"];
 	    }

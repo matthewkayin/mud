@@ -2,10 +2,17 @@ package main
 
 import (
 	"mud/world"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
 )
+
+func TestMain(m *testing.M) {
+	testWorld := world.World{}
+	testWorld.LoadData("../backend/data")
+	os.Exit(m.Run())
+}
 
 func testEditorRoom(name string, x int, y int, connections ...world.RoomEditorPosition) EditorWorldRoom {
 	return EditorWorldRoom {
@@ -29,6 +36,14 @@ func testEditorWorld() EditorWorld {
 
 	roomB := testEditorRoom("B", 0, 0, a, c)
 	roomB.Room.ExitIsLockedOnReset[world.DIRECTION_SOUTH] = true
+	roomB.Room.DropTable.Entries = []world.DropTableEntry {
+		{
+			ItemId: world.ITEM_NAME_TO_ID["Gold"],
+			AmountRange: world.Int32Range{ Min: 1, Max: 5 },
+			DurabilityPercentRange: world.Int32Range{ Min: 100, Max: 100 },
+			DropChancePercent: 50,
+		},
+	}
 	roomC := testEditorRoom("C", 0, 1, b)
 	roomC.Room.ExitIsLockedOnReset[world.DIRECTION_NORTH] = true
 	roomC.Npcs = []world.Npc {
@@ -91,6 +106,9 @@ func TestEditorWorldRoundTrip(t *testing.T) {
 	data, err := encodeWorld(testEditorWorld())
 	if err != nil {
 		t.Fatalf("Error encoding world: %s", err.Error())
+	}
+	if !strings.Contains(string(data), `"ItemId": "Gold"`) {
+		t.Errorf("Expected drop table items to be saved by name")
 	}
 
 	loadedWorld, err := decodeWorld(data)
