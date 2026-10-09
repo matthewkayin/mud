@@ -161,6 +161,10 @@ func (mobData *MobData) Armor() int32 {
 	return outfitData.Armor
 }
 
+func (mobData *MobData) GetStat(index int) int32 {
+	return mobData.Stats.Values[index] + mobData.Equipment.StatBonuses.Values[index]
+}
+
 func (mobData *MobData) Vitality() int32 {
 	return mobData.Stats.Values[STAT_VIT] + mobData.Equipment.StatBonuses.Values[STAT_VIT]
 }

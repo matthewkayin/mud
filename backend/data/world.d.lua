@@ -47,6 +47,26 @@ world.Direction = {
 	WEST = "west",
 }
 
+--- Deals magic damage to a mob. Returns the number of damage dealt.
+---
+---@param caster_handle table
+---@param target_handle table
+---@param base_damage integer
+---@return number
+function world.deal_magic_damage(caster_handle, target_handle, base_damage) end
+
+--- Queries the world for the requested mob data
+---
+--- Accepts a table of fields, where each entry is a string representing a field to get
+---
+--- Example: getMobData(handle, { "name" "health", "max_health"  })
+--- Returns: { name: "Bufo", health" 72, max_health: 100 }
+---
+---@param handle table
+---@param fields table
+---@return table
+function world.get_mob_data(handle, fields) end
+
 --- Logs a message to the game
 ---
 --- Accepts an optional table of arguments. The table keys should be strings only and the
@@ -70,4 +90,16 @@ function world.log(message, args) end
 ---@param room integer
 ---@param message string
 ---@param args? table
-function world.messageRoom(room, message, args) end
+function world.message_room(room, message, args) end
+
+--- Returns true if the mob exists
+---
+---@param handle table
+---@return bool
+function world.mob_exists(handle) end
+
+--- Returns true if the mob is dead
+---
+---@param handle table
+---@return bool
+function world.mob_is_dead(handle) end

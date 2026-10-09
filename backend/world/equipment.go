@@ -2,6 +2,7 @@ package world
 
 import (
 	"fmt"
+	"strings"
 )
 
 type EquipmentSlot int
@@ -51,7 +52,7 @@ func EquipmentSlotForItemKind(kind ItemKind) (EquipmentSlot, bool) {
 	}
 }
 
-func EquipmentSlotToString(slot EquipmentSlot) string {
+func (slot EquipmentSlot) String() string {
 	switch slot {
 		case EQUIPMENT_SLOT_MAIN_HAND:
 			return "Main Hand"
@@ -66,6 +67,13 @@ func EquipmentSlotToString(slot EquipmentSlot) string {
 	}
 }
 
+func (slot EquipmentSlot) LowerSnakeString() string {
+	str := slot.String()
+	str = strings.ReplaceAll(str, " ", "_")
+	str = strings.ToLower(str)
+
+	return str
+}
 
 func EquipmentInitEmpty() Equipment {
 	equipment := Equipment {

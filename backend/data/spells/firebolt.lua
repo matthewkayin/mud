@@ -8,11 +8,20 @@ spell.mana_cost = 5
 spell.cast_time = 1
 spell.can_target_players = false
 
-spell.on_hit = function(caster, target)
-	world.log("{target} took {damage} damage from the firebolt", {
-		target = "Friend",
-		damage = 5,
-	})
+function spell.on_hit(caster_handle, target_handle)
+    local damage = world.deal_magic_damage(caster_handle, target_handle, 5)
+
+    local caster = world.get_mob_data(caster_handle, { "room" })
+    local target = world.get_mob_data(target_handle, { "name", "health" })
+    world.message_room(caster.room, "{target} took {damage} damage from the firebolt.", {
+        target = target.name,
+        damage = damage,
+    })
+    if target.health <= 0 then
+        world.message_room(caster.room, "{target} has burnt to a crisp.", {
+            target = target.name
+        })
+    end
 end
 
 return spell

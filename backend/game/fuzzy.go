@@ -429,7 +429,7 @@ func fuzzyFindEquipmentSlot(searchWords []string) (world.EquipmentSlot, error) {
 	slotNames := make([]string, world.EQUIPMENT_SLOT_COUNT)
 	for index := range world.EQUIPMENT_SLOT_COUNT {
 		slot := world.EquipmentSlot(index)
-		slotNames[index] = world.EquipmentSlotToString(slot)
+		slotNames[index] = slot.String()
 	}
 
 	slotIndex := fuzzyFind(slotNames, searchWords, FUZZY_FIND_NUMBER_NONE)

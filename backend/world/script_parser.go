@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"strings"
 
 	"github.com/mmcdole/lunar"
 )
@@ -195,9 +194,7 @@ func (parser *ScriptParser) getEquipment(table *lua.Table, key string) Equipment
 		slot := EquipmentSlot(index)
 
 		// Convert equipment slot to lowercase string without spaces
-		key := EquipmentSlotToString(slot)
-		key = strings.ReplaceAll(key, " ", "_")
-		key = strings.ToLower(key)
+		key := slot.LowerSnakeString()
 
 		// If the item is nil, skip it
 		value := equipmentTable.RawGetString(key)

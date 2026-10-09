@@ -1687,7 +1687,7 @@ func printMobEquipmentList(player *Player, mob *world.Mob) {
 		if slot == world.EQUIPMENT_SLOT_MAIN_HAND && item != nil && itemData.Kind == world.ITEM_KIND_EQUIPMENT_TWO_HANDED {
 			slotName = "Both Hands"
 		} else {
-			slotName = world.EquipmentSlotToString(slot)
+			slotName = slot.String()
 		}
 
 		*player.inbox <- fmt.Sprintf("\t%s - %s", slotName, itemName)

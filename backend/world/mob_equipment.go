@@ -15,7 +15,7 @@ func (mob *Mob) EquipFromInventory(itemIndex int, slot EquipmentSlot) (Item, []s
 
 	// Check item type against equipment slot
 	if !ItemTypeMatchesEquipmentSlot(itemData.Kind, slot) {
-		return item, nil, fmt.Errorf("%s cannot be equipped to slot %s.", item.GetNameWithCondition(), EquipmentSlotToString(slot))
+		return item, nil, fmt.Errorf("%s cannot be equipped to slot %s.", item.GetNameWithCondition(), slot.String())
 	}
 
 	// Check stat requirements
@@ -56,7 +56,7 @@ func (mob *Mob) UnequipToInventory(slot EquipmentSlot) (Item, []string, error) {
 	}
 	equippedItem := mob.Data.Equipment.Get(slot)
 	if equippedItem == nil {
-		return Item{}, nil, fmt.Errorf("You have nothing equipped in your %s slot.", EquipmentSlotToString(slot))
+		return Item{}, nil, fmt.Errorf("You have nothing equipped in your %s slot.", slot.String())
 	}
 
 	if !mob.Data.Inventory.HasSpaceFor(equippedItem.Size(), mob.InventoryCapacity()) {

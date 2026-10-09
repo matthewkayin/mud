@@ -177,7 +177,7 @@
   ],
   "Npcs": [
     {
-      "Id": "goblin",
+      "Id": "troll",
       "SpawnRoom": 2,
       "LevelRange": {
         "Min": 1,
@@ -187,7 +187,14 @@
       "DropTableOverride": {
         "Entries": []
       },
-      "BehaviorParams": {}
+      "BehaviorParams": {
+        "ExitToBlock": "west",
+        "Toll": {
+          "Id": "Gold",
+          "Amount": 25,
+          "Durability": 0
+        }
+      }
     }
   ]
 }

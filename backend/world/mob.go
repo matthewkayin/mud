@@ -609,10 +609,22 @@ func (mob *Mob) spellcast(world *World, targetMob *Mob) {
 	mob.Data.Mana -= spellData.ManaCost
 
 	// TODO: wrap a context around this to timeout calls?
-	// spellData.onHit(world, mob, targetMob)
-	_, err := world.luaState.Call(spellData.OnHit.Value(), lua.Nil(), lua.Nil())
+
+	casterHandleTable, err := mob.Handle.toLua()
+	if err != nil {
+		log.Print(err.Error())
+		return
+	}
+	targetHandleTable, err := mob.Target.toLua()
+	if err != nil {
+		log.Print(err.Error())
+		return
+	}
+
+	_, err = world.luaState.Call(spellData.OnHit.Value(), casterHandleTable.Value(), targetHandleTable.Value())
 	if err != nil {
 		log.Printf("Warn - Error during spell %s onHit: %s", spellData.Name, err.Error())
+		return
 	}
 
 	if mob.PlayerCharacter != nil {
