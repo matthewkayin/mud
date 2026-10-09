@@ -9,11 +9,11 @@ import (
 type NpcId int
 
 type NpcData struct {
-	// key is an internal name used for saving the NPC in JSON data
+	// Key is an internal name used for saving the NPC in JSON data
 	// name is the actual display name of the NPC
 	// This allows us to have a Goblin whose name is still "Goblin" but who has
-	// some kind of special behavior and thus has a different key
-	key string
+	// some kind of special behavior and thus has a different Key
+	Key string
 	name string
 	description string
 	experienceWorth int32
@@ -29,7 +29,7 @@ type NpcData struct {
 	init *lua.Function
 	update *lua.Function
 	onEvent *lua.Function
-	getDescription *lua.Function
+	getStatusDescription *lua.Function
 }
 
 // LOAD
@@ -65,15 +65,15 @@ func (world *World) loadNpcData() {
 		}
 
 		// Check for duplicates
-		_, duplicateNpcId := NPC_KEY_TO_ID[npcData.key]
+		_, duplicateNpcId := NPC_KEY_TO_ID[npcData.Key]
 		if duplicateNpcId {
-			log.Fatalf("NPC %s has id '%s' which is a duplicate of another NPC.", path, npcData.key)
+			log.Fatalf("NPC %s has id '%s' which is a duplicate of another NPC.", path, npcData.Key)
 		}
 
 		// Store item in NPC_DATA
-		NPC_KEY_TO_ID[npcData.key] = NpcId(len(NPC_DATA))
+		NPC_KEY_TO_ID[npcData.Key] = NpcId(len(NPC_DATA))
 		NPC_DATA = append(NPC_DATA, npcData)
-		log.Printf("Loaded NPC '%s'.", npcData.key)
+		log.Printf("Loaded NPC '%s'.", npcData.Key)
 	}
 
 	log.Printf("All NPC data has been loaded.")
@@ -82,24 +82,9 @@ func (world *World) loadNpcData() {
 func (parser *ScriptParser) parseNpc(table *lua.Table) *NpcData {
 	npcData := &NpcData{}
 
-	npcData.key = parser.getString(table, "key")
+	npcData.Key = parser.getString(table, "key")
 	npcData.name = parser.getString(table, "name")
-
-	// Get description, which could be a string or a function
-	descriptionValue := table.RawGetString("description")
-	if descriptionValue.IsNil() {
-		parser.addProblem(fmt.Errorf("Missing required field 'description'"))
-	} else if descriptionValue.Kind() == lua.StringKind {
-		description, _ := descriptionValue.AsString()
-		npcData.description = description
-		npcData.getDescription = nil
-	} else if descriptionValue.Kind() == lua.FunctionKind {
-		descriptionFn, _ := descriptionValue.AsFunction()
-		npcData.description = ""
-		npcData.getDescription = descriptionFn
-	} else {
-		parser.addProblem(fmt.Errorf("invalid type for 'description'. expected string or function, got %s", descriptionValue.Kind().String()))
-	}
+	npcData.description = parser.getString(table, "description")
 
 	npcData.experienceWorth = parser.getInt32(table, "experienceWorth")
 	parser.checkInt32NonNegative(npcData.experienceWorth, "experienceWorth")
@@ -130,6 +115,7 @@ func (parser *ScriptParser) parseNpc(table *lua.Table) *NpcData {
 	npcData.init = parser.getFunction(table, "init")
 	npcData.update = parser.getFunction(table, "update")
 	npcData.onEvent = parser.getFunction(table, "on_event")
+	npcData.getStatusDescription = parser.getFunction(table, "get_status_description")
 
 	return npcData
 }

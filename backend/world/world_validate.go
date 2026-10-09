@@ -73,10 +73,10 @@ func (world *World) Validate() []string {
 		npc := &world.Npcs[npcIndex]
 		npcName := fmt.Sprintf("NPC %d", npcIndex)
 
-		if npc.Type < 0 || int(npc.Type) >= len(NPC_DATA) {
-			addProblem("%s has invalid NPC type %d.", npcName, npc.Type)
+		if npc.Id < 0 || int(npc.Id) >= len(NPC_DATA) {
+			addProblem("%s has invalid NPC type %d.", npcName, npc.Id)
 		} else {
-			npcName = fmt.Sprintf("NPC %d (%s)", npcIndex, NPC_DATA[npc.Type].Name)
+			npcName = fmt.Sprintf("NPC %d (%s)", npcIndex, NPC_DATA[npc.Id].Key)
 		}
 
 		if npc.SpawnRoom < 0 || npc.SpawnRoom >= len(world.Rooms) {
@@ -85,8 +85,6 @@ func (world *World) Validate() []string {
 		if npc.LevelRange.Min < 1 || npc.LevelRange.Min > npc.LevelRange.Max {
 			addProblem("%s has invalid level range %d-%d.", npcName, npc.LevelRange.Min, npc.LevelRange.Max)
 		}
-
-		problems = append(problems, validateDropTable(&npc.DropTable, npcName)...)
 	}
 
 	return problems

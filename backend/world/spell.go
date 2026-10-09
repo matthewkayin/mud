@@ -1,7 +1,6 @@
 package world
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/mmcdole/lunar"

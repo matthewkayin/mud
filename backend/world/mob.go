@@ -131,7 +131,6 @@ func (mob *Mob) IsInCombat(world *World) bool {
 	return slices.ContainsFunc(world.Rooms[mob.Data.Room].Occupants, func(handle MobHandle) bool {
 		occupant := world.Mobs.Get(handle)
 		return occupant.Npc != nil &&
-			occupant.Npc.mode != NPC_MODE_SLEEP &&
 			occupant.Npc.disposition == NPC_DISPOSITION_HOSTILE
 	})
 }

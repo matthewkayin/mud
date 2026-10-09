@@ -5,6 +5,7 @@ import (
 	"log"
 	"slices"
 	"math/rand/v2"
+	"encoding/json"
 )
 
 // Rather than reset the NPC's sleepy timer after combat,
@@ -94,6 +95,45 @@ type NpcJson struct {
 }
 
 func (npc *Npc) MarshalJSON() ([]byte, error) {
+	npcJson := NpcJson {
+		Key: NPC_DATA[npc.Id].Key,
+		SpawnRoom: npc.SpawnRoom,
+		LevelRange: npc.LevelRange,
+
+		MovementTypeOverride: npc.MovementTypeOverride.String(),
+		DropTableOverride: npc.DropTableOverride,
+	}
+	return json.Marshal(&npcJson)
+}
+
+func (npc *Npc) UnmarshalJSON(data []byte) error {
+	var npcJson NpcJson
+	err := json.Unmarshal(data, &npcJson)
+	if err != nil {
+		return err
+	}
+
+	var exists bool
+	npc.Id, exists = NPC_KEY_TO_ID[npcJson.Key]
+	if !exists {
+		return fmt.Errorf("No NPC key matches '%s'.", npcJson.Key)
+	}
+
+	npc.SpawnRoom = npcJson.SpawnRoom
+	npc.LevelRange = npcJson.LevelRange
+
+	if npcJson.MovementTypeOverride == "" {
+		npc.MovementTypeOverride = NPC_MOVEMENT_TYPE_OVERRIDE_NONE
+	} else {
+		npc.MovementTypeOverride, exists = EnumFromString(npcJson.MovementTypeOverride, NpcMovementType(NPC_MOVEMENT_TYPE_COUNT))
+		if !exists {
+			return fmt.Errorf("No NPC movement type matches '%s'.", npcJson.MovementTypeOverride)
+		}
+	}
+
+	npc.DropTableOverride = npcJson.DropTableOverride
+
+	return nil
 }
 
 func (npc *Npc) tryReset(world *World) {
@@ -132,13 +172,13 @@ func (npc *Npc) spawnMob(world *World) {
 		return
 	}
 
-	npcData := NPC_DATA[npc.Type]
+	npcData := NPC_DATA[npc.Id]
 
 	// Create mob data
 	level := npc.LevelRange.ChooseRandom()
-	stats := calculateStatBlockAtLevel(&npcData.baseStats, &npcData.scaling, level)
+	stats := calculateStatBlockAtLevel(&npcData.stats, &npcData.scaling, level)
 	mobData := MobData {
-		Name: npcData.Name,
+		Name: npcData.name,
 		Room: npc.SpawnRoom,
 
 		Level: level,
@@ -146,7 +186,7 @@ func (npc *Npc) spawnMob(world *World) {
 
 		Stats: stats,
 		Spells: []SpellId {},
-		Inventory: npc.DropTable.getLoot(),
+		Inventory: npcData.dropTable.getLoot(),
 		Equipment: npcData.equipment,
 	}
 
@@ -163,23 +203,16 @@ func (npc *Npc) spawnMob(world *World) {
 
 	// Init behavior
 	npc.setModeIdle()
-	npc.disposition = npc.StartingDisposition
-	if npc.hasSleepCycle() {
-		npc.sleepyTimer = 1 + rand.Int32N(npc.AwakeDuration)
-	}
+	npc.disposition = npcData.startingDisposition
 
-	if npc.Behavior.Hooks != nil {
-		npc.Behavior.Hooks.init(npc, world)
+	if npcData.init != nil {
+		world.luaState.Call(npcData.init.Value())
 	}
-}
-
-func (npc *Npc) hasSleepCycle() bool {
-	return npc.SleepDuration > 0 && npc.AwakeDuration > 0
 }
 
 func (npc *Npc) setModeIdle() {
 	npc.mode = NPC_MODE_IDLE
-	npc.timer = npc.MovementStepDuration
+	npc.timer = NPC_MOVEMENT_STEP_DURATION
 }
 
 func (npc *Npc) setModeSurprise(world *World) {
@@ -210,12 +243,13 @@ func (npc *Npc) update(world *World) {
 	npcMob, npcMobExists := world.Mobs.GetIfExists(npc.mobHandle)
 	if !npcMobExists {
 		npc.mode = NPC_MODE_DEAD
-		npc.timer = npc.RespawnDuration
+		npc.timer = NPC_RESPAWN_DURATION
 		return
 	}
 
-	if npc.Behavior.Hooks != nil {
-		npc.Behavior.Hooks.update(npc, world)
+	npcData := NPC_DATA[npc.Id]
+	if npcData.update != nil {
+		world.luaState.Call(npcData.update.Value())
 	}
 
 	switch npc.mode {
@@ -242,25 +276,13 @@ func (npc *Npc) update(world *World) {
 				}
 			}
 
-			// Decrement sleep timer
-			if npc.hasSleepCycle() {
-				npc.sleepyTimer--
-
-				// If sleepy, sleep
-				if npc.sleepyTimer <= 0 {
-					npc.mode = NPC_MODE_SLEEP
-					npc.sleepyTimer = max(npc.SleepDuration, npcMob.Data.MaxHealth() - npcMob.Data.Health)
-					world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s lied down and went to sleep.", npcMob.Data.Name))
-				}
-			}
-
 			// Update movement
-			if npc.MovementType == NPC_MOVEMENT_TYPE_WANDER {
+			if npc.getMovementType() == NPC_MOVEMENT_TYPE_WANDER {
 				npc.timer--
 
 				if npc.timer <= 0 {
 					npc.movementStep(world)
-					npc.timer = npc.MovementStepDuration
+					npc.timer = NPC_MOVEMENT_STEP_DURATION
 				}
 			}
 		}
@@ -307,37 +329,27 @@ func (npc *Npc) update(world *World) {
 			// target was found, so go back to idle
 			if npcMob.Mode == MOB_MODE_IDLE {
 				npc.mode = NPC_MODE_IDLE
-				npc.sleepyTimer += NPC_SLEEPY_ADRENALINE_DURATION
-			}
-		}
-
-		case NPC_MODE_SLEEP: {
-			// Decrement sleepy timer
-			npc.sleepyTimer--
-
-			// Heal mob
-			if npcMob.Data.Health < npcMob.Data.MaxHealth() {
-				npcMob.Data.Health++
-			}
-
-			// If sleepy timer is over, wake up!
-			if npc.sleepyTimer < 0 {
-				npc.setModeIdle()
-				npc.sleepyTimer = npc.AwakeDuration
-				world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s has woken up!", npcMob.Data.Name))
 			}
 		}
 	}
+}
+
+func (npc *Npc) getMovementType() NpcMovementType {
+	if npc.MovementTypeOverride != NPC_MOVEMENT_TYPE_OVERRIDE_NONE {
+		return npc.MovementTypeOverride
+	}
+
+	return NPC_DATA[npc.Id].movementType
 }
 
 func (npc *Npc) movementStep(world *World) {
 	npcMob := world.Mobs.Get(npc.mobHandle)
 	npcRoom := &world.Rooms[npcMob.Data.Room]
 
-	switch npc.MovementType {
+	switch npc.getMovementType() {
 		case NPC_MOVEMENT_TYPE_SENTINEL: {
-			log.Printf("Warn - movementStep() called on a sentinel NPC with type %d, mob name %s, and mob handle %d:%d.",
-				npc.Type, npcMob.Data.Name, npc.mobHandle.Id, npc.mobHandle.Generation)
+			log.Printf("Warn - movementStep() called on a sentinel NPC with key %s, mob name %s, and mob handle %d:%d.",
+				NPC_DATA[npc.Id].Key, npcMob.Data.Name, npc.mobHandle.Id, npc.mobHandle.Generation)
 		}
 
 		case NPC_MOVEMENT_TYPE_WANDER: {
@@ -375,22 +387,12 @@ func (npc *Npc) movementStep(world *World) {
 
 func (npc *Npc) OnEvent(world *World, event BehaviorEvent) {
 	// First, try event through behavior
-	if npc.Behavior.Hooks != nil {
-		eventHandled := npc.Behavior.Hooks.onEvent(npc, world, event)
-		if eventHandled {
-			return
-		}
-	}
+	// TODO: fire the appropriate NPC on event hook
 
 	// If behavior did not handle event, fallback to default
 	npcMob := world.Mobs.Get(npc.mobHandle)
 	switch event.Type {
 		case BEHAVIOR_EVENT_TYPE_ATTACKED: {
-			if npc.mode == NPC_MODE_SLEEP {
-				npc.setModeSurprise(world)
-				world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s was violently awoken from their nap! They seem disgruntled.", npcMob.Data.Name))
-			}
-
 			// TODO: for friendly NPCs, like town guards,
 			// make the NPC hostile only to the attacker, not
 			// all players?
@@ -411,22 +413,32 @@ func (npc *Npc) OnEvent(world *World, event BehaviorEvent) {
 	}
 }
 
-func (npc *Npc) GetDescription() string {
-	return NPC_DATA[npc.Type].description
+func (npc *Npc) GetDescription(world *World) string {
+	return NPC_DATA[npc.Id].description
 }
 
 func (npc *Npc) GetStatusDescription(world *World) (string, bool) {
-	// If behavior provides a description, then return it
-	if npc.Behavior.Hooks != nil {
-		description, hasBehaviorDescription := npc.Behavior.Hooks.getDescription(npc, world)
-		if hasBehaviorDescription {
-			return description, true
-		}
+	npcData := NPC_DATA[npc.Id]
+	if npcData.getStatusDescription == nil {
+		return "", false
 	}
 
-	npcMob := world.Mobs.Get(npc.mobHandle)
-	if npc.mode == NPC_MODE_SLEEP {
-		return fmt.Sprintf("%s is taking a nap.", npcMob.Data.Name), true
+	results, err := world.luaState.Call(npcData.getStatusDescription.Value())
+	if err != nil {
+		log.Printf("Warn - Error calling NPC get_description(): %s", err.Error())
+		return "", false
 	}
-	return "", false
+
+	if len(results) != 0 {
+		log.Printf("Warn - NPC get_description() returned no result.")
+		return "", false
+	}
+
+	result, ok := results[0].AsString()
+	if !ok {
+		log.Printf("Warn - NPC get_description() returned a non-string value.")
+		return "", false
+	}
+
+	return result, true
 }
