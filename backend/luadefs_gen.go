@@ -1,9 +1,9 @@
 package main
 
 // Generates data/world.d.lua, a Lua language server definition file for the world table that the
-// backend exposes to scripts. Constants come from world.ScriptConstantTables() and function stubs
-// come from the SCRIPT_LIBRARY entries in world/script_library.go, documented with the comment
-// above each entry.
+// backend exposes to scripts. Constants come from world.ScriptFreeConstants() and
+// world.ScriptConstantTables(), and function stubs come from the SCRIPT_LIBRARY entries in
+// world/script_library.go, documented with the comment above each entry.
 
 import (
 	"bytes"
@@ -17,6 +17,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/mmcdole/lunar"
 )
 
 const LUA_DEFS_SCRIPT_LIBRARY_PATH = "world/script_library.go"
@@ -39,12 +41,26 @@ func generateLuaDefs(path string) error {
 	output.WriteString("---@class world\n")
 	output.WriteString("world = {}\n")
 
+	for _, constant := range world.ScriptFreeConstants() {
+		valueText := constant.Value.String()
+		if constant.Value.Kind() == lua.StringKind {
+			valueText = strconv.Quote(valueText)
+		}
+		output.WriteString("\n")
+		output.WriteString(fmt.Sprintf("---@type %s\n", constant.Value.Kind().String()))
+		output.WriteString(fmt.Sprintf("world.%s = %s\n", constant.Name, valueText))
+	}
+
 	for _, constantTable := range world.ScriptConstantTables() {
 		output.WriteString("\n")
 		output.WriteString(fmt.Sprintf("---@enum %s\n", constantTable.Name))
 		output.WriteString(fmt.Sprintf("world.%s = {\n", constantTable.Name))
 		for _, constant := range constantTable.Constants {
-			output.WriteString(fmt.Sprintf("\t%s = %s,\n", constant.Name, strconv.Quote(constant.Value)))
+			valueText := constant.Value.String()
+			if constant.Value.Kind() == lua.StringKind {
+				valueText = strconv.Quote(valueText)
+			}
+			output.WriteString(fmt.Sprintf("\t%s = %s,\n", constant.Name, valueText))
 		}
 		output.WriteString("}\n")
 	}

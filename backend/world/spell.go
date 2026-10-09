@@ -6,7 +6,7 @@ import (
 	"github.com/mmcdole/lunar"
 )
 
-var SPELL_CAST_TIME_INSTANT int32 = 0
+const SPELL_CAST_TIME_INSTANT int32 = 0
 
 type SpellId int32
 
@@ -80,7 +80,7 @@ func (parser *ScriptParser) parseSpell(table *lua.Table) *SpellData {
 	parser.checkInt32Positive(spellData.ManaCost, "ManaCost")
 
 	spellData.CastTime = parser.getInt32(table, "cast_time")
-	parser.checkInt32Positive(spellData.ManaCost, "CastTime")
+	parser.checkInt32NonNegative(spellData.CastTime, "CastTime")
 
 	spellData.CanTargetPlayers = parser.getBool(table, "can_target_players")
 	spellData.OnHit = parser.getFunction(table, "on_hit")

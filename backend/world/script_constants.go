@@ -2,16 +2,25 @@ package world
 
 import (
 	"strings"
+
+	"github.com/mmcdole/lunar"
 )
 
 type ScriptConstant struct {
 	Name string
-	Value string
+	Value lua.Value
 }
 
 type ScriptConstantTable struct {
 	Name string
 	Constants []ScriptConstant
+}
+
+// Returns the constants exposed to scripts directly as world.<Name>
+func ScriptFreeConstants() []ScriptConstant {
+	return []ScriptConstant {
+		{ Name: "SPELL_CAST_TIME_INSTANT", Value: lua.Number(float64(SPELL_CAST_TIME_INSTANT)) },
+	}
 }
 
 // Returns the constant tables exposed to scripts as world.<Name>
@@ -25,7 +34,7 @@ func ScriptConstantTables() []ScriptConstantTable {
 		kind := ItemKind(index)
 		itemKindTable.Constants = append(itemKindTable.Constants, ScriptConstant {
 			Name: itemKindToScriptEnum(kind),
-			Value: kind.String(),
+			Value: lua.String(kind.String()),
 		})
 	}
 
@@ -38,7 +47,7 @@ func ScriptConstantTables() []ScriptConstantTable {
 		disposition := NpcDisposition(index)
 		npcDispositionTable.Constants = append(npcDispositionTable.Constants, ScriptConstant {
 			Name: strings.ToUpper(disposition.String()),
-			Value: disposition.String(),
+			Value: lua.String(disposition.String()),
 		})
 	}
 
@@ -51,7 +60,7 @@ func ScriptConstantTables() []ScriptConstantTable {
 		movementType := NpcMovementType(index)
 		npcMovementTypeTable.Constants = append(npcMovementTypeTable.Constants, ScriptConstant  {
 			Name: strings.ToUpper(movementType.String()),
-			Value: movementType.String(),
+			Value: lua.String(movementType.String()),
 		})
 	}
 
@@ -64,7 +73,7 @@ func ScriptConstantTables() []ScriptConstantTable {
 		paramType := NpcBehaviorParamType(index)
 		npcBehaviorParamTypeTable.Constants = append(npcBehaviorParamTypeTable.Constants, ScriptConstant {
 			Name: strings.ToUpper(paramType.String()),
-			Value: paramType.String(),
+			Value: lua.String(paramType.String()),
 		})
 	}
 
@@ -77,7 +86,7 @@ func ScriptConstantTables() []ScriptConstantTable {
 		direction := Direction(index)
 		directionTable.Constants = append(directionTable.Constants, ScriptConstant {
 			Name: strings.ToUpper(direction.String()),
-			Value: direction.String(),
+			Value: lua.String(direction.String()),
 		})
 	}
 

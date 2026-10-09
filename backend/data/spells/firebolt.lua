@@ -9,7 +9,7 @@ spell.cast_time = 1
 spell.can_target_players = false
 
 function spell.on_hit(caster_handle, target_handle)
-    local damage = world.deal_magic_damage(caster_handle, target_handle, 5)
+    local damage = world.deal_magic_damage(caster_handle, target_handle, 10)
 
     local caster = world.get_mob_data(caster_handle, { "room" })
     local target = world.get_mob_data(target_handle, { "name", "health" })

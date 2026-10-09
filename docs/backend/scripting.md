@@ -136,16 +136,18 @@ Scripts reach the backend through the global `world` table, which `scriptInit` (
 
 - **Functions** from `SCRIPT_LIBRARY` in `backend/world/script_library.go`. Each entry maps a Lua name to a `lua.NativeFunc`, so `"log"` becomes `world.log`.
 - **Constant tables** from `ScriptConstantTables()` in `backend/world/script_constants.go`. Each `ScriptConstantTable` becomes `world.<Name>`, with string values. For example, an item script sets `item.kind = world.ItemKind.CONSUMABLE`, and the parser maps that string back to the Go enum. To add a table, append it to the slice that `ScriptConstantTables()` returns.
+- **Free constants** from `ScriptFreeConstants()` in the same file. Each `ScriptFreeConstant` is set directly on the table as `world.<Name>`, and its `Value` is any scalar `lua.Value` (`lua.Number`, `lua.String`, `lua.Bool`). For example, a spell script can set `spell.cast_time = world.SPELL_CAST_TIME_INSTANT`. To add one, append it to the slice that `ScriptFreeConstants()` returns.
 
 ### Language server definitions
 
-The `world` table only exists at runtime, so `backend/data/world.d.lua` describes it to the Lua language server (LuaLS). It is generated, so don't edit it by hand. After changing `SCRIPT_LIBRARY` or `ScriptConstantTables()`, regenerate it from `backend/`:
+The `world` table only exists at runtime, so `backend/data/world.d.lua` describes it to the Lua language server (LuaLS). It is generated, so don't edit it by hand. After changing `SCRIPT_LIBRARY`, `ScriptConstantTables()` or `ScriptFreeConstants()`, regenerate it from `backend/`:
 
 ```
 go generate
 ```
 
 The generator (`backend/luadefs_gen.go`, run through the `-generate-lua-defs` flag in `backend/main.go`) writes:
+- each free constant as `world.<Name> = <value>` with a `---@type` annotation for its Lua type
 - each constant table as a LuaLS `---@enum`, in the order it's declared
 - a stub `function world.<name>(...) end` for each `SCRIPT_LIBRARY` entry, sorted by name
 

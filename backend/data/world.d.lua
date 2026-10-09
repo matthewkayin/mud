@@ -4,6 +4,9 @@
 ---@class world
 world = {}
 
+---@type number
+world.SPELL_CAST_TIME_INSTANT = 0
+
 ---@enum ItemKind
 world.ItemKind = {
 	CONSUMABLE = "Consumable",
@@ -67,6 +70,14 @@ function world.deal_magic_damage(caster_handle, target_handle, base_damage) end
 ---@return table
 function world.get_mob_data(handle, fields) end
 
+--- Heals a mob with non-magic healing.
+--- Returns the number of damage healed.
+---
+---@param target_handle table
+---@param heal_amount integer
+---@return number
+function world.heal_mob(target_handle, heal_amount) end
+
 --- Logs a message to the game
 ---
 --- Accepts an optional table of arguments. The table keys should be strings only and the
@@ -78,6 +89,15 @@ function world.get_mob_data(handle, fields) end
 ---@param message string
 ---@param args? table
 function world.log(message, args) end
+
+--- Heals a mob with healing that scales based on the caster and target's faith.
+--- Returns the number of damage healed.
+---
+---@param caster_handle table
+---@param target_handle table
+---@param base_healing integer
+---@return number
+function world.magic_heal_mob(caster_handle, target_handle, base_healing) end
 
 --- Sends a message to the specified room
 ---

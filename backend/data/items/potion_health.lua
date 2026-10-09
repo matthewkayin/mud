@@ -5,11 +5,14 @@ item.description = "A red tonic that gives health to the drinker"
 item.kind = world.ItemKind.CONSUMABLE
 item.size = 5
 
-item.on_use = function(user, target)
-	world.log("{target} drank a health potion and regained {healing} HP.", {
-		target = "Friend",
-		healing = 20,
-	})
+item.on_use = function(user_handle)
+    local healing = world.heal_mob(user_handle, 20)
+    local user = world.get_mob_data(user_handle, { "name", "room" })
+    world.message_room(user.room, "{user} drank a {item} and regained {healing} HP.", {
+        user = user.name,
+        item = item.name,
+        healing = healing
+    })
 end
 
 return item

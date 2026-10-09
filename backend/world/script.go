@@ -49,9 +49,12 @@ func (world *World) scriptInit(dataFolder string) {
 			log.Fatalf("Error creating constant table '%s': %s", constantTable.Name, err.Error())
 		}
 		for _, constant := range constantTable.Constants {
-			luaTable.RawSetString(constant.Name, lua.String(constant.Value))
+			luaTable.RawSetString(constant.Name, constant.Value)
 		}
 		worldTable.RawSetString(constantTable.Name, luaTable.Value())
+	}
+	for _, constant := range ScriptFreeConstants() {
+		worldTable.RawSetString(constant.Name, constant.Value)
 	}
 
 	// Add world table to global state

@@ -615,7 +615,7 @@ func (mob *Mob) spellcast(world *World, targetMob *Mob) {
 		log.Print(err.Error())
 		return
 	}
-	targetHandleTable, err := mob.Target.toLua()
+	targetHandleTable, err := targetMob.Handle.toLua()
 	if err != nil {
 		log.Print(err.Error())
 		return

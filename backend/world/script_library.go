@@ -209,6 +209,72 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		target.damage(__world, caster.Handle, damage)
 		return frame.ReturnNumber(float64(damage))
 	},
+
+	// Heals a mob with healing that scales based on the caster and target's faith.
+	// Returns the number of damage healed.
+	//
+	// @param caster_handle table
+	// @param target_handle table
+	// @param base_healing integer
+	// @return number
+	"magic_heal_mob": func(frame lua.Frame) lua.Outcome {
+		caster := frameGetMobArg(&frame, 0)
+		target := frameGetMobArg(&frame, 1)
+		baseHealing, ok := frame.Number(2)
+		if !ok {
+			frame.ThrowArgTypeError(2, lua.NumberKind)
+		}
+		if math.Trunc(baseHealing) != baseHealing {
+			frame.ThrowArgError(2, "base_healing must be an integer")
+		}
+
+		healing := caster.calculateMagicDamage(int32(baseHealing), target)
+		healing = min(healing, target.Data.MaxHealth() - target.Data.Health)
+		target.Data.Health += healing
+		return frame.ReturnNumber(float64(healing))
+	},
+
+	// Heals a mob with non-magic healing.
+	// Returns the number of damage healed.
+	//
+	// @param target_handle table
+	// @param heal_amount integer
+	// @return number
+	"mob_heal": func(frame lua.Frame) lua.Outcome {
+		target := frameGetMobArg(&frame, 0)
+		healAmount, ok := frame.Number(1)
+		if !ok {
+			frame.ThrowArgTypeError(1, lua.NumberKind)
+		}
+		if math.Trunc(healAmount) != healAmount {
+			frame.ThrowArgError(2, "heal_amount must be an integer")
+		}
+
+		healing := min(int32(healAmount), target.Data.MaxHealth() - target.Data.Health)
+		target.Data.Health += healing
+		return frame.ReturnNumber(float64(healing))
+	},
+
+	// Regenerates an amount of the mobs mana
+	// Returns the number of mana regained.
+	//
+	// @param target_handle table
+	// @param regen_amount integer
+	// @return number
+	"mob_regen_mana": func(frame lua.Frame) lua.Outcome {
+		target := frameGetMobArg(&frame, 0)
+		regenAmount, ok := frame.Number(1)
+		if !ok {
+			frame.ThrowArgTypeError(1, lua.NumberKind)
+		}
+		if math.Trunc(regenAmount) != regenAmount {
+			frame.ThrowArgError(2, "regen_amount must be an integer")
+		}
+
+		healing := min(int32(regenAmount), target.Data.MaxMana() - target.Data.Mana)
+		target.Data.Mana += healing
+		return frame.ReturnNumber(float64(healing))
+	},
 }
 
 // Returns a formatted string using the given lua table as a formatter
