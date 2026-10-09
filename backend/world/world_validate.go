@@ -77,7 +77,7 @@ func (world *World) Validate() []string {
 		if !npcIdIsValid(npc.Id) {
 			addProblem("%s has invalid NPC id %d.", npcName, npc.Id)
 		} else {
-			npcName = fmt.Sprintf("NPC %d (%s)", npcIndex, NPC_DATA[npc.Id].Key)
+			npcName = fmt.Sprintf("NPC %d (%s)", npcIndex, NPC_DATA[npc.Id].Id)
 			problems = append(problems, validateNpcBehaviorParams(npc, npcName)...)
 		}
 
@@ -165,7 +165,7 @@ func validateNpcBehaviorParams(npc *Npc, npcName string) []string {
 	for name := range npc.BehaviorParams {
 		_, isDeclared := npcData.BehaviorParams[name]
 		if !isDeclared {
-			problems = append(problems, fmt.Sprintf("%s has behavior param '%s', which NPC '%s' does not declare.", npcName, name, npcData.Key))
+			problems = append(problems, fmt.Sprintf("%s has behavior param '%s', which NPC '%s' does not declare.", npcName, name, npcData.Id))
 		}
 	}
 

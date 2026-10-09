@@ -15,7 +15,7 @@ Each `.lua` file in `backend/data/npcs/` returns one NpcData table. `parseNpc` r
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| `key` | string | Unique ID that the world JSON uses to refer to this NPC |
+| `id` | string | Unique ID that the world JSON uses to refer to this NPC |
 | `name` | string | Display name of the NPC's mobs |
 | `description` | string | Shown when a player looks at the NPC |
 | `experience_worth`, `experience_worth_scaling` | integer | Experience at level 1, plus the amount added per level after that |
@@ -30,7 +30,7 @@ Each `.lua` file in `backend/data/npcs/` returns one NpcData table. `parseNpc` r
 ```lua
 local npc = {}
 
-npc.key = "troll"
+npc.id = "troll"
 npc.name = "Troll"
 npc.description = "A hairy beast towers over you."
 npc.experience_worth = 100
@@ -111,7 +111,7 @@ A unique NPC must have a value for every declared param, and it can't have param
 }
 ```
 
-- `Id` is the NPC script's `key`.
+- `Id` is the NPC script's `id`.
 - `MovementTypeOverride` is `""` to use the script's `movement_type`, or a movement type name such as `"Wander"`.
 - `DropTableOverride` replaces the script's `drop_table` if it has any entries.
 

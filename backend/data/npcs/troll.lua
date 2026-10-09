@@ -1,6 +1,6 @@
 local npc = {}
 
-npc.key = "troll"
+npc.id = "troll"
 npc.name = "Troll"
 npc.description = "A hairy beast with a large nose and a pallid complexion towers over you."
 

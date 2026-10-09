@@ -1,6 +1,6 @@
 local npc = {}
 
-npc.key = "goblin"
+npc.id = "goblin"
 npc.name = "Goblin"
 npc.description = "You see a repulsive, green monster that wants to eat you."
 

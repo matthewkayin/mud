@@ -48,7 +48,7 @@ func testEditorWorld() EditorWorld {
 	roomC.Room.ExitIsLockedOnReset[world.DIRECTION_NORTH] = true
 	roomC.Npcs = []world.Npc {
 		{
-			Id: world.NPC_KEY_TO_ID["troll"],
+			Id: world.NPC_ID_STR_TO_ID["troll"],
 			LevelRange: world.Int32Range{ Min: 2, Max: 3 },
 			SpawnRoom: world.ROOM_NONE,
 			MovementTypeOverride: world.NPC_MOVEMENT_TYPE_OVERRIDE_NONE,

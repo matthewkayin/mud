@@ -357,7 +357,7 @@ export namespace world {
 		}
 	}
 	export class NpcData {
-	    Key: string;
+	    Id: string;
 	    Name: string;
 	    MovementType: NpcMovementType;
 	    BehaviorParams: Record<string, NpcBehaviorParamType>;
@@ -368,7 +368,7 @@ export namespace world {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.Key = source["Key"];
+	        this.Id = source["Id"];
 	        this.Name = source["Name"];
 	        this.MovementType = source["MovementType"];
 	        this.BehaviorParams = source["BehaviorParams"];

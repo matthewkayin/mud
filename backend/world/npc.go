@@ -114,7 +114,7 @@ func (npc *Npc) MarshalJSON() ([]byte, error) {
 	}
 
 	npcJson := NpcJson {
-		Id: npcData.Key,
+		Id: npcData.Id,
 		SpawnRoom: npc.SpawnRoom,
 		LevelRange: npc.LevelRange,
 
@@ -127,12 +127,12 @@ func (npc *Npc) MarshalJSON() ([]byte, error) {
 	for name, value := range npc.BehaviorParams {
 		paramType, isDeclared := npcData.BehaviorParams[name]
 		if !isDeclared {
-			return nil, fmt.Errorf("Cannot save NPC '%s' with undeclared behavior param '%s'.", npcData.Key, name)
+			return nil, fmt.Errorf("Cannot save NPC '%s' with undeclared behavior param '%s'.", npcData.Id, name)
 		}
 
 		jsonValue, err := npcBehaviorParamToJson(paramType, value)
 		if err != nil {
-			return nil, fmt.Errorf("Cannot save NPC '%s' behavior param '%s': %w", npcData.Key, name, err)
+			return nil, fmt.Errorf("Cannot save NPC '%s' behavior param '%s': %w", npcData.Id, name, err)
 		}
 		npcJson.BehaviorParams[name] = jsonValue
 	}
@@ -148,7 +148,7 @@ func (npc *Npc) UnmarshalJSON(data []byte) error {
 	}
 
 	var exists bool
-	npc.Id, exists = NPC_KEY_TO_ID[npcJson.Id]
+	npc.Id, exists = NPC_ID_STR_TO_ID[npcJson.Id]
 	if !exists {
 		return fmt.Errorf("No NPC id matches '%s'.", npcJson.Id)
 	}
@@ -173,12 +173,12 @@ func (npc *Npc) UnmarshalJSON(data []byte) error {
 	for name, jsonValue := range npcJson.BehaviorParams {
 		paramType, isDeclared := npcData.BehaviorParams[name]
 		if !isDeclared {
-			return fmt.Errorf("NPC '%s' has no behavior param named '%s'.", npcData.Key, name)
+			return fmt.Errorf("NPC '%s' has no behavior param named '%s'.", npcData.Id, name)
 		}
 
 		value, err := npcBehaviorParamFromJson(paramType, jsonValue)
 		if err != nil {
-			return fmt.Errorf("NPC '%s' behavior param '%s': %w", npcData.Key, name, err)
+			return fmt.Errorf("NPC '%s' behavior param '%s': %w", npcData.Id, name, err)
 		}
 		npc.BehaviorParams[name] = value
 	}
@@ -390,7 +390,7 @@ func (npc *Npc) callInit(world *World) {
 	}
 	paramsTable, err := world.luaState.NewTableFrom(paramsTree)
 	if err != nil {
-		log.Printf("Warn - Error creating behavior params table for NPC '%s': %s", npcData.Key, err.Error())
+		log.Printf("Warn - Error creating behavior params table for NPC '%s': %s", npcData.Id, err.Error())
 		return
 	}
 
@@ -399,7 +399,7 @@ func (npc *Npc) callInit(world *World) {
 		return
 	}
 	if result.Kind() != lua.TableKind {
-		log.Printf("Warn - NPC '%s' init() returned a %s instead of a table.", npcData.Key, result.Kind().String())
+		log.Printf("Warn - NPC '%s' init() returned a %s instead of a table.", npcData.Id, result.Kind().String())
 		return
 	}
 
@@ -420,7 +420,7 @@ func (npc *Npc) callHook(world *World, hook *lua.Function, hookName string, args
 	}
 	result, err := world.luaState.CallOne(hook.Value(), luaArgs...)
 	if err != nil {
-		log.Printf("Warn - NPC '%s' %s() failed: %s", NPC_DATA[npc.Id].Key, hookName, err.Error())
+		log.Printf("Warn - NPC '%s' %s() failed: %s", NPC_DATA[npc.Id].Id, hookName, err.Error())
 		return lua.Nil(), false
 	}
 
@@ -564,7 +564,7 @@ func (npc *Npc) movementStep(world *World) {
 	switch npc.getMovementType() {
 		case NPC_MOVEMENT_TYPE_SENTINEL: {
 			log.Printf("Warn - movementStep() called on a sentinel NPC with key %s, mob name %s, and mob handle %d:%d.",
-				NPC_DATA[npc.Id].Key, npcMob.Data.Name, npc.mobHandle.Id, npc.mobHandle.Generation)
+				NPC_DATA[npc.Id].Id, npcMob.Data.Name, npc.mobHandle.Id, npc.mobHandle.Generation)
 		}
 
 		case NPC_MOVEMENT_TYPE_WANDER: {
@@ -647,7 +647,7 @@ func (npc *Npc) GetStatusDescription(world *World) (string, bool) {
 
 	resultString, isString := result.AsString()
 	if !isString {
-		log.Printf("Warn - NPC '%s' get_status_description() returned a %s instead of a string.", npcData.Key, result.Kind().String())
+		log.Printf("Warn - NPC '%s' get_status_description() returned a %s instead of a string.", npcData.Id, result.Kind().String())
 		return "", false
 	}
 

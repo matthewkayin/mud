@@ -21,11 +21,11 @@ const (
 )
 
 type NpcData struct {
-	// Key is an internal name used for saving the NPC in JSON data
+	// Id is an internal name used for saving the NPC in JSON data
 	// Name is the actual display name of the NPC
 	// This allows us to have a Goblin whose name is still "Goblin" but who has
-	// some kind of special behavior and thus has a different Key
-	Key string
+	// some kind of special behavior and thus has a different Id
+	Id string
 	Name string
 	description string
 	experienceWorth int32
@@ -69,7 +69,7 @@ func (paramType NpcBehaviorParamType) String() string {
 // LOAD
 
 var NPC_DATA []*NpcData
-var NPC_KEY_TO_ID map[string]NpcId
+var NPC_ID_STR_TO_ID map[string]NpcId
 
 const NPC_DATA_FOLDER = "npcs"
 
@@ -82,7 +82,7 @@ func (world *World) loadNpcData() {
 	}
 
 	NPC_DATA = make([]*NpcData, 0, len(paths))
-	NPC_KEY_TO_ID = make(map[string]NpcId)
+	NPC_ID_STR_TO_ID = make(map[string]NpcId)
 
 	for _, path := range paths {
 		// Open script
@@ -99,15 +99,15 @@ func (world *World) loadNpcData() {
 		}
 
 		// Check for duplicates
-		_, duplicateNpcId := NPC_KEY_TO_ID[npcData.Key]
+		_, duplicateNpcId := NPC_ID_STR_TO_ID[npcData.Id]
 		if duplicateNpcId {
-			log.Fatalf("NPC %s has id '%s' which is a duplicate of another NPC.", path, npcData.Key)
+			log.Fatalf("NPC %s has id '%s' which is a duplicate of another NPC.", path, npcData.Id)
 		}
 
 		// Store item in NPC_DATA
-		NPC_KEY_TO_ID[npcData.Key] = NpcId(len(NPC_DATA))
+		NPC_ID_STR_TO_ID[npcData.Id] = NpcId(len(NPC_DATA))
 		NPC_DATA = append(NPC_DATA, npcData)
-		log.Printf("Loaded NPC '%s'.", npcData.Key)
+		log.Printf("Loaded NPC '%s'.", npcData.Id)
 	}
 
 	log.Printf("All NPC data has been loaded.")
@@ -116,7 +116,7 @@ func (world *World) loadNpcData() {
 func (parser *ScriptParser) parseNpc(table *lua.Table) *NpcData {
 	npcData := &NpcData{}
 
-	npcData.Key = parser.getString(table, "key")
+	npcData.Id = parser.getString(table, "id")
 	npcData.Name = parser.getString(table, "name")
 	npcData.description = parser.getString(table, "description")
 

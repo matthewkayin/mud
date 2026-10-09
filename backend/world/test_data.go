@@ -79,13 +79,13 @@ func primeTestData() {
 
 	NPC_DATA = []*NpcData {
 		TEST_NPC_GOBLIN: {
-			Key: "goblin",
+			Id: "goblin",
 			Name: "Goblin",
 			MovementType: NPC_MOVEMENT_TYPE_WANDER,
 			BehaviorParams: map[string]NpcBehaviorParamType{},
 		},
 		TEST_NPC_TROLL: {
-			Key: "troll",
+			Id: "troll",
 			Name: "Troll",
 			MovementType: NPC_MOVEMENT_TYPE_SENTINEL,
 			BehaviorParams: map[string]NpcBehaviorParamType {
@@ -98,8 +98,8 @@ func primeTestData() {
 		},
 	}
 
-	NPC_KEY_TO_ID = make(map[string]NpcId)
+	NPC_ID_STR_TO_ID = make(map[string]NpcId)
 	for npcId, npcData := range NPC_DATA {
-		NPC_KEY_TO_ID[npcData.Key] = NpcId(npcId)
+		NPC_ID_STR_TO_ID[npcData.Id] = NpcId(npcId)
 	}
 }

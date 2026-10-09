@@ -65,7 +65,7 @@ export function BehaviorParamsEditor({ npcData, params, onEdit }: BehaviorParams
 
   return (
     <Stack spacing={2}>
-      <Typography>Behavior:</Typography>
+      <Typography>-- Behavior Params --</Typography>
       {paramEntries.map(([name, paramType]) => {
         const value = params[name];
         switch (paramType) {

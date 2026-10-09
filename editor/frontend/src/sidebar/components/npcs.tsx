@@ -47,29 +47,29 @@ export function NpcsEditor({ npcs, onEdit }: NpcsEditorProps) {
       <AccordionDetails>
         <Stack spacing={2}>
           {npcs.map((npc, index) => {
-            const data = npcData.find((data) => data.Key === npc.Id);
+            const data = npcData.find((data) => data.Id === npc.Id);
 
             return (
               <Stack key={index} spacing={2}>
                 <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-                  <Typography>Type:</Typography>
+                  <Typography>ID:</Typography>
                   <Select
                     size="small"
                     value={data ? npc.Id : ''}
                     onChange={(event) => {
-                      const newData = npcData.find((data) => data.Key === event.target.value);
+                      const newData = npcData.find((data) => data.Id === event.target.value);
                       if (!newData) {
                         return;
                       }
                       editNpc(index, (editedNpc) => {
-                        editedNpc.Id = newData.Key;
+                        editedNpc.Id = newData.Id;
                         editedNpc.BehaviorParams = defaultBehaviorParams(newData, itemData);
                       });
                     }}
                     sx={{ minWidth: '45%' }}
                   >
                     {npcData.map((data) => (
-                      <MenuItem key={data.Key} value={data.Key}>{data.Name} ({data.Key})</MenuItem>
+                      <MenuItem key={data.Id} value={data.Id}>{data.Id}</MenuItem>
                     ))}
                   </Select>
                   <Box sx={{ marginLeft: 'auto' }}>
@@ -148,7 +148,7 @@ export function NpcsEditor({ npcs, onEdit }: NpcsEditorProps) {
           <Button disabled={npcData.length === 0} onClick={() => {
             const editedNpcs = structuredClone(npcs);
             editedNpcs.push(world.Npc.createFrom({
-              Id: npcData[0].Key,
+              Id: npcData[0].Id,
               LevelRange: { Min: 1, Max: 1 },
               MovementTypeOverride: MOVEMENT_TYPE_DEFAULT,
               DropTableOverride: {
