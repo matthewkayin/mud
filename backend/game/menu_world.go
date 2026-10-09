@@ -181,7 +181,7 @@ var MENU_WORLD = Menu {
 
 					*player.inbox <- fmt.Sprintf("Item: %s", itemData.Name)
 					*player.inbox <- fmt.Sprintf("Description: %s", itemData.Description)
-					*player.inbox <- fmt.Sprintf("Type: %s", world.ItemKindToString(itemData.Kind))
+					*player.inbox <- fmt.Sprintf("Type: %s", itemData.Kind.String())
 					*player.inbox <- fmt.Sprintf("Size: %d", itemData.Size)
 
 					// Stat requirements
@@ -382,7 +382,7 @@ var MENU_WORLD = Menu {
 				playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
 
 				// Determine the index of the target room
-				direction, directionFound := world.DirectionFromString(args[0])
+				direction, directionFound := world.EnumFromString[world.Direction](args[0], world.DIRECTION_COUNT)
 				if !directionFound {
 					*player.inbox <- fmt.Sprintf("'%s' is not a direction. The directions are 'north', 'south', 'east', and 'west'.", args[0])
 					return true
@@ -397,7 +397,7 @@ var MENU_WORLD = Menu {
 
 				// Check if the exit is locked
 				if playerRoom.ExitIsLocked[direction] {
-					*player.inbox <- fmt.Sprintf("The %s exit is blocked.", world.DirectionToString(direction))
+					*player.inbox <- fmt.Sprintf("The %s exit is blocked.", direction.String())
 					return true
 				}
 
@@ -1077,7 +1077,7 @@ var MENU_WORLD = Menu {
 					}
 
 					var slotFound bool
-					slot, slotFound = world.EquipmentSlotForItemType(itemData.Kind)
+					slot, slotFound = world.EquipmentSlotForItemKind(itemData.Kind)
 					if !slotFound {
 						*player.inbox <- fmt.Sprintf("%s cannot be equipped.", item.GetNameWithCondition())
 						return true
@@ -1592,7 +1592,7 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 			roomName = gamestate.world.Rooms[room.Exits[direction]].Name
 		}
 
-		*player.inbox <- fmt.Sprintf("To the %s is %s.", world.DirectionToString(direction), roomName)
+		*player.inbox <- fmt.Sprintf("To the %s is %s.", direction.String(), roomName)
 		exitFound = true
 	}
 	if !exitFound {

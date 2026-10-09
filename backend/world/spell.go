@@ -75,19 +75,13 @@ func (parser *ScriptParser) parseSpell(table *lua.Table) *SpellData {
 	spellData.Description = parser.getString(table, "description")
 
 	spellData.CastsToLearn = parser.getInt32(table, "casts_to_learn")
-	if spellData.CastsToLearn <= 0 {
-		parser.addProblem(fmt.Errorf("field 'CastsToLearn' must be greater than 0, got %d", spellData.CastsToLearn))
-	}
+	parser.checkInt32NonNegative(spellData.CastsToLearn, "CastsToLearn")
 
 	spellData.ManaCost = parser.getInt32(table, "mana_cost")
-	if spellData.ManaCost < 0 {
-		parser.addProblem(fmt.Errorf("field 'ManaCost' must not be negative, got %d", spellData.ManaCost))
-	}
+	parser.checkInt32Positive(spellData.ManaCost, "ManaCost")
 
 	spellData.CastTime = parser.getInt32(table, "cast_time")
-	if spellData.CastTime < 0 {
-		parser.addProblem(fmt.Errorf("field 'CastTime' must not be negative, got %d", spellData.CastTime))
-	}
+	parser.checkInt32Positive(spellData.ManaCost, "CastTime")
 
 	spellData.CanTargetPlayers = parser.getBool(table, "can_target_players")
 	spellData.OnHit = parser.getFunction(table, "on_hit")

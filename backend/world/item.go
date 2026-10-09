@@ -118,7 +118,6 @@ type ItemData struct {
 var ITEM_DATA []*ItemData
 var ITEM_NAME_TO_ID map[string]ItemId
 
-// Relative to the world data folder
 const ITEM_DATA_FOLDER = "items"
 
 func (world *World) loadItemData() {
@@ -169,8 +168,9 @@ func (parser *ScriptParser) parseItem(table *lua.Table) *ItemData {
 	itemData.Size = parser.getInt32(table, "size")
 
 	kindString := parser.getString(table, "kind")
+
 	var ok bool
-	itemData.Kind, ok = ItemKindFromString(kindString)
+	itemData.Kind, ok = EnumFromString[ItemKind](kindString, ITEM_KIND_COUNT)
 	if !ok {
 		parser.addProblem(fmt.Errorf("'%s' is not a valid item kind.", kindString))
 	}
@@ -305,17 +305,7 @@ func itemKindToScriptEnum(kind ItemKind) string {
 	}
 }
 
-func ItemKindFromString(kindString string) (ItemKind, bool) {
-	for index := range ITEM_KIND_COUNT {
-		if kindString == ItemKindToString(ItemKind(index)) {
-			return ItemKind(index), true
-		}
-	}
-
-	return 0, false
-}
-
-func ItemKindToString(kind ItemKind) string {
+func (kind ItemKind) String() string {
 	switch kind {
 		case ITEM_KIND_CONSUMABLE:
 			return "Consumable"

@@ -13,21 +13,36 @@ import (
 const NPC_SLEEPY_ADRENALINE_DURATION int32 = (5 * 60) / WORLD_SECONDS_PER_UPDATE
 const NPC_SURPRISE_DURATION int32 = 1
 
+const NPC_RESPAWN_DURATION = 60 / WORLD_SECONDS_PER_UPDATE
+const NPC_MOVEMENT_STEP_DURATION = 60 / WORLD_SECONDS_PER_UPDATE
+
+const NPC_MOVEMENT_TYPE_OVERRIDE_NONE = NPC_MOVEMENT_TYPE_COUNT
+
 type NpcMode int
 const (
 	NPC_MODE_DEAD = iota
 	NPC_MODE_IDLE
 	NPC_MODE_SURPRISE
 	NPC_MODE_AGGRO
-	NPC_MODE_SLEEP
 )
 
 type NpcMovementType int
 const (
 	NPC_MOVEMENT_TYPE_SENTINEL = iota
 	NPC_MOVEMENT_TYPE_WANDER
-	// TODO? NPC_MOVEMENT_TYPE_HUNT and NPC_MOVEMENT_TYPE_PATROL
+	NPC_MOVEMENT_TYPE_COUNT
 )
+
+func (movementType NpcMovementType) String() string {
+	switch movementType {
+		case NPC_MOVEMENT_TYPE_SENTINEL:
+			return "Sentinel"
+		case NPC_MOVEMENT_TYPE_WANDER:
+			return "Wander"
+		default:
+			return ""
+	}
+}
 
 // This could be replaced with a fine-grained number later
 type NpcDisposition int
@@ -35,51 +50,77 @@ const (
 	NPC_DISPOSITION_NEUTRAL = iota
 	NPC_DISPOSITION_HOSTILE
 	NPC_DISPOSITION_FRIENDLY
+	NPC_DISPOSITION_COUNT
 )
 
-type Npc struct {
-	// NPC "config" variables - These are public and saved to world JSON
-	Type NpcType
-	LevelRange Int32Range
-	StartingDisposition NpcDisposition
-	MovementType NpcMovementType
-	Behavior Behavior
-	SpawnRoom int
-	RespawnDuration int32
-	SleepDuration int32
-	AwakeDuration int32
-	MovementStepDuration int32
-	DropTable DropTable
+func (disposition NpcDisposition) String() string {
+	switch disposition {
+		case NPC_DISPOSITION_NEUTRAL:
+			return "Neutral"
+		case NPC_DISPOSITION_HOSTILE:
+			return "Hostile"
+		case NPC_DISPOSITION_FRIENDLY:
+			return "Friendly"
+		default:
+			return ""
+	}
+}
 
-	// NPC "instance" variables - These are private and not saved to world JSON
+type Npc struct {
+	// NPC "config" variables - tells us how to make a mob based on this NPC
+	Id NpcId
+	SpawnRoom int
+	LevelRange Int32Range
+
+	// Overrides - for things that would otherwise be specified by NPC data
+	MovementTypeOverride NpcMovementType
+	DropTableOverride DropTable
+
+	// NPC "instance" variables - keeps track of the NPC's current state
 	mobHandle MobHandle
 	mode NpcMode
 	disposition NpcDisposition
 	timer int32
-	sleepyTimer int32
 	shouldReset bool
 }
 
-func (npc *Npc) tryReset(world *World) {
-	// If NPC is not dead, try to despawn mob
-	if npc.mode != NPC_MODE_DEAD {
-		npcMob, npcMobExists := world.Mobs.GetIfExists(npc.mobHandle)
-		if npcMobExists {
-			// If players are still in the room, then don't despawn
-			npcRoom := &world.Rooms[npcMob.Data.Room]
-			if npcRoom.hasPlayerOccupants(world) {
-				return
-			}
+type NpcJson struct {
+	Key string
+	SpawnRoom int
+	LevelRange Int32Range
 
-			// Otherwise, despawn
-			npcRoom.RemoveOccupant(npc.mobHandle)
-			npc.mode = NPC_MODE_DEAD
-			npc.timer = 0 // Trigger a respawn
-		}
-	} else {
-		npc.timer = 0
+	MovementTypeOverride string
+	DropTableOverride DropTable
+}
+
+func (npc *Npc) MarshalJSON() ([]byte, error) {
+}
+
+func (npc *Npc) tryReset(world *World) {
+	// No need to reset if the NPC is already dead,
+	// it will just respawn after respawn timer is up
+	if npc.mode == NPC_MODE_DEAD {
+		npc.shouldReset = false
 	}
 
+	// If NPC is not dead, try to despawn mob
+	npcMob, npcMobExists := world.Mobs.GetIfExists(npc.mobHandle)
+	if !npcMobExists {
+		npc.timer = 0
+		npc.shouldReset = false
+		return
+	}
+
+	// If players are still in the room, then don't despawn
+	npcRoom := &world.Rooms[npcMob.Data.Room]
+	if npcRoom.hasPlayerOccupants(world) {
+		return
+	}
+
+	// Otherwise, despawn
+	npcRoom.RemoveOccupant(npc.mobHandle)
+	npc.mode = NPC_MODE_DEAD
+	npc.timer = 0 // Trigger a respawn
 	npc.shouldReset = false
 }
 

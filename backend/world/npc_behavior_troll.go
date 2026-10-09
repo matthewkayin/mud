@@ -116,7 +116,7 @@ func (behavior *BehaviorTroll) onEvent(npc *Npc, world *World, event BehaviorEve
 			world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s: 'Me see you are smart one. Me step aside now. Go on.'",
 				npcMob.Data.Name))
 			world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s stepped aside. The way %s is clear.",
-				npcMob.Data.Name, DirectionToString(behavior.ExitToBlock)))
+				npcMob.Data.Name, behavior.ExitToBlock.String()))
 
 			return true
 		}
@@ -129,10 +129,10 @@ func (behavior *BehaviorTroll) getDescription(npc *Npc, world *World) (string, b
 	npcMob := world.Mobs.Get(npc.mobHandle)
 
 	if behavior.isBlockingDoor(npc, world) {
-		return fmt.Sprintf("%s is blocking the way %s.", npcMob.Data.Name, DirectionToString(behavior.ExitToBlock)), true
+		return fmt.Sprintf("%s is blocking the way %s.", npcMob.Data.Name, behavior.ExitToBlock.String()), true
 	}
 
-	return fmt.Sprintf("%s has stepped aside. The way %s is clear.", npcMob.Data.Name, DirectionToString(behavior.ExitToBlock)), true
+	return fmt.Sprintf("%s has stepped aside. The way %s is clear.", npcMob.Data.Name, behavior.ExitToBlock.String()), true
 }
 
 func (behavior *BehaviorTroll) isBlockingDoor(npc *Npc, world *World) bool {

@@ -40,7 +40,7 @@ func ItemTypeMatchesEquipmentSlot(kind ItemKind, slot EquipmentSlot) bool {
 	}
 }
 
-func EquipmentSlotForItemType(kind ItemKind) (EquipmentSlot, bool) {
+func EquipmentSlotForItemKind(kind ItemKind) (EquipmentSlot, bool) {
 	switch kind {
 		case ITEM_KIND_EQUIPMENT_OUTFIT:
 			return EQUIPMENT_SLOT_OUTFIT, true

@@ -39,7 +39,7 @@ func (world *World) Validate() []string {
 			}
 			if exitRoomIndex < 0 || exitRoomIndex >= len(world.Rooms) {
 				addProblem("%s has a %s exit to room %d, which does not exist.",
-					roomName, DirectionToString(direction), exitRoomIndex)
+					roomName, direction.String(), exitRoomIndex)
 				continue
 			}
 
@@ -47,15 +47,15 @@ func (world *World) Validate() []string {
 			oppositeDirection := DirectionOppositeOf(direction)
 			if exitRoom.Exits[oppositeDirection] != roomIndex {
 				addProblem("%s has a %s exit to room %d, but room %d has no %s exit back.",
-					roomName, DirectionToString(direction), exitRoomIndex, exitRoomIndex, DirectionToString(oppositeDirection))
+					roomName, direction.String(), exitRoomIndex, exitRoomIndex, oppositeDirection.String())
 			} else if exitRoom.ExitIsLockedOnReset[oppositeDirection] != room.ExitIsLockedOnReset[direction] {
 				addProblem("%s %s exit and room %d %s exit disagree on whether they are locked.",
-					roomName, DirectionToString(direction), exitRoomIndex, DirectionToString(oppositeDirection))
+					roomName, direction.String(), exitRoomIndex, oppositeDirection.String())
 			}
 
 			if exitRoom.EditorPosition != directionStepFrom(room.EditorPosition, direction) {
 				addProblem("%s has a %s exit to room %d, but room %d is not %s of it in the editor.",
-					roomName, DirectionToString(direction), exitRoomIndex, exitRoomIndex, DirectionToString(direction))
+					roomName, direction.String(), exitRoomIndex, exitRoomIndex, direction.String())
 			}
 		}
 

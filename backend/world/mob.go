@@ -713,7 +713,7 @@ func (mob *Mob) useItem(world *World, targetMob *Mob) {
 			}
 		}
 		default:
-			panic(fmt.Sprintf("Unhandled item type %s. This item type should never have been allowed to be used here.", ItemKindToString(itemData.Kind)))
+			panic(fmt.Sprintf("Unhandled item type %s. This item type should never have been allowed to be used here.", itemData.Kind.String()))
 	}
 }
 
