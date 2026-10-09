@@ -164,12 +164,7 @@ func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, newRoomIn
 				continue
 			}
 
-			mob.Npc.OnEvent(world, BehaviorEvent {
-				Type: BEHAVIOR_EVENT_TYPE_PLAYER_ENTERED,
-				Data: BehaviorEventPlayerEntered {
-					PlayerHandle: occupantHandle,
-				},
-			})
+			mob.Npc.onPlayerEntered(world, occupantHandle)
 		}
 	}
 }

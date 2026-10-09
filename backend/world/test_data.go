@@ -12,6 +12,11 @@ const (
 	TEST_ITEM_SPELLBOOK_FIREBOLT
 )
 
+const (
+	TEST_NPC_GOBLIN NpcId = iota
+	TEST_NPC_TROLL
+)
+
 func primeTestData() {
 	SPELL_DATA = []*SpellData {
 		TEST_SPELL_FIREBOLT: {
@@ -70,5 +75,31 @@ func primeTestData() {
 	ITEM_NAME_TO_ID = make(map[string]ItemId)
 	for itemId, itemData := range ITEM_DATA {
 		ITEM_NAME_TO_ID[itemData.Name] = ItemId(itemId)
+	}
+
+	NPC_DATA = []*NpcData {
+		TEST_NPC_GOBLIN: {
+			Key: "goblin",
+			Name: "Goblin",
+			MovementType: NPC_MOVEMENT_TYPE_WANDER,
+			BehaviorParams: map[string]NpcBehaviorParamType{},
+		},
+		TEST_NPC_TROLL: {
+			Key: "troll",
+			Name: "Troll",
+			MovementType: NPC_MOVEMENT_TYPE_SENTINEL,
+			BehaviorParams: map[string]NpcBehaviorParamType {
+				"Greeting": NPC_BEHAVIOR_PARAM_TYPE_STRING,
+				"Patience": NPC_BEHAVIOR_PARAM_TYPE_NUMBER,
+				"IsGrumpy": NPC_BEHAVIOR_PARAM_TYPE_BOOLEAN,
+				"Toll": NPC_BEHAVIOR_PARAM_TYPE_ITEM,
+				"ExitToBlock": NPC_BEHAVIOR_PARAM_TYPE_DIRECTION,
+			},
+		},
+	}
+
+	NPC_KEY_TO_ID = make(map[string]NpcId)
+	for npcId, npcData := range NPC_DATA {
+		NPC_KEY_TO_ID[npcData.Key] = NpcId(npcId)
 	}
 }

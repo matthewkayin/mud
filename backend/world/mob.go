@@ -360,12 +360,7 @@ func (mob *Mob) damage(world *World, attackerHandle MobHandle, damage int32) {
 	mob.alertness = MOB_ALERTNESS_MAX
 
 	if mob.Npc != nil {
-		mob.Npc.OnEvent(world, BehaviorEvent {
-			Type: BEHAVIOR_EVENT_TYPE_ATTACKED,
-			Data: BehaviorEventAttacked {
-				AttackerHandle: attackerHandle,
-			},
-		})
+		mob.Npc.onAttacked(world, attackerHandle)
 	}
 }
 

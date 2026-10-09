@@ -820,14 +820,7 @@ var MENU_WORLD = Menu {
 					playerMob.Data.Name, result.item.GetNameWithAmount(), targetMob.Data.Name))
 
 				if targetMob.Npc != nil {
-					targetMob.Npc.OnEvent(gamestate.world, world.BehaviorEvent {
-						Type: world.BEHAVIOR_EVENT_TYPE_ITEM_GIVEN,
-						Data: world.BehaviorEventItemGiven {
-							PlayerHandle: player.mobHandle,
-							AddedToIndex: result.addedToIndex,
-							Amount: result.item.Amount,
-						},
-					})
+					targetMob.Npc.OnItemGiven(gamestate.world, player.mobHandle, result.addedToIndex, result.item.Amount)
 				}
 
 				return true

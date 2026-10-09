@@ -55,7 +55,37 @@ func ScriptConstantTables() []ScriptConstantTable {
 		})
 	}
 
+	// NPC behavior param type
+	npcBehaviorParamTypeTable := ScriptConstantTable {
+		Name: "NpcBehaviorParamType",
+		Constants: make([]ScriptConstant, 0, NPC_BEHAVIOR_PARAM_TYPE_COUNT),
+	}
+	for index := range NPC_BEHAVIOR_PARAM_TYPE_COUNT {
+		paramType := NpcBehaviorParamType(index)
+		npcBehaviorParamTypeTable.Constants = append(npcBehaviorParamTypeTable.Constants, ScriptConstant {
+			Name: strings.ToUpper(paramType.String()),
+			Value: paramType.String(),
+		})
+	}
+
+	// Direction
+	directionTable := ScriptConstantTable {
+		Name: "Direction",
+		Constants: make([]ScriptConstant, 0, DIRECTION_COUNT),
+	}
+	for index := range DIRECTION_COUNT {
+		direction := Direction(index)
+		directionTable.Constants = append(directionTable.Constants, ScriptConstant {
+			Name: strings.ToUpper(direction.String()),
+			Value: direction.String(),
+		})
+	}
+
 	return []ScriptConstantTable {
 		itemKindTable,
+		npcDispositionTable,
+		npcMovementTypeTable,
+		npcBehaviorParamTypeTable,
+		directionTable,
 	}
 }

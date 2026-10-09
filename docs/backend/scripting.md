@@ -84,7 +84,7 @@ Then when loading the player's inventory JSON, we will need to walk back using a
 
 ## Data scripts
 
-Each folder under `backend/data/` holds one kind of data, and every `.lua` file in it returns a single table of that kind. `WorldLoadData(dataFolder)` (`backend/world/world.go`) loads the folders in this order. `WorldInit` calls it with `./data`, and the world editor calls it with the backend's data folder so it can read world files. A script can only refer to data that was loaded before it, and those references are names that are checked during parsing:
+Each folder under `backend/data/` holds one kind of data, and every `.lua` file in it returns a single table of that kind. `World.LoadData(dataFolder)` (`backend/world/world.go`) loads the folders in this order. `WorldInit` calls it with `./data`, and the world editor calls it with the backend's data folder so it can read world files. A script can only refer to data that was loaded before it, and those references are names that are checked during parsing:
 
 | Order | Folder | Go type | Loader | References |
 | --- | --- | --- | --- | --- |
@@ -94,8 +94,9 @@ Each folder under `backend/data/` holds one kind of data, and every `.lua` file 
 | 4 | `recipes/` | `RecipeData` | `loadRecipeTables` + `loadRecipeData` (`recipe.go`) | jobs, items |
 | 5 | `items/` | `ItemData` | `loadItemData` (`item.go`) | spells, recipes |
 | 6 | `classes/` | `ClassData` | `loadClassData` (`character_class.go`) | spells, items |
+| 7 | `npcs/` | `NpcData` | `loadNpcData` (`npc_data.go`) | items |
 
-Recipes are loaded in two passes. `loadRecipeTables` registers recipe names first so that items can refer to them. `loadRecipeData` parses the rest of each recipe once items exist. Classes load last so they can refer to items.
+Recipes are loaded in two passes. `loadRecipeTables` registers recipe names first so that items can refer to them. `loadRecipeData` parses the rest of each recipe once items exist. Classes and NPCs load after items so they can refer to items. NPC scripts, their behavior hooks and their behavior params are described in [npcs.md](npcs.md).
 
 Each ID is the entry's position in load order, and files load in alphabetical order. Names must be unique within a kind, and the player-facing lookups (`RaceIdFromString` etc.) ignore case.
 
@@ -127,14 +128,14 @@ class.unlocks = {
 return class
 ```
 
-Character saves (`saves/<Name>.json`, `CharacterJson` in `character.go`) store race, class, job, spell and recipe names instead of IDs. World files (`data/world.json`) store item names in drop tables (`DropTableEntry` in `drop_table.go`) and inventories (`Item` in `item.go`). If a save names something that no longer exists, decoding returns an error and startup fails.
+Character saves (`saves/<Name>.json`, `CharacterJson` in `character.go`) store race, class, job, spell and recipe names instead of IDs. World files (`data/world.json`) store item names in drop tables (`DropTableEntry` in `drop_table.go`) and inventories (`Item` in `item.go`), and NPC keys in unique NPCs (`Npc` in `npc.go`). If a save names something that no longer exists, decoding returns an error and startup fails.
 
 ## Script API
 
 Scripts reach the backend through the global `world` table, which `scriptInit` (`backend/world/script.go`) builds when the Lua state is created. It contains:
 
 - **Functions** from `SCRIPT_LIBRARY` in `backend/world/script_library.go`. Each entry maps a Lua name to a `lua.NativeFunc`, so `"log"` becomes `world.log`.
-- **Constant tables** from `ScriptConstantTables()` in `backend/world/script.go`. Each `ScriptConstantTable` becomes `world.<Name>`, with string values. For example, an item script sets `item.kind = world.ItemKind.CONSUMABLE`, and the parser maps that string back to the Go enum. To add a table, append it to the slice that `ScriptConstantTables()` returns.
+- **Constant tables** from `ScriptConstantTables()` in `backend/world/script_constants.go`. Each `ScriptConstantTable` becomes `world.<Name>`, with string values. For example, an item script sets `item.kind = world.ItemKind.CONSUMABLE`, and the parser maps that string back to the Go enum. To add a table, append it to the slice that `ScriptConstantTables()` returns.
 
 ### Language server definitions
 

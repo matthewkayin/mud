@@ -17,6 +17,36 @@ world.ItemKind = {
 	MISC = "Misc",
 }
 
+---@enum NpcDisposition
+world.NpcDisposition = {
+	NEUTRAL = "Neutral",
+	HOSTILE = "Hostile",
+	FRIENDLY = "Friendly",
+}
+
+---@enum NpcMovementType
+world.NpcMovementType = {
+	SENTINEL = "Sentinel",
+	WANDER = "Wander",
+}
+
+---@enum NpcBehaviorParamType
+world.NpcBehaviorParamType = {
+	STRING = "String",
+	NUMBER = "Number",
+	BOOLEAN = "Boolean",
+	ITEM = "Item",
+	DIRECTION = "Direction",
+}
+
+---@enum Direction
+world.Direction = {
+	NORTH = "north",
+	EAST = "east",
+	SOUTH = "south",
+	WEST = "west",
+}
+
 --- Logs a message to the game
 ---
 --- Accepts an optional table of arguments. The table keys should be strings only and the

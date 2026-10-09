@@ -1,23 +1,17 @@
 import { world } from '../api/models';
-import { getEditorConstants } from './constants';
 
 // Records keyed by the generated enums, so adding an enum value in Go is a compile error here until it gets a name
-export const NPC_DISPOSITION_NAMES: Record<world.NpcDisposition, string> = {
-  [world.NpcDisposition.NEUTRAL]: 'Neutral',
-  [world.NpcDisposition.HOSTILE]: 'Hostile',
-};
 export const NPC_MOVEMENT_TYPE_NAMES: Record<world.NpcMovementType, string> = {
   [world.NpcMovementType.SENTINEL]: 'Sentinel',
   [world.NpcMovementType.WANDER]: 'Wander',
 };
-
-export function minutesToTicks(minutes: number): number {
-  return minutes * (60 / getEditorConstants().WorldSecondsPerUpdate);
-}
-
-export function ticksToMinutes(ticks: number): number {
-  return ticks / (60 / getEditorConstants().WorldSecondsPerUpdate);
-}
+// Direction behavior params are saved by these names
+export const DIRECTION_NAMES: Record<Exclude<world.Direction, world.Direction.COUNT>, string> = {
+  [world.Direction.NORTH]: 'north',
+  [world.Direction.EAST]: 'east',
+  [world.Direction.SOUTH]: 'south',
+  [world.Direction.WEST]: 'west',
+};
 
 // The world stores NPCs in a world-level list that references rooms by index,
 // but the editor stores them in the room they spawn in. NPC SpawnRoom values

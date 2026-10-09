@@ -48,9 +48,14 @@ func testEditorWorld() EditorWorld {
 	roomC.Room.ExitIsLockedOnReset[world.DIRECTION_NORTH] = true
 	roomC.Npcs = []world.Npc {
 		{
-			Type: world.NPC_TYPE_TROLL,
+			Id: world.NPC_KEY_TO_ID["troll"],
 			LevelRange: world.Int32Range{ Min: 2, Max: 3 },
 			SpawnRoom: world.ROOM_NONE,
+			MovementTypeOverride: world.NPC_MOVEMENT_TYPE_OVERRIDE_NONE,
+			BehaviorParams: map[string]any {
+				"Toll": world.Item{ Id: world.ITEM_NAME_TO_ID["Gold"], Amount: 10 },
+				"ExitToBlock": world.Direction(world.DIRECTION_NORTH),
+			},
 		},
 	}
 
@@ -109,6 +114,9 @@ func TestEditorWorldRoundTrip(t *testing.T) {
 	}
 	if !strings.Contains(string(data), `"ItemId": "Gold"`) {
 		t.Errorf("Expected drop table items to be saved by name")
+	}
+	if !strings.Contains(string(data), `"Id": "troll"`) || !strings.Contains(string(data), `"ExitToBlock": "north"`) {
+		t.Errorf("Expected NPCs and their behavior params to be saved by name")
 	}
 
 	loadedWorld, err := decodeWorld(data)

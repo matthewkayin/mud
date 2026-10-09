@@ -6,6 +6,7 @@ import (
 	"slices"
 	"math/rand/v2"
 	"encoding/json"
+	"github.com/mmcdole/lunar"
 )
 
 // Rather than reset the NPC's sleepy timer after combat,
@@ -69,13 +70,16 @@ func (disposition NpcDisposition) String() string {
 
 type Npc struct {
 	// NPC "config" variables - tells us how to make a mob based on this NPC
-	Id NpcId
+	Id NpcId `ts_type:"string"`
 	SpawnRoom int
 	LevelRange Int32Range
 
 	// Overrides - for things that would otherwise be specified by NPC data
-	MovementTypeOverride NpcMovementType
+	MovementTypeOverride NpcMovementType `ts_type:"string"`
 	DropTableOverride DropTable
+
+	// Maps each behavior param name declared by the NPC data to its value
+	BehaviorParams map[string]any
 
 	// NPC "instance" variables - keeps track of the NPC's current state
 	mobHandle MobHandle
@@ -83,26 +87,56 @@ type Npc struct {
 	disposition NpcDisposition
 	timer int32
 	shouldReset bool
+	// The table returned by the script's init() hook, or nil
+	instance lua.Value
 }
 
 type NpcJson struct {
-	Key string
+	Id string
 	SpawnRoom int
 	LevelRange Int32Range
 
 	MovementTypeOverride string
 	DropTableOverride DropTable
+
+	BehaviorParams map[string]json.RawMessage
 }
 
 func (npc *Npc) MarshalJSON() ([]byte, error) {
+	if !npcIdIsValid(npc.Id) {
+		return nil, fmt.Errorf("Cannot save NPC with invalid NPC id %d.", npc.Id)
+	}
+	npcData := NPC_DATA[npc.Id]
+
+	movementTypeOverride := ""
+	if npc.MovementTypeOverride != NPC_MOVEMENT_TYPE_OVERRIDE_NONE {
+		movementTypeOverride = npc.MovementTypeOverride.String()
+	}
+
 	npcJson := NpcJson {
-		Key: NPC_DATA[npc.Id].Key,
+		Id: npcData.Key,
 		SpawnRoom: npc.SpawnRoom,
 		LevelRange: npc.LevelRange,
 
-		MovementTypeOverride: npc.MovementTypeOverride.String(),
+		MovementTypeOverride: movementTypeOverride,
 		DropTableOverride: npc.DropTableOverride,
+
+		BehaviorParams: make(map[string]json.RawMessage, len(npc.BehaviorParams)),
 	}
+
+	for name, value := range npc.BehaviorParams {
+		paramType, isDeclared := npcData.BehaviorParams[name]
+		if !isDeclared {
+			return nil, fmt.Errorf("Cannot save NPC '%s' with undeclared behavior param '%s'.", npcData.Key, name)
+		}
+
+		jsonValue, err := npcBehaviorParamToJson(paramType, value)
+		if err != nil {
+			return nil, fmt.Errorf("Cannot save NPC '%s' behavior param '%s': %w", npcData.Key, name, err)
+		}
+		npcJson.BehaviorParams[name] = jsonValue
+	}
+
 	return json.Marshal(&npcJson)
 }
 
@@ -114,10 +148,11 @@ func (npc *Npc) UnmarshalJSON(data []byte) error {
 	}
 
 	var exists bool
-	npc.Id, exists = NPC_KEY_TO_ID[npcJson.Key]
+	npc.Id, exists = NPC_KEY_TO_ID[npcJson.Id]
 	if !exists {
-		return fmt.Errorf("No NPC key matches '%s'.", npcJson.Key)
+		return fmt.Errorf("No NPC id matches '%s'.", npcJson.Id)
 	}
+	npcData := NPC_DATA[npc.Id]
 
 	npc.SpawnRoom = npcJson.SpawnRoom
 	npc.LevelRange = npcJson.LevelRange
@@ -133,7 +168,129 @@ func (npc *Npc) UnmarshalJSON(data []byte) error {
 
 	npc.DropTableOverride = npcJson.DropTableOverride
 
+	// Missing params are reported by Validate()
+	npc.BehaviorParams = make(map[string]any, len(npcJson.BehaviorParams))
+	for name, jsonValue := range npcJson.BehaviorParams {
+		paramType, isDeclared := npcData.BehaviorParams[name]
+		if !isDeclared {
+			return fmt.Errorf("NPC '%s' has no behavior param named '%s'.", npcData.Key, name)
+		}
+
+		value, err := npcBehaviorParamFromJson(paramType, jsonValue)
+		if err != nil {
+			return fmt.Errorf("NPC '%s' behavior param '%s': %w", npcData.Key, name, err)
+		}
+		npc.BehaviorParams[name] = value
+	}
+
 	return nil
+}
+
+func npcIdIsValid(npcId NpcId) bool {
+	return npcId >= 0 && int(npcId) < len(NPC_DATA)
+}
+
+// Returns true if the value has the Go type that the param type expects
+func npcBehaviorParamHasType(paramType NpcBehaviorParamType, value any) bool {
+	switch paramType {
+		case NPC_BEHAVIOR_PARAM_TYPE_STRING:
+			_, ok := value.(string)
+			return ok
+		case NPC_BEHAVIOR_PARAM_TYPE_NUMBER:
+			_, ok := value.(float64)
+			return ok
+		case NPC_BEHAVIOR_PARAM_TYPE_BOOLEAN:
+			_, ok := value.(bool)
+			return ok
+		case NPC_BEHAVIOR_PARAM_TYPE_ITEM:
+			_, ok := value.(Item)
+			return ok
+		case NPC_BEHAVIOR_PARAM_TYPE_DIRECTION:
+			_, ok := value.(Direction)
+			return ok
+		default:
+			return false
+	}
+}
+
+func npcBehaviorParamToJson(paramType NpcBehaviorParamType, value any) (json.RawMessage, error) {
+	if !npcBehaviorParamHasType(paramType, value) {
+		return nil, fmt.Errorf("value %v is not of type %s", value, paramType.String())
+	}
+
+	switch paramType {
+		case NPC_BEHAVIOR_PARAM_TYPE_ITEM: {
+			// Item.MarshalJSON has a pointer receiver, so the Item must be addressable
+			item := value.(Item)
+			return json.Marshal(&item)
+		}
+		case NPC_BEHAVIOR_PARAM_TYPE_DIRECTION: {
+			direction := value.(Direction)
+			if direction < 0 || direction >= DIRECTION_COUNT {
+				return nil, fmt.Errorf("%d is not a valid direction", direction)
+			}
+			return json.Marshal(direction.String())
+		}
+		default:
+			return json.Marshal(value)
+	}
+}
+
+func npcBehaviorParamFromJson(paramType NpcBehaviorParamType, data json.RawMessage) (any, error) {
+	switch paramType {
+		case NPC_BEHAVIOR_PARAM_TYPE_STRING: {
+			var value string
+			err := json.Unmarshal(data, &value)
+			return value, err
+		}
+		case NPC_BEHAVIOR_PARAM_TYPE_NUMBER: {
+			var value float64
+			err := json.Unmarshal(data, &value)
+			return value, err
+		}
+		case NPC_BEHAVIOR_PARAM_TYPE_BOOLEAN: {
+			var value bool
+			err := json.Unmarshal(data, &value)
+			return value, err
+		}
+		case NPC_BEHAVIOR_PARAM_TYPE_ITEM: {
+			var value Item
+			err := json.Unmarshal(data, &value)
+			return value, err
+		}
+		case NPC_BEHAVIOR_PARAM_TYPE_DIRECTION: {
+			var directionString string
+			err := json.Unmarshal(data, &directionString)
+			if err != nil {
+				return nil, err
+			}
+			direction, ok := EnumFromString(directionString, Direction(DIRECTION_COUNT))
+			if !ok {
+				return nil, fmt.Errorf("'%s' is not a valid direction", directionString)
+			}
+			return direction, nil
+		}
+		default:
+			return nil, fmt.Errorf("unhandled behavior param type %d", paramType)
+	}
+}
+
+// Converts a behavior param value into a value that lua.State.NewTableFrom accepts
+func npcBehaviorParamToLua(paramType NpcBehaviorParamType, value any) any {
+	switch paramType {
+		case NPC_BEHAVIOR_PARAM_TYPE_ITEM: {
+			item := value.(Item)
+			return map[string]any {
+				"name": ITEM_DATA[item.Id].Name,
+				"amount": item.Amount,
+				"durability": item.Durability,
+			}
+		}
+		case NPC_BEHAVIOR_PARAM_TYPE_DIRECTION:
+			return value.(Direction).String()
+		default:
+			return value
+	}
 }
 
 func (npc *Npc) tryReset(world *World) {
@@ -141,6 +298,7 @@ func (npc *Npc) tryReset(world *World) {
 	// it will just respawn after respawn timer is up
 	if npc.mode == NPC_MODE_DEAD {
 		npc.shouldReset = false
+		return
 	}
 
 	// If NPC is not dead, try to despawn mob
@@ -160,6 +318,7 @@ func (npc *Npc) tryReset(world *World) {
 	// Otherwise, despawn
 	npcRoom.RemoveOccupant(npc.mobHandle)
 	npc.mode = NPC_MODE_DEAD
+	npc.instance = lua.Nil()
 	npc.timer = 0 // Trigger a respawn
 	npc.shouldReset = false
 }
@@ -174,11 +333,16 @@ func (npc *Npc) spawnMob(world *World) {
 
 	npcData := NPC_DATA[npc.Id]
 
+	dropTable := &npcData.dropTable
+	if len(npc.DropTableOverride.Entries) != 0 {
+		dropTable = &npc.DropTableOverride
+	}
+
 	// Create mob data
 	level := npc.LevelRange.ChooseRandom()
 	stats := calculateStatBlockAtLevel(&npcData.stats, &npcData.scaling, level)
 	mobData := MobData {
-		Name: npcData.name,
+		Name: npcData.Name,
 		Room: npc.SpawnRoom,
 
 		Level: level,
@@ -186,8 +350,13 @@ func (npc *Npc) spawnMob(world *World) {
 
 		Stats: stats,
 		Spells: []SpellId {},
-		Inventory: npcData.dropTable.getLoot(),
-		Equipment: npcData.equipment,
+		Inventory: dropTable.getLoot(),
+		// Copy the equipment so that mobs don't share the NPC data's slices
+		Equipment: Equipment {
+			IsSlotInUse: slices.Clone(npcData.equipment.IsSlotInUse),
+			SlotItem: slices.Clone(npcData.equipment.SlotItem),
+			StatBonuses: npcData.equipment.StatBonuses,
+		},
 	}
 
 	mobData.Health = mobData.MaxHealth()
@@ -205,9 +374,57 @@ func (npc *Npc) spawnMob(world *World) {
 	npc.setModeIdle()
 	npc.disposition = npcData.startingDisposition
 
+	npc.instance = lua.Nil()
 	if npcData.init != nil {
-		world.luaState.Call(npcData.init.Value())
+		npc.callInit(world)
 	}
+}
+
+// Calls the init() hook with the behavior params and keeps the instance table it returns
+func (npc *Npc) callInit(world *World) {
+	npcData := NPC_DATA[npc.Id]
+
+	paramsTree := make(map[string]any, len(npc.BehaviorParams))
+	for name, value := range npc.BehaviorParams {
+		paramsTree[name] = npcBehaviorParamToLua(npcData.BehaviorParams[name], value)
+	}
+	paramsTable, err := world.luaState.NewTableFrom(paramsTree)
+	if err != nil {
+		log.Printf("Warn - Error creating behavior params table for NPC '%s': %s", npcData.Key, err.Error())
+		return
+	}
+
+	result, ok := npc.callHook(world, npcData.init, "init", paramsTable.Value())
+	if !ok || result.IsNil() {
+		return
+	}
+	if result.Kind() != lua.TableKind {
+		log.Printf("Warn - NPC '%s' init() returned a %s instead of a table.", npcData.Key, result.Kind().String())
+		return
+	}
+
+	npc.instance = result
+}
+
+// Calls a script hook and returns its first result. Returns false if the hook
+// is not defined or if it failed, in which case the error is logged.
+func (npc *Npc) callHook(world *World, hook *lua.Function, hookName string, args ...lua.Value) (lua.Value, bool) {
+	if hook == nil {
+		return lua.Nil(), false
+	}
+
+	luaArgs := make([]lua.Value, 0, len(args) + 1)
+	luaArgs = append(luaArgs, npc.instance)
+	for _, arg := range args {
+		luaArgs = append(luaArgs, arg)
+	}
+	result, err := world.luaState.CallOne(hook.Value(), luaArgs...)
+	if err != nil {
+		log.Printf("Warn - NPC '%s' %s() failed: %s", NPC_DATA[npc.Id].Key, hookName, err.Error())
+		return lua.Nil(), false
+	}
+
+	return result, true
 }
 
 func (npc *Npc) setModeIdle() {
@@ -244,13 +461,11 @@ func (npc *Npc) update(world *World) {
 	if !npcMobExists {
 		npc.mode = NPC_MODE_DEAD
 		npc.timer = NPC_RESPAWN_DURATION
+		npc.instance = lua.Nil()
 		return
 	}
 
-	npcData := NPC_DATA[npc.Id]
-	if npcData.update != nil {
-		world.luaState.Call(npcData.update.Value())
-	}
+	npc.callHook(world, NPC_DATA[npc.Id].update, "update")
 
 	switch npc.mode {
 		case NPC_MODE_IDLE: {
@@ -339,7 +554,7 @@ func (npc *Npc) getMovementType() NpcMovementType {
 		return npc.MovementTypeOverride
 	}
 
-	return NPC_DATA[npc.Id].movementType
+	return NPC_DATA[npc.Id].MovementType
 }
 
 func (npc *Npc) movementStep(world *World) {
@@ -385,60 +600,56 @@ func (npc *Npc) movementStep(world *World) {
 	}
 }
 
-func (npc *Npc) OnEvent(world *World, event BehaviorEvent) {
-	// First, try event through behavior
-	// TODO: fire the appropriate NPC on event hook
+func (npc *Npc) onAttacked(world *World, attackerHandle MobHandle) {
+	_, handled := npc.callHook(world, NPC_DATA[npc.Id].onAttacked, "on_attacked")
+	if handled {
+		return
+	}
 
-	// If behavior did not handle event, fallback to default
-	npcMob := world.Mobs.Get(npc.mobHandle)
-	switch event.Type {
-		case BEHAVIOR_EVENT_TYPE_ATTACKED: {
-			// TODO: for friendly NPCs, like town guards,
-			// make the NPC hostile only to the attacker, not
-			// all players?
-			if npc.disposition == NPC_DISPOSITION_NEUTRAL {
-				npc.disposition = NPC_DISPOSITION_HOSTILE
-			}
-		}
-
-		case BEHAVIOR_EVENT_TYPE_ITEM_GIVEN: {
-			eventData := event.Data.(BehaviorEventItemGiven)
-
-			playerMob := world.Mobs.Get(eventData.PlayerHandle)
-			item := npcMob.Data.Inventory.RemoveItems(eventData.AddedToIndex, eventData.Amount)
-			playerMob.Data.Inventory.AddItem(item)
-
-			world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s is uninterested in this item. They returned it to %s.", npcMob.Data.Name, playerMob.Data.Name))
-		}
+	// TODO: for friendly NPCs, like town guards,
+	// make the NPC hostile only to the attacker, not
+	// all players?
+	if npc.disposition == NPC_DISPOSITION_NEUTRAL {
+		npc.disposition = NPC_DISPOSITION_HOSTILE
 	}
 }
 
-func (npc *Npc) GetDescription(world *World) string {
+func (npc *Npc) onPlayerEntered(world *World, playerHandle MobHandle) {
+	npc.callHook(world, NPC_DATA[npc.Id].onPlayerEntered, "on_player_entered")
+}
+
+// Called after a player gives this NPC an item. addedToIndex is where the item landed in the NPC's inventory
+func (npc *Npc) OnItemGiven(world *World, playerHandle MobHandle, addedToIndex int, amount int32) {
+	_, handled := npc.callHook(world, NPC_DATA[npc.Id].onItemGiven, "on_item_given")
+	if handled {
+		return
+	}
+
+	// By default, give the item back
+	npcMob := world.Mobs.Get(npc.mobHandle)
+	playerMob := world.Mobs.Get(playerHandle)
+	item := npcMob.Data.Inventory.RemoveItems(addedToIndex, amount)
+	playerMob.Data.Inventory.AddItem(item)
+
+	world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s is uninterested in this item. They returned it to %s.", npcMob.Data.Name, playerMob.Data.Name))
+}
+
+func (npc *Npc) GetDescription() string {
 	return NPC_DATA[npc.Id].description
 }
 
 func (npc *Npc) GetStatusDescription(world *World) (string, bool) {
 	npcData := NPC_DATA[npc.Id]
-	if npcData.getStatusDescription == nil {
+	result, ok := npc.callHook(world, npcData.getStatusDescription, "get_status_description", npc.instance)
+	if !ok || result.IsNil() {
 		return "", false
 	}
 
-	results, err := world.luaState.Call(npcData.getStatusDescription.Value())
-	if err != nil {
-		log.Printf("Warn - Error calling NPC get_description(): %s", err.Error())
+	resultString, isString := result.AsString()
+	if !isString {
+		log.Printf("Warn - NPC '%s' get_status_description() returned a %s instead of a string.", npcData.Key, result.Kind().String())
 		return "", false
 	}
 
-	if len(results) != 0 {
-		log.Printf("Warn - NPC get_description() returned no result.")
-		return "", false
-	}
-
-	result, ok := results[0].AsString()
-	if !ok {
-		log.Printf("Warn - NPC get_description() returned a non-string value.")
-		return "", false
-	}
-
-	return result, true
+	return resultString, true
 }

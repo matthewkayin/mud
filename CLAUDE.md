@@ -48,9 +48,9 @@ go test ./...
 - `world/` — pure simulation: rooms, mobs, NPCs, items, spells, recipes. `World.Update()` advances the simulation and appends `world.Event`s; `game` subscribes via `addEventListener(eventType, fn)` and dispatches after each update, then clears events. Keep `world` free of player/networking concerns and communicate outward through events.
 
 ### World data conventions
-- Static game data that isn't scripted yet is defined as Go tables indexed by enum constants (e.g. `NPC_DATA[NPC_TYPE_TROLL]` in `npc_data.go`, `MOB_ABILITY_DATA` in `mob_ability.go`).
+- Static game data that isn't scripted yet is defined as Go tables indexed by enum constants (e.g. `MOB_ABILITY_DATA` in `mob_ability.go`).
 - Mobs live in `MobArray`, a sparse-set with generational `MobHandle{Id, Generation}`. `Get` panics on stale handles; use `GetIfExists` when a handle may be dead. Rooms reference occupants by handle; rooms are referenced by index with `ROOM_NONE` as the sentinel.
-- Item, spell, recipe, race, job and class data are Lua scripts in `backend/data/` (see `docs/backend/scripting.md`), and their IDs are load-order indices. `WorldLoadData(dataFolder)` loads them, and both `WorldInit` and the editor call it.
+- Item, spell, recipe, race, job, class and NPC data are Lua scripts in `backend/data/` (see `docs/backend/scripting.md` and `docs/backend/npcs.md`), and their IDs are load-order indices. `World.LoadData(dataFolder)` loads them, and both `WorldInit` and the editor call it.
 - Persistence is JSON: `data/world.json` (fields tagged `json:"-"` are transient) and `saves/<Name>.json` for characters. Since script data IDs are not stable, saved files reference it by name through custom `MarshalJSON`/`UnmarshalJSON` (e.g. `Item`, `DropTableEntry`, `CharacterJson`).
 
 ### Go ↔ TypeScript types

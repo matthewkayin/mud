@@ -98,6 +98,13 @@ export namespace world {
 	    SOUTH = 2,
 	    WEST = 3,
 	}
+	export enum NpcBehaviorParamType {
+	    BOOLEAN = 2,
+	    DIRECTION = 4,
+	    ITEM = 3,
+	    NUMBER = 1,
+	    STRING = 0,
+	}
 	export enum NpcDisposition {
 	    HOSTILE = 1,
 	    NEUTRAL = 0,
@@ -105,18 +112,6 @@ export namespace world {
 	export enum NpcMovementType {
 	    SENTINEL = 0,
 	    WANDER = 1,
-	}
-	export class Behavior {
-	    Hooks: any;
-	
-	    static createFrom(source: any = {}) {
-	        return new Behavior(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.Hooks = source["Hooks"];
-	    }
 	}
 	export class Item {
 	    Id: string;
@@ -322,17 +317,12 @@ export namespace world {
 	    }
 	}
 	export class Npc {
-	    Type: number;
-	    LevelRange: Int32Range;
-	    StartingDisposition: NpcDisposition;
-	    MovementType: NpcMovementType;
-	    Behavior: Behavior;
+	    Id: string;
 	    SpawnRoom: number;
-	    RespawnDuration: number;
-	    SleepDuration: number;
-	    AwakeDuration: number;
-	    MovementStepDuration: number;
-	    DropTable: DropTable;
+	    LevelRange: Int32Range;
+	    MovementTypeOverride: string;
+	    DropTableOverride: DropTable;
+	    BehaviorParams: Record<string, any>;
 	
 	    static createFrom(source: any = {}) {
 	        return new Npc(source);
@@ -340,17 +330,12 @@ export namespace world {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.Type = source["Type"];
-	        this.LevelRange = this.convertValues(source["LevelRange"], Int32Range);
-	        this.StartingDisposition = source["StartingDisposition"];
-	        this.MovementType = source["MovementType"];
-	        this.Behavior = this.convertValues(source["Behavior"], Behavior);
+	        this.Id = source["Id"];
 	        this.SpawnRoom = source["SpawnRoom"];
-	        this.RespawnDuration = source["RespawnDuration"];
-	        this.SleepDuration = source["SleepDuration"];
-	        this.AwakeDuration = source["AwakeDuration"];
-	        this.MovementStepDuration = source["MovementStepDuration"];
-	        this.DropTable = this.convertValues(source["DropTable"], DropTable);
+	        this.LevelRange = this.convertValues(source["LevelRange"], Int32Range);
+	        this.MovementTypeOverride = source["MovementTypeOverride"];
+	        this.DropTableOverride = this.convertValues(source["DropTableOverride"], DropTable);
+	        this.BehaviorParams = source["BehaviorParams"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -372,7 +357,10 @@ export namespace world {
 		}
 	}
 	export class NpcData {
+	    Key: string;
 	    Name: string;
+	    MovementType: NpcMovementType;
+	    BehaviorParams: Record<string, NpcBehaviorParamType>;
 	
 	    static createFrom(source: any = {}) {
 	        return new NpcData(source);
@@ -380,7 +368,10 @@ export namespace world {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Key = source["Key"];
 	        this.Name = source["Name"];
+	        this.MovementType = source["MovementType"];
+	        this.BehaviorParams = source["BehaviorParams"];
 	    }
 	}
 	export class RoomEditorPosition {

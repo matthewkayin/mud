@@ -88,6 +88,7 @@ func (world *World) LoadData(dataFolder string) {
 	world.loadItemData()
 	world.loadRecipeData(recipeTables)
 	world.loadClassData()
+	world.loadNpcData()
 }
 
 func (world *World) Update() {

@@ -2,6 +2,7 @@ package world
 
 import (
 	"fmt"
+	"slices"
 )
 
 // Validate checks the world's saved data for problems that would break the game
@@ -73,10 +74,11 @@ func (world *World) Validate() []string {
 		npc := &world.Npcs[npcIndex]
 		npcName := fmt.Sprintf("NPC %d", npcIndex)
 
-		if npc.Id < 0 || int(npc.Id) >= len(NPC_DATA) {
-			addProblem("%s has invalid NPC type %d.", npcName, npc.Id)
+		if !npcIdIsValid(npc.Id) {
+			addProblem("%s has invalid NPC id %d.", npcName, npc.Id)
 		} else {
 			npcName = fmt.Sprintf("NPC %d (%s)", npcIndex, NPC_DATA[npc.Id].Key)
+			problems = append(problems, validateNpcBehaviorParams(npc, npcName)...)
 		}
 
 		if npc.SpawnRoom < 0 || npc.SpawnRoom >= len(world.Rooms) {
@@ -85,6 +87,7 @@ func (world *World) Validate() []string {
 		if npc.LevelRange.Min < 1 || npc.LevelRange.Min > npc.LevelRange.Max {
 			addProblem("%s has invalid level range %d-%d.", npcName, npc.LevelRange.Min, npc.LevelRange.Max)
 		}
+		problems = append(problems, validateDropTable(&npc.DropTableOverride, npcName + " override")...)
 	}
 
 	return problems
@@ -125,6 +128,48 @@ func validateDropTable(dropTable *DropTable, ownerName string) []string {
 		}
 	}
 
+	return problems
+}
+
+func validateNpcBehaviorParams(npc *Npc, npcName string) []string {
+	problems := []string{}
+	npcData := NPC_DATA[npc.Id]
+
+	for name, paramType := range npcData.BehaviorParams {
+		value, exists := npc.BehaviorParams[name]
+		if !exists {
+			problems = append(problems, fmt.Sprintf("%s is missing behavior param '%s'.", npcName, name))
+			continue
+		}
+		if !npcBehaviorParamHasType(paramType, value) {
+			problems = append(problems, fmt.Sprintf("%s behavior param '%s' is not of type %s.", npcName, name, paramType.String()))
+			continue
+		}
+
+		switch paramType {
+			case NPC_BEHAVIOR_PARAM_TYPE_ITEM: {
+				item := value.(Item)
+				if !itemIdIsValid(item.Id) {
+					problems = append(problems, fmt.Sprintf("%s behavior param '%s' has invalid item id %d.", npcName, name, item.Id))
+				}
+			}
+			case NPC_BEHAVIOR_PARAM_TYPE_DIRECTION: {
+				direction := value.(Direction)
+				if direction < 0 || direction >= DIRECTION_COUNT {
+					problems = append(problems, fmt.Sprintf("%s behavior param '%s' has invalid direction %d.", npcName, name, direction))
+				}
+			}
+		}
+	}
+
+	for name := range npc.BehaviorParams {
+		_, isDeclared := npcData.BehaviorParams[name]
+		if !isDeclared {
+			problems = append(problems, fmt.Sprintf("%s has behavior param '%s', which NPC '%s' does not declare.", npcName, name, npcData.Key))
+		}
+	}
+
+	slices.Sort(problems)
 	return problems
 }
 

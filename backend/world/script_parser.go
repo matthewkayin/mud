@@ -123,6 +123,22 @@ func (parser *ScriptParser) getFunction(table *lua.Table, key string) *lua.Funct
 	return result
 }
 
+// Returns nil if the field is missing
+func (parser *ScriptParser) getOptionalFunction(table *lua.Table, key string) *lua.Function {
+	value := table.RawGetString(key)
+	if value.IsNil() {
+		return nil
+	}
+
+	result, ok := value.AsFunction()
+	if !ok {
+		parser.addProblem(fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, lua.FunctionKind, value.Kind().String()))
+		return nil
+	}
+
+	return result
+}
+
 func (parser *ScriptParser) getTable(table *lua.Table, key string) *lua.Table {
 	value := parser.getValue(table, key, lua.TableKind)
 	result, ok := value.AsTable()
@@ -168,7 +184,7 @@ func (parser *ScriptParser) getStatBlock(table *lua.Table, key string, allowNega
 }
 
 func (parser *ScriptParser) getEquipment(table *lua.Table, key string) Equipment {
-	equipment := Equipment{}
+	equipment := EquipmentInitEmpty()
 
 	equipmentTable := parser.getTable(table, key)
 	if equipmentTable == nil {
@@ -250,9 +266,9 @@ func (parser *ScriptParser) getDropTable(table *lua.Table, key string) DropTable
 		entry := DropTableEntry {
 			ItemId: itemId,
 
-			AmountRange: parser.getInt32Range(dropTable, "amount"),
-			DurabilityPercentRange: parser.getInt32Range(dropTable, "durability_percent"),
-			DropChancePercent: parser.getInt32(dropTable, "drop_chance_percent"),
+			AmountRange: parser.getInt32Range(entryTable, "amount"),
+			DurabilityPercentRange: parser.getInt32Range(entryTable, "durability_percent"),
+			DropChancePercent: parser.getInt32(entryTable, "drop_chance_percent"),
 		}
 
 		parser.checkInt32IsPositivePercent(entry.DurabilityPercentRange.Min, "durability_percent.min")

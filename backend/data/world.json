@@ -177,25 +177,17 @@
   ],
   "Npcs": [
     {
-      "Type": 0,
+      "Id": "goblin",
+      "SpawnRoom": 2,
       "LevelRange": {
         "Min": 1,
         "Max": 1
       },
-      "StartingDisposition": 0,
-      "MovementType": 0,
-      "Behavior": {
-        "Type": "nil",
-        "Data": null
-      },
-      "SpawnRoom": 2,
-      "RespawnDuration": 20,
-      "SleepDuration": 0,
-      "AwakeDuration": 0,
-      "MovementStepDuration": 0,
-      "DropTable": {
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
         "Entries": []
-      }
+      },
+      "BehaviorParams": {}
     }
   ]
 }

@@ -34,6 +34,17 @@ var ALL_NPC_MOVEMENT_TYPES = []struct {
 	{ world.NPC_MOVEMENT_TYPE_WANDER, "WANDER" },
 }
 
+var ALL_NPC_BEHAVIOR_PARAM_TYPES = []struct {
+	Value world.NpcBehaviorParamType
+	TSName string
+}{
+	{ world.NPC_BEHAVIOR_PARAM_TYPE_STRING, "STRING" },
+	{ world.NPC_BEHAVIOR_PARAM_TYPE_NUMBER, "NUMBER" },
+	{ world.NPC_BEHAVIOR_PARAM_TYPE_BOOLEAN, "BOOLEAN" },
+	{ world.NPC_BEHAVIOR_PARAM_TYPE_ITEM, "ITEM" },
+	{ world.NPC_BEHAVIOR_PARAM_TYPE_DIRECTION, "DIRECTION" },
+}
+
 var ALL_CHEST_TYPES = []struct {
 	Value world.ChestType
 	TSName string
