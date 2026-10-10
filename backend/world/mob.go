@@ -118,11 +118,11 @@ func (mob *Mob) GetName() string {
 func (mob *Mob) GetNameWithInjury() string {
 	name := mob.GetName()
 
-	if (2 * mob.Data.Health) < mob.Data.MaxHealth() {
-		return name + " <r>(Badly Injured)</r>"
+	if mob.Data.Health < mob.Data.MaxHealth() / 5 {
+		return name + " <r>(Near Death)</r>"
 	}
 
-	if mob.Data.Health < mob.Data.MaxHealth() {
+	if mob.Data.Health < mob.Data.MaxHealth() / 2 {
 		return name + " <r>(Injured)</r>"
 	}
 
@@ -338,19 +338,11 @@ func (mob *Mob) Update(world *World) {
 }
 
 func (mob *Mob) IsNpc() bool {
-	if mob.Npc == nil {
-		return false
-	}
-
-	return true
+	return mob.Npc != nil
 }
 
 func (mob *Mob) IsPlayer() bool {
-	if mob.PlayerCharacter == nil {
-		return false
-	}
-
-	return true
+	return mob.PlayerCharacter != nil
 }
 
 func (mob *Mob) getTargetIfExists(world *World) (*Mob, bool) {
@@ -406,7 +398,7 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	evasionChance := targetAgility / (targetAgility + (mobAgility * MOB_EVASION_K))
 	evasionRoll := rand.Float32()
 	if evasionRoll < evasionChance {
-		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s dodged %s's attack!", targetMob.GetNameWithInjury(), mob.GetNameWithInjury()))
+		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s dodged %s's attack!", targetMob.GetName(), mob.GetName()))
 		return
 	}
 
