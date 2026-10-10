@@ -81,7 +81,7 @@ func (mob *Mob) unequip(slot EquipmentSlot) (Item, []string, bool) {
 }
 
 func (mob *Mob) onItemEquipped(item Item) []string {
-	if mob.PlayerCharacter == nil {
+	if !mob.IsPlayer() {
 		return nil
 	}
 
@@ -114,7 +114,7 @@ func (mob *Mob) onItemEquipped(item Item) []string {
 }
 
 func (mob *Mob) onItemUnequipped(item Item) []string {
-	if mob.PlayerCharacter == nil {
+	if !mob.IsPlayer() {
 		return nil
 	}
 

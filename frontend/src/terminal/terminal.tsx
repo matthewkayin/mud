@@ -88,9 +88,83 @@ export const Terminal = ({ prompt, lines, command, setCommand, onSubmit }: Termi
         id="terminal-contents"
         onScroll={onScroll}
       >
-        {lines.map((line: string, index) => (<p className="terminal-text" key={index}>{line}</p>))}
+        {lines.map(terminalLineToSpan)}
         <div ref={terminalBottomElementRef}></div>
       </div>
     </div>
   )
 };
+
+const terminalLineToSpan = (line: string, index: number) => {
+  const parts = [];
+  while (line.length !== 0) {
+    const bracketIndex = line.indexOf("<");
+
+    if (bracketIndex === -1) {
+      parts.push({
+        msg: line,
+        color: "w"
+      });
+      line = "";
+      continue;
+    }
+
+    if (bracketIndex > 0) {
+      parts.push({
+        msg: line.substring(0, bracketIndex),
+        color: "w"
+      });
+      line = line.substring(bracketIndex);
+    }
+
+    const closeIndex = line.indexOf(">");
+    if (closeIndex === -1 || closeIndex === line.length - 1) {
+      parts.push({
+        msg: line,
+        color: "w"
+      });
+      line = "";
+      continue;
+    }
+
+    const color = line[1];
+    const closingTag = `</${color}>`;
+    const closingTagIndex = line.indexOf(closingTag)
+
+    if (closingTagIndex === -1) {
+      parts.push({
+        msg: line.substring(closeIndex + 1),
+        color: color
+      });
+      line = "";
+      continue;
+    }
+
+    parts.push({
+      msg: line.substring(closeIndex + 1, closingTagIndex),
+      color: color
+    });
+    const remainingIndex = closingTagIndex + closingTag.length;
+    if (remainingIndex >= line.length) {
+      line = "";
+    } else {
+      line = line.substring(remainingIndex);
+    }
+  }
+
+  return (
+    <span key = {index}>
+      {parts.map((part) => {
+        let color = "#fff";
+        switch (part.color) {
+          case "r":
+            color = "#ff0000";
+            break
+          default:
+            break
+        }
+        return (<span className = "terminal-text" style = {{ color }}>{part.msg}</span>)
+      })}
+    </span>
+  );
+}

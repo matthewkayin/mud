@@ -492,7 +492,7 @@ var MENU_WORLD = Menu {
 						occupantMob := gamestate.world.Mobs.Get(occupantHandle)
 
 						// Skip NPCs
-						if occupantMob.PlayerCharacter == nil {
+						if !occupantMob.IsPlayer() {
 							continue
 						}
 
@@ -1617,7 +1617,7 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 			}
 
 			// Add their name to the list
-			otherPlayerNames = append(otherPlayerNames, mob.GetName())
+			otherPlayerNames = append(otherPlayerNames, mob.GetNameWithInjury())
 		}
 
 		// Re-check the length in case all other occupants are hidden (spooky)

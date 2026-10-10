@@ -525,7 +525,7 @@ func (npc *Npc) update(world *World) {
 					if mob.CheckFlag(MOB_FLAG_HIDDEN) {
 						return false
 					}
-					if mob.PlayerCharacter == nil {
+					if !mob.IsPlayer() {
 						return false
 					}
 					return true
@@ -574,7 +574,7 @@ func (npc *Npc) update(world *World) {
 
 				// For now, only attack players
 				targetMob := world.Mobs.Get(targetHandle)
-				if targetMob.PlayerCharacter == nil {
+				if !targetMob.IsPlayer() {
 					continue
 				}
 

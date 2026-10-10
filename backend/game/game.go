@@ -172,7 +172,7 @@ func (gamestate *GameState) getPlayerById(playerId int) *Player {
 
 func (gamestate *GameState) getPlayerByMobHandle(handle world.MobHandle) *Player {
 	mob := gamestate.world.Mobs.Get(handle)
-	if mob.PlayerCharacter == nil {
+	if !mob.IsPlayer() {
 		return nil
 	}
 
@@ -224,7 +224,7 @@ func (gamestate *GameState) messageRoom(roomIndex int, message string) {
 
 	for _, mobHandle := range room.Occupants {
 		mob := gamestate.world.Mobs.Get(mobHandle)
-		if mob.PlayerCharacter == nil {
+		if !mob.IsPlayer() {
 			continue
 		}
 
