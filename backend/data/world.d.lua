@@ -33,6 +33,13 @@ world.NpcDisposition = {
 	FRIENDLY = "Friendly",
 }
 
+---@enum NpcMode
+world.NpcMode = {
+	IDLE = "Idle",
+	SURPRISE = "Surprise",
+	AGGRO = "Aggro",
+}
+
 ---@enum NpcMovementType
 world.NpcMovementType = {
 	SENTINEL = "Sentinel",
@@ -176,6 +183,36 @@ function world.mob_get_stat(handle, stat) end
 ---@param handle MobHandle
 ---@return boolean
 function world.mob_is_dead(handle) end
+
+--- Returns true if the mob is an NPC
+---
+---@param handle MobHandle
+---@return boolean
+function world.mob_is_npc(handle) end
+
+--- Returns the NPC's disposition
+---
+---@param handle MobHandle
+---@return NpcDisposition
+function world.npc_get_disposition(handle) end
+
+--- Returns the NPC's mode
+---
+---@param handle MobHandle
+---@return NpcMode
+function world.npc_get_mode(handle) end
+
+--- Sets the NPC's disposition
+---
+---@param handle MobHandle
+---@param disposition NpcDisposition
+function world.npc_set_disposition(handle, disposition) end
+
+--- Sets the NPC's mode
+---
+---@param handle MobHandle
+---@param mode NpcMode
+function world.npc_set_mode(handle, mode) end
 
 --- Regenerates an amount of the mobs mana
 --- Returns the number of mana regained.

@@ -52,6 +52,19 @@ func ScriptConstantTables() []ScriptConstantTable {
 		})
 	}
 
+	// NPC mode
+	// Dead is left out because scripts can never set or observe it
+	npcModeTable := ScriptConstantTable {
+		Name: "NpcMode",
+		Constants: make([]ScriptConstant, 0, NPC_MODE_COUNT - NPC_MODE_IDLE),
+	}
+	for index := NpcMode(NPC_MODE_IDLE); index < NPC_MODE_COUNT; index++ {
+		npcModeTable.Constants = append(npcModeTable.Constants, ScriptConstant {
+			Name: strings.ToUpper(index.String()),
+			Value: lua.String(index.String()),
+		})
+	}
+
 	// NPC movement type
 	npcMovementTypeTable := ScriptConstantTable {
 		Name: "NpcMovementType",
@@ -119,6 +132,7 @@ func ScriptConstantTables() []ScriptConstantTable {
 	return []ScriptConstantTable {
 		itemKindTable,
 		npcDispositionTable,
+		npcModeTable,
 		npcMovementTypeTable,
 		npcBehaviorParamTypeTable,
 		directionTable,

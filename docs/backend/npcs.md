@@ -47,7 +47,7 @@ npc.behavior_params = {
 	{ name = "ExitToBlock", type = world.NpcBehaviorParamType.DIRECTION },
 }
 
-npc.init = function(params)
+npc.init = function(self, params)
 	return { toll = params.Toll, exit_to_block = params.ExitToBlock }
 end
 
@@ -58,26 +58,42 @@ return npc
 
 The script table is loaded only once and shared by every NPC of that type, so it can't hold per-NPC state. Instead, `init` returns an **instance table**, and the NPC passes that table back to each of its other hooks. When the mob dies or is despawned on a world reset, the instance table is dropped, and the next spawn calls `init` again.
 
+Every hook also receives `self`, the `MobHandle` of the NPC's own mob, so a script can pass it to the `world` library (`world.mob_get_room(self)`, `world.npc_set_mode(self, world.NpcMode.AGGRO)`). `self` and `instance` live exactly as long as the mob, so a hook never sees a stale `self`.
+
 | Hook | Called | Arguments | Return |
 | --- | --- | --- | --- |
-| `init` | When the NPC spawns its mob | `params` | The instance table, or nil |
-| `update` | Every world update while the mob is alive, before the state machine runs | `instance` | |
-| `on_attacked` | When the mob takes damage | `instance` | `true` if handled |
-| `on_player_entered` | When a player moves into the mob's room | `instance` | `true` if handled |
-| `on_item_given` | When a player gives the mob an item | `instance` | `true` if handled |
-| `get_status_description` | When a player looks at the mob, after its description | `instance` | A string, or nil for no status line |
+| `init` | When the NPC spawns its mob | `self, params` | The instance table, or nil |
+| `update` | Every world update while the mob is alive, before the state machine runs | `instance, self` | |
+| `on_attacked` | When the mob takes damage | `instance, self, attacker` | |
+| `on_player_entered` | When a player moves into the mob's room | `instance, self, player` | `true` to prevent the default |
+| `on_item_given` | When a player gives the mob an item | `instance, self, player, added_to_index, amount` | `true` to prevent the default |
+| `get_status_description` | When a player looks at the mob, after its description | `instance, self` | A string, or nil for no status line |
 
-Every hook is optional. Each event has its own hook, so an NPC only crosses the Go/Lua boundary for the events it handles. If an event hook returns a truthy value, the Go default is skipped:
-- `on_attacked`: by default, a neutral NPC becomes hostile.
+`attacker` and `player` are `MobHandle`s. `added_to_index` is the index in the NPC's inventory that the given item was added to.
+
+Every hook is optional. Each event has its own hook, so an NPC only crosses the Go/Lua boundary for the events it handles. If an event hook returns `true` (`world.NPC_EVENT_PREVENT_DEFAULT`), the Go default is skipped:
+- `on_player_entered`: by default, a neutral NPC becomes hostile.
 - `on_item_given`: by default, the NPC gives the item back to the player.
-- `on_player_entered`: has no default.
+- `on_attacked` has no Go default, so its return value is ignored.
 
 Hook errors are logged as warnings and treated as unhandled.
 
-On the Go side, each event is a method on `Npc` with its own parameters (`onAttacked`, `onPlayerEntered`, `OnItemGiven`). To add an event:
+On the Go side, events are queued on the NPC with `Npc.PushEvent` and handled at the start of the NPC's next `update` by `Npc.onEvent`, so a hook never runs in the middle of another hook. `Npc.callHook` passes `instance` and `self` before the hook's own arguments, and `Npc.callEventHook` also reads the prevent-default result. To add an event:
 1. Add a `*lua.Function` field to `NpcData` and read it in `parseNpc` with `getOptionalFunction`.
-2. Add an `Npc` method that calls `npc.callEventHook` and then runs any Go default.
-3. Call the method from wherever the event happens.
+2. Add an `NPC_EVENT_TYPE_*` constant and an event data struct, and push the event from wherever it happens.
+3. Handle the event in `onEvent`: call the hook with `callHook` or `callEventHook`, then run any Go default.
+
+## NPC state
+
+Scripts read and change NPC state through the `world` library, passing the NPC's mob handle. These functions throw an error if the mob doesn't exist or isn't an NPC, so check `world.mob_is_npc(handle)` first when the handle might be a player.
+
+| Function | Notes |
+| --- | --- |
+| `mob_is_npc(handle)` | |
+| `npc_get_mode(handle)`, `npc_set_mode(handle, mode)` | `world.NpcMode`: `IDLE`, `SURPRISE` or `AGGRO`. Setting a mode goes through the same Go setters as the state machine, so `SURPRISE` alerts the mob and `IDLE` restarts the wander timer. Dead isn't a mode that scripts can see or set, because an NPC is dead exactly when its mob doesn't exist. |
+| `npc_get_disposition(handle)`, `npc_set_disposition(handle, disposition)` | `world.NpcDisposition`: `NEUTRAL`, `HOSTILE` or `FRIENDLY` |
+
+A mode set in `update` takes effect on the same tick, because `update` runs before the state machine.
 
 ## Behavior params
 

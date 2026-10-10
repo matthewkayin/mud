@@ -3,6 +3,8 @@ package world
 import (
 	"strings"
 	"testing"
+
+	"github.com/mmcdole/lunar"
 )
 
 func scriptTestWorld(t *testing.T) *World {
@@ -147,5 +149,115 @@ func TestScriptMobGetters(t *testing.T) {
 		if err == nil || !strings.Contains(err.Error(), testCase.expectedError) {
 			t.Errorf("%s: expected error containing %q, got %v", testCase.source, testCase.expectedError, err)
 		}
+	}
+}
+
+// Pushes a mob with an attached NPC and returns the NPC
+func scriptTestPushNpc(world *World, name string) *Npc {
+	npc := &Npc{
+		Id: TEST_NPC_GOBLIN,
+		mode: NPC_MODE_IDLE,
+		disposition: NPC_DISPOSITION_NEUTRAL,
+	}
+	mob := scriptTestMob(name)
+	mob.Npc = npc
+	npc.mobHandle = world.Mobs.Push(mob)
+	return npc
+}
+
+func TestScriptNpcState(t *testing.T) {
+	primeTestData()
+	world := scriptTestWorld(t)
+	npc := scriptTestPushNpc(world, "Goblin")
+	scriptTestSetHandle(t, world, "goblin", npc.mobHandle)
+	scriptTestSetHandle(t, world, "player", world.Mobs.Push(scriptTestMob("Bufo")))
+
+	cases := []struct {
+		source string
+		expected string
+	}{
+		{ "return world.mob_is_npc(goblin)", "true" },
+		{ "return world.mob_is_npc(player)", "false" },
+		{ "return world.npc_get_mode(goblin)", "Idle" },
+		{ "world.npc_set_mode(goblin, world.NpcMode.AGGRO) return world.npc_get_mode(goblin)", "Aggro" },
+		{ "world.npc_set_mode(goblin, world.NpcMode.IDLE) return world.npc_get_mode(goblin)", "Idle" },
+		{ "world.npc_set_mode(goblin, world.NpcMode.SURPRISE) return world.npc_get_mode(goblin)", "Surprise" },
+		{ "return world.npc_get_disposition(goblin)", "Neutral" },
+		{ "world.npc_set_disposition(goblin, world.NpcDisposition.FRIENDLY) return world.npc_get_disposition(goblin)", "Friendly" },
+	}
+	for _, testCase := range cases {
+		if result := scriptTestEval(t, world, testCase.source); result != testCase.expected {
+			t.Errorf("%s: expected %s, got %s", testCase.source, testCase.expected, result)
+		}
+	}
+
+	// Setting surprise goes through setModeSurprise, which alerts the mob
+	if alertness := world.Mobs.Get(npc.mobHandle).alertness; alertness != MOB_ALERTNESS_MAX {
+		t.Errorf("Expected surprised NPC to have max alertness, got %f", alertness)
+	}
+}
+
+func TestScriptNpcErrors(t *testing.T) {
+	primeTestData()
+	world := scriptTestWorld(t)
+	npc := scriptTestPushNpc(world, "Goblin")
+	scriptTestSetHandle(t, world, "goblin", npc.mobHandle)
+	scriptTestSetHandle(t, world, "player", world.Mobs.Push(scriptTestMob("Bufo")))
+
+	cases := []struct {
+		source string
+		expectedError string
+	}{
+		{ "return world.npc_get_mode(player)", "is not an NPC" },
+		{ "world.npc_set_disposition(player, world.NpcDisposition.HOSTILE)", "is not an NPC" },
+		{ "world.npc_set_mode(goblin, \"Dead\")", "not a valid NPC mode" },
+		{ "world.npc_set_mode(goblin, \"Asleep\")", "not a valid NPC mode" },
+		{ "world.npc_set_disposition(goblin, \"Angry\")", "not a valid NPC disposition" },
+	}
+	for _, testCase := range cases {
+		_, err := world.luaState.DoString("@test.lua", testCase.source)
+		if err == nil || !strings.Contains(err.Error(), testCase.expectedError) {
+			t.Errorf("%s: expected error containing %q, got %v", testCase.source, testCase.expectedError, err)
+		}
+	}
+}
+
+func TestNpcHookArguments(t *testing.T) {
+	primeTestData()
+	world := scriptTestWorld(t)
+
+	hooks, err := world.luaState.DoString("@test.lua", `
+		return {
+			init = function(self, params)
+				return { self = self, greeting = params.Greeting }
+			end,
+			get_status_description = function(instance, self)
+				return instance.greeting .. " " .. world.mob_get_name(self) .. " " .. tostring(instance.self == self)
+			end,
+		}
+	`)
+	if err != nil {
+		t.Fatalf("Error loading hooks: %s", err.Error())
+	}
+	hooksTable, _ := hooks[0].AsTable()
+	parser := ScriptParser{}
+	npcData := NPC_DATA[TEST_NPC_GOBLIN]
+	npcData.BehaviorParams = map[string]NpcBehaviorParamType{ "Greeting": NPC_BEHAVIOR_PARAM_TYPE_STRING }
+	npcData.init = parser.getOptionalFunction(hooksTable, "init")
+	npcData.getStatusDescription = parser.getOptionalFunction(hooksTable, "get_status_description")
+	if parser.getError() != nil {
+		t.Fatalf("Error parsing hooks: %s", parser.getError().Error())
+	}
+
+	npc := scriptTestPushNpc(world, "Goblin")
+	npc.BehaviorParams = map[string]any{ "Greeting": "Hello" }
+	npc.callInit(world)
+	if npc.instance.Kind() != lua.TableKind {
+		t.Fatalf("Expected init() to set the instance table, got %s", npc.instance.Kind().String())
+	}
+
+	statusDescription, ok := npc.GetStatusDescription(world)
+	if !ok || statusDescription != "Hello Goblin true" {
+		t.Errorf("Expected status description %q, got %q (ok = %t)", "Hello Goblin true", statusDescription, ok)
 	}
 }

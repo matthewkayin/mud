@@ -174,6 +174,83 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.ReturnString(ITEM_DATA[item.Id].Name)
 	},
 
+	// Returns true if the mob is an NPC
+	//
+	// @param handle MobHandle
+	// @return boolean
+	"mob_is_npc": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		return frame.ReturnBool(mob.IsNpc())
+	},
+
+	// Returns the NPC's mode
+	//
+	// @param handle MobHandle
+	// @return NpcMode
+	"npc_get_mode": func(frame lua.Frame) lua.Outcome {
+		npc := frameGetNpcArg(&frame, 0)
+		return frame.ReturnString(npc.mode.String())
+	},
+
+	// Sets the NPC's mode
+	//
+	// @param handle MobHandle
+	// @param mode NpcMode
+	"npc_set_mode": func(frame lua.Frame) lua.Outcome {
+		npc := frameGetNpcArg(&frame, 0)
+
+		// Get mode from args
+		modeString, ok := frame.String(1)
+		if !ok {
+			frame.ThrowArgTypeError(1, lua.StringKind)
+		}
+		mode, ok := EnumFromString(modeString, NpcMode(NPC_MODE_COUNT))
+		if !ok || mode == NPC_MODE_DEAD {
+			frame.ThrowArgError(1, fmt.Sprintf("%s is not a valid NPC mode.", modeString))
+		}
+
+		switch mode {
+			case NPC_MODE_IDLE:
+				npc.setModeIdle()
+			case NPC_MODE_SURPRISE:
+				npc.setModeSurprise(__world)
+			case NPC_MODE_AGGRO:
+				npc.mode = NPC_MODE_AGGRO
+		}
+
+		return frame.Return()
+	},
+
+	// Returns the NPC's disposition
+	//
+	// @param handle MobHandle
+	// @return NpcDisposition
+	"npc_get_disposition": func(frame lua.Frame) lua.Outcome {
+		npc := frameGetNpcArg(&frame, 0)
+		return frame.ReturnString(npc.disposition.String())
+	},
+
+	// Sets the NPC's disposition
+	//
+	// @param handle MobHandle
+	// @param disposition NpcDisposition
+	"npc_set_disposition": func(frame lua.Frame) lua.Outcome {
+		npc := frameGetNpcArg(&frame, 0)
+
+		// Get disposition from args
+		dispositionString, ok := frame.String(1)
+		if !ok {
+			frame.ThrowArgTypeError(1, lua.StringKind)
+		}
+		disposition, ok := EnumFromString(dispositionString, NpcDisposition(NPC_DISPOSITION_COUNT))
+		if !ok {
+			frame.ThrowArgError(1, fmt.Sprintf("%s is not a valid NPC disposition.", dispositionString))
+		}
+
+		npc.disposition = disposition
+		return frame.Return()
+	},
+
 	// Deals magic damage to a mob. Returns the number of damage dealt.
 	//
 	// @param caster_handle MobHandle
@@ -285,4 +362,13 @@ func frameGetMobArg(frame *lua.Frame, index int) *Mob {
 	}
 
 	return mob
+}
+
+func frameGetNpcArg(frame *lua.Frame, index int) *Npc {
+	mob := frameGetMobArg(frame, index)
+	if !mob.IsNpc() {
+		frame.ThrowArgError(index, fmt.Sprintf("Mob with handle %d:%d is not an NPC.", mob.Handle.Id, mob.Handle.Generation))
+	}
+
+	return mob.Npc
 }

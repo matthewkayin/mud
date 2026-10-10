@@ -21,7 +21,7 @@ npc.behavior_params = {
 	{ name = "ExitToBlock", type = world.NpcBehaviorParamType.DIRECTION },
 }
 
-npc.init = function(params)
+npc.init = function(self, params)
 	-- TODO: block the exit, demand the toll from entering players, and step aside once
 	-- it is paid. This needs script API functions for exits, messages and inventories.
 	return {

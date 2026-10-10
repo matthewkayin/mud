@@ -28,7 +28,23 @@ const (
 	NPC_MODE_IDLE
 	NPC_MODE_SURPRISE
 	NPC_MODE_AGGRO
+	NPC_MODE_COUNT
 )
+
+func (mode NpcMode) String() string {
+	switch mode {
+		case NPC_MODE_DEAD:
+			return "Dead"
+		case NPC_MODE_IDLE:
+			return "Idle"
+		case NPC_MODE_SURPRISE:
+			return "Surprise"
+		case NPC_MODE_AGGRO:
+			return "Aggro"
+		default:
+			return ""
+	}
+}
 
 type NpcMovementType int
 const (
@@ -424,7 +440,13 @@ func (npc *Npc) callInit(world *World) {
 		return
 	}
 
-	result, ok := npc.callHook(world, npcData.init, "init", paramsTable.Value())
+	selfLuaHandle, err := world.getMobLuaHandle(npc.mobHandle)
+	if err != nil {
+		log.Printf("Warn - Error creating mob handle for NPC '%s': %s", npcData.Id, err.Error())
+		return
+	}
+
+	result, ok := npc.callFunction(world, npcData.init, "init", selfLuaHandle, paramsTable.Value())
 	if !ok || result.IsNil() {
 		return
 	}
@@ -436,21 +458,35 @@ func (npc *Npc) callInit(world *World) {
 	npc.instance = result
 }
 
-// Calls a script hook and returns its first result. Returns false if the hook
-// is not defined or if it failed, in which case the error is logged.
+// Calls a script hook with the instance table and the NPC's mob handle, followed by args.
+// Returns the hook's first result, or false if the hook is not defined or if it failed.
 func (npc *Npc) callHook(world *World, hook *lua.Function, hookName string, args ...lua.Value) (lua.Value, bool) {
 	if hook == nil {
 		return lua.Nil(), false
 	}
 
-	luaArgs := make([]lua.Value, 0, len(args) + 1)
-	luaArgs = append(luaArgs, npc.instance)
-	for _, arg := range args {
-		luaArgs = append(luaArgs, arg)
-	}
-	result, err := world.luaState.CallOne(hook.Value(), luaArgs...)
+	selfLuaHandle, err := world.getMobLuaHandle(npc.mobHandle)
 	if err != nil {
-		log.Printf("Warn - NPC '%s' %s() failed: %s", NPC_DATA[npc.Id].Id, hookName, err.Error())
+		log.Printf("Warn - Error creating mob handle for NPC '%s' %s(): %s", NPC_DATA[npc.Id].Id, hookName, err.Error())
+		return lua.Nil(), false
+	}
+
+	luaArgs := make([]lua.Value, 0, len(args) + 2)
+	luaArgs = append(luaArgs, npc.instance, selfLuaHandle)
+	luaArgs = append(luaArgs, args...)
+	return npc.callFunction(world, hook, hookName, luaArgs...)
+}
+
+// Calls a script function with exactly the given args and returns its first result.
+// Returns false if the function is not defined or if it failed, in which case the error is logged.
+func (npc *Npc) callFunction(world *World, function *lua.Function, functionName string, args ...lua.Value) (lua.Value, bool) {
+	if function == nil {
+		return lua.Nil(), false
+	}
+
+	result, err := world.luaState.CallOne(function.Value(), args...)
+	if err != nil {
+		log.Printf("Warn - NPC '%s' %s() failed: %s", NPC_DATA[npc.Id].Id, functionName, err.Error())
 		return lua.Nil(), false
 	}
 
@@ -722,7 +758,7 @@ func (npc *Npc) GetDescription() string {
 
 func (npc *Npc) GetStatusDescription(world *World) (string, bool) {
 	npcData := NPC_DATA[npc.Id]
-	result, ok := npc.callHook(world, npcData.getStatusDescription, "get_status_description", npc.instance)
+	result, ok := npc.callHook(world, npcData.getStatusDescription, "get_status_description")
 	if !ok || result.IsNil() {
 		return "", false
 	}
