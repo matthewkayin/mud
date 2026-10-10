@@ -41,6 +41,9 @@ func generateLuaDefs(path string) error {
 	output.WriteString("---@class world\n")
 	output.WriteString("world = {}\n")
 
+	output.WriteString("\n---An opaque reference to a mob. Compare with ==. It may refer to a mob that no longer exists; check with world.mob_exists.\n")
+	output.WriteString("---@class MobHandle\n")
+
 	for _, constant := range world.ScriptFreeConstants() {
 		valueText := constant.Value.String()
 		if constant.Value.Kind() == lua.StringKind {

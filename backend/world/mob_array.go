@@ -119,6 +119,8 @@ func (array *MobArray) Remove(handle MobHandle) {
 	array.indexToId[index] = array.indexToId[lastIndex]
 
 	// Remove the last element from the array
+	// Zero it first so the backing array doesn't keep its pointers (such as its Lua handle) alive
+	array.data[lastIndex] = Mob{}
 	array.data = array.data[:lastIndex]
 	array.indexToId = array.indexToId[:lastIndex]
 }

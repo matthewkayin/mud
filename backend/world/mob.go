@@ -79,6 +79,9 @@ type Mob struct {
 	alertness float32
 	tauntCooldown float32
 	fuzzyNumber int
+
+	// Created on first use by getLuaHandle so that each mob has one handle userdata
+	luaHandle *lua.UserData
 }
 
 func MobInit(data *MobData) Mob {
@@ -610,18 +613,18 @@ func (mob *Mob) spellcast(world *World, targetMob *Mob) {
 
 	// TODO: wrap a context around this to timeout calls?
 
-	casterHandleTable, err := mob.Handle.toLua()
+	casterHandle, err := mob.getLuaHandle(world)
 	if err != nil {
 		log.Print(err.Error())
 		return
 	}
-	targetHandleTable, err := targetMob.Handle.toLua()
+	targetHandle, err := targetMob.getLuaHandle(world)
 	if err != nil {
 		log.Print(err.Error())
 		return
 	}
 
-	_, err = world.luaState.Call(spellData.OnHit.Value(), casterHandleTable.Value(), targetHandleTable.Value())
+	_, err = world.luaState.Call(spellData.OnHit.Value(), casterHandle, targetHandle)
 	if err != nil {
 		log.Printf("Warn - Error during spell %s onHit: %s", spellData.Name, err.Error())
 		return
@@ -644,6 +647,20 @@ func (mob *Mob) spellcast(world *World, targetMob *Mob) {
 			mob.subtractDurabilityFromEquipment(world, slot)
 		}
 	}
+}
+
+// Returns the mob's handle as Lua userdata. The userdata is created on first use
+// and cached, so passing a mob to a script does not allocate.
+func (mob *Mob) getLuaHandle(world *World) (lua.Value, error) {
+	if mob.luaHandle == nil {
+		luaHandle, err := world.mobHandleType.New(mob.Handle)
+		if err != nil {
+			return lua.Nil(), err
+		}
+		mob.luaHandle = luaHandle
+	}
+
+	return mob.luaHandle.Value(), nil
 }
 
 func (mob *Mob) calculateMagicDamage(baseDamage int32, target *Mob) int32 {

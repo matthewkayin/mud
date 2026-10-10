@@ -4,6 +4,9 @@
 ---@class world
 world = {}
 
+---An opaque reference to a mob. Compare with ==. It may refer to a mob that no longer exists; check with world.mob_exists.
+---@class MobHandle
+
 ---@type number
 world.SPELL_CAST_TIME_INSTANT = 0
 
@@ -52,8 +55,8 @@ world.Direction = {
 
 --- Deals magic damage to a mob. Returns the number of damage dealt.
 ---
----@param caster_handle table
----@param target_handle table
+---@param caster_handle MobHandle
+---@param target_handle MobHandle
 ---@param base_damage integer
 ---@return number
 function world.deal_magic_damage(caster_handle, target_handle, base_damage) end
@@ -65,18 +68,10 @@ function world.deal_magic_damage(caster_handle, target_handle, base_damage) end
 --- Example: getMobData(handle, { "name" "health", "max_health"  })
 --- Returns: { name: "Bufo", health" 72, max_health: 100 }
 ---
----@param handle table
+---@param handle MobHandle
 ---@param fields table
 ---@return table
 function world.get_mob_data(handle, fields) end
-
---- Heals a mob with non-magic healing.
---- Returns the number of damage healed.
----
----@param target_handle table
----@param heal_amount integer
----@return number
-function world.heal_mob(target_handle, heal_amount) end
 
 --- Logs a message to the game
 ---
@@ -93,8 +88,8 @@ function world.log(message, args) end
 --- Heals a mob with healing that scales based on the caster and target's faith.
 --- Returns the number of damage healed.
 ---
----@param caster_handle table
----@param target_handle table
+---@param caster_handle MobHandle
+---@param target_handle MobHandle
 ---@param base_healing integer
 ---@return number
 function world.magic_heal_mob(caster_handle, target_handle, base_healing) end
@@ -114,12 +109,28 @@ function world.message_room(room, message, args) end
 
 --- Returns true if the mob exists
 ---
----@param handle table
+---@param handle MobHandle
 ---@return bool
 function world.mob_exists(handle) end
 
+--- Heals a mob with non-magic healing.
+--- Returns the number of damage healed.
+---
+---@param target_handle MobHandle
+---@param heal_amount integer
+---@return number
+function world.mob_heal(target_handle, heal_amount) end
+
 --- Returns true if the mob is dead
 ---
----@param handle table
+---@param handle MobHandle
 ---@return bool
 function world.mob_is_dead(handle) end
+
+--- Regenerates an amount of the mobs mana
+--- Returns the number of mana regained.
+---
+---@param target_handle MobHandle
+---@param regen_amount integer
+---@return number
+function world.mob_regen_mana(target_handle, regen_amount) end

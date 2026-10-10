@@ -20,6 +20,7 @@ const WORLD_RESET_INTERVAL = (60 * 60) / WORLD_SECONDS_PER_UPDATE
 type World struct {
 	Events []Event `json:"-"`
 	luaState *lua.State
+	mobHandleType *lua.UserDataType[MobHandle]
 	dataFolder string
 
 	Characters map[string]*Character `json:"-"`

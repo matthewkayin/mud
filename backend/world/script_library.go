@@ -86,7 +86,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 
 	// Returns true if the mob exists
 	//
-	// @param handle table
+	// @param handle MobHandle
 	// @return bool
 	"mob_exists": func(frame lua.Frame) lua.Outcome {
 		handle := frameGetMobHandleArg(&frame, 0)
@@ -96,7 +96,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 
 	// Returns true if the mob is dead
 	//
-	// @param handle table
+	// @param handle MobHandle
 	// @return bool
 	"mob_is_dead": func(frame lua.Frame) lua.Outcome {
 		mob := frameGetMobArg(&frame, 0)
@@ -110,7 +110,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	// Example: getMobData(handle, { "name" "health", "max_health"  })
 	// Returns: { name: "Bufo", health" 72, max_health: 100 }
 	//
-	// @param handle table
+	// @param handle MobHandle
 	// @param fields table
 	// @return table
 	"get_mob_data": func(frame lua.Frame) lua.Outcome {
@@ -190,8 +190,8 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 
 	// Deals magic damage to a mob. Returns the number of damage dealt.
 	//
-	// @param caster_handle table
-	// @param target_handle table
+	// @param caster_handle MobHandle
+	// @param target_handle MobHandle
 	// @param base_damage integer
 	// @return number
 	"deal_magic_damage": func(frame lua.Frame) lua.Outcome {
@@ -213,8 +213,8 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	// Heals a mob with healing that scales based on the caster and target's faith.
 	// Returns the number of damage healed.
 	//
-	// @param caster_handle table
-	// @param target_handle table
+	// @param caster_handle MobHandle
+	// @param target_handle MobHandle
 	// @param base_healing integer
 	// @return number
 	"magic_heal_mob": func(frame lua.Frame) lua.Outcome {
@@ -237,7 +237,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	// Heals a mob with non-magic healing.
 	// Returns the number of damage healed.
 	//
-	// @param target_handle table
+	// @param target_handle MobHandle
 	// @param heal_amount integer
 	// @return number
 	"mob_heal": func(frame lua.Frame) lua.Outcome {
@@ -258,7 +258,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	// Regenerates an amount of the mobs mana
 	// Returns the number of mana regained.
 	//
-	// @param target_handle table
+	// @param target_handle MobHandle
 	// @param regen_amount integer
 	// @return number
 	"mob_regen_mana": func(frame lua.Frame) lua.Outcome {
@@ -305,43 +305,10 @@ func scriptFormatString(format string, args *lua.Table) (string, error) {
 	return message, nil
 }
 
-func (handle MobHandle) toLua() (*lua.Table, error) {
-	table, err := __world.luaState.NewTableWithCapacity(0, 2)
-	if err != nil {
-		return nil, err
-	}
-
-	table.RawSetString("id", lua.Number(float64(handle.Id)))
-	table.RawSetString("generation", lua.Number(float64(handle.Generation)))
-	return table, nil
-}
-
-func mobHandleFromLua(table *lua.Table) (MobHandle, error) {
-	handle := MobHandle{}
-	idNumber, ok := table.RawGetString("id").AsNumber()
-	if !ok || idNumber < 0 {
-		return handle, fmt.Errorf("Invalid ID on mob handle table")
-	}
-	handle.Id = uint32(idNumber)
-
-	generationNumber, ok := table.RawGetString("generation").AsNumber()
-	if !ok || generationNumber < 0 {
-		return handle, fmt.Errorf("Invalid generation on mob handle table")
-	}
-	handle.Generation = uint32(generationNumber)
-
-	return handle, nil
-}
-
 func frameGetMobHandleArg(frame *lua.Frame, index int) MobHandle {
-	handleTable, ok := frame.Table(index)
+	handle, ok := __world.mobHandleType.FromArgument(*frame, index)
 	if !ok {
-		frame.ThrowArgTypeError(index, lua.TableKind)
-	}
-
-	handle, err := mobHandleFromLua(handleTable)
-	if err != nil {
-		frame.ThrowArgError(index, err.Error())
+		frame.ThrowArgError(index, "MobHandle expected")
 	}
 
 	return handle

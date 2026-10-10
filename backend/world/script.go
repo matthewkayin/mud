@@ -26,6 +26,26 @@ func (world *World) scriptInit(dataFolder string) {
 	// Hacky world pointer so that script functions have access to the world
 	__world = world
 
+	// Register mob handle userdata type
+	world.mobHandleType, err = lua.NewUserDataType[MobHandle](world.luaState, "MobHandle")
+	if err != nil {
+		log.Fatalf("Error registering MobHandle userdata type: %s", err.Error())
+	}
+	err = world.luaState.SetFunctions(world.mobHandleType.Metatable(), map[string]lua.NativeFunc {
+		"__eq": func(frame lua.Frame) lua.Outcome {
+			a, aOk := world.mobHandleType.FromArgument(frame, 0)
+			b, bOk := world.mobHandleType.FromArgument(frame, 1)
+			return frame.ReturnBool(aOk && bOk && a == b)
+		},
+		"__tostring": func(frame lua.Frame) lua.Outcome {
+			handle := frameGetMobHandleArg(&frame, 0)
+			return frame.ReturnString(fmt.Sprintf("MobHandle(%d:%d)", handle.Id, handle.Generation))
+		},
+	})
+	if err != nil {
+		log.Fatalf("Error registering MobHandle metamethods: %s", err.Error())
+	}
+
 	// Create world table
 	worldTable, err := world.luaState.NewTableWithCapacity(0, len(SCRIPT_LIBRARY))
 	if err != nil {
