@@ -16,6 +16,9 @@ func (world *World) scriptInit(dataFolder string) {
 	world.luaState, err = lua.New(lua.Options {
 		Libraries: lua.LibrarySet {
 			lua.BaseLibrary,
+			lua.MathLibrary,
+			lua.StringLibrary,
+			lua.TableLibrary,
 		},
 		ScriptLoader: lua.FSLoader(os.DirFS(dataFolder)),
 	})

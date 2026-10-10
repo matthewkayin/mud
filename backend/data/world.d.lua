@@ -10,6 +10,9 @@ world = {}
 ---@type number
 world.SPELL_CAST_TIME_INSTANT = 0
 
+---@type boolean
+world.NPC_EVENT_PREVENT_DEFAULT = true
+
 ---@enum ItemKind
 world.ItemKind = {
 	CONSUMABLE = "Consumable",
@@ -73,17 +76,18 @@ function world.deal_magic_damage(caster_handle, target_handle, base_damage) end
 ---@return table
 function world.get_mob_data(handle, fields) end
 
+--- Heals a mob with non-magic healing.
+--- Returns the number of damage healed.
+---
+---@param target_handle MobHandle
+---@param heal_amount integer
+---@return number
+function world.heal(target_handle, heal_amount) end
+
 --- Logs a message to the game
 ---
---- Accepts an optional table of arguments. The table keys should be strings only and the
---- values can be any value. Instances of each key in the message will be replaced by the values.
----
---- Example: log("{caster} cast firebolt at {target}.", { "caster": "Bufo", "target": "Hodor" })
---- Output: "Bufo cast firebolt at Hodor."
----
 ---@param message string
----@param args? table
-function world.log(message, args) end
+function world.log(message) end
 
 --- Heals a mob with healing that scales based on the caster and target's faith.
 --- Returns the number of damage healed.
@@ -92,39 +96,24 @@ function world.log(message, args) end
 ---@param target_handle MobHandle
 ---@param base_healing integer
 ---@return number
-function world.magic_heal_mob(caster_handle, target_handle, base_healing) end
+function world.magic_heal(caster_handle, target_handle, base_healing) end
 
 --- Sends a message to the specified room
 ---
---- Accepts an optional table of arguments. The table keys should be strings only and the
---- values can be any value. Instances of each key in the message will be replaced by the values.
----
---- Example: messageRoom(0, "{caster} cast firebolt at {target}.", { "caster": "Bufo", "target": "Hodor" })
---- Output: "Bufo cast firebolt at Hodor."
----
 ---@param room integer
 ---@param message string
----@param args? table
-function world.message_room(room, message, args) end
+function world.message_room(room, message) end
 
 --- Returns true if the mob exists
 ---
 ---@param handle MobHandle
----@return bool
+---@return boolean
 function world.mob_exists(handle) end
-
---- Heals a mob with non-magic healing.
---- Returns the number of damage healed.
----
----@param target_handle MobHandle
----@param heal_amount integer
----@return number
-function world.mob_heal(target_handle, heal_amount) end
 
 --- Returns true if the mob is dead
 ---
 ---@param handle MobHandle
----@return bool
+---@return boolean
 function world.mob_is_dead(handle) end
 
 --- Regenerates an amount of the mobs mana
@@ -133,4 +122,4 @@ function world.mob_is_dead(handle) end
 ---@param target_handle MobHandle
 ---@param regen_amount integer
 ---@return number
-function world.mob_regen_mana(target_handle, regen_amount) end
+function world.regen_mana(target_handle, regen_amount) end

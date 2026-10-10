@@ -13,14 +13,9 @@ function spell.on_hit(caster_handle, target_handle)
 
     local caster = world.get_mob_data(caster_handle, { "room" })
     local target = world.get_mob_data(target_handle, { "name", "health" })
-    world.message_room(caster.room, "{target} took {damage} damage from the firebolt.", {
-        target = target.name,
-        damage = damage,
-    })
+    world.message_room(caster.room, string.format("%s took %d damage from the firebolt.", target.name, damage))
     if target.health <= 0 then
-        world.message_room(caster.room, "{target} has burnt to a crisp.", {
-            target = target.name
-        })
+        world.message_room(caster.room, string.format("%s has burnt to a crisp.", target.name))
     end
 end
 

@@ -6,13 +6,9 @@ item.kind = world.ItemKind.CONSUMABLE
 item.size = 5
 
 item.on_use = function(user_handle)
-    local healing = world.heal_mob(user_handle, 20)
+    local healing = world.heal(user_handle, 20)
     local user = world.get_mob_data(user_handle, { "name", "room" })
-    world.message_room(user.room, "{user} drank a {item} and regained {healing} HP.", {
-        user = user.name,
-        item = item.name,
-        healing = healing
-    })
+    world.message_room(user.room, string.format("%s drank a %s and regained %d HP.", user.name, item.name, healing))
 end
 
 return item
