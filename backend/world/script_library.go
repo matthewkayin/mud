@@ -71,7 +71,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	// @return string
 	"mob_get_name": func(frame lua.Frame) lua.Outcome {
 		mob := frameGetMobArg(&frame, 0)
-		return frame.ReturnString(mob.Data.Name)
+		return frame.ReturnString(mob.GetNameWithInjury())
 	},
 
 	// Returns the room the mob is in
