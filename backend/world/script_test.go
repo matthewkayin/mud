@@ -56,8 +56,8 @@ func TestScriptMobHandle(t *testing.T) {
 		expected string
 	}{
 		{ "return world.mob_exists(a)", "true" },
-		{ "return world.get_mob_data(a, { \"name\" }).name", "Bufo" },
-		{ "return world.get_mob_data(b, { \"name\" }).name", "Hodor" },
+		{ "return world.mob_get_name(a)", "Bufo" },
+		{ "return world.mob_get_name(b)", "Hodor" },
 		{ "return rawequal(a, a2)", "true" },
 		{ "return a == a2", "true" },
 		{ "return a == b", "false" },
@@ -80,7 +80,7 @@ func TestScriptMobHandleStale(t *testing.T) {
 		t.Errorf("expected removed mob to not exist, got %s", result)
 	}
 
-	_, err := world.luaState.DoString("@test.lua", "return world.get_mob_data(a, { \"name\" })")
+	_, err := world.luaState.DoString("@test.lua", "return world.mob_get_name(a)")
 	if err == nil || !strings.Contains(err.Error(), "does not exist") {
 		t.Errorf("expected stale handle error, got %v", err)
 	}
@@ -100,5 +100,52 @@ func TestScriptMobHandleRejectsTable(t *testing.T) {
 	_, err := world.luaState.DoString("@test.lua", "return world.mob_exists({ id = 0, generation = 0 })")
 	if err == nil || !strings.Contains(err.Error(), "MobHandle expected") {
 		t.Errorf("expected MobHandle argument error, got %v", err)
+	}
+}
+
+func TestScriptMobGetters(t *testing.T) {
+	world := scriptTestWorld(t)
+	mob := scriptTestMob("Bufo")
+	mob.Data.Room = 3
+	mob.Data.Level = 4
+	mob.Data.Health = 36
+	mob.Data.Mana = 12
+	mob.Data.Stats.Values[STAT_VIT] = 10
+	mob.Data.Stats.Values[STAT_INT] = 8
+	mob.Data.Stats.Values[STAT_STR] = 7
+	scriptTestSetHandle(t, world, "a", world.Mobs.Push(mob))
+
+	cases := []struct {
+		source string
+		expected string
+	}{
+		{ "return world.mob_get_name(a)", "Bufo" },
+		{ "return world.mob_get_room(a)", "3" },
+		{ "return world.mob_get_level(a)", "4" },
+		{ "return world.mob_get_health(a)", "36" },
+		{ "return world.mob_get_max_health(a)", "50" },
+		{ "return world.mob_get_mana(a)", "12" },
+		{ "return world.mob_get_max_mana(a)", "40" },
+		{ "return world.mob_get_stat(a, world.Stat.STR)", "7" },
+		{ "return world.mob_get_equipment(a, world.EquipmentSlot.MAIN_HAND)", "nil" },
+	}
+	for _, testCase := range cases {
+		if result := scriptTestEval(t, world, testCase.source); result != testCase.expected {
+			t.Errorf("%s: expected %s, got %s", testCase.source, testCase.expected, result)
+		}
+	}
+
+	invalidCases := []struct {
+		source string
+		expectedError string
+	}{
+		{ "return world.mob_get_stat(a, \"XYZ\")", "not a valid stat" },
+		{ "return world.mob_get_equipment(a, \"Nowhere\")", "not a valid equipment slot" },
+	}
+	for _, testCase := range invalidCases {
+		_, err := world.luaState.DoString("@test.lua", testCase.source)
+		if err == nil || !strings.Contains(err.Error(), testCase.expectedError) {
+			t.Errorf("%s: expected error containing %q, got %v", testCase.source, testCase.expectedError, err)
+		}
 	}
 }

@@ -56,6 +56,23 @@ world.Direction = {
 	WEST = "west",
 }
 
+---@enum Stat
+world.Stat = {
+	VIT = "VIT",
+	STR = "STR",
+	AGI = "AGI",
+	INT = "INT",
+	FTH = "FTH",
+}
+
+---@enum EquipmentSlot
+world.EquipmentSlot = {
+	MAIN_HAND = "Main Hand",
+	OFF_HAND = "Off Hand",
+	OUTFIT = "Outfit",
+	ACCESSORY = "Accessory",
+}
+
 --- Deals magic damage to a mob. Returns the number of damage dealt.
 ---
 ---@param caster_handle MobHandle
@@ -63,18 +80,6 @@ world.Direction = {
 ---@param base_damage integer
 ---@return number
 function world.deal_magic_damage(caster_handle, target_handle, base_damage) end
-
---- Queries the world for the requested mob data
----
---- Accepts a table of fields, where each entry is a string representing a field to get
----
---- Example: getMobData(handle, { "name" "health", "max_health"  })
---- Returns: { name: "Bufo", health" 72, max_health: 100 }
----
----@param handle MobHandle
----@param fields table
----@return table
-function world.get_mob_data(handle, fields) end
 
 --- Heals a mob with non-magic healing.
 --- Returns the number of damage healed.
@@ -109,6 +114,62 @@ function world.message_room(room, message) end
 ---@param handle MobHandle
 ---@return boolean
 function world.mob_exists(handle) end
+
+--- Returns the name of the item the mob has equipped in a slot, or nil if the slot is empty
+---
+---@param handle MobHandle
+---@param slot EquipmentSlot
+---@return string?
+function world.mob_get_equipment(handle, slot) end
+
+--- Returns the mob's current health
+---
+---@param handle MobHandle
+---@return integer
+function world.mob_get_health(handle) end
+
+--- Returns the mob's level
+---
+---@param handle MobHandle
+---@return integer
+function world.mob_get_level(handle) end
+
+--- Returns the mob's current mana
+---
+---@param handle MobHandle
+---@return integer
+function world.mob_get_mana(handle) end
+
+--- Returns the mob's max health
+---
+---@param handle MobHandle
+---@return integer
+function world.mob_get_max_health(handle) end
+
+--- Returns the mob's max mana
+---
+---@param handle MobHandle
+---@return integer
+function world.mob_get_max_mana(handle) end
+
+--- Returns the mob's name
+---
+---@param handle MobHandle
+---@return string
+function world.mob_get_name(handle) end
+
+--- Returns the room the mob is in
+---
+---@param handle MobHandle
+---@return integer
+function world.mob_get_room(handle) end
+
+--- Returns the mob's value for a stat, including equipment bonuses
+---
+---@param handle MobHandle
+---@param stat Stat
+---@return integer
+function world.mob_get_stat(handle, stat) end
 
 --- Returns true if the mob is dead
 ---

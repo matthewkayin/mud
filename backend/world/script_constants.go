@@ -91,11 +91,38 @@ func ScriptConstantTables() []ScriptConstantTable {
 		})
 	}
 
+	// Stat
+	statTable := ScriptConstantTable {
+		Name: "Stat",
+		Constants: make([]ScriptConstant, 0, STAT_COUNT),
+	}
+	for index := range STAT_COUNT {
+		statTable.Constants = append(statTable.Constants, ScriptConstant {
+			Name: STAT_DATA[index].Abbreviation,
+			Value: lua.String(STAT_DATA[index].Abbreviation),
+		})
+	}
+
+	// Equipment slot
+	equipmentSlotTable := ScriptConstantTable {
+		Name: "EquipmentSlot",
+		Constants: make([]ScriptConstant, 0, EQUIPMENT_SLOT_COUNT),
+	}
+	for index := range EQUIPMENT_SLOT_COUNT {
+		slot := EquipmentSlot(index)
+		equipmentSlotTable.Constants = append(equipmentSlotTable.Constants, ScriptConstant {
+			Name: strings.ToUpper(slot.LowerSnakeString()),
+			Value: lua.String(slot.String()),
+		})
+	}
+
 	return []ScriptConstantTable {
 		itemKindTable,
 		npcDispositionTable,
 		npcMovementTypeTable,
 		npcBehaviorParamTypeTable,
 		directionTable,
+		statTable,
+		equipmentSlotTable,
 	}
 }

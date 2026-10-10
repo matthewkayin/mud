@@ -11,8 +11,8 @@ spell.can_target_players = true
 function spell.on_hit(caster_handle, target_handle)
     local healing = world.magic_heal(caster_handle, target_handle, 15)
 
-    local target = world.get_mob_data(target_handle, { "room", "name", })
-    world.message_room(target.room, string.format("%s regained %d HP.", target.name, healing))
+    local target_name = world.mob_get_name(target_handle)
+    world.message_room(world.mob_get_room(target_handle), string.format("%s regained %d HP.", target_name, healing))
 end
 
 return spell

@@ -140,7 +140,7 @@ Scripts reach the backend through the global `world` table, which `scriptInit` (
 
 ### Mob handles
 
-Scripts refer to mobs through `MobHandle` values, such as the `caster` and `target` arguments of a spell's `on_hit`. A handle is opaque userdata with no readable fields, so scripts read mob state through `world.get_mob_data`. Handles compare with `==`, and `tostring` gives `MobHandle(<id>:<generation>)` for logging.
+Scripts refer to mobs through `MobHandle` values, such as the `caster` and `target` arguments of a spell's `on_hit`. A handle is opaque userdata with no readable fields, so scripts read mob state through the `world.mob_get_*` functions, one per value (`mob_get_name`, `mob_get_room`, `mob_get_health`, `mob_get_max_health` etc.). `mob_get_stat(handle, stat)` takes a `world.Stat` value (`world.Stat.STR`), and `mob_get_equipment(handle, slot)` takes a `world.EquipmentSlot` value and returns the equipped item's name, or `nil` if the slot is empty. Handles compare with `==`, and `tostring` gives `MobHandle(<id>:<generation>)` for logging.
 
 A handle can outlive its mob. Library functions that take a mob throw an error when given a handle to a mob that no longer exists, so a script holding onto a handle (for example in an NPC instance table) should check `world.mob_exists` before using it.
 
@@ -170,3 +170,42 @@ Each stub is documented with the `//` comment directly above its `SCRIPT_LIBRARY
 // @param args? table
 "messageRoom": func(frame lua.Frame) lua.Outcome {
 ```
+
+### Performance
+
+The backend runs Lua with [lunar](https://github.com/mmcdole/lunar) (`github.com/mmcdole/lunar`), a Lua 5.1 interpreter written in pure Go. Calling a `SCRIPT_LIBRARY` function from Lua is an ordinary native call inside the interpreter, with no cgo or FFI cost. With the C Lua implementation, the usual advice is to batch work into fewer Lua/C calls, but that doesn't apply here: one call to a simple getter costs around 90 ns. Allocating Lua tables is what costs time, whether the script allocates them or Go does. Each table is a Go heap allocation that has to be garbage collected later, and that dominates the cost of a call that returns one.
+
+Library functions that read state should therefore:
+- Return scalars, one value per function (`mob_get_health`), rather than returning a table that holds a few fields.
+- Take an enum parameter for a family of similar values (`mob_get_stat(handle, world.Stat.STR)`), rather than taking a table of field names.
+- Return a table only when the data really is a collection, such as a list of mobs in a room.
+
+Separate functions are also better for scripting. The generated LuaLS definitions give each getter its own return type, and a misspelled function name gets flagged by the language server, whereas a misspelled field name inside a table of field names only fails at runtime.
+
+#### Measurements
+
+`backend/world/script_bench_test.go` compares the two designs. `bench_get_mob_table(handle, fields)` is a test-only native that takes a table of field names and returns a table of values. This is how a function returning several mob fields at once would work. The other side uses the real `world.mob_get_*` getters. Each benchmark runs a Lua `for` loop inside a single Lua call, so the Go→Lua call that starts the loop isn't counted. Each iteration reads the given number of fields from a real mob and adds them to an accumulator.
+
+Results (median of 3 runs at 2,000,000 iterations each; lunar v0.1.3, Go 1.26.7, Apple Silicon aarch64 on Asahi Linux):
+
+| Fields read | Table design | Getter design | Getters faster by |
+| --- | ---: | ---: | ---: |
+| 1 | 4,296 ns/op, 10 allocs | 93 ns/op, 0 allocs | ~46× |
+| 2 | 4,775 ns/op, 10 allocs | 186 ns/op, 0 allocs | ~26× |
+| 2, fields table built once outside the loop | 2,746 ns/op, 5 allocs | 186 ns/op, 0 allocs | ~15× |
+| 5 | 5,158 ns/op, 10 allocs | 480 ns/op, 0 allocs | ~11× |
+
+What this shows:
+- A getter call costs about 90 ns, and getters never allocate, so their cost grows linearly with the number of fields read.
+- A table-design call costs roughly 4–5 µs, almost all of it in allocation and collection. Each call creates two tables, the script's `{ "name", "room" }` literal and the result table that Go builds, at about 5 Go allocations each. Building the field-name table once and reusing it removes half of that, but the result table still costs more than a dozen getter calls.
+- Reading 5 fields with getters is still about 11× faster than one table call. The table design would only win if a script read dozens of fields at once.
+
+Scripts currently run on events (spell hits, item use, NPC hooks) rather than on every tick, so neither design would dominate the 3-second update today. This guideline keeps the API cheap and typed as more scripts get added.
+
+To reproduce, run from `backend/` (takes about 2 minutes):
+
+```
+go test ./world -run '^$' -bench ScriptMobData -benchmem -benchtime 2000000x -count 3
+```
+
+Absolute numbers depend on the machine. The ratios between the two designs are the part to compare.

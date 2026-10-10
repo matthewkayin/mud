@@ -7,8 +7,8 @@ item.size = 5
 
 item.on_use = function(user_handle)
     local regen = world.regen_mana(user_handle, 20)
-    local user = world.get_mob_data(user_handle, { "name", "room" })
-    world.message_room(user.room, string.format("%s drank a %s and regained %d MP.", user.name, item.name, regen))
+    local user_name = world.mob_get_name(user_handle)
+    world.message_room(world.mob_get_room(user_handle), string.format("%s drank a %s and regained %d MP.", user_name, item.name, regen))
 end
 
 return item

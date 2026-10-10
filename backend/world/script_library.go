@@ -65,89 +65,113 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.ReturnBool(mob.IsDead())
 	},
 
-	// Queries the world for the requested mob data
-	//
-	// Accepts a table of fields, where each entry is a string representing a field to get
-	//
-	// Example: getMobData(handle, { "name" "health", "max_health"  })
-	// Returns: { name: "Bufo", health" 72, max_health: 100 }
+	// Returns the mob's name
 	//
 	// @param handle MobHandle
-	// @param fields table
-	// @return table
-	"get_mob_data": func(frame lua.Frame) lua.Outcome {
+	// @return string
+	"mob_get_name": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		return frame.ReturnString(mob.Data.Name)
+	},
+
+	// Returns the room the mob is in
+	//
+	// @param handle MobHandle
+	// @return integer
+	"mob_get_room": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		return frame.ReturnNumber(float64(mob.Data.Room))
+	},
+
+	// Returns the mob's level
+	//
+	// @param handle MobHandle
+	// @return integer
+	"mob_get_level": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		return frame.ReturnNumber(float64(mob.Data.Level))
+	},
+
+	// Returns the mob's current health
+	//
+	// @param handle MobHandle
+	// @return integer
+	"mob_get_health": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		return frame.ReturnNumber(float64(mob.Data.Health))
+	},
+
+	// Returns the mob's max health
+	//
+	// @param handle MobHandle
+	// @return integer
+	"mob_get_max_health": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		return frame.ReturnNumber(float64(mob.Data.MaxHealth()))
+	},
+
+	// Returns the mob's current mana
+	//
+	// @param handle MobHandle
+	// @return integer
+	"mob_get_mana": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		return frame.ReturnNumber(float64(mob.Data.Mana))
+	},
+
+	// Returns the mob's max mana
+	//
+	// @param handle MobHandle
+	// @return integer
+	"mob_get_max_mana": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		return frame.ReturnNumber(float64(mob.Data.MaxMana()))
+	},
+
+	// Returns the mob's value for a stat, including equipment bonuses
+	//
+	// @param handle MobHandle
+	// @param stat Stat
+	// @return integer
+	"mob_get_stat": func(frame lua.Frame) lua.Outcome {
 		mob := frameGetMobArg(&frame, 0)
 
-		// Get requested fields from args
-		fieldsTable, ok := frame.Table(1)
+		// Get stat from args
+		statString, ok := frame.String(1)
 		if !ok {
-			frame.ThrowArgTypeError(1, lua.TableKind)
+			frame.ThrowArgTypeError(1, lua.StringKind)
 		}
-
-		// Fill out requested data
-		fieldCount := fieldsTable.RawLen()
-		returnTable, err := frame.State().NewTableWithCapacity(0, fieldCount)
+		stat, err := statAbbreviationToEnum(statString)
 		if err != nil {
-			frame.ThrowError(err)
-		}
-		for index := 1; index <= fieldCount; index++ {
-			field, ok := fieldsTable.RawGetInt(index).AsString()
-			if !ok {
-				frame.ThrowArgError(1, "Provided data fields must be strings.")
-			}
-
-			switch field {
-				case "name":
-					returnTable.RawSetString(field, lua.String(mob.Data.Name))
-				case "room":
-					returnTable.RawSetString(field, lua.Number(float64(mob.Data.Room)))
-				case "level":
-					returnTable.RawSetString(field, lua.Number(float64(mob.Data.Level)))
-				case "health":
-					returnTable.RawSetString(field, lua.Number(float64(mob.Data.Health)))
-				case "mana":
-					returnTable.RawSetString(field, lua.Number(float64(mob.Data.Mana)))
-				case "max_health":
-					returnTable.RawSetString(field, lua.Number(float64(mob.Data.MaxHealth())))
-				case "max_mana":
-					returnTable.RawSetString(field, lua.Number(float64(mob.Data.MaxMana())))
-				case "stats": {
-					statTable, err := frame.State().NewTableWithCapacity(0, STAT_COUNT)
-					if err != nil {
-						frame.ThrowError(err)
-					}
-
-					for index := range STAT_COUNT {
-						statTable.RawSetString(STAT_DATA[index].Abbreviation, lua.Number(float64(mob.Data.GetStat(index))))
-					}
-
-					returnTable.RawSetString(field, statTable.Value())
-				}
-				case "equipment": {
-					equipTable, err := frame.State().NewTableWithCapacity(0, EQUIPMENT_SLOT_COUNT)
-					if err != nil {
-						frame.ThrowError(err)
-					}
-
-					for index := range EQUIPMENT_SLOT_COUNT {
-						slot := EquipmentSlot(index)
-						item := mob.Data.Equipment.Get(slot)
-
-						if item == nil {
-							equipTable.RawSetString(slot.LowerSnakeString(), lua.Nil())
-						} else {
-							equipTable.RawSetString(slot.LowerSnakeString(), lua.String(ITEM_DATA[item.Id].Name))
-						}
-
-						returnTable.RawSetString(field, equipTable.Value())
-					}
-				}
-				default:
-					frame.ThrowArgError(1, fmt.Sprintf("Field '%s' is not a valid mob field.", field))
-			}
+			frame.ThrowArgError(1, err.Error())
 		}
 
-		return frame.ReturnValue(returnTable.Value())
+		return frame.ReturnNumber(float64(mob.Data.GetStat(int(stat))))
+	},
+
+	// Returns the name of the item the mob has equipped in a slot, or nil if the slot is empty
+	//
+	// @param handle MobHandle
+	// @param slot EquipmentSlot
+	// @return string?
+	"mob_get_equipment": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+
+		// Get slot from args
+		slotString, ok := frame.String(1)
+		if !ok {
+			frame.ThrowArgTypeError(1, lua.StringKind)
+		}
+		slot, ok := EnumFromString(slotString, EquipmentSlot(EQUIPMENT_SLOT_COUNT))
+		if !ok {
+			frame.ThrowArgError(1, fmt.Sprintf("%s is not a valid equipment slot.", slotString))
+		}
+
+		item := mob.Data.Equipment.Get(slot)
+		if item == nil {
+			return frame.ReturnValue(lua.Nil())
+		}
+		return frame.ReturnString(ITEM_DATA[item.Id].Name)
 	},
 
 	// Deals magic damage to a mob. Returns the number of damage dealt.
