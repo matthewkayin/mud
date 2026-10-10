@@ -97,7 +97,7 @@ var MENU_TRADE_ENTRIES = map[string]MenuEntry {
 
 			// Check if target mob is a player
 			targetMob := gamestate.world.Mobs.Get(targetHandle)
-			if targetMob.PlayerCharacter == nil {
+			if !targetMob.IsPlayer() {
 				*player.inbox <- fmt.Sprintf("You cannot trade with %s because they are not a player.", targetMob.GetName())
 				return true
 			}

@@ -101,7 +101,7 @@ func MobInitFromCharacter(character *Character) Mob {
 }
 
 func (mob *Mob) GetPlayerId() int {
-	if mob.PlayerCharacter == nil {
+	if !mob.IsPlayer() {
 		return MOB_PLAYER_NONE
 	}
 
@@ -113,6 +113,20 @@ func (mob *Mob) GetName() string {
 		return mob.Data.Name
 	}
 	return fmt.Sprintf("%s %d", mob.Data.Name, mob.fuzzyNumber)
+}
+
+func (mob *Mob) GetNameWithInjury() string {
+	name := mob.GetName()
+
+	if mob.Data.Health < mob.Data.MaxHealth() / 5 {
+		return name + " <r>(Near Death)</r>"
+	}
+
+	if mob.Data.Health < mob.Data.MaxHealth() / 2 {
+		return name + " <r>(Injured)</r>"
+	}
+
+	return name
 }
 
 func (mob *Mob) IsDead() bool {
@@ -128,7 +142,7 @@ func (mob *Mob) IsInCombat(world *World) bool {
 	// A mob is in combat if at least one occupant in the room is a hostile, non-sleeping NPC
 	return slices.ContainsFunc(world.Rooms[mob.Data.Room].Occupants, func(handle MobHandle) bool {
 		occupant := world.Mobs.Get(handle)
-		return occupant.Npc != nil &&
+		return occupant.IsNpc() &&
 			occupant.Npc.mode != NPC_MODE_SLEEP &&
 			occupant.Npc.disposition == NPC_DISPOSITION_HOSTILE
 	})
@@ -148,7 +162,7 @@ func (mob *Mob) SetFlag(flag MobFlag, value bool) {
 
 func (mob *Mob) GrantExperience(world *World, experience int32) {
 	// This function is only meant for player mobs at this time
-	if mob.PlayerCharacter == nil {
+	if !mob.IsPlayer() {
 		return
 	}
 
@@ -308,7 +322,7 @@ func (mob *Mob) Update(world *World) {
 			success := mob.rollForTaunt(targetMob)
 			if success {
 				targetMob.SetModeAttack(world, mob.Target, mob.Handle)
-				if targetMob.Npc != nil {
+				if targetMob.IsNpc() {
 					targetMob.Npc.disposition = NPC_DISPOSITION_HOSTILE
 				}
 
@@ -321,6 +335,14 @@ func (mob *Mob) Update(world *World) {
 			mob.tauntCooldown = MOB_TAUNT_COOLDOWN_MAX
 		}
 	}
+}
+
+func (mob *Mob) IsNpc() bool {
+	return mob.Npc != nil
+}
+
+func (mob *Mob) IsPlayer() bool {
+	return mob.PlayerCharacter != nil
 }
 
 func (mob *Mob) getTargetIfExists(world *World) (*Mob, bool) {
@@ -343,7 +365,7 @@ func (mob *Mob) damage(world *World, attackerHandle MobHandle, damage int32) {
 	mob.Data.Health -= damage
 	mob.alertness = MOB_ALERTNESS_MAX
 
-	if mob.Npc != nil {
+	if mob.IsNpc() {
 		mob.Npc.OnEvent(world, BehaviorEvent {
 			Type: BEHAVIOR_EVENT_TYPE_ATTACKED,
 			Data: BehaviorEventAttacked {
@@ -416,9 +438,9 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	if crit {
 		critStr = "Critical hit! "
 	}
-	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s%s struck %s for %d damage.", critStr, mob.GetName(), targetMob.GetName(), damage))
+	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s%s struck %s for <r>%d</r> damage.", critStr, mob.GetName(), targetMob.GetName(), damage))
 	if targetMob.IsDead() {
-		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s has slain %s.", mob.GetName(), targetMob.GetName()))
+		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s has <r>slain</r> %s.", mob.GetName(), targetMob.GetName()))
 	} else {
 		targetMob.rollForConcentration(world, damage)
 	}
@@ -468,8 +490,8 @@ func (mob *Mob) RollForEscape(world *World) bool {
 	room := &world.Rooms[mob.Data.Room]
 	for _, handle := range room.Occupants {
 		occupant := world.Mobs.Get(handle)
-		// TODO: change to !occupant.isNpc()
-		if occupant.Npc == nil || occupant.Npc.disposition != NPC_DISPOSITION_HOSTILE {
+
+		if !occupant.IsNpc() || occupant.Npc.disposition != NPC_DISPOSITION_HOSTILE {
 			continue
 		}
 
@@ -496,7 +518,7 @@ func (mob *Mob) RollForStealth(world *World) bool {
 	room := &world.Rooms[mob.Data.Room]
 	for _, handle := range room.Occupants {
 		occupant := world.Mobs.Get(handle)
-		if occupant.Npc == nil || occupant.Npc.disposition != NPC_DISPOSITION_HOSTILE {
+		if !occupant.IsNpc() || occupant.Npc.disposition != NPC_DISPOSITION_HOSTILE {
 			continue
 		}
 
@@ -536,7 +558,7 @@ func (mob *Mob) rollForTaunt(targetMob *Mob) bool {
 	tauntChance := mobStrength / targetIntelligence
 	tauntChance *= (1.0 - mob.tauntCooldown)
 
-	if targetMob.Npc != nil && targetMob.Npc.disposition == NPC_DISPOSITION_FRIENDLY {
+	if targetMob.IsNpc() && targetMob.Npc.disposition == NPC_DISPOSITION_FRIENDLY {
 		tauntChance = 0.0
 	}
 
@@ -563,7 +585,7 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 	}
 
 	// The rest of these messages are only sent to players holding the item
-	if mob.PlayerCharacter == nil {
+	if !mob.IsPlayer() {
 		return
 	}
 
@@ -611,7 +633,7 @@ func (mob *Mob) spellcast(world *World, targetMob *Mob) {
 	mob.Data.Mana -= spellData.ManaCost
 	spellData.onHit(world, mob, targetMob)
 
-	if mob.PlayerCharacter != nil {
+	if mob.IsPlayer() {
 		equippedSpell, spellIsEquipped := mob.PlayerCharacter.SpellsEquipped[mob.castSpell]
 		if spellIsEquipped && !equippedSpell.IsKnown {
 
@@ -721,7 +743,7 @@ func (mob *Mob) CanCraft(recipe Recipe, batchAmount int32) error {
 }
 
 func (mob *Mob) InventoryCapacity() int32 {
-	if mob.PlayerCharacter == nil {
+	if !mob.IsPlayer() {
 		return INVENTORY_CAPACITY_UNLIMITED
 	}
 
@@ -752,7 +774,7 @@ func (mob *Mob) CraftItem(world *World, recipe Recipe) bool {
 	// Add the crafted item to the player's inventory
 	recipeOutput := recipeData.CreateOutput()
 	mob.Data.Inventory.AddItem(recipeOutput)
-	if mob.PlayerCharacter != nil {
+	if mob.IsPlayer() {
 		world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You crafted %s.", recipeOutput.GetNameWithAmount()))
 	}
 	return true

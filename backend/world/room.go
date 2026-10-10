@@ -160,7 +160,7 @@ func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, newRoomIn
 	if occupantMob.PlayerCharacter != nil {
 		for _, handle := range newRoom.Occupants {
 			mob := world.Mobs.Get(handle)
-			if mob.Npc == nil {
+			if !mob.IsNpc()  {
 				continue
 			}
 
@@ -292,7 +292,7 @@ func (room *Room) removeDeadOccupants(world *World) {
 		})
 
 		// If NPC mob, distribute experience to players in the room
-		if occupantMob.PlayerCharacter == nil {
+		if occupantMob.IsNpc() {
 			// Get a list of all player mobs
 			playersInRoom := []*Mob{}
 			for _, handle := range room.Occupants {

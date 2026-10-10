@@ -77,7 +77,7 @@ func (world *World) messageRoomWithOptions(options MessageRoomOptions) {
 
 		// Don't send messages to NPCs
 		mob := world.Mobs.Get(mobHandle)
-		if mob.PlayerCharacter == nil {
+		if !mob.IsPlayer() {
 			continue
 		}
 
