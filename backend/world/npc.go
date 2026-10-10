@@ -20,6 +20,8 @@ const NPC_MOVEMENT_STEP_DURATION = 60 / WORLD_SECONDS_PER_UPDATE
 
 const NPC_MOVEMENT_TYPE_OVERRIDE_NONE = NPC_MOVEMENT_TYPE_COUNT
 
+const NPC_EVENT_PREVENT_DEFAULT = true
+
 type NpcMode int
 const (
 	NPC_MODE_DEAD = iota
@@ -68,6 +70,32 @@ func (disposition NpcDisposition) String() string {
 	}
 }
 
+type NpcEventType int
+const (
+	NPC_EVENT_TYPE_ATTACKED = iota
+	NPC_EVENT_TYPE_PLAYER_ENTERED
+	NPC_EVENT_TYPE_ITEM_GIVEN
+)
+
+type NpcEventAttacked struct {
+	AttackerHandle MobHandle
+}
+
+type NpcEventPlayerEntered struct {
+	PlayerHandle MobHandle
+}
+
+type NpcEventItemGiven struct {
+	PlayerHandle MobHandle
+	AddedToIndex int
+	Amount int32
+}
+
+type NpcEvent struct {
+	Type NpcEventType
+	Data any
+}
+
 type Npc struct {
 	// NPC "config" variables - tells us how to make a mob based on this NPC
 	Id NpcId `ts_type:"string"`
@@ -89,6 +117,7 @@ type Npc struct {
 	shouldReset bool
 	// The table returned by the script's init() hook, or nil
 	instance lua.Value
+	events []NpcEvent
 }
 
 type NpcJson struct {
@@ -375,6 +404,7 @@ func (npc *Npc) spawnMob(world *World) {
 	npc.disposition = npcData.startingDisposition
 
 	npc.instance = lua.Nil()
+	npc.events = make([]NpcEvent, 0, 1)
 	if npcData.init != nil {
 		npc.callInit(world)
 	}
@@ -427,6 +457,18 @@ func (npc *Npc) callHook(world *World, hook *lua.Function, hookName string, args
 	return result, true
 }
 
+// Calls a script event hook and returns true if the event's default should be prevented
+func (npc *Npc) callEventHook(world *World, hook *lua.Function, hookName string, args ...lua.Value) bool {
+	result, handled := npc.callHook(world, hook, hookName, args...)
+	if !handled {
+		return false
+	}
+
+	// The hook is allowed to not return a boolean, in which case preventDefault is false
+	preventDefault, ok := result.AsBool()
+	return ok && preventDefault
+}
+
 func (npc *Npc) setModeIdle() {
 	npc.mode = NPC_MODE_IDLE
 	npc.timer = NPC_MOVEMENT_STEP_DURATION
@@ -464,6 +506,12 @@ func (npc *Npc) update(world *World) {
 		npc.instance = lua.Nil()
 		return
 	}
+
+	// Handle events
+	for index := range len(npc.events) {
+		npc.onEvent(world, &npc.events[index])
+	}
+	npc.events = []NpcEvent{}
 
 	npc.callHook(world, NPC_DATA[npc.Id].update, "update")
 
@@ -600,38 +648,72 @@ func (npc *Npc) movementStep(world *World) {
 	}
 }
 
-func (npc *Npc) onAttacked(world *World, attackerHandle MobHandle) {
-	_, handled := npc.callHook(world, NPC_DATA[npc.Id].onAttacked, "on_attacked")
-	if handled {
-		return
-	}
-
-	// TODO: for friendly NPCs, like town guards,
-	// make the NPC hostile only to the attacker, not
-	// all players?
-	if npc.disposition == NPC_DISPOSITION_NEUTRAL {
-		npc.disposition = NPC_DISPOSITION_HOSTILE
-	}
+func (npc *Npc) PushEvent(event NpcEvent) {
+	npc.events = append(npc.events, event)
 }
 
-func (npc *Npc) onPlayerEntered(world *World, playerHandle MobHandle) {
-	npc.callHook(world, NPC_DATA[npc.Id].onPlayerEntered, "on_player_entered")
-}
+func (npc *Npc) onEvent(world* World, event *NpcEvent) {
+	switch event.Type {
+		case NPC_EVENT_TYPE_ATTACKED: {
+			data := event.Data.(NpcEventAttacked)
 
-// Called after a player gives this NPC an item. addedToIndex is where the item landed in the NPC's inventory
-func (npc *Npc) OnItemGiven(world *World, playerHandle MobHandle, addedToIndex int, amount int32) {
-	_, handled := npc.callHook(world, NPC_DATA[npc.Id].onItemGiven, "on_item_given")
-	if handled {
-		return
+			attackerLuaHandle, err := world.getMobLuaHandle(data.AttackerHandle)
+			if err != nil {
+				log.Print(err.Error())
+				return
+			}
+
+			npc.callHook(world, NPC_DATA[npc.Id].onAttacked, "on_attacked", attackerLuaHandle)
+		}
+
+		case NPC_EVENT_TYPE_PLAYER_ENTERED: {
+			data := event.Data.(NpcEventPlayerEntered)
+
+			playerLuaHandle, err := world.getMobLuaHandle(data.PlayerHandle)
+			if err != nil {
+				log.Print(err.Error())
+				return
+			}
+
+			preventDefault := npc.callEventHook(world, NPC_DATA[npc.Id].onPlayerEntered, "on_player_entered", playerLuaHandle)
+			if preventDefault {
+				return
+			}
+
+			// Default
+			if npc.disposition == NPC_DISPOSITION_NEUTRAL {
+				npc.disposition = NPC_DISPOSITION_HOSTILE
+			}
+		}
+
+		case NPC_EVENT_TYPE_ITEM_GIVEN: {
+			data := event.Data.(NpcEventItemGiven)
+
+			playerLuaHandle, err := world.getMobLuaHandle(data.PlayerHandle)
+			if err != nil {
+				log.Print(err.Error())
+				return
+			}
+
+			preventDefault := npc.callEventHook(world, NPC_DATA[npc.Id].onItemGiven, "on_item_given",
+				playerLuaHandle,
+				lua.Number(float64(data.AddedToIndex)),
+				lua.Number(float64(data.Amount)),
+			)
+
+			if preventDefault {
+				return
+			}
+
+			// Default - give the item back
+			npcMob := world.Mobs.Get(npc.mobHandle)
+			playerMob := world.Mobs.Get(data.PlayerHandle)
+			item := npcMob.Data.Inventory.RemoveItems(data.AddedToIndex, data.Amount)
+			playerMob.Data.Inventory.AddItem(item)
+
+			world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s is uninterested in this item. They returned it to %s.", npcMob.Data.Name, playerMob.Data.Name))
+		}
 	}
-
-	// By default, give the item back
-	npcMob := world.Mobs.Get(npc.mobHandle)
-	playerMob := world.Mobs.Get(playerHandle)
-	item := npcMob.Data.Inventory.RemoveItems(addedToIndex, amount)
-	playerMob.Data.Inventory.AddItem(item)
-
-	world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s is uninterested in this item. They returned it to %s.", npcMob.Data.Name, playerMob.Data.Name))
 }
 
 func (npc *Npc) GetDescription() string {

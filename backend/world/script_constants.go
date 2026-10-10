@@ -20,6 +20,7 @@ type ScriptConstantTable struct {
 func ScriptFreeConstants() []ScriptConstant {
 	return []ScriptConstant {
 		{ Name: "SPELL_CAST_TIME_INSTANT", Value: lua.Number(float64(SPELL_CAST_TIME_INSTANT)) },
+		{ Name: "NPC_EVENT_PREVENT_DEFAULT", Value: lua.Bool(NPC_EVENT_PREVENT_DEFAULT) },
 	}
 }
 

@@ -363,7 +363,12 @@ func (mob *Mob) damage(world *World, attackerHandle MobHandle, damage int32) {
 	mob.alertness = MOB_ALERTNESS_MAX
 
 	if mob.Npc != nil {
-		mob.Npc.onAttacked(world, attackerHandle)
+		mob.Npc.PushEvent(NpcEvent {
+			Type: NPC_EVENT_TYPE_ATTACKED,
+			Data: NpcEventAttacked {
+				AttackerHandle: attackerHandle,
+			},
+		})
 	}
 }
 
@@ -613,18 +618,18 @@ func (mob *Mob) spellcast(world *World, targetMob *Mob) {
 
 	// TODO: wrap a context around this to timeout calls?
 
-	casterHandle, err := mob.getLuaHandle(world)
+	casterLuaHandle, err := world.getMobLuaHandle(mob.Handle)
 	if err != nil {
 		log.Print(err.Error())
 		return
 	}
-	targetHandle, err := targetMob.getLuaHandle(world)
+	targetLuaHandle, err := world.getMobLuaHandle(targetMob.Handle)
 	if err != nil {
 		log.Print(err.Error())
 		return
 	}
 
-	_, err = world.luaState.Call(spellData.OnHit.Value(), casterHandle, targetHandle)
+	_, err = world.luaState.Call(spellData.OnHit.Value(), casterLuaHandle, targetLuaHandle)
 	if err != nil {
 		log.Printf("Warn - Error during spell %s onHit: %s", spellData.Name, err.Error())
 		return
@@ -647,20 +652,6 @@ func (mob *Mob) spellcast(world *World, targetMob *Mob) {
 			mob.subtractDurabilityFromEquipment(world, slot)
 		}
 	}
-}
-
-// Returns the mob's handle as Lua userdata. The userdata is created on first use
-// and cached, so passing a mob to a script does not allocate.
-func (mob *Mob) getLuaHandle(world *World) (lua.Value, error) {
-	if mob.luaHandle == nil {
-		luaHandle, err := world.mobHandleType.New(mob.Handle)
-		if err != nil {
-			return lua.Nil(), err
-		}
-		mob.luaHandle = luaHandle
-	}
-
-	return mob.luaHandle.Value(), nil
 }
 
 func (mob *Mob) calculateMagicDamage(baseDamage int32, target *Mob) int32 {

@@ -22,7 +22,7 @@ func scriptTestMob(name string) Mob {
 }
 
 func scriptTestSetHandle(t *testing.T, world *World, name string, handle MobHandle) {
-	value, err := world.Mobs.Get(handle).getLuaHandle(world)
+	value, err := world.getMobLuaHandle(handle)
 	if err != nil {
 		t.Fatalf("getLuaHandle: %s", err.Error())
 	}

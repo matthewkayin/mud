@@ -92,6 +92,28 @@ func (world *World) LoadData(dataFolder string) {
 	world.loadNpcData()
 }
 
+func (world *World) getMobLuaHandle(handle MobHandle) (lua.Value, error) {
+	mob, exists := world.Mobs.GetIfExists(handle)
+
+	// If a cached value already exists, return it
+	if exists && mob.luaHandle != nil {
+		return mob.luaHandle.Value(), nil
+	}
+
+	// Otherwise, alloc a new one
+	luaHandle, err := world.mobHandleType.New(handle)
+	if err != nil {
+		return lua.Nil(), err
+	}
+
+	// And if the mob exists, cache the new lua handle onto the mob
+	if exists {
+		mob.luaHandle = luaHandle
+	}
+
+	return luaHandle.Value(), nil
+}
+
 func (world *World) Update() {
 	// Reset timer
 	world.resetTimer--

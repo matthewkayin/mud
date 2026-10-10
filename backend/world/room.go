@@ -164,7 +164,12 @@ func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, newRoomIn
 				continue
 			}
 
-			mob.Npc.onPlayerEntered(world, occupantHandle)
+			mob.Npc.PushEvent(NpcEvent {
+				Type: NPC_EVENT_TYPE_PLAYER_ENTERED,
+				Data: NpcEventPlayerEntered {
+					PlayerHandle: occupantHandle,
+				},
+			})
 		}
 	}
 }
