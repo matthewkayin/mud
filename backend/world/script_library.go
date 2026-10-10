@@ -183,6 +183,153 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.ReturnBool(mob.IsNpc())
 	},
 
+	// Returns the number of item stacks in the mob's inventory
+	//
+	// @param handle MobHandle
+	// @return integer
+	"mob_get_inventory_length": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		return frame.ReturnNumber(float64(mob.Data.Inventory.Length()))
+	},
+
+	// Returns the name of the item at an index in the mob's inventory. Indices start at 0.
+	//
+	// @param handle MobHandle
+	// @param index integer
+	// @return string
+	"mob_get_inventory_item_name": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
+		return frame.ReturnString(ITEM_DATA[mob.Data.Inventory.Items[index].Id].Name)
+	},
+
+	// Returns the amount of the item at an index in the mob's inventory. Indices start at 0.
+	//
+	// @param handle MobHandle
+	// @param index integer
+	// @return integer
+	"mob_get_inventory_item_amount": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
+		return frame.ReturnNumber(float64(mob.Data.Inventory.Items[index].Amount))
+	},
+
+	// Returns the durability of the item at an index in the mob's inventory, or nil if the item has no durability.
+	// Indices start at 0.
+	//
+	// @param handle MobHandle
+	// @param index integer
+	// @return integer?
+	"mob_get_inventory_item_durability": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
+		item := &mob.Data.Inventory.Items[index]
+		if ITEM_DATA[item.Id].GetMaxDurability() == 0 {
+			return frame.ReturnValue(lua.Nil())
+		}
+		return frame.ReturnNumber(float64(item.Durability))
+	},
+
+	// Returns the total amount of an item in the mob's inventory
+	//
+	// @param handle MobHandle
+	// @param item_name string
+	// @return integer
+	"mob_get_inventory_amount_of": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		itemId := frameGetItemIdArg(&frame, 1)
+		return frame.ReturnNumber(float64(mob.Data.Inventory.AmountOf(itemId)))
+	},
+
+	// Drops an amount of the item at an index in the mob's inventory into the mob's room.
+	// The amount is limited to the size of the stack. Returns the amount dropped.
+	// Removing a whole stack moves the last item in the inventory to its index.
+	//
+	// @param handle MobHandle
+	// @param index integer
+	// @param amount integer
+	// @return integer
+	"mob_drop_inventory_item": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
+		amount := frameGetIntegerArg(&frame, 2, "amount")
+		if amount <= 0 {
+			frame.ThrowArgError(2, "amount must be positive")
+		}
+
+		item := mob.Data.Inventory.RemoveItems(index, amount)
+		__world.Rooms[mob.Data.Room].Inventory.AddItem(item)
+		return frame.ReturnNumber(float64(item.Amount))
+	},
+
+	// Gives an amount of the item at an index in the mob's inventory to the target mob.
+	// The amount is limited to the size of the stack and to what fits in the target's inventory.
+	// Returns the amount given. Removing a whole stack moves the last item in the inventory to its index.
+	//
+	// @param handle MobHandle
+	// @param index integer
+	// @param target_handle MobHandle
+	// @param amount integer
+	// @return integer
+	"mob_give_inventory_item": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
+		target := frameGetMobArg(&frame, 2)
+		amount := frameGetIntegerArg(&frame, 3, "amount")
+		if amount <= 0 {
+			frame.ThrowArgError(3, "amount must be positive")
+		}
+
+		itemId := mob.Data.Inventory.Items[index].Id
+		if amount != 1 && !ITEM_DATA[itemId].ItemCanStack() {
+			frame.ThrowArgError(3, fmt.Sprintf("%s does not stack, so amount must be 1", ITEM_DATA[itemId].Name))
+		}
+		if target == mob {
+			frame.ThrowArgError(2, "target must be a different mob")
+		}
+
+		amount = min(amount, mob.Data.Inventory.Items[index].Amount)
+		amount = target.Data.Inventory.AmountThatFits(itemId, amount, target.InventoryCapacity())
+		if amount == 0 {
+			return frame.ReturnNumber(0)
+		}
+
+		item := mob.Data.Inventory.RemoveItems(index, amount)
+		target.Data.Inventory.AddItem(item)
+		return frame.ReturnNumber(float64(item.Amount))
+	},
+
+	// Creates a new item and adds it to the mob's inventory.
+	// Returns the index the item was added at or -1 if the item did not fit.
+	//
+	// @param handle MobHandle
+	// @param item_name string
+	// @param amount integer
+	// @param durability_percent integer
+	// @return integer
+	"mob_add_inventory_item": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		itemId := frameGetItemIdArg(&frame, 1)
+		amount := frameGetIntegerArg(&frame, 2, "amount")
+		durability, hasDurability := frameGetOptionalIntegerArg(&frame, 3, "durability_percent")
+		if !hasDurability {
+			durability = 0
+		}
+
+		itemData := ITEM_DATA[itemId]
+		if mob.Data.Inventory.HasSpaceFor(itemData.Size * amount, mob.InventoryCapacity()) {
+			return frame.ReturnNumber(-1)
+		}
+
+		index := mob.Data.Inventory.AddItem(Item {
+			Id: itemId,
+			Amount: amount,
+			Durability: int32(float32(itemData.GetMaxDurability()) * float32(durability)),
+		})
+
+		return frame.ReturnNumber(float64(index))
+	},
+
 	// Returns the NPC's mode
 	//
 	// @param handle MobHandle
@@ -371,4 +518,54 @@ func frameGetNpcArg(frame *lua.Frame, index int) *Npc {
 	}
 
 	return mob.Npc
+}
+
+func frameGetIntegerArg(frame *lua.Frame, index int, name string) int32 {
+	value, ok := frame.Number(index)
+	if !ok {
+		frame.ThrowArgTypeError(index, lua.NumberKind)
+	}
+	if math.Trunc(value) != value {
+		frame.ThrowArgError(index, fmt.Sprintf("%s must be an integer", name))
+	}
+
+	return int32(value)
+}
+
+func frameGetOptionalIntegerArg(frame *lua.Frame, index int, name string) (int32, bool) {
+	value, ok := frame.Argument(index)
+	if !ok {
+		return 0, false
+	}
+	number, ok := value.AsNumber()
+	if !ok {
+		frame.ThrowArgTypeError(index, lua.NumberKind)
+	}
+	if math.Trunc(number) != number {
+		frame.ThrowArgError(index, fmt.Sprintf("%s must be an integer", name))
+	}
+
+	return int32(number), true
+}
+
+func frameGetInventoryIndexArg(frame *lua.Frame, index int, inventory *Inventory) int {
+	inventoryIndex := int(frameGetIntegerArg(frame, index, "index"))
+	if inventoryIndex < 0 || inventoryIndex >= inventory.Length() {
+		frame.ThrowArgError(index, fmt.Sprintf("Inventory index %d is out of range (length %d).", inventoryIndex, inventory.Length()))
+	}
+
+	return inventoryIndex
+}
+
+func frameGetItemIdArg(frame *lua.Frame, index int) ItemId {
+	itemName, ok := frame.String(index)
+	if !ok {
+		frame.ThrowArgTypeError(index, lua.StringKind)
+	}
+	itemId, exists := ITEM_NAME_TO_ID[itemName]
+	if !exists {
+		frame.ThrowArgError(index, fmt.Sprintf("%s is not a valid item.", itemName))
+	}
+
+	return itemId
 }

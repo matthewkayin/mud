@@ -69,7 +69,20 @@ Every hook also receives `self`, the `MobHandle` of the NPC's own mob, so a scri
 | `on_item_given` | When a player gives the mob an item | `instance, self, player, added_to_index, amount` | `true` to prevent the default |
 | `get_status_description` | When a player looks at the mob, after its description | `instance, self` | A string, or nil for no status line |
 
-`attacker` and `player` are `MobHandle`s. `added_to_index` is the index in the NPC's inventory that the given item was added to.
+`attacker` and `player` are `MobHandle`s. `added_to_index` is the 0-based index in the NPC's inventory that the given item was added to, and `amount` is how many were given. Pass `self` and `added_to_index` to the [inventory functions](scripting.md#inventories) to inspect the item or move it:
+
+```lua
+npc.on_item_given = function(instance, self, player, added_to_index, amount)
+	if world.mob_get_inventory_item_name(self, added_to_index) ~= "Gold" or amount < 10 then
+		-- Not handled, so the default gives the item back
+		return
+	end
+
+	-- Keep the gold
+	world.message_room(world.mob_get_room(self), "The troll pockets the gold.")
+	return world.NPC_EVENT_PREVENT_DEFAULT
+end
+```
 
 Every hook is optional. Each event has its own hook, so an NPC only crosses the Go/Lua boundary for the events it handles. If an event hook returns `true` (`world.NPC_EVENT_PREVENT_DEFAULT`), the Go default is skipped:
 - `on_player_entered`: by default, a neutral NPC becomes hostile.

@@ -146,6 +146,26 @@ A handle can outlive its mob. Library functions that take a mob throw an error w
 
 On the Go side, `scriptInit` registers the `MobHandle` userdata type as `World.mobHandleType`. Pass a mob to Lua with `Mob.getLuaHandle`, which creates the userdata on first use and caches it on the mob. Passing a mob to a script therefore doesn't allocate, and every handle for a mob is the same Lua value. Read a handle argument in a `SCRIPT_LIBRARY` function with `frameGetMobHandleArg`, or with `frameGetMobArg` to also look up the mob. Document handle parameters as `@param name MobHandle`.
 
+### Inventories
+
+Scripts read and change a mob's inventory through the `world.mob_*inventory*` functions. Items are addressed by their **0-based** index in the inventory, the same index that an NPC's `on_item_given` hook receives as `added_to_index`. An index that isn't an integer in `[0, length)` throws an error.
+
+| Function | Returns | Notes |
+| --- | --- | --- |
+| `mob_get_inventory_length(handle)` | integer | Number of item stacks, for looping from `0` to `length - 1` |
+| `mob_get_inventory_item_name(handle, index)` | string | |
+| `mob_get_inventory_item_amount(handle, index)` | integer | |
+| `mob_get_inventory_item_durability(handle, index)` | integer? | `nil` for items that have no durability, so `0` always means broken |
+| `mob_get_inventory_amount_of(handle, item_name)` | integer | Total across all stacks. Throws an error if no item has that name |
+| `mob_drop_inventory_item(handle, index, amount)` | integer | Moves the item into the mob's room. Returns the amount dropped |
+| `mob_give_inventory_item(handle, index, target_handle, amount)` | integer | Moves the item to another mob. Returns the amount given, which is `0` if none of it fits in the target's inventory |
+
+The read functions follow the getter guideline in [Performance](#performance). There's one function per item property, not a function that returns an item table.
+
+`amount` must be a positive integer. It's limited to the size of the stack, and for giving, also to the space left in the target's inventory (players have a capacity, NPCs don't). An item that doesn't stack can only be dropped or given with an amount of `1`.
+
+Removing a whole stack moves the last stack in the inventory into its index (`Inventory.RemoveItems`), so after a drop or give, read the indices again before using them. These functions don't send any messages, so use `message_room` to tell players what happened. Giving an item to an NPC doesn't trigger its `on_item_given` hook, because that hook is only for items that players give.
+
 ### Language server definitions
 
 The `world` table only exists at runtime, so `backend/data/world.d.lua` describes it to the Lua language server (LuaLS). It is generated, so don't edit it by hand. After changing `SCRIPT_LIBRARY`, `ScriptConstantTables()` or `ScriptFreeConstants()`, regenerate it from `backend/`:

@@ -261,3 +261,85 @@ func TestNpcHookArguments(t *testing.T) {
 		t.Errorf("Expected status description %q, got %q (ok = %t)", "Hello Goblin true", statusDescription, ok)
 	}
 }
+
+func TestScriptInventory(t *testing.T) {
+	primeTestData()
+	ITEM_DATA[TEST_ITEM_SWORD].Data.(*ItemDataWeapon).MaxDurability = 20
+
+	world := scriptTestWorld(t)
+	world.Rooms = []Room{ {}, {} }
+
+	npcMob := scriptTestMob("Bufo")
+	npcMob.Data.Room = 1
+	npcMob.Data.Inventory.Items = []Item {
+		{ Id: TEST_ITEM_GOLD, Amount: 30 },
+		{ Id: TEST_ITEM_SWORD, Amount: 1, Durability: 12 },
+		{ Id: TEST_ITEM_POTION_HEALTH, Amount: 50 },
+		{ Id: TEST_ITEM_AXE, Amount: 1 },
+	}
+	npcHandle := world.Mobs.Push(npcMob)
+	scriptTestSetHandle(t, world, "a", npcHandle)
+
+	playerMob := scriptTestMob("Player")
+	playerMob.PlayerCharacter = &Character{}
+	playerMob.Data.Inventory.Items = []Item {
+		{ Id: TEST_ITEM_POTION_HEALTH, Amount: 5 },
+	}
+	playerHandle := world.Mobs.Push(playerMob)
+	scriptTestSetHandle(t, world, "p", playerHandle)
+
+	cases := []struct {
+		source string
+		expected string
+	}{
+		{ "return world.mob_get_inventory_length(a)", "4" },
+		{ "return world.mob_get_inventory_item_name(a, 1)", "Sword" },
+		{ "return world.mob_get_inventory_item_amount(a, 0)", "30" },
+		{ "return world.mob_get_inventory_item_durability(a, 1)", "12" },
+		{ "return world.mob_get_inventory_item_durability(a, 0)", "nil" },
+		{ "return world.mob_get_inventory_amount_of(a, \"Potion of Health\")", "50" },
+		{ "return world.mob_get_inventory_amount_of(a, \"Spellbook of Firebolt\")", "0" },
+		// Drop part of a stack, then more than the rest of it
+		{ "return world.mob_drop_inventory_item(a, 0, 10)", "10" },
+		{ "return world.mob_get_inventory_item_amount(a, 0)", "20" },
+		{ "return world.mob_drop_inventory_item(a, 0, 100)", "20" },
+		// The axe moved from the last index into the removed gold stack's index
+		{ "return world.mob_get_inventory_item_name(a, 0)", "Axe" },
+		// The player has 100 - 5 * 5 = 75 space left, which fits 15 potions
+		{ "return world.mob_give_inventory_item(a, 2, p, 40)", "15" },
+		{ "return world.mob_get_inventory_amount_of(a, \"Potion of Health\")", "35" },
+		{ "return world.mob_get_inventory_amount_of(p, \"Potion of Health\")", "20" },
+		{ "return world.mob_give_inventory_item(a, 2, p, 1)", "0" },
+		{ "return world.mob_give_inventory_item(p, 0, a, 20)", "20" },
+		{ "return world.mob_get_inventory_length(p)", "0" },
+	}
+	for _, testCase := range cases {
+		if result := scriptTestEval(t, world, testCase.source); result != testCase.expected {
+			t.Errorf("%s: expected %s, got %s", testCase.source, testCase.expected, result)
+		}
+	}
+
+	roomInventory := &world.Rooms[1].Inventory
+	if roomInventory.Length() != 1 || roomInventory.Items[0].Id != TEST_ITEM_GOLD || roomInventory.Items[0].Amount != 30 {
+		t.Errorf("expected 30 gold in room 1, got %+v", roomInventory.Items)
+	}
+
+	invalidCases := []struct {
+		source string
+		expectedError string
+	}{
+		{ "return world.mob_get_inventory_item_name(a, 3)", "out of range" },
+		{ "return world.mob_get_inventory_item_name(a, -1)", "out of range" },
+		{ "return world.mob_get_inventory_item_name(a, 0.5)", "must be an integer" },
+		{ "return world.mob_get_inventory_amount_of(a, \"Nothing\")", "not a valid item" },
+		{ "return world.mob_drop_inventory_item(a, 0, 0)", "must be positive" },
+		{ "return world.mob_give_inventory_item(a, 0, p, 2)", "does not stack" },
+		{ "return world.mob_give_inventory_item(a, 0, a, 1)", "different mob" },
+	}
+	for _, testCase := range invalidCases {
+		_, err := world.luaState.DoString("@test.lua", testCase.source)
+		if err == nil || !strings.Contains(err.Error(), testCase.expectedError) {
+			t.Errorf("%s: expected error containing %q, got %v", testCase.source, testCase.expectedError, err)
+		}
+	}
+}

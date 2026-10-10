@@ -116,6 +116,16 @@ function world.magic_heal(caster_handle, target_handle, base_healing) end
 ---@param message string
 function world.message_room(room, message) end
 
+--- Drops an amount of the item at an index in the mob's inventory into the mob's room.
+--- The amount is limited to the size of the stack. Returns the amount dropped.
+--- Removing a whole stack moves the last item in the inventory to its index.
+---
+---@param handle MobHandle
+---@param index integer
+---@param amount integer
+---@return integer
+function world.mob_drop_inventory_item(handle, index, amount) end
+
 --- Returns true if the mob exists
 ---
 ---@param handle MobHandle
@@ -134,6 +144,41 @@ function world.mob_get_equipment(handle, slot) end
 ---@param handle MobHandle
 ---@return integer
 function world.mob_get_health(handle) end
+
+--- Returns the total amount of an item in the mob's inventory
+---
+---@param handle MobHandle
+---@param item_name string
+---@return integer
+function world.mob_get_inventory_amount_of(handle, item_name) end
+
+--- Returns the amount of the item at an index in the mob's inventory. Indices start at 0.
+---
+---@param handle MobHandle
+---@param index integer
+---@return integer
+function world.mob_get_inventory_item_amount(handle, index) end
+
+--- Returns the durability of the item at an index in the mob's inventory, or nil if the item has no durability.
+--- Indices start at 0.
+---
+---@param handle MobHandle
+---@param index integer
+---@return integer?
+function world.mob_get_inventory_item_durability(handle, index) end
+
+--- Returns the name of the item at an index in the mob's inventory. Indices start at 0.
+---
+---@param handle MobHandle
+---@param index integer
+---@return string
+function world.mob_get_inventory_item_name(handle, index) end
+
+--- Returns the number of item stacks in the mob's inventory
+---
+---@param handle MobHandle
+---@return integer
+function world.mob_get_inventory_length(handle) end
 
 --- Returns the mob's level
 ---
@@ -177,6 +222,17 @@ function world.mob_get_room(handle) end
 ---@param stat Stat
 ---@return integer
 function world.mob_get_stat(handle, stat) end
+
+--- Gives an amount of the item at an index in the mob's inventory to the target mob.
+--- The amount is limited to the size of the stack and to what fits in the target's inventory.
+--- Returns the amount given. Removing a whole stack moves the last item in the inventory to its index.
+---
+---@param handle MobHandle
+---@param index integer
+---@param target_handle MobHandle
+---@param amount integer
+---@return integer
+function world.mob_give_inventory_item(handle, index, target_handle, amount) end
 
 --- Returns true if the mob is dead
 ---

@@ -593,7 +593,7 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 	itemData := ITEM_DATA[item.Id]
 
 	item.Durability--
-	if item.Durability == 0 {
+	if item.Durability <= 0 {
 		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s's %s broke!", mob.GetName(), itemData.Name))
 		_, messages, _ := mob.unequip(slot)
 		for _, message := range messages {
