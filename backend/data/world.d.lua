@@ -7,11 +7,20 @@ world = {}
 ---An opaque reference to a mob. Compare with ==. It may refer to a mob that no longer exists; check with world.mob_exists.
 ---@class MobHandle
 
+---A stack of items, such as the value of an Item NPC behavior param.
+---@class Item
+---@field name string
+---@field amount integer
+---@field durability integer
+
 ---@type number
 world.SPELL_CAST_TIME_INSTANT = 0
 
 ---@type boolean
 world.NPC_EVENT_PREVENT_DEFAULT = true
+
+---@type number
+world.ROOM_NONE = -1
 
 ---@enum ItemKind
 world.ItemKind = {
@@ -110,11 +119,27 @@ function world.log(message) end
 ---@return number
 function world.magic_heal(caster_handle, target_handle, base_healing) end
 
+--- Sends a message to the specified player
+---
+---@param player MobHandle
+---@param message string
+function world.message_player(player, message) end
+
 --- Sends a message to the specified room
 ---
 ---@param room integer
 ---@param message string
 function world.message_room(room, message) end
+
+--- Creates a new item and adds it to the mob's inventory.
+--- Returns the index the item was added at or -1 if the item did not fit.
+---
+---@param handle MobHandle
+---@param item_name string
+---@param amount integer
+---@param durability_percent integer
+---@return integer
+function world.mob_add_inventory_item(handle, item_name, amount, durability_percent) end
 
 --- Drops an amount of the item at an index in the mob's inventory into the mob's room.
 --- The amount is limited to the size of the stack. Returns the amount dropped.
@@ -131,6 +156,14 @@ function world.mob_drop_inventory_item(handle, index, amount) end
 ---@param handle MobHandle
 ---@return boolean
 function world.mob_exists(handle) end
+
+--- Returns the index of the first occurance of an item in the mob's inventory
+--- Returns -1 if the item was not found.
+---
+---@param handle MobHandle
+---@param item_name string
+---@return integer, boolean
+function world.mob_find_inventory_item(handle, item_name) end
 
 --- Returns the name of the item the mob has equipped in a slot, or nil if the slot is empty
 ---
@@ -246,6 +279,16 @@ function world.mob_is_dead(handle) end
 ---@return boolean
 function world.mob_is_npc(handle) end
 
+--- Removes an amount of the item at an index in the mob's inventory.
+--- The amount is limited to the size of the stack. Returns the amount dropped.
+--- Removing a whole stack moves the last item in the inventory to its index.
+---
+---@param handle MobHandle
+---@param index integer
+---@param amount integer
+---@return integer
+function world.mob_remove_inventory_item(handle, index, amount) end
+
 --- Returns the NPC's disposition
 ---
 ---@param handle MobHandle
@@ -270,6 +313,24 @@ function world.npc_set_disposition(handle, disposition) end
 ---@param mode NpcMode
 function world.npc_set_mode(handle, mode) end
 
+--- Returns the player's class
+---
+---@param player MobHandle
+---@return string
+function world.player_get_class(player) end
+
+--- Returns the player's job
+---
+---@param player MobHandle
+---@return string
+function world.player_get_job(player) end
+
+--- Returns the player's race
+---
+---@param player MobHandle
+---@return string
+function world.player_get_race(player) end
+
 --- Regenerates an amount of the mobs mana
 --- Returns the number of mana regained.
 ---
@@ -277,3 +338,58 @@ function world.npc_set_mode(handle, mode) end
 ---@param regen_amount integer
 ---@return number
 function world.regen_mana(target_handle, regen_amount) end
+
+--- Returns the room's exit in the specified direction. If there is no exit, returns world.ROOM_NONE
+---
+---@param room integer
+---@param direction Direction
+---@return boolean
+function world.room_get_exit(room, direction) end
+
+--- Returns the room occupant at the specified index
+---
+---@param room integer
+---@param occupant_index integer
+function world.room_get_occupant(room, occupant_index) end
+
+--- Returns the room's occupant count
+---
+---@param room integer
+function world.room_get_occupant_count(room) end
+
+--- Returns true if the exit to the room is locked in the specified direction
+---
+---@param room integer
+---@param direction Direction
+---@return boolean
+function world.room_is_exit_locked(room, direction) end
+
+--- Sets the locked status of the room's exit.
+---
+---@param room integer
+---@param direction Direction
+---@param locked boolean
+function world.room_set_exit_locked(room, direction, locked) end
+
+--- Sends a dialog message to a specified player.
+--- Dialog messages are prefixed with the speakers name:
+--- i.e. "Troll: 'This is a message'"
+---
+---@param speaker MobHandle
+---@param player MobHandle
+---@param message string
+function world.say_to_player(speaker, player, message) end
+
+--- Sends a dialog message to the speaker's room.
+--- Dialog messages are prefixed with the speakers name:
+--- i.e. "Troll: 'This is a message'"
+---
+---@param speaker MobHandle
+---@param message string
+function world.say_to_room(speaker, message) end
+
+--- Returns the number of updates that will occur in X minutes
+---
+---@param minutes integer
+---@return integer
+function world.time_minutes(minutes) end

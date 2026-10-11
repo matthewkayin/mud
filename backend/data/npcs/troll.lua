@@ -1,5 +1,8 @@
 local npc = {}
 
+local TROLL_ANGRY_DURATION = world.time_minutes(5)
+local TROLL_PEACE_DURATION = world.time_minutes(5)
+
 npc.id = "troll"
 npc.name = "Troll"
 npc.description = "A hairy beast with a large nose and a pallid complexion towers over you."
@@ -21,13 +24,137 @@ npc.behavior_params = {
 	{ name = "ExitToBlock", type = world.NpcBehaviorParamType.DIRECTION },
 }
 
-npc.init = function(self, params)
-	-- TODO: block the exit, demand the toll from entering players, and step aside once
-	-- it is paid. This needs script API functions for exits, messages and inventories.
+---@class Params
+---@field Toll Item
+---@field ExitToBlock Direction
+
+---@class Instance
+---@field toll Item
+---@field exit_to_block Direction
+---@field angry_timer integer
+---@field peace_timer integer
+
+---@param self MobHandle
+---@param params Params
+function npc.init(self, params)
 	return {
 		toll = params.Toll,
 		exit_to_block = params.ExitToBlock,
+		angry_timer = 0,
+		peace_timer = 0,
 	}
+end
+
+---@param self MobHandle
+---@param instance Instance
+function npc.update(self, instance)
+    -- Decrement angry timer
+    if instance.angry_timer > 0 then
+        instance.angry_timer = instance.angry_timer - 1
+        if instance.angry_timer == 0 then
+            world.npc_set_disposition(self, world.NpcDisposition.NEUTRAL)
+        end
+    end
+
+    -- Decrement peace timer
+    if instance.peace_timer > 0 then
+        instance.peace_timer = instance.peace_timer - 1
+        if instance.peace_timer == 0 then
+            -- Block exit
+            room = world.mob_get_room(self)
+            world.room_set_exit_locked(room, instance.exit_to_block, true)
+
+            -- Remove toll from inventory
+            index = world.mob_find_inventory_item(self, instance.toll.name)
+            if index ~= -1 then
+                amount = world.mob_get_inventory_item_amount(self, index)
+                world.mob_remove_inventory_item(self, index, amount)
+            end
+        end
+    end
+end
+
+---@param self MobHandle
+---@param instance Instance
+---@param attacker MobHandle
+function npc.on_attacked(self, instance, attacker)
+    instance.angry_timer = TROLL_ANGRY_DURATION
+    instance.peace_timer = 0
+    world.npc_set_disposition(self, world.NpcDisposition.HOSTILE)
+    world.log("Troll was attacked, set disposition to hostile.")
+
+    -- Block exit
+    room = world.mob_get_room(self)
+    world.room_set_exit_locked(room, instance.exit_to_block, true)
+
+    return world.NPC_EVENT_PREVENT_DEFAULT
+end
+
+---@param self MobHandle
+---@param instance Instance
+---@param player MobHandle
+function npc.on_player_entered(self, instance, player)
+    if instance.peace_timer == 0 or instance.angry_timer == 0 then
+        player_race = world.player_get_race(player)
+        world.say_to_player(self, player, string.format("Stop, %s. You want pass? Must pay toll. Give me %d %s.",
+            player_race, instance.toll.amount, instance.toll.name))
+    end
+
+    return world.NPC_EVENT_PREVENT_DEFAULT
+end
+
+---@param self MobHandle
+---@param instance Instance
+---@param player MobHandle
+---@param added_to_index integer
+---@param amount integer
+function npc.on_item_given(self, instance, player, added_to_index, amount)
+    -- If troll is angry or pacified, ignore and allow default behavior
+    if instance.peace_timer ~= 0 or instance.angry_timer ~= 0 then
+        return
+    end
+
+    -- If player gives non-toll item, drop it on the floor
+    item_name = world.mob_get_inventory_item_name(self, added_to_index)
+    self_name = world.mob_get_name(self)
+    room = world.mob_get_room(self)
+    if item_name ~= instance.toll.name then
+        world.mob_drop_inventory_item(self, added_to_index, amount)
+        world.say_to_room(self, string.format("This not toll! Give me %s!", instance.toll.name))
+        world.message_room(room, string.format("%s dropped the %s on the floor.", self_name, item_name))
+
+        return world.NPC_EVENT_PREVENT_DEFAULT
+    end
+
+    -- If the player gave the toll but not the right amount, then complain
+    if world.mob_get_inventory_amount_of(self, instance.toll.name) < instance.toll.amount then
+        world.say_to_room(self, string.format("You think me no count? Me need %d %s!", instance.toll.amount, instance.toll.name))
+
+        return world.NPC_EVENT_PREVENT_DEFAULT
+    end
+
+    -- Otherwise, the toll is paid, unblock the exit
+    world.room_set_exit_locked(room, instance.exit_to_block, false)
+    instance.peace_timer = TROLL_PEACE_DURATION
+
+    world.message_room(room, string.format("%s grins and pockets the toll.", self_name))
+    world.say_to_room(self, string.format("Me see you are smart one. Me step aside now. Go on."))
+    world.message_room(room, string.format("%s stepped aside. The way %s is clear.", self_name, instance.exit_to_block))
+
+    return world.NPC_EVENT_PREVENT_DEFAULT
+end
+
+---@param self MobHandle
+---@param instance Instance
+---@return string
+function npc.get_status_description(self, instance)
+    self_name = world.mob_get_name(self)
+
+    if instance.peace_timer == 0 then
+        return string.format("%s is blocking the way %s.", self_name, instance.exit_to_block)
+    end
+
+    return string.format("%s has stepped aside. The way %s is clear.", self_name, instance.exit_to_block)
 end
 
 return npc

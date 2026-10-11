@@ -418,6 +418,7 @@ func (npc *Npc) spawnMob(world *World) {
 	// Init behavior
 	npc.setModeIdle()
 	npc.disposition = npcData.startingDisposition
+	log.Printf("NPC starting disposition - %s", npc.disposition.String())
 
 	npc.instance = lua.Nil()
 	npc.events = make([]NpcEvent, 0, 1)
@@ -458,7 +459,7 @@ func (npc *Npc) callInit(world *World) {
 	npc.instance = result
 }
 
-// Calls a script hook with the instance table and the NPC's mob handle, followed by args.
+// Calls a script hook with the NPC's mob handle and instance table, followed by args.
 // Returns the hook's first result, or false if the hook is not defined or if it failed.
 func (npc *Npc) callHook(world *World, hook *lua.Function, hookName string, args ...lua.Value) (lua.Value, bool) {
 	if hook == nil {
@@ -472,7 +473,7 @@ func (npc *Npc) callHook(world *World, hook *lua.Function, hookName string, args
 	}
 
 	luaArgs := make([]lua.Value, 0, len(args) + 2)
-	luaArgs = append(luaArgs, npc.instance, selfLuaHandle)
+	luaArgs = append(luaArgs, selfLuaHandle, npc.instance)
 	luaArgs = append(luaArgs, args...)
 	return npc.callFunction(world, hook, hookName, luaArgs...)
 }
@@ -712,13 +713,9 @@ func (npc *Npc) onEvent(world* World, event *NpcEvent) {
 			}
 
 			preventDefault := npc.callEventHook(world, NPC_DATA[npc.Id].onPlayerEntered, "on_player_entered", playerLuaHandle)
+			log.Printf("On player entered, prevent default? %v", preventDefault)
 			if preventDefault {
 				return
-			}
-
-			// Default
-			if npc.disposition == NPC_DISPOSITION_NEUTRAL {
-				npc.disposition = NPC_DISPOSITION_HOSTILE
 			}
 		}
 

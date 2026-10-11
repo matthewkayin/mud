@@ -157,14 +157,14 @@ func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, newRoomIn
 	})
 
 	// Fire event to NPCs
-	if occupantMob.PlayerCharacter != nil {
-		for _, handle := range newRoom.Occupants {
-			mob := world.Mobs.Get(handle)
-			if !mob.IsNpc()  {
+	if occupantMob.IsPlayer() {
+		for _, npcHandle := range newRoom.Occupants {
+			npcMob := world.Mobs.Get(npcHandle)
+			if !npcMob.IsNpc()  {
 				continue
 			}
 
-			mob.Npc.PushEvent(NpcEvent {
+			npcMob.Npc.PushEvent(NpcEvent {
 				Type: NPC_EVENT_TYPE_PLAYER_ENTERED,
 				Data: NpcEventPlayerEntered {
 					PlayerHandle: occupantHandle,

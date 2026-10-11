@@ -46,6 +46,102 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.Return()
 	},
 
+	// Sends a message to the specified player
+	//
+	// @param player MobHandle
+	// @param message string
+	"message_player": func(frame lua.Frame) lua.Outcome {
+		playerMob := frameGetMobArg(&frame, 0)
+		if !playerMob.IsPlayer() {
+			frame.ThrowArgError(0, fmt.Sprintf("Tried to message_player %s who is not a player.", playerMob.Data.Name))
+		}
+
+		// Get message from args
+		message, ok := frame.String(1)
+		if !ok {
+			frame.ThrowArgTypeError(1, lua.StringKind)
+		}
+
+		__world.messagePlayer(playerMob.PlayerCharacter.PlayerId, message)
+		return frame.Return()
+	},
+
+	// Sends a dialog message to the speaker's room.
+	// Dialog messages are prefixed with the speakers name:
+	// i.e. "Troll: 'This is a message'"
+	//
+	// @param speaker MobHandle
+	// @param message string
+	"say_to_room": func(frame lua.Frame) lua.Outcome {
+		speaker := frameGetMobArg(&frame, 0)
+
+		// Get message from args
+		message, ok := frame.String(2)
+		if !ok {
+			frame.ThrowArgTypeError(2, lua.StringKind)
+		}
+
+		__world.messageRoom(speaker.Data.Room, fmt.Sprintf("%s: '%s'", speaker.Data.Name, message))
+		return frame.Return()
+	},
+
+	// Sends a dialog message to a specified player.
+	// Dialog messages are prefixed with the speakers name:
+	// i.e. "Troll: 'This is a message'"
+	//
+	// @param speaker MobHandle
+	// @param player MobHandle
+	// @param message string
+	"say_to_player": func(frame lua.Frame) lua.Outcome {
+		speaker := frameGetMobArg(&frame, 0)
+		playerMob := frameGetPlayerArg(&frame, 1)
+
+		// Get message from args
+		message, ok := frame.String(2)
+		if !ok {
+			frame.ThrowArgTypeError(2, lua.StringKind)
+		}
+
+		__world.messagePlayer(playerMob.PlayerCharacter.PlayerId, fmt.Sprintf("%s: '%s'", speaker.Data.Name, message))
+		return frame.Return()
+	},
+
+	// Returns the number of updates that will occur in X minutes
+	//
+	// @param minutes integer
+	// @return integer
+	"time_minutes": func(frame lua.Frame) lua.Outcome {
+		minutes := frameGetIntegerArg(&frame, 0, "minutes")
+		return frame.ReturnNumber(float64((minutes * 60) / WORLD_SECONDS_PER_UPDATE))
+	},
+
+	// Returns the player's race
+	//
+	// @param player MobHandle
+	// @return string
+	"player_get_race": func(frame lua.Frame) lua.Outcome {
+		playerMob := frameGetPlayerArg(&frame, 0)
+		return frame.ReturnString(RACE_DATA[playerMob.PlayerCharacter.Race].Name)
+	},
+
+	// Returns the player's class
+	//
+	// @param player MobHandle
+	// @return string
+	"player_get_class": func(frame lua.Frame) lua.Outcome {
+		playerMob := frameGetPlayerArg(&frame, 0)
+		return frame.ReturnString(CLASS_DATA[playerMob.PlayerCharacter.Class].Name)
+	},
+
+	// Returns the player's job
+	//
+	// @param player MobHandle
+	// @return string
+	"player_get_job": func(frame lua.Frame) lua.Outcome {
+		playerMob := frameGetPlayerArg(&frame, 0)
+		return frame.ReturnString(JOB_DATA[playerMob.PlayerCharacter.Job].Name)
+	},
+
 	// Returns true if the mob exists
 	//
 	// @param handle MobHandle
@@ -230,6 +326,23 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.ReturnNumber(float64(item.Durability))
 	},
 
+	// Returns the index of the first occurance of an item in the mob's inventory
+	// Returns -1 if the item was not found.
+	//
+	// @param handle MobHandle
+	// @param item_name string
+	// @return integer, boolean
+	"mob_find_inventory_item": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		itemId := frameGetItemIdArg(&frame, 1)
+		index, found := mob.Data.Inventory.FindItem(itemId)
+		if !found {
+			return frame.ReturnNumber(-1)
+		}
+
+		return frame.ReturnNumber(float64(index))
+	},
+
 	// Returns the total amount of an item in the mob's inventory
 	//
 	// @param handle MobHandle
@@ -252,7 +365,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	"mob_drop_inventory_item": func(frame lua.Frame) lua.Outcome {
 		mob := frameGetMobArg(&frame, 0)
 		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
-		amount := frameGetIntegerArg(&frame, 2, "amount")
+		amount := frameGetInt32Arg(&frame, 2, "amount")
 		if amount <= 0 {
 			frame.ThrowArgError(2, "amount must be positive")
 		}
@@ -275,7 +388,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		mob := frameGetMobArg(&frame, 0)
 		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
 		target := frameGetMobArg(&frame, 2)
-		amount := frameGetIntegerArg(&frame, 3, "amount")
+		amount := frameGetInt32Arg(&frame, 3, "amount")
 		if amount <= 0 {
 			frame.ThrowArgError(3, "amount must be positive")
 		}
@@ -310,7 +423,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	"mob_add_inventory_item": func(frame lua.Frame) lua.Outcome {
 		mob := frameGetMobArg(&frame, 0)
 		itemId := frameGetItemIdArg(&frame, 1)
-		amount := frameGetIntegerArg(&frame, 2, "amount")
+		amount := frameGetInt32Arg(&frame, 2, "amount")
 		durability, hasDurability := frameGetOptionalIntegerArg(&frame, 3, "durability_percent")
 		if !hasDurability {
 			durability = 0
@@ -328,6 +441,26 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		})
 
 		return frame.ReturnNumber(float64(index))
+	},
+
+	// Removes an amount of the item at an index in the mob's inventory.
+	// The amount is limited to the size of the stack. Returns the amount dropped.
+	// Removing a whole stack moves the last item in the inventory to its index.
+	//
+	// @param handle MobHandle
+	// @param index integer
+	// @param amount integer
+	// @return integer
+	"mob_remove_inventory_item": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
+		amount := frameGetInt32Arg(&frame, 2, "amount")
+		if amount <= 0 {
+			frame.ThrowArgError(2, "amount must be positive")
+		}
+
+		item := mob.Data.Inventory.RemoveItems(index, amount)
+		return frame.ReturnNumber(float64(item.Amount))
 	},
 
 	// Returns the NPC's mode
@@ -485,6 +618,90 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		target.Data.Mana += healing
 		return frame.ReturnNumber(float64(healing))
 	},
+
+	// Returns the room's occupant count
+	//
+	// @param room integer
+	"room_get_occupant_count": func(frame lua.Frame) lua.Outcome {
+		roomIndex := frameGetRoomIndexArg(&frame, 0, "room")
+		room := &__world.Rooms[roomIndex]
+
+		return frame.ReturnNumber(float64(len(room.Occupants)))
+	},
+
+	// Returns the room occupant at the specified index
+	//
+	// @param room integer
+	// @param occupant_index integer
+	"room_get_occupant": func(frame lua.Frame) lua.Outcome {
+		roomIndex := frameGetRoomIndexArg(&frame, 0, "room")
+		occupantIndex := frameGetIntegerArg(&frame, 1, "occupant_index")
+
+		room := &__world.Rooms[roomIndex]
+		if occupantIndex < 0 || occupantIndex >= len(room.Occupants) {
+			frame.ThrowArgError(1, fmt.Sprintf("Occupant index %d is out of bounds for room %d (%s), which has occupant count %d",
+				occupantIndex, roomIndex, room.Name, len(room.Occupants)))
+		}
+
+		occupantHandle := room.Occupants[occupantIndex]
+		occupantLuaHandle, err := __world.getMobLuaHandle(occupantHandle)
+		if err != nil {
+			frame.ThrowError(err)
+		}
+		return frame.ReturnValue(occupantLuaHandle)
+	},
+
+	// Returns the room's exit in the specified direction. If there is no exit, returns world.ROOM_NONE
+	//
+	// @param room integer
+	// @param direction Direction
+	// @return boolean
+	"room_get_exit": func(frame lua.Frame) lua.Outcome {
+		roomIndex := frameGetRoomIndexArg(&frame, 0, "room")
+		direction := frameGetDirectionArg(&frame, 1)
+
+		room := &__world.Rooms[roomIndex]
+		return frame.ReturnNumber(float64(room.Exits[direction]))
+	},
+
+	// Returns true if the exit to the room is locked in the specified direction
+	//
+	// @param room integer
+	// @param direction Direction
+	// @return boolean
+	"room_is_exit_locked": func(frame lua.Frame) lua.Outcome {
+		roomIndex := frameGetRoomIndexArg(&frame, 0, "room")
+		direction := frameGetDirectionArg(&frame, 1)
+
+		room := &__world.Rooms[roomIndex]
+		if room.Exits[direction] == ROOM_NONE {
+			frame.ThrowArgError(0, fmt.Sprintf("Room %d (%s) has no %s exit.", roomIndex, room.Name, direction.String()))
+		}
+
+		return frame.ReturnBool(room.ExitIsLocked[direction])
+	},
+
+	// Sets the locked status of the room's exit.
+	//
+	// @param room integer
+	// @param direction Direction
+	// @param locked boolean
+	"room_set_exit_locked": func(frame lua.Frame) lua.Outcome {
+		roomIndex := frameGetRoomIndexArg(&frame, 0, "room")
+		direction := frameGetDirectionArg(&frame, 1)
+		locked, ok := frame.Bool(2)
+		if !ok {
+			frame.ThrowArgTypeError(2, lua.BoolKind)
+		}
+
+		room := &__world.Rooms[roomIndex]
+		if room.Exits[direction] == ROOM_NONE {
+			frame.ThrowArgError(0, fmt.Sprintf("Room %d (%s) has no %s exit.", roomIndex, room.Name, direction.String()))
+		}
+
+		room.SetExitLocked(__world, direction, locked)
+		return frame.Return()
+	},
 }
 
 func frameGetMobHandleArg(frame *lua.Frame, index int) MobHandle {
@@ -511,6 +728,15 @@ func frameGetMobArg(frame *lua.Frame, index int) *Mob {
 	return mob
 }
 
+func frameGetPlayerArg(frame *lua.Frame, index int) *Mob {
+	mob := frameGetMobArg(frame, index)
+	if !mob.IsPlayer() {
+		frame.ThrowArgError(index, fmt.Sprintf("Mob %s is not a Player.", mob.Data.Name))
+	}
+
+	return mob
+}
+
 func frameGetNpcArg(frame *lua.Frame, index int) *Npc {
 	mob := frameGetMobArg(frame, index)
 	if !mob.IsNpc() {
@@ -520,7 +746,7 @@ func frameGetNpcArg(frame *lua.Frame, index int) *Npc {
 	return mob.Npc
 }
 
-func frameGetIntegerArg(frame *lua.Frame, index int, name string) int32 {
+func frameGetInt32Arg(frame *lua.Frame, index int, name string) int32 {
 	value, ok := frame.Number(index)
 	if !ok {
 		frame.ThrowArgTypeError(index, lua.NumberKind)
@@ -532,7 +758,19 @@ func frameGetIntegerArg(frame *lua.Frame, index int, name string) int32 {
 	return int32(value)
 }
 
-func frameGetOptionalIntegerArg(frame *lua.Frame, index int, name string) (int32, bool) {
+func frameGetIntegerArg(frame *lua.Frame, index int, name string) int {
+	value, ok := frame.Number(index)
+	if !ok {
+		frame.ThrowArgTypeError(index, lua.NumberKind)
+	}
+	if math.Trunc(value) != value {
+		frame.ThrowArgError(index, fmt.Sprintf("%s must be an integer", name))
+	}
+
+	return int(value)
+}
+
+func frameGetOptionalIntegerArg(frame *lua.Frame, index int, name string) (int, bool) {
 	value, ok := frame.Argument(index)
 	if !ok {
 		return 0, false
@@ -545,7 +783,7 @@ func frameGetOptionalIntegerArg(frame *lua.Frame, index int, name string) (int32
 		frame.ThrowArgError(index, fmt.Sprintf("%s must be an integer", name))
 	}
 
-	return int32(number), true
+	return int(number), true
 }
 
 func frameGetInventoryIndexArg(frame *lua.Frame, index int, inventory *Inventory) int {
@@ -568,4 +806,26 @@ func frameGetItemIdArg(frame *lua.Frame, index int) ItemId {
 	}
 
 	return itemId
+}
+
+func frameGetRoomIndexArg(frame *lua.Frame, index int, name string) int {
+	roomIndex := frameGetIntegerArg(frame, 0, name)
+	if roomIndex < 0 || roomIndex >= len(__world.Rooms) {
+		frame.ThrowArgError(0, fmt.Sprintf("%d is not a valid room index", roomIndex))
+	}
+
+	return roomIndex
+}
+
+func frameGetDirectionArg(frame *lua.Frame, index int) Direction {
+	name, ok := frame.String(index)
+	if !ok {
+		frame.ThrowArgTypeError(index, lua.StringKind)
+	}
+	direction, exists := EnumFromString[Direction](name, DIRECTION_COUNT)
+	if !exists {
+		frame.ThrowArgError(index, fmt.Sprintf("%s is not a valid direction.", name))
+	}
+
+	return direction
 }

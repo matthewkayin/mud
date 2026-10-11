@@ -231,7 +231,7 @@ func TestNpcHookArguments(t *testing.T) {
 			init = function(self, params)
 				return { self = self, greeting = params.Greeting }
 			end,
-			get_status_description = function(instance, self)
+			get_status_description = function(self, instance)
 				return instance.greeting .. " " .. world.mob_get_name(self) .. " " .. tostring(instance.self == self)
 			end,
 		}

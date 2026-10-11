@@ -176,6 +176,7 @@ go generate
 
 The generator (`backend/luadefs_gen.go`, run through the `-generate-lua-defs` flag in `backend/main.go`) writes:
 - the opaque `MobHandle` class
+- the `Item` class, matching the `{ name, amount, durability }` table that `npcBehaviorParamToLua` passes for Item behavior params. Update both together.
 - each free constant as `world.<Name> = <value>` with a `---@type` annotation for its Lua type
 - each constant table as a LuaLS `---@enum`, in the order it's declared
 - a stub `function world.<name>(...) end` for each `SCRIPT_LIBRARY` entry, sorted by name

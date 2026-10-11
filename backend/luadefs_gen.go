@@ -44,6 +44,13 @@ func generateLuaDefs(path string) error {
 	output.WriteString("\n---An opaque reference to a mob. Compare with ==. It may refer to a mob that no longer exists; check with world.mob_exists.\n")
 	output.WriteString("---@class MobHandle\n")
 
+	// Matches the table built by npcBehaviorParamToLua in world/npc.go
+	output.WriteString("\n---A stack of items, such as the value of an Item NPC behavior param.\n")
+	output.WriteString("---@class Item\n")
+	output.WriteString("---@field name string\n")
+	output.WriteString("---@field amount integer\n")
+	output.WriteString("---@field durability integer\n")
+
 	for _, constant := range world.ScriptFreeConstants() {
 		valueText := constant.Value.String()
 		if constant.Value.Kind() == lua.StringKind {
