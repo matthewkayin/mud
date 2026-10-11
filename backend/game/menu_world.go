@@ -181,7 +181,7 @@ var MENU_WORLD = Menu {
 
 					*player.inbox <- fmt.Sprintf("Item: %s", itemData.Name)
 					*player.inbox <- fmt.Sprintf("Description: %s", itemData.Description)
-					*player.inbox <- fmt.Sprintf("Type: %s", world.ItemTypeToString(itemData.ItemType))
+					*player.inbox <- fmt.Sprintf("Type: %s", itemData.Kind.String())
 					*player.inbox <- fmt.Sprintf("Size: %d", itemData.Size)
 
 					// Stat requirements
@@ -215,13 +215,13 @@ var MENU_WORLD = Menu {
 					}
 
 					// Item type specific description
-					switch itemData.ItemType {
-						case world.ITEM_TYPE_EQUIPMENT_OUTFIT: {
+					switch itemData.Kind {
+						case world.ITEM_KIND_EQUIPMENT_OUTFIT: {
 							outfitData := itemData.Data.(*world.ItemDataOutfit)
 							*player.inbox <- fmt.Sprintf("Armor: %d", outfitData.Armor)
 							*player.inbox <- fmt.Sprintf("Stealth Penalty: %d%%", int(outfitData.StealthPenality * 100))
 						}
-						case world.ITEM_TYPE_EQUIPMENT_ONE_HANDED, world.ITEM_TYPE_EQUIPMENT_TWO_HANDED: {
+						case world.ITEM_KIND_EQUIPMENT_ONE_HANDED, world.ITEM_KIND_EQUIPMENT_TWO_HANDED: {
 							weaponData := itemData.Data.(*world.ItemDataWeapon)
 							*player.inbox <- fmt.Sprintf("Damage: %d", weaponData.Damage)
 						}
@@ -382,7 +382,7 @@ var MENU_WORLD = Menu {
 				playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
 
 				// Determine the index of the target room
-				direction, directionFound := world.DirectionFromString(args[0])
+				direction, directionFound := world.EnumFromString[world.Direction](args[0], world.DIRECTION_COUNT)
 				if !directionFound {
 					*player.inbox <- fmt.Sprintf("'%s' is not a direction. The directions are 'north', 'south', 'east', and 'west'.", args[0])
 					return true
@@ -396,8 +396,16 @@ var MENU_WORLD = Menu {
 				}
 
 				// Check if the exit is locked
-				if playerRoom.ExitIsLocked[direction] {
-					*player.inbox <- fmt.Sprintf("The %s exit is blocked.", world.DirectionToString(direction))
+				if playerRoom.IsExitLocked(direction) {
+					*player.inbox <- fmt.Sprintf("The %s exit is locked.", direction.String())
+					return true
+				}
+
+				// Check if an NPC is blocking the exit
+				blockingNpcHandle, isExitBlocked := playerRoom.GetNpcBlockingExit(gamestate.world, direction)
+				if isExitBlocked {
+					blockingNpcMob := gamestate.world.Mobs.Get(blockingNpcHandle)
+					*player.inbox <- fmt.Sprintf("%s is blocking the way %s.", blockingNpcMob.GetName(), direction.String())
 					return true
 				}
 
@@ -820,9 +828,9 @@ var MENU_WORLD = Menu {
 					playerMob.Data.Name, result.item.GetNameWithAmount(), targetMob.Data.Name))
 
 				if targetMob.Npc != nil {
-					targetMob.Npc.OnEvent(gamestate.world, world.BehaviorEvent {
-						Type: world.BEHAVIOR_EVENT_TYPE_ITEM_GIVEN,
-						Data: world.BehaviorEventItemGiven {
+					targetMob.Npc.FireEvent(gamestate.world, world.NpcEvent {
+						Type: world.NPC_EVENT_TYPE_ITEM_GIVEN,
+						Data: world.NpcEventItemGiven {
 							PlayerHandle: player.mobHandle,
 							AddedToIndex: result.addedToIndex,
 							Amount: result.item.Amount,
@@ -1077,7 +1085,7 @@ var MENU_WORLD = Menu {
 					}
 
 					var slotFound bool
-					slot, slotFound = world.EquipmentSlotForItemType(itemData.ItemType)
+					slot, slotFound = world.EquipmentSlotForItemKind(itemData.Kind)
 					if !slotFound {
 						*player.inbox <- fmt.Sprintf("%s cannot be equipped.", item.GetNameWithCondition())
 						return true
@@ -1390,8 +1398,8 @@ var MENU_WORLD = Menu {
 				item := &playerMob.Data.Inventory.Items[itemIndex]
 				itemData := world.ITEM_DATA[item.Id]
 
-				switch itemData.ItemType {
-					case world.ITEM_TYPE_CONSUMABLE:
+				switch itemData.Kind {
+					case world.ITEM_KIND_CONSUMABLE:
 						if targetHandle != player.mobHandle {
 							*player.inbox <- "That item can only be used on yourself."
 							return true
@@ -1406,7 +1414,7 @@ var MENU_WORLD = Menu {
 						}
 
 						return true
-					case world.ITEM_TYPE_SPELL_SCROLL:
+					case world.ITEM_KIND_SPELL_SCROLL:
 						scrollData := itemData.Data.(*world.ItemDataSpellScroll)
 						spellInfo := world.SPELL_DATA[scrollData.Spell]
 
@@ -1425,8 +1433,8 @@ var MENU_WORLD = Menu {
 						}
 
 						return true
-					case world.ITEM_TYPE_RECIPE:
-						var recipe world.Recipe = itemData.Data.(*world.ItemDataRecipe).Recipe
+					case world.ITEM_KIND_RECIPE:
+						var recipe world.RecipeId = itemData.Data.(*world.ItemDataRecipe).Recipe
 						recipeData := world.RECIPE_DATA[recipe]
 
 						if recipeData.Job != player.character.Job {
@@ -1592,7 +1600,7 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 			roomName = gamestate.world.Rooms[room.Exits[direction]].Name
 		}
 
-		*player.inbox <- fmt.Sprintf("To the %s is %s.", world.DirectionToString(direction), roomName)
+		*player.inbox <- fmt.Sprintf("To the %s is %s.", direction.String(), roomName)
 		exitFound = true
 	}
 	if !exitFound {
@@ -1668,7 +1676,7 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 func printMobEquipmentList(player *Player, mob *world.Mob) {
 	// Determine if we should skip the offhand item slot
 	mainHandItem := mob.Data.Equipment.Get(world.EQUIPMENT_SLOT_MAIN_HAND)
-	shouldSkipOffhand := mainHandItem != nil && world.ITEM_DATA[mainHandItem.Id].ItemType == world.ITEM_TYPE_EQUIPMENT_TWO_HANDED
+	shouldSkipOffhand := mainHandItem != nil && world.ITEM_DATA[mainHandItem.Id].Kind == world.ITEM_KIND_EQUIPMENT_TWO_HANDED
 
 	for index := range world.EQUIPMENT_SLOT_COUNT {
 		slot := world.EquipmentSlot(index)
@@ -1691,10 +1699,10 @@ func printMobEquipmentList(player *Player, mob *world.Mob) {
 
 		// Determine slot name
 		var slotName string
-		if slot == world.EQUIPMENT_SLOT_MAIN_HAND && item != nil && itemData.ItemType == world.ITEM_TYPE_EQUIPMENT_TWO_HANDED {
+		if slot == world.EQUIPMENT_SLOT_MAIN_HAND && item != nil && itemData.Kind == world.ITEM_KIND_EQUIPMENT_TWO_HANDED {
 			slotName = "Both Hands"
 		} else {
-			slotName = world.EquipmentSlotToString(slot)
+			slotName = slot.String()
 		}
 
 		*player.inbox <- fmt.Sprintf("\t%s - %s", slotName, itemName)

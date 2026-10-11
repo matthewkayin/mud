@@ -2,6 +2,7 @@ package world
 
 import (
 	"fmt"
+	"slices"
 )
 
 // Validate checks the world's saved data for problems that would break the game
@@ -39,7 +40,7 @@ func (world *World) Validate() []string {
 			}
 			if exitRoomIndex < 0 || exitRoomIndex >= len(world.Rooms) {
 				addProblem("%s has a %s exit to room %d, which does not exist.",
-					roomName, DirectionToString(direction), exitRoomIndex)
+					roomName, direction.String(), exitRoomIndex)
 				continue
 			}
 
@@ -47,16 +48,32 @@ func (world *World) Validate() []string {
 			oppositeDirection := DirectionOppositeOf(direction)
 			if exitRoom.Exits[oppositeDirection] != roomIndex {
 				addProblem("%s has a %s exit to room %d, but room %d has no %s exit back.",
-					roomName, DirectionToString(direction), exitRoomIndex, exitRoomIndex, DirectionToString(oppositeDirection))
-			} else if exitRoom.ExitIsLockedOnReset[oppositeDirection] != room.ExitIsLockedOnReset[direction] {
-				addProblem("%s %s exit and room %d %s exit disagree on whether they are locked.",
-					roomName, DirectionToString(direction), exitRoomIndex, DirectionToString(oppositeDirection))
+					roomName, direction.String(), exitRoomIndex, exitRoomIndex, oppositeDirection.String())
 			}
 
 			if exitRoom.EditorPosition != directionStepFrom(room.EditorPosition, direction) {
 				addProblem("%s has a %s exit to room %d, but room %d is not %s of it in the editor.",
-					roomName, DirectionToString(direction), exitRoomIndex, exitRoomIndex, DirectionToString(direction))
+					roomName, direction.String(), exitRoomIndex, exitRoomIndex, direction.String())
 			}
+		}
+
+		isDirectionLocked := [DIRECTION_COUNT]bool{}
+		for lockIndex, lock := range room.Locks {
+			if lock.Type < 0 || lock.Type >= LOCK_TYPE_COUNT {
+				addProblem("%s lock %d has invalid lock type %d.", roomName, lockIndex, lock.Type)
+			}
+			if lock.Direction < 0 || lock.Direction >= DIRECTION_COUNT {
+				addProblem("%s lock %d has invalid direction %d.", roomName, lockIndex, lock.Direction)
+				continue
+			}
+			if room.Exits[lock.Direction] == ROOM_NONE {
+				addProblem("%s has a lock on its %s exit, but it has no %s exit.",
+					roomName, lock.Direction.String(), lock.Direction.String())
+			}
+			if isDirectionLocked[lock.Direction] {
+				addProblem("%s has more than one lock on its %s exit.", roomName, lock.Direction.String())
+			}
+			isDirectionLocked[lock.Direction] = true
 		}
 
 		problems = append(problems, validateDropTable(&room.DropTable, roomName)...)
@@ -73,10 +90,11 @@ func (world *World) Validate() []string {
 		npc := &world.Npcs[npcIndex]
 		npcName := fmt.Sprintf("NPC %d", npcIndex)
 
-		if npc.Type < 0 || int(npc.Type) >= len(NPC_DATA) {
-			addProblem("%s has invalid NPC type %d.", npcName, npc.Type)
+		if !npcIdIsValid(npc.Id) {
+			addProblem("%s has invalid NPC id %d.", npcName, npc.Id)
 		} else {
-			npcName = fmt.Sprintf("NPC %d (%s)", npcIndex, NPC_DATA[npc.Type].Name)
+			npcName = fmt.Sprintf("NPC %d (%s)", npcIndex, NPC_DATA[npc.Id].Id)
+			problems = append(problems, validateNpcBehaviorParams(npc, npcName)...)
 		}
 
 		if npc.SpawnRoom < 0 || npc.SpawnRoom >= len(world.Rooms) {
@@ -85,8 +103,7 @@ func (world *World) Validate() []string {
 		if npc.LevelRange.Min < 1 || npc.LevelRange.Min > npc.LevelRange.Max {
 			addProblem("%s has invalid level range %d-%d.", npcName, npc.LevelRange.Min, npc.LevelRange.Max)
 		}
-
-		problems = append(problems, validateDropTable(&npc.DropTable, npcName)...)
+		problems = append(problems, validateDropTable(&npc.DropTableOverride, npcName + " override")...)
 	}
 
 	return problems
@@ -127,6 +144,48 @@ func validateDropTable(dropTable *DropTable, ownerName string) []string {
 		}
 	}
 
+	return problems
+}
+
+func validateNpcBehaviorParams(npc *Npc, npcName string) []string {
+	problems := []string{}
+	npcData := NPC_DATA[npc.Id]
+
+	for name, paramType := range npcData.BehaviorParams {
+		value, exists := npc.BehaviorParams[name]
+		if !exists {
+			problems = append(problems, fmt.Sprintf("%s is missing behavior param '%s'.", npcName, name))
+			continue
+		}
+		if !npcBehaviorParamHasType(paramType, value) {
+			problems = append(problems, fmt.Sprintf("%s behavior param '%s' is not of type %s.", npcName, name, paramType.String()))
+			continue
+		}
+
+		switch paramType {
+			case NPC_BEHAVIOR_PARAM_TYPE_ITEM: {
+				item := value.(Item)
+				if !itemIdIsValid(item.Id) {
+					problems = append(problems, fmt.Sprintf("%s behavior param '%s' has invalid item id %d.", npcName, name, item.Id))
+				}
+			}
+			case NPC_BEHAVIOR_PARAM_TYPE_DIRECTION: {
+				direction := value.(Direction)
+				if direction < 0 || direction >= DIRECTION_COUNT {
+					problems = append(problems, fmt.Sprintf("%s behavior param '%s' has invalid direction %d.", npcName, name, direction))
+				}
+			}
+		}
+	}
+
+	for name := range npc.BehaviorParams {
+		_, isDeclared := npcData.BehaviorParams[name]
+		if !isDeclared {
+			problems = append(problems, fmt.Sprintf("%s has behavior param '%s', which NPC '%s' does not declare.", npcName, name, npcData.Id))
+		}
+	}
+
+	slices.Sort(problems)
 	return problems
 }
 

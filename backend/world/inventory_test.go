@@ -5,11 +5,13 @@ import (
 )
 
 func TestAmountThatFits(t *testing.T) {
+	primeTestData()
+
 	inventory := Inventory {
 		// Size 10 + 5 * 2 = 20
 		Items: []Item {
-			{ Id: ITEM_SWORD, Amount: 1 },
-			{ Id: ITEM_POTION_HEALTH, Amount: 2 },
+			{ Id: TEST_ITEM_SWORD, Amount: 1 },
+			{ Id: TEST_ITEM_POTION_HEALTH, Amount: 2 },
 		},
 	}
 
@@ -20,12 +22,12 @@ func TestAmountThatFits(t *testing.T) {
 		capacity int32
 		expected int32
 	}{
-		{ "unlimited", ITEM_POTION_HEALTH, 50, INVENTORY_CAPACITY_UNLIMITED, 50 },
-		{ "size zero", ITEM_GOLD, 1000, 20, 1000 },
-		{ "all fit", ITEM_POTION_HEALTH, 2, 30, 2 },
-		{ "partial", ITEM_POTION_HEALTH, 5, 32, 2 },
-		{ "none fit", ITEM_POTION_HEALTH, 5, 24, 0 },
-		{ "already over capacity", ITEM_POTION_HEALTH, 1, 10, 0 },
+		{ "unlimited", TEST_ITEM_POTION_HEALTH, 50, INVENTORY_CAPACITY_UNLIMITED, 50 },
+		{ "size zero", TEST_ITEM_GOLD, 1000, 20, 1000 },
+		{ "all fit", TEST_ITEM_POTION_HEALTH, 2, 30, 2 },
+		{ "partial", TEST_ITEM_POTION_HEALTH, 5, 32, 2 },
+		{ "none fit", TEST_ITEM_POTION_HEALTH, 5, 24, 0 },
+		{ "already over capacity", TEST_ITEM_POTION_HEALTH, 1, 10, 0 },
 	}
 	for _, testCase := range testCases {
 		result := inventory.AmountThatFits(testCase.id, testCase.amount, testCase.capacity)
@@ -36,9 +38,11 @@ func TestAmountThatFits(t *testing.T) {
 }
 
 func TestHasSpaceFor(t *testing.T) {
+	primeTestData()
+
 	inventory := Inventory {
 		Items: []Item {
-			{ Id: ITEM_SWORD, Amount: 1 },
+			{ Id: TEST_ITEM_SWORD, Amount: 1 },
 		},
 	}
 
@@ -57,16 +61,18 @@ func TestHasSpaceFor(t *testing.T) {
 }
 
 func TestSize(t *testing.T) {
+	primeTestData()
+
 	inventory := Inventory {
 		Items: []Item {
-			{ Id: ITEM_SWORD, Amount: 1 },
-			{ Id: ITEM_SWORD, Amount: 1 },
-			{ Id: ITEM_POTION_HEALTH, Amount: 5 },
-			{ Id: ITEM_GOLD, Amount: 5000 },
+			{ Id: TEST_ITEM_SWORD, Amount: 1 },
+			{ Id: TEST_ITEM_SWORD, Amount: 1 },
+			{ Id: TEST_ITEM_POTION_HEALTH, Amount: 5 },
+			{ Id: TEST_ITEM_GOLD, Amount: 5000 },
 		},
 	}
 
-	expectedSize := (ITEM_DATA[ITEM_SWORD].Size * 2) + (ITEM_DATA[ITEM_POTION_HEALTH].Size * 5)
+	expectedSize := (ITEM_DATA[TEST_ITEM_SWORD].Size * 2) + (ITEM_DATA[TEST_ITEM_POTION_HEALTH].Size * 5)
 	if inventory.Size() != expectedSize {
 		t.Errorf("Inventory size should be equal to the size of all items.")
 	}

@@ -1,16 +1,15 @@
 package world
 
+import (
+	"fmt"
+	"log"
+
+	"github.com/mmcdole/lunar"
+)
+
 const RECIPE_OUTPUT_MAX_DURABILITY = -1
 
-type Recipe int
-const (
-	RECIPE_HEALTH_POTION = iota
-	RECIPE_MANA_POTION
-	RECIPE_CURE_BOOK
-	RECIPE_FIREBOLT_BOOK
-	RECIPE_SWORD
-	RECIPE_AXE
-)
+type RecipeId int
 
 type RecipeMaterial struct {
 	Id ItemId
@@ -25,63 +24,154 @@ type RecipeData struct {
 	Output Item
 }
 
-var RECIPE_DATA = map[Recipe]*RecipeData {
-	RECIPE_HEALTH_POTION: {
-		Name: "Potion of Health",
-		Job: JOB_ALCHEMIST,
-		Level: 1,
-		Materials: []RecipeMaterial {
-			{ Id: ITEM_DUMMY_MATERIAL, Amount: 10 },
-		},
-		Output: Item {
-			Id: ITEM_POTION_HEALTH,
-			Amount: 1,
-		},
-	},
+var RECIPE_DATA []*RecipeData
+var RECIPE_NAME_TO_ID map[string]RecipeId
 
-	RECIPE_MANA_POTION: {
-		Name: "Potion of Mana",
-		Job: JOB_ALCHEMIST,
-		Level: 2,
-		Materials: []RecipeMaterial {
-			{ Id: ITEM_DUMMY_MATERIAL, Amount: 10 },
-		},
-		Output: Item {
-			Id: ITEM_POTION_MANA,
-			Amount: 1,
-		},
-	},
+// Relative to the world data folder
+const RECIPE_DATA_FOLDER = "recipes"
 
-	RECIPE_SWORD: {
-		Name: "Sword",
-		Job: JOB_BLACKSMITH,
-		Level: 1,
-		Materials: []RecipeMaterial {
-			{ Id: ITEM_AXE, Amount: 2 },
-			{ Id: ITEM_DUMMY_MATERIAL, Amount: 5 },
-		},
-		Output: Item {
-			Id: ITEM_SWORD,
-			Amount: 1,
-			Durability: RECIPE_OUTPUT_MAX_DURABILITY,
-		},
-	},
+// LOAD
 
-	RECIPE_AXE: {
-		Name: "Axe",
-		Job: JOB_BLACKSMITH,
-		Level: 1,
-		Materials: []RecipeMaterial {
-			{ Id: ITEM_SWORD, Amount: 2 },
-			{ Id: ITEM_DUMMY_MATERIAL, Amount: 5 },
-		},
-		Output: Item {
-			Id: ITEM_AXE,
-			Amount: 1,
-			Durability: RECIPE_OUTPUT_MAX_DURABILITY,
-		},
-	},
+// Loads each recipe script and maps its name to a RecipeId, without parsing the rest of the recipe.
+// This lets items reference recipes by name before the recipes themselves are parsed.
+// The returned tables are indexed by RecipeId and should be passed to loadRecipeData once items are loaded.
+func (world *World) loadRecipeTables() []*lua.Table {
+	// Read recipe folder
+	log.Printf("Loading recipe tables...")
+	paths, err := scriptGetFilesFrom(world.dataFolder, RECIPE_DATA_FOLDER)
+	if err != nil {
+		log.Fatalf("Error opening recipe data folder: %s", err.Error())
+	}
+
+	recipeTables := make([]*lua.Table, 0, len(paths))
+	RECIPE_DATA = make([]*RecipeData, len(paths))
+	RECIPE_NAME_TO_ID = make(map[string]RecipeId)
+
+	for _, path := range paths {
+		// Open script
+		table, err := world.scriptLoadTable(path)
+		if err != nil {
+			log.Fatalf("%s: %s", path, err.Error())
+		}
+
+		// Get recipe name
+		parser := ScriptParser{}
+		recipeName := parser.getString(table, "name")
+		if len(parser.problems) != 0 {
+			log.Fatalf("%s: %s", path, parser.getError().Error())
+		}
+
+		// Check for duplicates
+		_, duplicateRecipeName := RECIPE_NAME_TO_ID[recipeName]
+		if duplicateRecipeName {
+			log.Fatalf("Recipe %s has name '%s' which is a duplicate of another recipe.", path, recipeName)
+		}
+
+		// Store recipe table
+		RECIPE_NAME_TO_ID[recipeName] = RecipeId(len(recipeTables))
+		recipeTables = append(recipeTables, table)
+	}
+
+	log.Printf("All recipe tables have been loaded.")
+	return recipeTables
 }
+
+// Parses the recipe tables returned by loadRecipeTables. Must be called after loadItemData.
+func (world *World) loadRecipeData(recipeTables []*lua.Table) {
+	log.Printf("Loading recipe data...")
+
+	for index, table := range recipeTables {
+		// Parse recipe data
+		parser := ScriptParser{}
+		recipeData := parser.parseRecipe(table)
+		if recipeData == nil {
+			recipeName, _ := table.RawGetString("name").AsString()
+			log.Fatalf("Recipe '%s': %s", recipeName, parser.getError().Error())
+		}
+
+		// Store recipe in RECIPE_DATA
+		RECIPE_DATA[index] = recipeData
+		log.Printf("Loaded recipe '%s'.", recipeData.Name)
+	}
+
+	log.Printf("All recipe data has been loaded.")
+}
+
+func (parser *ScriptParser) parseRecipe(table *lua.Table) *RecipeData {
+	recipeData := &RecipeData{}
+
+	recipeData.Name = parser.getString(table, "name")
+
+	jobName := parser.getString(table, "job")
+	var err error
+	recipeData.Job, err = JobIdFromString(jobName)
+	parser.addProblem(err)
+
+	recipeData.Level = parser.getInt32(table, "level")
+	if recipeData.Level <= 0 {
+		parser.addProblem(fmt.Errorf("field 'level' must be greater than 0, got %d", recipeData.Level))
+	}
+
+	// Materials
+	materialsTable := parser.getTable(table, "materials")
+	if materialsTable != nil {
+		materialCount := materialsTable.RawLen()
+		if materialCount == 0 {
+			parser.addProblem(fmt.Errorf("field 'materials' must not be empty"))
+		}
+
+		recipeData.Materials = make([]RecipeMaterial, 0, materialCount)
+		for index := 1; index <= materialCount; index++ {
+			key := fmt.Sprintf("materials[%d]", index)
+			materialTable, ok := materialsTable.RawGetInt(index).AsTable()
+			if !ok {
+				parser.addProblem(fmt.Errorf("field '%s' must be a table", key))
+				continue
+			}
+
+			itemId, amount := parser.parseRecipeItem(materialTable, key)
+			recipeData.Materials = append(recipeData.Materials, RecipeMaterial {
+				Id: itemId,
+				Amount: amount,
+			})
+		}
+	}
+
+	// Output
+	outputTable := parser.getTable(table, "output")
+	if outputTable != nil {
+		itemId, amount := parser.parseRecipeItem(outputTable, "output")
+		recipeData.Output = Item {
+			Id: itemId,
+			Amount: amount,
+			Durability: RECIPE_OUTPUT_MAX_DURABILITY,
+		}
+	}
+
+	if len(parser.problems) != 0 {
+		return nil
+	}
+
+	return recipeData
+}
+
+// Parses a table of the form { item = "<item name>", amount = N }
+func (parser *ScriptParser) parseRecipeItem(table *lua.Table, key string) (ItemId, int32) {
+	itemName := parser.getString(table, "item")
+	itemId, exists := ITEM_NAME_TO_ID[itemName]
+	if !exists {
+		parser.addProblem(fmt.Errorf("field '%s' references item '%s' which does not exist", key, itemName))
+	}
+
+	amount := parser.getInt32(table, "amount")
+	if amount <= 0 {
+		parser.addProblem(fmt.Errorf("field '%s' amount must be greater than 0, got %d", key, amount))
+	}
+
+	return itemId, amount
+}
+
+// HELPERS
 
 func (recipeData *RecipeData) NetItemSize(batchAmount int32) int32 {
 	var netSize int32 = 0

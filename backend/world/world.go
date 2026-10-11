@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"encoding/json"
+	"github.com/mmcdole/lunar"
 )
 
 const WORLD_DATA_FOLDER = "./data"
@@ -18,6 +19,9 @@ const WORLD_RESET_INTERVAL = (60 * 60) / WORLD_SECONDS_PER_UPDATE
 
 type World struct {
 	Events []Event `json:"-"`
+	luaState *lua.State
+	mobHandleType *lua.UserDataType[MobHandle]
+	dataFolder string
 
 	Characters map[string]*Character `json:"-"`
 	PlayerCharacters map[int][]string `json:"-"`
@@ -27,6 +31,12 @@ type World struct {
 	Npcs []Npc
 
 	resetTimer int
+
+	// True while a script function called by scriptCall is running
+	scriptIsRunning bool
+	// NPC events fired while a script was running, handled once it returns
+	deferredNpcEvents []deferredNpcEvent
+	isHandlingDeferredNpcEvents bool
 }
 
 func WorldInit() *World {
@@ -43,8 +53,11 @@ func WorldInit() *World {
 	}
 	defer file.Close()
 
-	// Decode JSON into world object
+	// Load script data. This must happen before decoding, since saved data references it by name
 	world := &World{}
+	world.LoadData(WORLD_DATA_FOLDER)
+
+	// Decode JSON into world object
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(world)
 	if err != nil {
@@ -55,7 +68,7 @@ func WorldInit() *World {
 	problems := world.Validate()
 	if len(problems) != 0 {
 		log.Printf("World validation encountered problems:")
-		for problem := range problems {
+		for _, problem := range problems {
 			log.Print(problem)
 		}
 		log.Fatalf("Unable to load world because of validation issues.")
@@ -69,6 +82,42 @@ func WorldInit() *World {
 
 	log.Printf("World initialized.")
 	return world
+}
+
+// Creates a world with only the script data loaded from the data folder. WorldInit uses this before
+// loading the world JSON, and the world editor uses it to read and validate world files.
+func (world *World) LoadData(dataFolder string) {
+	world.scriptInit(dataFolder)
+	world.loadRaceData()
+	world.loadJobData()
+	world.loadSpellData()
+	recipeTables := world.loadRecipeTables()
+	world.loadItemData()
+	world.loadRecipeData(recipeTables)
+	world.loadClassData()
+	world.loadNpcData()
+}
+
+func (world *World) getMobLuaHandle(handle MobHandle) (lua.Value, error) {
+	mob, exists := world.Mobs.GetIfExists(handle)
+
+	// If a cached value already exists, return it
+	if exists && mob.luaHandle != nil {
+		return mob.luaHandle.Value(), nil
+	}
+
+	// Otherwise, alloc a new one
+	luaHandle, err := world.mobHandleType.New(handle)
+	if err != nil {
+		return lua.Nil(), err
+	}
+
+	// And if the mob exists, cache the new lua handle onto the mob
+	if exists {
+		mob.luaHandle = luaHandle
+	}
+
+	return luaHandle.Value(), nil
 }
 
 func (world *World) Update() {

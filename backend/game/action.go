@@ -25,7 +25,7 @@ type ActionAttack struct {
 }
 
 type ActionCast struct {
-	spell world.Spell
+	spell world.SpellId
 	target world.MobHandle
 }
 
@@ -36,7 +36,7 @@ type ActionUseItem struct {
 
 type ActionCraftItem struct {
 	amount int32
-	target world.Recipe
+	target world.RecipeId
 }
 
 type ActionTaunt struct {

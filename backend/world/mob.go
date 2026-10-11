@@ -2,8 +2,10 @@ package world
 
 import (
 	"fmt"
+	"log"
 	"math/rand/v2"
 	"slices"
+	"github.com/mmcdole/lunar"
 )
 
 const MOB_PLAYER_NONE = -1
@@ -66,17 +68,20 @@ type Mob struct {
 
 	flags MobFlag
 
-	castSpell Spell
+	castSpell SpellId
 	castTimer int32
 	useItemId ItemId
 
-	craftItemRecipe Recipe
+	craftItemRecipe RecipeId
 	craftItemAmount int32
 
 	escapeChance float32
 	alertness float32
 	tauntCooldown float32
 	fuzzyNumber int
+
+	// Created on first use by getLuaHandle so that each mob has one handle userdata
+	luaHandle *lua.UserData
 }
 
 func MobInit(data *MobData) Mob {
@@ -143,7 +148,6 @@ func (mob *Mob) IsInCombat(world *World) bool {
 	return slices.ContainsFunc(world.Rooms[mob.Data.Room].Occupants, func(handle MobHandle) bool {
 		occupant := world.Mobs.Get(handle)
 		return occupant.IsNpc() &&
-			occupant.Npc.mode != NPC_MODE_SLEEP &&
 			occupant.Npc.disposition == NPC_DISPOSITION_HOSTILE
 	})
 }
@@ -211,7 +215,7 @@ func (mob *Mob) SetModeAttack(world *World, mobHandle MobHandle, targetHandle Mo
 	mob.Target = targetHandle
 }
 
-func (mob *Mob) SetModeCast(world *World, mobHandle MobHandle, spell Spell, targetHandle MobHandle) {
+func (mob *Mob) SetModeCast(world *World, mobHandle MobHandle, spell SpellId, targetHandle MobHandle) {
 	mob.Mode = MOB_MODE_CAST
 	mob.Target = targetHandle
 	mob.castSpell = spell
@@ -224,7 +228,7 @@ func (mob *Mob) SetModeUseItem(world *World, mobHandle MobHandle, itemId ItemId,
 	mob.useItemId = itemId
 }
 
-func (mob *Mob) SetModeCraftItem(world *World, mobHandle MobHandle, recipe Recipe, amount int32) {
+func (mob *Mob) SetModeCraftItem(world *World, mobHandle MobHandle, recipe RecipeId, amount int32) {
 	mob.Mode = MOB_MODE_CRAFT_ITEM
 	mob.craftItemRecipe = recipe
 	mob.craftItemAmount = amount
@@ -267,6 +271,21 @@ func (mob *Mob) Update(world *World) {
 			// Check if target exists
 			targetMob, targetExists := mob.getTargetIfExists(world)
 			if !targetExists {
+				break
+			}
+
+			// Check if caster has enough mana
+			spellData := SPELL_DATA[mob.castSpell]
+			if mob.Data.Mana < spellData.ManaCost {
+				mob.Mode = MOB_MODE_IDLE
+				world.messageRoom(mob.Data.Room, fmt.Sprintf("%s tried to cast %s, but they don't have enough mana.", mob.GetName(), spellData.Name))
+				break
+			}
+
+			// Check spell timer
+			if mob.castTimer > 0 {
+				mob.castTimer--
+				world.messageRoom(mob.Data.Room, fmt.Sprintf("%s is charging a spell...", mob.GetName()))
 				break
 			}
 
@@ -366,9 +385,9 @@ func (mob *Mob) damage(world *World, attackerHandle MobHandle, damage int32) {
 	mob.alertness = MOB_ALERTNESS_MAX
 
 	if mob.IsNpc() {
-		mob.Npc.OnEvent(world, BehaviorEvent {
-			Type: BEHAVIOR_EVENT_TYPE_ATTACKED,
-			Data: BehaviorEventAttacked {
+		mob.Npc.FireEvent(world, NpcEvent {
+			Type: NPC_EVENT_TYPE_ATTACKED,
+			Data: NpcEventAttacked {
 				AttackerHandle: attackerHandle,
 			},
 		})
@@ -383,8 +402,8 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	if weapon != nil {
 		itemData = ITEM_DATA[weapon.Id]
 		heldItemIsWeapon =
-			itemData.ItemType == ITEM_TYPE_EQUIPMENT_ONE_HANDED ||
-			itemData.ItemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED
+			itemData.Kind == ITEM_KIND_EQUIPMENT_ONE_HANDED ||
+			itemData.Kind == ITEM_KIND_EQUIPMENT_TWO_HANDED
 	}
 
 	// Don't attack with off-hand unless there is a weapon in off-hand
@@ -574,7 +593,7 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 	itemData := ITEM_DATA[item.Id]
 
 	item.Durability--
-	if item.Durability == 0 {
+	if item.Durability <= 0 {
 		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s's %s broke!", mob.GetName(), itemData.Name))
 		_, messages, _ := mob.unequip(slot)
 		for _, message := range messages {
@@ -603,8 +622,8 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 	itemIsSharp := item.Durability > maxDurability
 	if itemWasSharp && !itemIsSharp {
 		itemIsWeapon :=
-			itemData.ItemType == ITEM_TYPE_EQUIPMENT_ONE_HANDED ||
-			itemData.ItemType == ITEM_TYPE_EQUIPMENT_TWO_HANDED
+			itemData.Kind == ITEM_KIND_EQUIPMENT_ONE_HANDED ||
+			itemData.Kind == ITEM_KIND_EQUIPMENT_TWO_HANDED
 		if itemIsWeapon {
 			world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("Your %s has lost its sharpness.", itemData.Name))
 		} else {
@@ -613,25 +632,29 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 }
 
 func (mob *Mob) spellcast(world *World, targetMob *Mob) {
-	// Check if caster has enough mana
 	spellData := SPELL_DATA[mob.castSpell]
-	if mob.Data.Mana < spellData.ManaCost {
-		mob.Mode = MOB_MODE_IDLE
-		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s tried to cast %s, but they don't have enough mana.", mob.GetName(), spellData.Name))
-		return
-	}
-
-	// Check spell timer
-	if mob.castTimer > 0 {
-		mob.castTimer--
-		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s is charging a spell...", mob.GetName()))
-		return
-	}
 
 	// Cast spell
 	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s cast %s!", mob.GetName(), spellData.Name))
 	mob.Data.Mana -= spellData.ManaCost
-	spellData.onHit(world, mob, targetMob)
+
+	// TODO: wrap a context around this to timeout calls?
+
+	casterLuaHandle, err := world.getMobLuaHandle(mob.Handle)
+	if err != nil {
+		log.Print(err.Error())
+		return
+	}
+	targetLuaHandle, err := world.getMobLuaHandle(targetMob.Handle)
+	if err != nil {
+		log.Print(err.Error())
+		return
+	}
+
+	_, ok := world.scriptCall(spellData.OnHit.Value(), fmt.Sprintf("spell '%s' on_hit()", spellData.Name), casterLuaHandle, targetLuaHandle)
+	if !ok {
+		return
+	}
 
 	if mob.IsPlayer() {
 		equippedSpell, spellIsEquipped := mob.PlayerCharacter.SpellsEquipped[mob.castSpell]
@@ -656,7 +679,7 @@ func (mob *Mob) calculateMagicDamage(baseDamage int32, target *Mob) int32 {
 	return baseDamage + (mob.Data.Faith() / 2) + (target.Data.Faith() / 4)
 }
 
-func (mob *Mob) getEquipmentWhichProvidesSpell(spell Spell) (EquipmentSlot, bool) {
+func (mob *Mob) getEquipmentWhichProvidesSpell(spell SpellId) (EquipmentSlot, bool) {
 	slots := []EquipmentSlot { EQUIPMENT_SLOT_MAIN_HAND, EQUIPMENT_SLOT_OFF_HAND }
 	for _, slot := range slots {
 		slotSpell, slotProvidesSpell := mob.getSpellProvidedBySlot(slot)
@@ -668,14 +691,14 @@ func (mob *Mob) getEquipmentWhichProvidesSpell(spell Spell) (EquipmentSlot, bool
 	return 0, false
 }
 
-func (mob *Mob) getSpellProvidedBySlot(slot EquipmentSlot) (Spell, bool) {
+func (mob *Mob) getSpellProvidedBySlot(slot EquipmentSlot) (SpellId, bool) {
 	item := mob.Data.Equipment.Get(slot)
 	if item == nil {
 		return 0, false
 	}
 
 	itemData := ITEM_DATA[item.Id]
-	if itemData.ItemType != ITEM_TYPE_EQUIPMENT_SPELLBOOK {
+	if itemData.Kind != ITEM_KIND_EQUIPMENT_SPELLBOOK {
 		return 0, false
 	}
 
@@ -707,23 +730,24 @@ func (mob *Mob) useItem(world *World, targetMob *Mob) {
 	itemData := ITEM_DATA[item.Id]
 	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s used %s!", mob.GetName(), itemData.Name))
 
-	switch itemData.ItemType {
-		case ITEM_TYPE_CONSUMABLE: {
+	switch itemData.Kind {
+		case ITEM_KIND_CONSUMABLE: {
 			consumableData := itemData.Data.(*ItemDataConsumable)
-			consumableData.onUse(world, targetMob)
+			world.scriptCall(consumableData.onUse.Value(), fmt.Sprintf("item '%s' on_use()", itemData.Name), lua.Nil(), lua.Nil())
 		}
-		case ITEM_TYPE_SPELL_SCROLL: {
+		case ITEM_KIND_SPELL_SCROLL: {
 			scrollData := itemData.Data.(*ItemDataSpellScroll)
 			spellData := SPELL_DATA[scrollData.Spell]
-			spellData.onHit(world, mob, targetMob)
+
+			world.scriptCall(spellData.OnHit.Value(), fmt.Sprintf("spell '%s' on_hit()", spellData.Name), lua.Nil(), lua.Nil())
 		}
 		default:
-			panic(fmt.Sprintf("Unhandled item type %s. This item type should never have been allowed to be used here.", ItemTypeToString(itemData.ItemType)))
+			panic(fmt.Sprintf("Unhandled item type %s. This item type should never have been allowed to be used here.", itemData.Kind.String()))
 	}
 }
 
 // Returns an error if the mob is unable to craft batchAmount of the recipe
-func (mob *Mob) CanCraft(recipe Recipe, batchAmount int32) error {
+func (mob *Mob) CanCraft(recipe RecipeId, batchAmount int32) error {
 	recipeData := RECIPE_DATA[recipe]
 
 	// Check for the materials
@@ -750,7 +774,7 @@ func (mob *Mob) InventoryCapacity() int32 {
 	return INVENTORY_CAPACITY_PLAYER
 }
 
-func (mob *Mob) CraftItem(world *World, recipe Recipe) bool {
+func (mob *Mob) CraftItem(world *World, recipe RecipeId) bool {
 	recipeData := RECIPE_DATA[recipe]
 
 	err := mob.CanCraft(recipe, 1)

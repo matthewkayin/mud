@@ -13,7 +13,7 @@ const (
 	DIRECTION_COUNT
 )
 
-func DirectionToString(direction Direction) string {
+func (direction Direction) String() string {
 	switch direction {
 		case DIRECTION_NORTH:
 			return "north"
@@ -25,21 +25,6 @@ func DirectionToString(direction Direction) string {
 			return "west"
 		default:
 			panic(fmt.Sprintf("%d is not a valid direction.", direction))
-	}
-}
-
-func DirectionFromString(directionStr string) (Direction, bool) {
-	switch directionStr {
-		case "north":
-			return DIRECTION_NORTH, true
-		case "south":
-			return DIRECTION_SOUTH, true
-		case "east":
-			return DIRECTION_EAST, true
-		case "west":
-			return DIRECTION_WEST, true
-		default:
-			return 0, false
 	}
 }
 

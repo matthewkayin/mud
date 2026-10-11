@@ -1,5 +1,7 @@
 package main
 
+//go:generate go run . -generate-lua-defs data/world.d.lua
+
 import (
 	"fmt"
 	"io"
@@ -8,6 +10,7 @@ import (
 	"os/signal"
 	"syscall"
 	"context"
+	"flag"
 	"time"
 	"net/http"
 	"mud/api"
@@ -17,6 +20,18 @@ import (
 const MUD_LOG_FOLDER = "./logs"
 
 func main() {
+	// Handle lua def run path
+	generateLuaDefsPath := flag.String("generate-lua-defs", "", "write the Lua language server definitions for the world script API to this path and exit")
+	flag.Parse()
+
+	if *generateLuaDefsPath != "" {
+		err := generateLuaDefs(*generateLuaDefsPath)
+		if err != nil {
+			log.Fatalf("Error generating Lua definitions: %s", err.Error())
+		}
+		return
+	}
+
 	// Init logger
 	logfile := initLogger()
 	defer logfile.Close()

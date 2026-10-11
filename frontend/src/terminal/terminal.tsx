@@ -88,7 +88,7 @@ export const Terminal = ({ prompt, lines, command, setCommand, onSubmit }: Termi
         id="terminal-contents"
         onScroll={onScroll}
       >
-        {lines.map(terminalLineToSpan)}
+        {lines.map((line) => (<p className="terminal-text">{line}</p>))}
         <div ref={terminalBottomElementRef}></div>
       </div>
     </div>

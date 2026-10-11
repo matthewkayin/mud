@@ -2,10 +2,17 @@ package main
 
 import (
 	"mud/world"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
 )
+
+func TestMain(m *testing.M) {
+	testWorld := world.World{}
+	testWorld.LoadData("../backend/data")
+	os.Exit(m.Run())
+}
 
 func testEditorRoom(name string, x int, y int, connections ...world.RoomEditorPosition) EditorWorldRoom {
 	return EditorWorldRoom {
@@ -21,21 +28,35 @@ func testEditorRoom(name string, x int, y int, connections ...world.RoomEditorPo
 }
 
 // An L of three rooms: A at (1, 0) is the start room, B at (0, 0) is west of A,
-// and C at (0, 1) is south of B. The B-C exit is locked and C has an NPC.
+// and C at (0, 1) is south of B. B's south exit to C is locked and C has an NPC.
 func testEditorWorld() EditorWorld {
 	a := world.RoomEditorPosition{ X: 1, Y: 0 }
 	b := world.RoomEditorPosition{ X: 0, Y: 0 }
 	c := world.RoomEditorPosition{ X: 0, Y: 1 }
 
 	roomB := testEditorRoom("B", 0, 0, a, c)
-	roomB.Room.ExitIsLockedOnReset[world.DIRECTION_SOUTH] = true
+	roomB.Room.Locks = []world.Lock {
+		{ Type: world.LOCK_TYPE_PHYSICAL, Direction: world.DIRECTION_SOUTH },
+	}
+	roomB.Room.DropTable.Entries = []world.DropTableEntry {
+		{
+			ItemId: world.ITEM_NAME_TO_ID["Gold"],
+			AmountRange: world.Int32Range{ Min: 1, Max: 5 },
+			DurabilityPercentRange: world.Int32Range{ Min: 100, Max: 100 },
+			DropChancePercent: 50,
+		},
+	}
 	roomC := testEditorRoom("C", 0, 1, b)
-	roomC.Room.ExitIsLockedOnReset[world.DIRECTION_NORTH] = true
 	roomC.Npcs = []world.Npc {
 		{
-			Type: world.NPC_TYPE_TROLL,
+			Id: world.NPC_ID_STR_TO_ID["troll"],
 			LevelRange: world.Int32Range{ Min: 2, Max: 3 },
 			SpawnRoom: world.ROOM_NONE,
+			MovementTypeOverride: world.NPC_MOVEMENT_TYPE_OVERRIDE_NONE,
+			BehaviorParams: map[string]any {
+				"Toll": world.Item{ Id: world.ITEM_NAME_TO_ID["Gold"], Amount: 10 },
+				"ExitToBlock": world.Direction(world.DIRECTION_NORTH),
+			},
 		},
 	}
 
@@ -76,14 +97,19 @@ func TestEditorWorldToWorld(t *testing.T) {
 
 func TestEditorWorldClearsLocksWithoutExits(t *testing.T) {
 	editorWorld := testEditorWorld()
-	editorWorld.Rooms[2].Room.ExitIsLockedOnReset[world.DIRECTION_NORTH] = true
+	editorWorld.Rooms[2].Room.Locks = []world.Lock {
+		{ Type: world.LOCK_TYPE_MAGICAL, Direction: world.DIRECTION_NORTH },
+	}
 
 	savedWorld, problems := editorWorldToWorld(editorWorld)
 	if len(problems) != 0 {
 		t.Fatalf("Expected no problems, got %v", problems)
 	}
-	if savedWorld.Rooms[0].ExitIsLockedOnReset[world.DIRECTION_NORTH] {
-		t.Errorf("Expected lock on a missing exit to be cleared")
+	if len(savedWorld.Rooms[0].Locks) != 0 {
+		t.Errorf("Expected lock on a missing exit to be cleared, got %v", savedWorld.Rooms[0].Locks)
+	}
+	if len(savedWorld.Rooms[1].Locks) != 1 || len(savedWorld.Rooms[2].Locks) != 0 {
+		t.Errorf("Expected only B's south exit to be locked, got %v and %v", savedWorld.Rooms[1].Locks, savedWorld.Rooms[2].Locks)
 	}
 }
 
@@ -91,6 +117,12 @@ func TestEditorWorldRoundTrip(t *testing.T) {
 	data, err := encodeWorld(testEditorWorld())
 	if err != nil {
 		t.Fatalf("Error encoding world: %s", err.Error())
+	}
+	if !strings.Contains(string(data), `"ItemId": "Gold"`) {
+		t.Errorf("Expected drop table items to be saved by name")
+	}
+	if !strings.Contains(string(data), `"Id": "troll"`) || !strings.Contains(string(data), `"ExitToBlock": "north"`) {
+		t.Errorf("Expected NPCs and their behavior params to be saved by name")
 	}
 
 	loadedWorld, err := decodeWorld(data)

@@ -11,6 +11,8 @@ go run .
 
 Then open http://localhost:7373. For a standalone window, run `chromium --app=http://localhost:7373`.
 
+World files reference items by name, so at startup the server loads the backend's Lua data scripts from `../backend/data` (pass `-data` to use another folder). Restart the server after changing data scripts.
+
 ## Development
 
 `just dev` starts the server and Vite and opens the editor in a Chromium app window; closing the window stops everything. It uses its own Chromium profile (in `~/.cache/mud-editor-chromium`) so it runs separately from your normal browser. Set `CHROMIUM` to choose the browser binary.

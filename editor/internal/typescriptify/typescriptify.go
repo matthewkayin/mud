@@ -686,12 +686,12 @@ func (t *TypeScriptify) convertType(depth int, typeOf reflect.Type, customCode m
 		if fldOpts.TSTransform != "" {
 			t.logf(depth, "- simple field %s.%s", typeOf.Name(), field.Name)
 			err = builder.AddSimpleField(jsonFieldName, field, fldOpts)
+		} else if fldOpts.TSType != "" { // An explicit ts_type overrides the field's Go type, including enums
+			t.logf(depth, "- simple field %s.%s", typeOf.Name(), field.Name)
+			err = builder.AddSimpleField(jsonFieldName, field, fldOpts)
 		} else if _, isEnum := t.enums[field.Type]; isEnum {
 			t.logf(depth, "- enum field %s.%s", typeOf.Name(), field.Name)
 			builder.AddEnumField(jsonFieldName, field)
-		} else if fldOpts.TSType != "" { // Struct:
-			t.logf(depth, "- simple field %s.%s", typeOf.Name(), field.Name)
-			err = builder.AddSimpleField(jsonFieldName, field, fldOpts)
 		} else if field.Type.Kind() == reflect.Struct { // Struct:
 			t.logf(depth, "- struct %s.%s (%s)", typeOf.Name(), field.Name, field.Type.String())
 

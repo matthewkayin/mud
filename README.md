@@ -1,6 +1,6 @@
 # Castle Recurse
 
-![Castle Recurse Welcome](./readme/welcome.png)
+![Castle Recurse Welcome](./docs/readme/welcome.png)
 
 Castle Recurse is a [Multi-User Dungeon](https://en.wikipedia.org/wiki/Multi-user_dungeon) (a multiplayer online text adventure game) developed for the Recurse Center. The game is still in active development.
 
@@ -37,7 +37,7 @@ Users login from the frontend via Recurse OAuth. Once logged in, their client es
 
 Since this is a realtime multiplayer game, good concurrency is an important part of keeping the game running. Pictured below is a flow of the game's concurrency scheme.
 
-![Concurrency Diagram](./readme/concurrency.png)
+![Concurrency Diagram](./docs/readme/concurrency.png)
 
 - The main goroutine handles gameplay
   - Gameplay happens on a 3 second server tick
@@ -51,7 +51,7 @@ Since this is a realtime multiplayer game, good concurrency is an important part
 
 ## World Editor
 
-![World Editor Screenshot](./readme/editor.png)
+![World Editor Screenshot](./docs/readme/editor.png)
 
 The world editor allows developers to edit the game world without manually typing out the world JSON. The editor is a separate self-contained full stack web app that lives inside the `./editor` folder. The editor should not be run at the same time as the backend or frontend.
 

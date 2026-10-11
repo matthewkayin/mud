@@ -90,6 +90,7 @@ func (gamestate *GameState) Run(ctx context.Context) {
 					default:
 						log.Printf("Socket event type %d not handled!", event.Type)
 				}
+				gamestate.handleWorldEvents()
 			case <- ticker.C:
 				gamestate.update()
 			case <- saveTicker.C:
@@ -99,6 +100,7 @@ func (gamestate *GameState) Run(ctx context.Context) {
 
 	log.Printf("Shutdown signal received. Shutting down server...")
 	gamestate.saveAllLoggedInPlayers()
+	gamestate.world.ScriptQuit()
 }
 
 // Must only be called from the game loop
@@ -246,6 +248,10 @@ func (gamestate *GameState) addEventListener(eventType world.EventType, listener
 
 func (gamestate *GameState) createCharacter(playerId int, characterSheet *world.CharacterSheet) {
 	character := world.CharacterInitEmpty(playerId, characterSheet)
+
+	// TEMP DEBUG DELETE ME
+	character.SpellsKnown = append(character.SpellsKnown, 0)
+
 	gamestate.world.AddCharacter(playerId, character)
 	world.SaveCharacter(character)
 }
@@ -264,7 +270,12 @@ func (gamestate *GameState) update() {
 	// World update
 	gamestate.world.Update()
 
-	// Handle world events
+	gamestate.handleWorldEvents()
+}
+
+// Dispatches world events to their listeners and clears them.
+// Called after each update and after each socket event, since commands can also cause world events.
+func (gamestate *GameState) handleWorldEvents() {
 	for index := range len(gamestate.world.Events) {
 		event := &gamestate.world.Events[index]
 		listeners := &gamestate.eventListeners[event.EventType]

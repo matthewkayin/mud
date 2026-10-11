@@ -5,7 +5,8 @@ import { SubmitTextField } from './components/submit_textfield';
 import { DropTableEditor } from './components/drop_table';
 import { ChestsEditor } from './components/chests';
 import { NpcsEditor } from './components/npcs';
-import { editorStore, EditorCell, type EditorRoom } from '../store';
+import { LocksEditor } from './components/locks';
+import { editorStore, EditorCell, EditorConnection, type EditorRoom } from '../store';
 import { EditorActionDeleteRoom, EditorActionEditRoom, EditorActionSetStartRoom } from '../store/action';
 
 type RoomEditorProps = {
@@ -17,6 +18,10 @@ type RoomEditorProps = {
 export function RoomEditor({ selectedCell, room, connections }: RoomEditorProps) {
   const startCell = useSyncExternalStore(editorStore.subscribe, editorStore.getStartCell);
   const isStartRoom = startCell?.isEqual(selectedCell) ?? false;
+
+  const connectedDirections = connections.map((connection) => (
+    new EditorConnection(selectedCell, EditorCell.fromString(connection)).getDirection()
+  ));
 
   const commitRoomEdit = (edit: (editedRoom: EditorRoom) => void) => {
     const editedRoom = structuredClone(room);
@@ -95,6 +100,16 @@ export function RoomEditor({ selectedCell, room, connections }: RoomEditorProps)
             }}
           />
         }
+      />
+
+      <LocksEditor
+        locks={room.Locks}
+        connectedDirections={connectedDirections}
+        onEdit={(locks) => {
+          commitRoomEdit((editedRoom) => {
+            editedRoom.Locks = locks;
+          });
+        }}
       />
 
       <DropTableEditor

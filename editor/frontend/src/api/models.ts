@@ -98,6 +98,18 @@ export namespace world {
 	    SOUTH = 2,
 	    WEST = 3,
 	}
+	export enum LockType {
+	    COUNT = 2,
+	    MAGICAL = 1,
+	    PHYSICAL = 0,
+	}
+	export enum NpcBehaviorParamType {
+	    BOOLEAN = 2,
+	    DIRECTION = 4,
+	    ITEM = 3,
+	    NUMBER = 1,
+	    STRING = 0,
+	}
 	export enum NpcDisposition {
 	    HOSTILE = 1,
 	    NEUTRAL = 0,
@@ -106,20 +118,8 @@ export namespace world {
 	    SENTINEL = 0,
 	    WANDER = 1,
 	}
-	export class Behavior {
-	    Hooks: any;
-	
-	    static createFrom(source: any = {}) {
-	        return new Behavior(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.Hooks = source["Hooks"];
-	    }
-	}
 	export class Item {
-	    Id: number;
+	    Id: string;
 	    Amount: number;
 	    Durability: number;
 	
@@ -179,7 +179,7 @@ export namespace world {
 	    }
 	}
 	export class DropTableEntry {
-	    ItemId: number;
+	    ItemId: string;
 	    AmountRange: Int32Range;
 	    DurabilityPercentRange: Int32Range;
 	    DropChancePercent: number;
@@ -290,7 +290,7 @@ export namespace world {
 	export class ItemData {
 	    Name: string;
 	    Description: string;
-	    ItemType: number;
+	    Kind: number;
 	    Size: number;
 	    Data: any;
 	
@@ -302,9 +302,23 @@ export namespace world {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Name = source["Name"];
 	        this.Description = source["Description"];
-	        this.ItemType = source["ItemType"];
+	        this.Kind = source["Kind"];
 	        this.Size = source["Size"];
 	        this.Data = source["Data"];
+	    }
+	}
+	export class Lock {
+	    Type: LockType;
+	    Direction: Direction;
+	
+	    static createFrom(source: any = {}) {
+	        return new Lock(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Type = source["Type"];
+	        this.Direction = source["Direction"];
 	    }
 	}
 	export class MobHandle {
@@ -322,17 +336,12 @@ export namespace world {
 	    }
 	}
 	export class Npc {
-	    Type: number;
-	    LevelRange: Int32Range;
-	    StartingDisposition: NpcDisposition;
-	    MovementType: NpcMovementType;
-	    Behavior: Behavior;
+	    Id: string;
 	    SpawnRoom: number;
-	    RespawnDuration: number;
-	    SleepDuration: number;
-	    AwakeDuration: number;
-	    MovementStepDuration: number;
-	    DropTable: DropTable;
+	    LevelRange: Int32Range;
+	    MovementTypeOverride: string;
+	    DropTableOverride: DropTable;
+	    BehaviorParams: Record<string, any>;
 	
 	    static createFrom(source: any = {}) {
 	        return new Npc(source);
@@ -340,17 +349,12 @@ export namespace world {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.Type = source["Type"];
-	        this.LevelRange = this.convertValues(source["LevelRange"], Int32Range);
-	        this.StartingDisposition = source["StartingDisposition"];
-	        this.MovementType = source["MovementType"];
-	        this.Behavior = this.convertValues(source["Behavior"], Behavior);
+	        this.Id = source["Id"];
 	        this.SpawnRoom = source["SpawnRoom"];
-	        this.RespawnDuration = source["RespawnDuration"];
-	        this.SleepDuration = source["SleepDuration"];
-	        this.AwakeDuration = source["AwakeDuration"];
-	        this.MovementStepDuration = source["MovementStepDuration"];
-	        this.DropTable = this.convertValues(source["DropTable"], DropTable);
+	        this.LevelRange = this.convertValues(source["LevelRange"], Int32Range);
+	        this.MovementTypeOverride = source["MovementTypeOverride"];
+	        this.DropTableOverride = this.convertValues(source["DropTableOverride"], DropTable);
+	        this.BehaviorParams = source["BehaviorParams"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -372,7 +376,10 @@ export namespace world {
 		}
 	}
 	export class NpcData {
+	    Id: string;
 	    Name: string;
+	    MovementType: NpcMovementType;
+	    BehaviorParams: Record<string, NpcBehaviorParamType>;
 	
 	    static createFrom(source: any = {}) {
 	        return new NpcData(source);
@@ -380,7 +387,10 @@ export namespace world {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Id = source["Id"];
 	        this.Name = source["Name"];
+	        this.MovementType = source["MovementType"];
+	        this.BehaviorParams = source["BehaviorParams"];
 	    }
 	}
 	export class RoomEditorPosition {
@@ -403,7 +413,7 @@ export namespace world {
 	    IsSafeZone: boolean;
 	    EditorPosition: RoomEditorPosition;
 	    Exits: number[];
-	    ExitIsLockedOnReset: boolean[];
+	    Locks: Lock[];
 	    DropTable: DropTable;
 	    Inventory: Inventory;
 	    Chests: Chest[];
@@ -419,7 +429,7 @@ export namespace world {
 	        this.IsSafeZone = source["IsSafeZone"];
 	        this.EditorPosition = this.convertValues(source["EditorPosition"], RoomEditorPosition);
 	        this.Exits = source["Exits"];
-	        this.ExitIsLockedOnReset = source["ExitIsLockedOnReset"];
+	        this.Locks = this.convertValues(source["Locks"], Lock);
 	        this.DropTable = this.convertValues(source["DropTable"], DropTable);
 	        this.Inventory = this.convertValues(source["Inventory"], Inventory);
 	        this.Chests = this.convertValues(source["Chests"], Chest);

@@ -204,7 +204,7 @@ func fuzzyFindTarget(gamestate *GameState, player *Player, searchWords []string)
 }
 
 // Chooses either a prepared spell or a class spell
-func fuzzyFindCastableSpell(gamestate *GameState, player *Player, searchWords []string) (world.Spell, error) {
+func fuzzyFindCastableSpell(gamestate *GameState, player *Player, searchWords []string) (world.SpellId, error) {
 	// Check that there are any arguments
 	if len(searchWords) == 0 {
 		return 0, errors.New("You must specify a spell.")
@@ -245,7 +245,7 @@ func fuzzyFindCastableSpell(gamestate *GameState, player *Player, searchWords []
 	return player.character.ClassSpells[spellIndex - len(playerMob.Data.Spells)], nil
 }
 
-func fuzzyFindPreparedSpell(gamestate *GameState, player *Player, searchWords []string) (world.Spell, error) {
+func fuzzyFindPreparedSpell(gamestate *GameState, player *Player, searchWords []string) (world.SpellId, error) {
 	// Check that there are any arguments
 	if len(searchWords) == 0 {
 		return 0, errors.New("You must specify a spell.")
@@ -278,14 +278,14 @@ func fuzzyFindPreparedSpell(gamestate *GameState, player *Player, searchWords []
 	return playerMob.Data.Spells[spellIndex], nil
 }
 
-func fuzzyFindKnownOrEquippedSpell(player *Player, searchWords []string) (world.Spell, error) {
+func fuzzyFindKnownOrEquippedSpell(player *Player, searchWords []string) (world.SpellId, error) {
 	// Check that there are any arguments
 	if len(searchWords) == 0 {
 		return 0, errors.New("You must specify a spell.")
 	}
 
 	// Get equipped spells into a flat array
-	spellsEquipped := make([]world.Spell, 0, 2)
+	spellsEquipped := make([]world.SpellId, 0, 2)
 	for spell, _ := range player.character.SpellsEquipped {
 		spellsEquipped = append(spellsEquipped, spell)
 	}
@@ -429,7 +429,7 @@ func fuzzyFindEquipmentSlot(searchWords []string) (world.EquipmentSlot, error) {
 	slotNames := make([]string, world.EQUIPMENT_SLOT_COUNT)
 	for index := range world.EQUIPMENT_SLOT_COUNT {
 		slot := world.EquipmentSlot(index)
-		slotNames[index] = world.EquipmentSlotToString(slot)
+		slotNames[index] = slot.String()
 	}
 
 	slotIndex := fuzzyFind(slotNames, searchWords, FUZZY_FIND_NUMBER_NONE)
@@ -487,7 +487,7 @@ func fuzzyFindChestInventory(room *world.Room, searchWords []string) (*world.Inv
 	return &room.Chests[chestIndex].Inventory, room.Chests[chestIndex].Name, nil
 }
 
-func fuzzyFindKnownRecipe(character *world.Character, searchWords []string) (world.Recipe, error) {
+func fuzzyFindKnownRecipe(character *world.Character, searchWords []string) (world.RecipeId, error) {
 	if len(searchWords) == 0 {
 		return 0, errors.New("You must specify a recipe.")
 	}

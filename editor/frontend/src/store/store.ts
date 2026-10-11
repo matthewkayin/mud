@@ -111,8 +111,8 @@ export class EditorStore {
       });
     }
 
-    // This is a plain object rather than main.EditorWorld.createFrom() because createFrom
-    // would rebuild each NPC's Behavior from its generated model, which drops the behavior JSON.
+    // This is a plain object rather than main.EditorWorld.createFrom() so that rooms and NPCs
+    // are sent as-is. NPC BehaviorParams are untyped, so the generated models can't describe them.
     return {
       Rooms: rooms,
       StartRoom: this.state.startCell?.toPosition(),
@@ -206,16 +206,6 @@ export class EditorStore {
 
   getStartCell = (): EditorCell | null => {
     return this.state.startCell;
-  }
-
-  getSelectedConnectionIsLocked = (): boolean => {
-    if (!this.state.selectedConnection) {
-      return false;
-    }
-
-    const fromRoom = this.state.rooms.get(this.state.selectedConnection.from.toString());
-    const direction = this.state.selectedConnection.getDirection();
-    return fromRoom!.ExitIsLockedOnReset[direction];
   }
 }
 

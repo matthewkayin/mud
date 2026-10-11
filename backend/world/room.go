@@ -18,9 +18,24 @@ const CHEST_REFRESH_DURATION = 30 / WORLD_SECONDS_PER_UPDATE
 
 type ChestType int
 const (
-	CHEST_TYPE_CHEST = iota
+	CHEST_TYPE_CHEST ChestType = iota
 	CHEST_TYPE_CORPSE
 )
+
+type LockType int
+const (
+	LOCK_TYPE_PHYSICAL LockType = iota
+	LOCK_TYPE_MAGICAL
+	LOCK_TYPE_COUNT
+)
+
+// Locks are one-directional, they only block leaving the room through the lock's direction.
+// A lock becomes active again when the room resets.
+type Lock struct {
+	Type LockType
+	Direction Direction
+	IsActive bool `json:"-"`
+}
 
 type Chest struct {
 	Name string
@@ -44,8 +59,7 @@ type Room struct {
 	EditorPosition RoomEditorPosition
 
 	Exits [DIRECTION_COUNT]int
-	ExitIsLockedOnReset [DIRECTION_COUNT]bool
-	ExitIsLocked [DIRECTION_COUNT]bool `json:"-"`
+	Locks []Lock
 
 	DropTable DropTable
 	Inventory Inventory
@@ -55,31 +69,26 @@ type Room struct {
 	shouldReset bool
 }
 
+func (lockType LockType) String() string {
+	switch lockType {
+		case LOCK_TYPE_PHYSICAL:
+			return "physical"
+		case LOCK_TYPE_MAGICAL:
+			return "magical"
+		default:
+			panic(fmt.Sprintf("%d is not a valid lock type.", lockType))
+	}
+}
+
 // Returns true when a room is able to be reset
 func (room *Room) canReset(world *World) bool {
-	if room.hasPlayerOccupants(world) {
-		return false
-	}
-
-	// If the room has any exits that will be locked, only reset the room if the exit-rooms are also free of players
-	for direction := range DIRECTION_COUNT {
-		if !room.ExitIsLockedOnReset[direction] {
-			continue
-		}
-
-		adjacentRoom := &world.Rooms[room.Exits[direction]]
-		if adjacentRoom.hasPlayerOccupants(world) {
-			return false
-		}
-	}
-
-	return true
+	return !room.hasPlayerOccupants(world)
 }
 
 func (room *Room) reset() {
-	// Reset locked doors
-	for direction := range DIRECTION_COUNT {
-		room.ExitIsLocked[direction] = room.ExitIsLockedOnReset[direction]
+	// Re-activate locks
+	for lockIndex := range room.Locks {
+		room.Locks[lockIndex].IsActive = true
 	}
 
 	// Remove corpses
@@ -146,7 +155,7 @@ func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, newRoomIn
 		bitset.Set(occupantMob.PlayerCharacter.RoomsDiscovered, newRoomIndex, true)
 	}
 
-	// Fire event
+	// Push event
 	world.pushEvent(Event {
 		EventType: EVENT_TYPE_MOB_MOVE,
 		Data: EventMobMove {
@@ -157,16 +166,17 @@ func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, newRoomIn
 	})
 
 	// Fire event to NPCs
-	if occupantMob.PlayerCharacter != nil {
-		for _, handle := range newRoom.Occupants {
-			mob := world.Mobs.Get(handle)
-			if !mob.IsNpc()  {
+	if occupantMob.IsPlayer() {
+		// Clone the occupants, since NPC hooks run during the loop
+		for _, npcHandle := range slices.Clone(newRoom.Occupants) {
+			npcMob := world.Mobs.Get(npcHandle)
+			if !npcMob.IsNpc()  {
 				continue
 			}
 
-			mob.Npc.OnEvent(world, BehaviorEvent {
-				Type: BEHAVIOR_EVENT_TYPE_PLAYER_ENTERED,
-				Data: BehaviorEventPlayerEntered {
+			npcMob.Npc.FireEvent(world, NpcEvent {
+				Type: NPC_EVENT_TYPE_PLAYER_ENTERED,
+				Data: NpcEventPlayerEntered {
 					PlayerHandle: occupantHandle,
 				},
 			})
@@ -216,12 +226,33 @@ func (room *Room) RemoveOccupantByIndex(index int) {
 	room.Occupants = room.Occupants[:lastIndex]
 }
 
-func (room *Room) SetExitLocked(world *World, direction Direction, value bool) {
-	adjacentRoom := &world.Rooms[room.Exits[direction]]
-	oppositeDirection := DirectionOppositeOf(direction)
+// Returns the room's lock in the specified direction, or nil if there is none
+func (room *Room) getLock(direction Direction) *Lock {
+	for lockIndex := range room.Locks {
+		if room.Locks[lockIndex].Direction == direction {
+			return &room.Locks[lockIndex]
+		}
+	}
 
-	room.ExitIsLocked[direction] = value
-	adjacentRoom.ExitIsLocked[oppositeDirection] = value
+	return nil
+}
+
+// Returns true if the room has an active lock in the specified direction
+func (room *Room) IsExitLocked(direction Direction) bool {
+	lock := room.getLock(direction)
+	return lock != nil && lock.IsActive
+}
+
+// Returns the handle of an NPC mob in the room which is blocking the exit in the specified direction
+func (room *Room) GetNpcBlockingExit(world *World, direction Direction) (MobHandle, bool) {
+	for _, occupantHandle := range room.Occupants {
+		occupantMob := world.Mobs.Get(occupantHandle)
+		if occupantMob.IsNpc() && occupantMob.Npc.isBlockingExit[direction] {
+			return occupantHandle, true
+		}
+	}
+
+	return MobHandle{}, false
 }
 
 func (room *Room) updateChests() {

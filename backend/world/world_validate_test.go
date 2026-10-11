@@ -13,8 +13,10 @@ func validateTestRoom(name string, x int, y int) Room {
 	}
 }
 
-// Two rooms side by side, connected east-west, with an NPC in the first room
+// Two rooms side by side, connected east-west, with a troll NPC in the first room
 func validateTestWorld() *World {
+	primeTestData()
+
 	world := &World {
 		Rooms: []Room {
 			validateTestRoom("West", 0, 0),
@@ -22,9 +24,11 @@ func validateTestWorld() *World {
 		},
 		Npcs: []Npc {
 			{
-				Type: NPC_TYPE_GOLBIN,
+				Id: TEST_NPC_TROLL,
 				LevelRange: Int32Range{ Min: 1, Max: 2 },
 				SpawnRoom: 0,
+				MovementTypeOverride: NPC_MOVEMENT_TYPE_OVERRIDE_NONE,
+				BehaviorParams: testTrollBehaviorParams(),
 			},
 		},
 	}
@@ -34,8 +38,30 @@ func validateTestWorld() *World {
 	return world
 }
 
+func testTrollBehaviorParams() map[string]any {
+	return map[string]any {
+		"Greeting": "Halt!",
+		"Patience": float64(3),
+		"IsGrumpy": true,
+		"Toll": Item{ Id: TEST_ITEM_GOLD, Amount: 10 },
+		"ExitToBlock": Direction(DIRECTION_EAST),
+	}
+}
+
 func TestValidateValidWorld(t *testing.T) {
 	problems := validateTestWorld().Validate()
+	if len(problems) != 0 {
+		t.Errorf("Expected no problems, got %v", problems)
+	}
+}
+
+func TestValidateOneDirectionalLock(t *testing.T) {
+	world := validateTestWorld()
+	world.Rooms[0].Locks = []Lock {
+		{ Type: LOCK_TYPE_PHYSICAL, Direction: DIRECTION_EAST },
+	}
+
+	problems := world.Validate()
 	if len(problems) != 0 {
 		t.Errorf("Expected no problems, got %v", problems)
 	}
@@ -63,15 +89,45 @@ func TestValidateProblems(t *testing.T) {
 		{ "one-way exit", func(world *World) {
 			world.Rooms[1].Exits[DIRECTION_WEST] = ROOM_NONE
 		}, "no west exit back" },
-		{ "mismatched lock", func(world *World) {
-			world.Rooms[0].ExitIsLockedOnReset[DIRECTION_EAST] = true
-		}, "disagree on whether they are locked" },
+		{ "lock without exit", func(world *World) {
+			world.Rooms[0].Locks = []Lock {
+				{ Type: LOCK_TYPE_PHYSICAL, Direction: DIRECTION_NORTH },
+			}
+		}, "has no north exit" },
+		{ "duplicate lock", func(world *World) {
+			world.Rooms[0].Locks = []Lock {
+				{ Type: LOCK_TYPE_PHYSICAL, Direction: DIRECTION_EAST },
+				{ Type: LOCK_TYPE_MAGICAL, Direction: DIRECTION_EAST },
+			}
+		}, "more than one lock on its east exit" },
+		{ "invalid lock type", func(world *World) {
+			world.Rooms[0].Locks = []Lock {
+				{ Type: LOCK_TYPE_COUNT, Direction: DIRECTION_EAST },
+			}
+		}, "invalid lock type" },
+		{ "invalid lock direction", func(world *World) {
+			world.Rooms[0].Locks = []Lock {
+				{ Type: LOCK_TYPE_PHYSICAL, Direction: DIRECTION_COUNT },
+			}
+		}, "invalid direction" },
 		{ "exit not adjacent", func(world *World) {
 			world.Rooms[1].EditorPosition = RoomEditorPosition{ X: 2, Y: 0 }
 		}, "is not east of it" },
-		{ "invalid npc type", func(world *World) {
-			world.Npcs[0].Type = NpcType(len(NPC_DATA))
-		}, "invalid NPC type" },
+		{ "invalid npc id", func(world *World) {
+			world.Npcs[0].Id = NpcId(len(NPC_DATA))
+		}, "invalid NPC id" },
+		{ "missing behavior param", func(world *World) {
+			delete(world.Npcs[0].BehaviorParams, "Toll")
+		}, "missing behavior param 'Toll'" },
+		{ "undeclared behavior param", func(world *World) {
+			world.Npcs[0].BehaviorParams["Mood"] = "angry"
+		}, "does not declare" },
+		{ "wrong behavior param type", func(world *World) {
+			world.Npcs[0].BehaviorParams["Patience"] = "three"
+		}, "is not of type Number" },
+		{ "invalid behavior param item", func(world *World) {
+			world.Npcs[0].BehaviorParams["Toll"] = Item{ Id: ItemId(len(ITEM_DATA)), Amount: 1 }
+		}, "behavior param 'Toll' has invalid item id" },
 		{ "invalid spawn room", func(world *World) {
 			world.Npcs[0].SpawnRoom = ROOM_NONE
 		}, "spawns in room -1" },
@@ -84,8 +140,8 @@ func TestValidateProblems(t *testing.T) {
 			}
 		}, "invalid item id" },
 		{ "invalid drop chance", func(world *World) {
-			world.Npcs[0].DropTable.Entries = []DropTableEntry {
-				{ ItemId: ITEM_SWORD, DropChancePercent: 101 },
+			world.Npcs[0].DropTableOverride.Entries = []DropTableEntry {
+				{ ItemId: TEST_ITEM_SWORD, DropChancePercent: 101 },
 			}
 		}, "invalid drop chance" },
 		{ "invalid amount range", func(world *World) {
@@ -94,7 +150,7 @@ func TestValidateProblems(t *testing.T) {
 					Name: "Chest",
 					DropTable: DropTable {
 						Entries: []DropTableEntry {
-							{ ItemId: ITEM_SWORD, AmountRange: Int32Range{ Min: 2, Max: 1 } },
+							{ ItemId: TEST_ITEM_SWORD, AmountRange: Int32Range{ Min: 2, Max: 1 } },
 						},
 					},
 				},

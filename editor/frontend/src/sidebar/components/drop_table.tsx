@@ -47,16 +47,16 @@ export function DropTableEditor({ name, dropTable, onEdit }: DropTableEditorProp
                 <Typography>Item:</Typography>
                 <Select
                   size="small"
-                  value={itemData.length > entry.ItemId ? entry.ItemId : ''}
+                  value={itemData.some((item) => item.Name === entry.ItemId) ? entry.ItemId : ''}
                   onChange={(event) => {
                     editEntry(index, (editedEntry) => {
-                      editedEntry.ItemId = Number(event.target.value);
+                      editedEntry.ItemId = event.target.value;
                     });
                   }}
                   sx={{ minWidth: '45%' }}
                 >
-                  {itemData.map((item, itemId) => (
-                    <MenuItem key={itemId} value={itemId}>{item.Name}</MenuItem>
+                  {itemData.map((item) => (
+                    <MenuItem key={item.Name} value={item.Name}>{item.Name}</MenuItem>
                   ))}
                 </Select>
                 <Box sx={{ marginLeft: 'auto' }}>
@@ -114,10 +114,10 @@ export function DropTableEditor({ name, dropTable, onEdit }: DropTableEditorProp
             </Stack>
           ))}
 
-          <Button onClick={() => {
+          <Button disabled={itemData.length === 0} onClick={() => {
             const editedTable = structuredClone(dropTable);
             editedTable.Entries.push(world.DropTableEntry.createFrom({
-              ItemId: 0,
+              ItemId: itemData[0].Name,
               AmountRange: { Min: 1, Max: 1 },
               DurabilityPercentRange: { Min: 100, Max: 100 },
               DropChancePercent: 100,

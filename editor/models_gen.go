@@ -37,7 +37,9 @@ func generateModels(path string) error {
 	generator.addEnum(ALL_DIRECTIONS)
 	generator.addEnum(ALL_NPC_DISPOSITIONS)
 	generator.addEnum(ALL_NPC_MOVEMENT_TYPES)
+	generator.addEnum(ALL_NPC_BEHAVIOR_PARAM_TYPES)
 	generator.addEnum(ALL_CHEST_TYPES)
+	generator.addEnum(ALL_LOCK_TYPES)
 
 	models, err := generator.generate()
 	if err != nil {

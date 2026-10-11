@@ -14,8 +14,8 @@ func (mob *Mob) EquipFromInventory(itemIndex int, slot EquipmentSlot) (Item, []s
 	itemData := ITEM_DATA[item.Id]
 
 	// Check item type against equipment slot
-	if !ItemTypeMatchesEquipmentSlot(itemData.ItemType, slot) {
-		return item, nil, fmt.Errorf("%s cannot be equipped to slot %s.", item.GetNameWithCondition(), EquipmentSlotToString(slot))
+	if !ItemTypeMatchesEquipmentSlot(itemData.Kind, slot) {
+		return item, nil, fmt.Errorf("%s cannot be equipped to slot %s.", item.GetNameWithCondition(), slot.String())
 	}
 
 	// Check stat requirements
@@ -56,7 +56,7 @@ func (mob *Mob) UnequipToInventory(slot EquipmentSlot) (Item, []string, error) {
 	}
 	equippedItem := mob.Data.Equipment.Get(slot)
 	if equippedItem == nil {
-		return Item{}, nil, fmt.Errorf("You have nothing equipped in your %s slot.", EquipmentSlotToString(slot))
+		return Item{}, nil, fmt.Errorf("You have nothing equipped in your %s slot.", slot.String())
 	}
 
 	if !mob.Data.Inventory.HasSpaceFor(equippedItem.Size(), mob.InventoryCapacity()) {
@@ -87,7 +87,7 @@ func (mob *Mob) onItemEquipped(item Item) []string {
 
 	// If the equipped item is a spellbook, add the spell to their spells equipped
 	itemData := ITEM_DATA[item.Id]
-	if itemData.ItemType != ITEM_TYPE_EQUIPMENT_SPELLBOOK {
+	if itemData.Kind != ITEM_KIND_EQUIPMENT_SPELLBOOK {
 		return nil
 	}
 
@@ -119,7 +119,7 @@ func (mob *Mob) onItemUnequipped(item Item) []string {
 	}
 
 	itemData := ITEM_DATA[item.Id]
-	if itemData.ItemType != ITEM_TYPE_EQUIPMENT_SPELLBOOK {
+	if itemData.Kind != ITEM_KIND_EQUIPMENT_SPELLBOOK {
 		return nil
 	}
 

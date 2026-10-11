@@ -1,12 +1,22 @@
 package world
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"math/rand/v2"
 )
 
 type DropTableEntry struct {
-	ItemId ItemId
+	ItemId ItemId `ts_type:"string"`
+
+	AmountRange Int32Range
+	DurabilityPercentRange Int32Range
+	DropChancePercent int32
+}
+
+type DropTableEntryJson struct {
+	ItemId string
 
 	AmountRange Int32Range
 	DurabilityPercentRange Int32Range
@@ -15,6 +25,39 @@ type DropTableEntry struct {
 
 type DropTable struct {
 	Entries []DropTableEntry
+}
+
+func (entry *DropTableEntry) MarshalJSON() ([]byte, error) {
+	if !itemIdIsValid(entry.ItemId) {
+		return nil, fmt.Errorf("Cannot save drop table entry with invalid item id %d.", entry.ItemId)
+	}
+
+	entryJson := DropTableEntryJson {
+		ItemId: ITEM_DATA[entry.ItemId].Name,
+		AmountRange: entry.AmountRange,
+		DurabilityPercentRange: entry.DurabilityPercentRange,
+		DropChancePercent: entry.DropChancePercent,
+	}
+	return json.Marshal(&entryJson)
+}
+
+func (entry *DropTableEntry) UnmarshalJSON(data []byte) error {
+	var entryJson DropTableEntryJson
+	err := json.Unmarshal(data, &entryJson)
+	if err != nil {
+		return err
+	}
+
+	var exists bool
+	entry.ItemId, exists = ITEM_NAME_TO_ID[entryJson.ItemId]
+	if !exists {
+		return fmt.Errorf("No item ID matches '%s'.", entryJson.ItemId)
+	}
+	entry.AmountRange = entryJson.AmountRange
+	entry.DurabilityPercentRange = entryJson.DurabilityPercentRange
+	entry.DropChancePercent = entryJson.DropChancePercent
+
+	return nil
 }
 
 func (table *DropTable) getLoot() Inventory {

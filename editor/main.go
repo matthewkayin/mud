@@ -24,6 +24,7 @@ type EditorConstants struct {
 
 func main() {
 	port := flag.Int("port", 7373, "port to serve the editor on")
+	dataFolder := flag.String("data", "../backend/data", "the backend data folder to load item and other script data from")
 	generateTypesPath := flag.String("generate-types", "", "write the frontend TypeScript models to this path and exit")
 	flag.Parse()
 
@@ -34,6 +35,10 @@ func main() {
 		}
 		return
 	}
+
+	// Load world data
+	editorWorld := &world.World{}
+	editorWorld.LoadData(*dataFolder)
 
 	distFS, err := fs.Sub(assets, "frontend/dist")
 	if err != nil {

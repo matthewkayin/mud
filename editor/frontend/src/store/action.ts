@@ -28,8 +28,7 @@ export class EditorActionAddRoom implements EditorAction {
       Description: 'This is a new room',
       // Exits are filled in when the world is saved
       Exits: new Array(world.Direction.COUNT).fill(getEditorConstants().RoomNone),
-      ExitIsLocked: new Array(world.Direction.COUNT).fill(false),
-      ExitIsLockedOnReset: new Array(world.Direction.COUNT).fill(false),
+      Locks: [],
       IsSafeZone: false,
       DropTable: {
         Entries: [],
@@ -147,35 +146,6 @@ export class EditorActionDisconnectRooms implements EditorAction {
 
     state.connections.get(fromKey)?.push(toKey);
     state.connections.get(toKey)?.push(fromKey);
-  }
-}
-
-export class EditorActionEditConnection implements EditorAction {
-  private data: {
-    connection: EditorConnection;
-    isLocked: boolean;
-  };
-
-  constructor(params: typeof this.data) {
-    this.data = params;
-  }
-
-  do = (state: EditorState) => {
-    this.setConnectionIsLocked(state, this.data.isLocked);
-  }
-
-  undo = (state: EditorState) => {
-    this.setConnectionIsLocked(state, !this.data.isLocked);
-  }
-
-  private setConnectionIsLocked(state: EditorState, value: boolean) {
-    const fromRoom = state.rooms.get(this.data.connection.from.toString());
-    const toRoom = state.rooms.get(this.data.connection.to.toString());
-    const direction = this.data.connection.getDirection();
-    const reverseDirection = (direction + 2) % world.Direction.COUNT;
-
-    fromRoom!.ExitIsLockedOnReset[direction] = value;
-    toRoom!.ExitIsLockedOnReset[reverseDirection] = value;
   }
 }
 
