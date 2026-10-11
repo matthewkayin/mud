@@ -278,6 +278,22 @@ func (parser *ScriptParser) getDropTable(table *lua.Table, key string) DropTable
 	return drops
 }
 
+// Parses a table of the form { item = "<item name>", amount = N }
+func (parser *ScriptParser) parseItem(table *lua.Table, key string) (ItemId, int32) {
+	itemName := parser.getString(table, "item")
+	itemId, exists := ITEM_NAME_TO_ID[itemName]
+	if !exists {
+		parser.addProblem(fmt.Errorf("field '%s' references item '%s' which does not exist", key, itemName))
+	}
+
+	amount := parser.getInt32(table, "amount")
+	if amount <= 0 {
+		parser.addProblem(fmt.Errorf("field '%s' amount must be greater than 0, got %d", key, amount))
+	}
+
+	return itemId, amount
+}
+
 func (parser *ScriptParser) checkInt32NonNegative(value int32, key string) {
 	if value < 0 {
 		parser.addProblem(fmt.Errorf("field '%s' must not be negative, got %d", key, value))

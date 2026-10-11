@@ -140,7 +140,7 @@ func (world *World) loadItemData() {
 
 		// Parse item data
 		parser := ScriptParser{}
-		itemData := parser.parseItem(table)
+		itemData := parser.parseItemData(table)
 		if itemData == nil {
 			log.Fatalf("%s: %s", path, parser.getError().Error())
 		}
@@ -160,7 +160,7 @@ func (world *World) loadItemData() {
 	log.Printf("All item data has been loaded.")
 }
 
-func (parser *ScriptParser) parseItem(table *lua.Table) *ItemData {
+func (parser *ScriptParser) parseItemData(table *lua.Table) *ItemData {
 	itemData := &ItemData{}
 
 	itemData.Name = parser.getString(table, "name")

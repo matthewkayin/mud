@@ -129,7 +129,7 @@ func (parser *ScriptParser) parseRecipe(table *lua.Table) *RecipeData {
 				continue
 			}
 
-			itemId, amount := parser.parseRecipeItem(materialTable, key)
+			itemId, amount := parser.parseItem(materialTable, key)
 			recipeData.Materials = append(recipeData.Materials, RecipeMaterial {
 				Id: itemId,
 				Amount: amount,
@@ -140,7 +140,7 @@ func (parser *ScriptParser) parseRecipe(table *lua.Table) *RecipeData {
 	// Output
 	outputTable := parser.getTable(table, "output")
 	if outputTable != nil {
-		itemId, amount := parser.parseRecipeItem(outputTable, "output")
+		itemId, amount := parser.parseItem(outputTable, "output")
 		recipeData.Output = Item {
 			Id: itemId,
 			Amount: amount,
@@ -153,22 +153,6 @@ func (parser *ScriptParser) parseRecipe(table *lua.Table) *RecipeData {
 	}
 
 	return recipeData
-}
-
-// Parses a table of the form { item = "<item name>", amount = N }
-func (parser *ScriptParser) parseRecipeItem(table *lua.Table, key string) (ItemId, int32) {
-	itemName := parser.getString(table, "item")
-	itemId, exists := ITEM_NAME_TO_ID[itemName]
-	if !exists {
-		parser.addProblem(fmt.Errorf("field '%s' references item '%s' which does not exist", key, itemName))
-	}
-
-	amount := parser.getInt32(table, "amount")
-	if amount <= 0 {
-		parser.addProblem(fmt.Errorf("field '%s' amount must be greater than 0, got %d", key, amount))
-	}
-
-	return itemId, amount
 }
 
 // HELPERS
