@@ -531,6 +531,37 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.Return()
 	},
 
+	// Returns true if the NPC is blocking its room's exit in the specified direction
+	//
+	// @param handle MobHandle
+	// @param direction Direction
+	// @return boolean
+	"npc_is_blocking_exit": func(frame lua.Frame) lua.Outcome {
+		npc := frameGetNpcArg(&frame, 0)
+		direction := frameGetDirectionArg(&frame, 1)
+
+		return frame.ReturnBool(npc.isBlockingExit[direction])
+	},
+
+	// Sets whether the NPC is blocking its room's exit in the specified direction.
+	// While blocking, players and other mobs can't leave the NPC's room through that exit.
+	// The block ends when the NPC's mob dies or despawns.
+	//
+	// @param handle MobHandle
+	// @param direction Direction
+	// @param blocking boolean
+	"npc_set_blocking_exit": func(frame lua.Frame) lua.Outcome {
+		npc := frameGetNpcArg(&frame, 0)
+		direction := frameGetDirectionArg(&frame, 1)
+		blocking, ok := frame.Bool(2)
+		if !ok {
+			frame.ThrowArgTypeError(2, lua.BoolKind)
+		}
+
+		npc.isBlockingExit[direction] = blocking
+		return frame.Return()
+	},
+
 	// Deals magic damage to a mob. Returns the number of damage dealt.
 	//
 	// @param caster_handle MobHandle
@@ -664,7 +695,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.ReturnNumber(float64(room.Exits[direction]))
 	},
 
-	// Returns true if the exit to the room is locked in the specified direction
+	// Returns true if the room has an active lock on its exit in the specified direction
 	//
 	// @param room integer
 	// @param direction Direction
@@ -678,10 +709,11 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 			frame.ThrowArgError(0, fmt.Sprintf("Room %d (%s) has no %s exit.", roomIndex, room.Name, direction.String()))
 		}
 
-		return frame.ReturnBool(room.ExitIsLocked[direction])
+		return frame.ReturnBool(room.IsExitLocked(direction))
 	},
 
-	// Sets the locked status of the room's exit.
+	// Activates or deactivates the room's lock on its exit in the specified direction.
+	// Only affects this room, since locks are one-directional. The lock becomes active again when the room resets.
 	//
 	// @param room integer
 	// @param direction Direction
@@ -695,11 +727,12 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		}
 
 		room := &__world.Rooms[roomIndex]
-		if room.Exits[direction] == ROOM_NONE {
-			frame.ThrowArgError(0, fmt.Sprintf("Room %d (%s) has no %s exit.", roomIndex, room.Name, direction.String()))
+		lock := room.getLock(direction)
+		if lock == nil {
+			frame.ThrowArgError(0, fmt.Sprintf("Room %d (%s) has no lock on its %s exit.", roomIndex, room.Name, direction.String()))
 		}
 
-		room.SetExitLocked(__world, direction, locked)
+		lock.IsActive = locked
 		return frame.Return()
 	},
 }

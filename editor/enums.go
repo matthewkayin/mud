@@ -52,3 +52,12 @@ var ALL_CHEST_TYPES = []struct {
 	{ world.CHEST_TYPE_CHEST, "CHEST" },
 	{ world.CHEST_TYPE_CORPSE, "CORPSE" },
 }
+
+var ALL_LOCK_TYPES = []struct {
+	Value world.LockType
+	TSName string
+}{
+	{ world.LOCK_TYPE_PHYSICAL, "PHYSICAL" },
+	{ world.LOCK_TYPE_MAGICAL, "MAGICAL" },
+	{ world.LOCK_TYPE_COUNT, "COUNT" },
+}

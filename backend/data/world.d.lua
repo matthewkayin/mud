@@ -301,6 +301,22 @@ function world.npc_get_disposition(handle) end
 ---@return NpcMode
 function world.npc_get_mode(handle) end
 
+--- Returns true if the NPC is blocking its room's exit in the specified direction
+---
+---@param handle MobHandle
+---@param direction Direction
+---@return boolean
+function world.npc_is_blocking_exit(handle, direction) end
+
+--- Sets whether the NPC is blocking its room's exit in the specified direction.
+--- While blocking, players and other mobs can't leave the NPC's room through that exit.
+--- The block ends when the NPC's mob dies or despawns.
+---
+---@param handle MobHandle
+---@param direction Direction
+---@param blocking boolean
+function world.npc_set_blocking_exit(handle, direction, blocking) end
+
 --- Sets the NPC's disposition
 ---
 ---@param handle MobHandle
@@ -357,14 +373,15 @@ function world.room_get_occupant(room, occupant_index) end
 ---@param room integer
 function world.room_get_occupant_count(room) end
 
---- Returns true if the exit to the room is locked in the specified direction
+--- Returns true if the room has an active lock on its exit in the specified direction
 ---
 ---@param room integer
 ---@param direction Direction
 ---@return boolean
 function world.room_is_exit_locked(room, direction) end
 
---- Sets the locked status of the room's exit.
+--- Activates or deactivates the room's lock on its exit in the specified direction.
+--- Only affects this room, since locks are one-directional. The lock becomes active again when the room resets.
 ---
 ---@param room integer
 ---@param direction Direction

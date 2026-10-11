@@ -37,8 +37,7 @@ npc.behavior_params = {
 ---@param self MobHandle
 ---@param params Params
 function npc.init(self, params)
-    local room = world.mob_get_room(self)
-    world.room_set_exit_locked(room, params.ExitToBlock, true)
+    world.npc_set_blocking_exit(self, params.ExitToBlock, true)
 
 	return {
 		toll = params.Toll,
@@ -64,8 +63,7 @@ function npc.update(self, instance)
         instance.peace_timer = instance.peace_timer - 1
         if instance.peace_timer == 0 then
             -- Block exit
-            local room = world.mob_get_room(self)
-            world.room_set_exit_locked(room, instance.exit_to_block, true)
+            world.npc_set_blocking_exit(self, instance.exit_to_block, true)
 
             -- Remove toll from inventory
             local index = world.mob_find_inventory_item(self, instance.toll.name)
@@ -87,8 +85,7 @@ function npc.on_attacked(self, instance, attacker)
     world.log("Troll was attacked, set disposition to hostile.")
 
     -- Block exit
-    local room = world.mob_get_room(self)
-    world.room_set_exit_locked(room, instance.exit_to_block, true)
+    world.npc_set_blocking_exit(self, instance.exit_to_block, true)
 
     return world.NPC_EVENT_PREVENT_DEFAULT
 end
@@ -137,7 +134,7 @@ function npc.on_item_given(self, instance, player, added_to_index, amount)
     end
 
     -- Otherwise, the toll is paid, unblock the exit
-    world.room_set_exit_locked(room, instance.exit_to_block, false)
+    world.npc_set_blocking_exit(self, instance.exit_to_block, false)
     instance.peace_timer = TROLL_PEACE_DURATION
 
     world.message_room(room, string.format("%s grins and pockets the toll.", self_name))

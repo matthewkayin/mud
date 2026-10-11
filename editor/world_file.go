@@ -93,9 +93,13 @@ func editorWorldToWorld(editorWorld EditorWorld) (*world.World, []string) {
 		for direction := range world.Direction(world.DIRECTION_COUNT) {
 			if !isConnected[direction] {
 				room.Exits[direction] = world.ROOM_NONE
-				room.ExitIsLockedOnReset[direction] = false
 			}
 		}
+		// Remove locks on exits that are no longer connected. Locks with invalid directions are left for Validate() to report.
+		room.Locks = slices.DeleteFunc(slices.Clone(room.Locks), func(lock world.Lock) bool {
+			isDirectionValid := lock.Direction >= 0 && lock.Direction < world.DIRECTION_COUNT
+			return isDirectionValid && !isConnected[lock.Direction]
+		})
 		result.Rooms = append(result.Rooms, room)
 
 		for _, npc := range editorRoom.Npcs {

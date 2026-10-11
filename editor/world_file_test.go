@@ -28,14 +28,16 @@ func testEditorRoom(name string, x int, y int, connections ...world.RoomEditorPo
 }
 
 // An L of three rooms: A at (1, 0) is the start room, B at (0, 0) is west of A,
-// and C at (0, 1) is south of B. The B-C exit is locked and C has an NPC.
+// and C at (0, 1) is south of B. B's south exit to C is locked and C has an NPC.
 func testEditorWorld() EditorWorld {
 	a := world.RoomEditorPosition{ X: 1, Y: 0 }
 	b := world.RoomEditorPosition{ X: 0, Y: 0 }
 	c := world.RoomEditorPosition{ X: 0, Y: 1 }
 
 	roomB := testEditorRoom("B", 0, 0, a, c)
-	roomB.Room.ExitIsLockedOnReset[world.DIRECTION_SOUTH] = true
+	roomB.Room.Locks = []world.Lock {
+		{ Type: world.LOCK_TYPE_PHYSICAL, Direction: world.DIRECTION_SOUTH },
+	}
 	roomB.Room.DropTable.Entries = []world.DropTableEntry {
 		{
 			ItemId: world.ITEM_NAME_TO_ID["Gold"],
@@ -45,7 +47,6 @@ func testEditorWorld() EditorWorld {
 		},
 	}
 	roomC := testEditorRoom("C", 0, 1, b)
-	roomC.Room.ExitIsLockedOnReset[world.DIRECTION_NORTH] = true
 	roomC.Npcs = []world.Npc {
 		{
 			Id: world.NPC_ID_STR_TO_ID["troll"],
@@ -96,14 +97,19 @@ func TestEditorWorldToWorld(t *testing.T) {
 
 func TestEditorWorldClearsLocksWithoutExits(t *testing.T) {
 	editorWorld := testEditorWorld()
-	editorWorld.Rooms[2].Room.ExitIsLockedOnReset[world.DIRECTION_NORTH] = true
+	editorWorld.Rooms[2].Room.Locks = []world.Lock {
+		{ Type: world.LOCK_TYPE_MAGICAL, Direction: world.DIRECTION_NORTH },
+	}
 
 	savedWorld, problems := editorWorldToWorld(editorWorld)
 	if len(problems) != 0 {
 		t.Fatalf("Expected no problems, got %v", problems)
 	}
-	if savedWorld.Rooms[0].ExitIsLockedOnReset[world.DIRECTION_NORTH] {
-		t.Errorf("Expected lock on a missing exit to be cleared")
+	if len(savedWorld.Rooms[0].Locks) != 0 {
+		t.Errorf("Expected lock on a missing exit to be cleared, got %v", savedWorld.Rooms[0].Locks)
+	}
+	if len(savedWorld.Rooms[1].Locks) != 1 || len(savedWorld.Rooms[2].Locks) != 0 {
+		t.Errorf("Expected only B's south exit to be locked, got %v and %v", savedWorld.Rooms[1].Locks, savedWorld.Rooms[2].Locks)
 	}
 }
 

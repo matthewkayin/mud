@@ -396,8 +396,16 @@ var MENU_WORLD = Menu {
 				}
 
 				// Check if the exit is locked
-				if playerRoom.ExitIsLocked[direction] {
-					*player.inbox <- fmt.Sprintf("The %s exit is blocked.", direction.String())
+				if playerRoom.IsExitLocked(direction) {
+					*player.inbox <- fmt.Sprintf("The %s exit is locked.", direction.String())
+					return true
+				}
+
+				// Check if an NPC is blocking the exit
+				blockingNpcHandle, isExitBlocked := playerRoom.GetNpcBlockingExit(gamestate.world, direction)
+				if isExitBlocked {
+					blockingNpcMob := gamestate.world.Mobs.Get(blockingNpcHandle)
+					*player.inbox <- fmt.Sprintf("%s is blocking the way %s.", blockingNpcMob.GetName(), direction.String())
 					return true
 				}
 

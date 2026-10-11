@@ -14,12 +14,7 @@
         -1,
         -1
       ],
-      "ExitIsLockedOnReset": [
-        false,
-        false,
-        false,
-        false
-      ],
+      "Locks": [],
       "DropTable": {
         "Entries": [
           {
@@ -91,12 +86,7 @@
         -1,
         -1
       ],
-      "ExitIsLockedOnReset": [
-        false,
-        false,
-        false,
-        false
-      ],
+      "Locks": [],
       "DropTable": {
         "Entries": []
       },
@@ -119,12 +109,7 @@
         0,
         1
       ],
-      "ExitIsLockedOnReset": [
-        false,
-        false,
-        false,
-        false
-      ],
+      "Locks": [],
       "DropTable": {
         "Entries": [
           {
@@ -160,12 +145,7 @@
         -1,
         0
       ],
-      "ExitIsLockedOnReset": [
-        false,
-        false,
-        false,
-        false
-      ],
+      "Locks": [],
       "DropTable": {
         "Entries": []
       },

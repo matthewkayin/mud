@@ -5,6 +5,10 @@ export const NPC_MOVEMENT_TYPE_NAMES: Record<world.NpcMovementType, string> = {
   [world.NpcMovementType.SENTINEL]: 'Sentinel',
   [world.NpcMovementType.WANDER]: 'Wander',
 };
+export const LOCK_TYPE_NAMES: Record<Exclude<world.LockType, world.LockType.COUNT>, string> = {
+  [world.LockType.PHYSICAL]: 'Physical',
+  [world.LockType.MAGICAL]: 'Magical',
+};
 // Direction behavior params are saved by these names
 export const DIRECTION_NAMES: Record<Exclude<world.Direction, world.Direction.COUNT>, string> = {
   [world.Direction.NORTH]: 'north',

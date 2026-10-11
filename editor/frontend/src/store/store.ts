@@ -208,14 +208,11 @@ export class EditorStore {
     return this.state.startCell;
   }
 
-  getSelectedConnectionIsLocked = (): boolean => {
-    if (!this.state.selectedConnection) {
-      return false;
-    }
-
-    const fromRoom = this.state.rooms.get(this.state.selectedConnection.from.toString());
-    const direction = this.state.selectedConnection.getDirection();
-    return fromRoom!.ExitIsLockedOnReset[direction];
+  // Returns the type of the room's lock on its exit in the specified direction, or null if the exit is not locked
+  getExitLockType = (cell: EditorCell, direction: world.Direction): world.LockType | null => {
+    const room = this.state.rooms.get(cell.toString());
+    const lock = room?.Locks.find((lock) => lock.Direction === direction);
+    return lock ? lock.Type : null;
   }
 }
 

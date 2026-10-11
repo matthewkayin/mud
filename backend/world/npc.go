@@ -137,6 +137,8 @@ type Npc struct {
 	disposition NpcDisposition
 	timer int32
 	shouldReset bool
+	// Exits which the NPC's mob prevents players and other mobs from leaving its room through
+	isBlockingExit [DIRECTION_COUNT]bool
 	// The table returned by the script's init() hook, or nil
 	instance lua.Value
 }
@@ -369,6 +371,7 @@ func (npc *Npc) tryReset(world *World) {
 	npcRoom.RemoveOccupant(npc.mobHandle)
 	npc.mode = NPC_MODE_DEAD
 	npc.instance = lua.Nil()
+	npc.isBlockingExit = [DIRECTION_COUNT]bool{}
 	npc.timer = 0 // Trigger a respawn
 	npc.shouldReset = false
 }
@@ -425,6 +428,7 @@ func (npc *Npc) spawnMob(world *World) {
 	npc.disposition = npcData.startingDisposition
 
 	npc.instance = lua.Nil()
+	npc.isBlockingExit = [DIRECTION_COUNT]bool{}
 	if npcData.init != nil {
 		npc.callInit(world)
 	}
@@ -542,6 +546,7 @@ func (npc *Npc) update(world *World) {
 		npc.mode = NPC_MODE_DEAD
 		npc.timer = NPC_RESPAWN_DURATION
 		npc.instance = lua.Nil()
+	npc.isBlockingExit = [DIRECTION_COUNT]bool{}
 		return
 	}
 
@@ -651,9 +656,13 @@ func (npc *Npc) movementStep(world *World) {
 			// Collect an array of all possible exits
 			exitRoomIndices := make([]int, 0, 4)
 			for directionIndex := range DIRECTION_COUNT {
-				// Don't walk into non-existing or locked rooms
+				// Don't walk into non-existing, locked or blocked rooms
 				adjacentRoomIndex := npcRoom.Exits[directionIndex]
-				if adjacentRoomIndex == ROOM_NONE || npcRoom.ExitIsLocked[directionIndex] {
+				if adjacentRoomIndex == ROOM_NONE || npcRoom.IsExitLocked(Direction(directionIndex)) {
+					continue
+				}
+				_, isExitBlocked := npcRoom.GetNpcBlockingExit(world, Direction(directionIndex))
+				if isExitBlocked {
 					continue
 				}
 

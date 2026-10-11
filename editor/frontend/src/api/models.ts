@@ -98,6 +98,11 @@ export namespace world {
 	    SOUTH = 2,
 	    WEST = 3,
 	}
+	export enum LockType {
+	    COUNT = 2,
+	    MAGICAL = 1,
+	    PHYSICAL = 0,
+	}
 	export enum NpcBehaviorParamType {
 	    BOOLEAN = 2,
 	    DIRECTION = 4,
@@ -302,6 +307,20 @@ export namespace world {
 	        this.Data = source["Data"];
 	    }
 	}
+	export class Lock {
+	    Type: LockType;
+	    Direction: Direction;
+	
+	    static createFrom(source: any = {}) {
+	        return new Lock(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Type = source["Type"];
+	        this.Direction = source["Direction"];
+	    }
+	}
 	export class MobHandle {
 	    Id: number;
 	    Generation: number;
@@ -394,7 +413,7 @@ export namespace world {
 	    IsSafeZone: boolean;
 	    EditorPosition: RoomEditorPosition;
 	    Exits: number[];
-	    ExitIsLockedOnReset: boolean[];
+	    Locks: Lock[];
 	    DropTable: DropTable;
 	    Inventory: Inventory;
 	    Chests: Chest[];
@@ -410,7 +429,7 @@ export namespace world {
 	        this.IsSafeZone = source["IsSafeZone"];
 	        this.EditorPosition = this.convertValues(source["EditorPosition"], RoomEditorPosition);
 	        this.Exits = source["Exits"];
-	        this.ExitIsLockedOnReset = source["ExitIsLockedOnReset"];
+	        this.Locks = this.convertValues(source["Locks"], Lock);
 	        this.DropTable = this.convertValues(source["DropTable"], DropTable);
 	        this.Inventory = this.convertValues(source["Inventory"], Inventory);
 	        this.Chests = this.convertValues(source["Chests"], Chest);

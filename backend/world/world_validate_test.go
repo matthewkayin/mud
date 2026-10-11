@@ -55,6 +55,18 @@ func TestValidateValidWorld(t *testing.T) {
 	}
 }
 
+func TestValidateOneDirectionalLock(t *testing.T) {
+	world := validateTestWorld()
+	world.Rooms[0].Locks = []Lock {
+		{ Type: LOCK_TYPE_PHYSICAL, Direction: DIRECTION_EAST },
+	}
+
+	problems := world.Validate()
+	if len(problems) != 0 {
+		t.Errorf("Expected no problems, got %v", problems)
+	}
+}
+
 func TestValidateProblems(t *testing.T) {
 	tests := []struct {
 		name string
@@ -77,9 +89,27 @@ func TestValidateProblems(t *testing.T) {
 		{ "one-way exit", func(world *World) {
 			world.Rooms[1].Exits[DIRECTION_WEST] = ROOM_NONE
 		}, "no west exit back" },
-		{ "mismatched lock", func(world *World) {
-			world.Rooms[0].ExitIsLockedOnReset[DIRECTION_EAST] = true
-		}, "disagree on whether they are locked" },
+		{ "lock without exit", func(world *World) {
+			world.Rooms[0].Locks = []Lock {
+				{ Type: LOCK_TYPE_PHYSICAL, Direction: DIRECTION_NORTH },
+			}
+		}, "has no north exit" },
+		{ "duplicate lock", func(world *World) {
+			world.Rooms[0].Locks = []Lock {
+				{ Type: LOCK_TYPE_PHYSICAL, Direction: DIRECTION_EAST },
+				{ Type: LOCK_TYPE_MAGICAL, Direction: DIRECTION_EAST },
+			}
+		}, "more than one lock on its east exit" },
+		{ "invalid lock type", func(world *World) {
+			world.Rooms[0].Locks = []Lock {
+				{ Type: LOCK_TYPE_COUNT, Direction: DIRECTION_EAST },
+			}
+		}, "invalid lock type" },
+		{ "invalid lock direction", func(world *World) {
+			world.Rooms[0].Locks = []Lock {
+				{ Type: LOCK_TYPE_PHYSICAL, Direction: DIRECTION_COUNT },
+			}
+		}, "invalid direction" },
 		{ "exit not adjacent", func(world *World) {
 			world.Rooms[1].EditorPosition = RoomEditorPosition{ X: 2, Y: 0 }
 		}, "is not east of it" },

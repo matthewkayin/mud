@@ -28,8 +28,7 @@ export class EditorActionAddRoom implements EditorAction {
       Description: 'This is a new room',
       // Exits are filled in when the world is saved
       Exits: new Array(world.Direction.COUNT).fill(getEditorConstants().RoomNone),
-      ExitIsLocked: new Array(world.Direction.COUNT).fill(false),
-      ExitIsLockedOnReset: new Array(world.Direction.COUNT).fill(false),
+      Locks: [],
       IsSafeZone: false,
       DropTable: {
         Entries: [],
@@ -150,10 +149,14 @@ export class EditorActionDisconnectRooms implements EditorAction {
   }
 }
 
-export class EditorActionEditConnection implements EditorAction {
+// Sets or removes (when lockType is null) the lock on one room's exit.
+// Locks are one-directional, so the room on the other side of the exit is unaffected.
+export class EditorActionSetExitLock implements EditorAction {
   private data: {
-    connection: EditorConnection;
-    isLocked: boolean;
+    cell: EditorCell;
+    direction: world.Direction;
+    lockType: world.LockType | null;
+    previousLockType: world.LockType | null;
   };
 
   constructor(params: typeof this.data) {
@@ -161,21 +164,25 @@ export class EditorActionEditConnection implements EditorAction {
   }
 
   do = (state: EditorState) => {
-    this.setConnectionIsLocked(state, this.data.isLocked);
+    this.setExitLock(state, this.data.lockType);
   }
 
   undo = (state: EditorState) => {
-    this.setConnectionIsLocked(state, !this.data.isLocked);
+    this.setExitLock(state, this.data.previousLockType);
   }
 
-  private setConnectionIsLocked(state: EditorState, value: boolean) {
-    const fromRoom = state.rooms.get(this.data.connection.from.toString());
-    const toRoom = state.rooms.get(this.data.connection.to.toString());
-    const direction = this.data.connection.getDirection();
-    const reverseDirection = (direction + 2) % world.Direction.COUNT;
+  private setExitLock(state: EditorState, lockType: world.LockType | null) {
+    const key = this.data.cell.toString();
+    const room = structuredClone(state.rooms.get(key)!);
+    room.Locks = room.Locks.filter((lock) => lock.Direction !== this.data.direction);
+    if (lockType !== null) {
+      room.Locks.push(world.Lock.createFrom({
+        Type: lockType,
+        Direction: this.data.direction,
+      }));
+    }
 
-    fromRoom!.ExitIsLockedOnReset[direction] = value;
-    toRoom!.ExitIsLockedOnReset[reverseDirection] = value;
+    state.rooms.set(key, room);
   }
 }
 

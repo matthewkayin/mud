@@ -105,6 +105,7 @@ Scripts read and change NPC state through the `world` library, passing the NPC's
 | `mob_is_npc(handle)` | |
 | `npc_get_mode(handle)`, `npc_set_mode(handle, mode)` | `world.NpcMode`: `IDLE`, `SURPRISE` or `AGGRO`. Setting a mode goes through the same Go setters as the state machine, so `SURPRISE` alerts the mob and `IDLE` restarts the wander timer. Dead isn't a mode that scripts can see or set, because an NPC is dead exactly when its mob doesn't exist. |
 | `npc_get_disposition(handle)`, `npc_set_disposition(handle, disposition)` | `world.NpcDisposition`: `NEUTRAL`, `HOSTILE` or `FRIENDLY` |
+| `npc_is_blocking_exit(handle, direction)`, `npc_set_blocking_exit(handle, direction, blocking)` | Takes a `world.Direction`. While blocking, nobody can leave the NPC's room through that exit. The block ends when the mob dies or despawns, and room resets don't affect it. See [Rooms](rooms.md#npc-exit-blocking) |
 
 A mode set in `update` takes effect on the same tick, because `update` runs before the state machine.
 

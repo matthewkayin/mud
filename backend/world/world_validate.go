@@ -49,15 +49,31 @@ func (world *World) Validate() []string {
 			if exitRoom.Exits[oppositeDirection] != roomIndex {
 				addProblem("%s has a %s exit to room %d, but room %d has no %s exit back.",
 					roomName, direction.String(), exitRoomIndex, exitRoomIndex, oppositeDirection.String())
-			} else if exitRoom.ExitIsLockedOnReset[oppositeDirection] != room.ExitIsLockedOnReset[direction] {
-				addProblem("%s %s exit and room %d %s exit disagree on whether they are locked.",
-					roomName, direction.String(), exitRoomIndex, oppositeDirection.String())
 			}
 
 			if exitRoom.EditorPosition != directionStepFrom(room.EditorPosition, direction) {
 				addProblem("%s has a %s exit to room %d, but room %d is not %s of it in the editor.",
 					roomName, direction.String(), exitRoomIndex, exitRoomIndex, direction.String())
 			}
+		}
+
+		isDirectionLocked := [DIRECTION_COUNT]bool{}
+		for lockIndex, lock := range room.Locks {
+			if lock.Type < 0 || lock.Type >= LOCK_TYPE_COUNT {
+				addProblem("%s lock %d has invalid lock type %d.", roomName, lockIndex, lock.Type)
+			}
+			if lock.Direction < 0 || lock.Direction >= DIRECTION_COUNT {
+				addProblem("%s lock %d has invalid direction %d.", roomName, lockIndex, lock.Direction)
+				continue
+			}
+			if room.Exits[lock.Direction] == ROOM_NONE {
+				addProblem("%s has a lock on its %s exit, but it has no %s exit.",
+					roomName, lock.Direction.String(), lock.Direction.String())
+			}
+			if isDirectionLocked[lock.Direction] {
+				addProblem("%s has more than one lock on its %s exit.", roomName, lock.Direction.String())
+			}
+			isDirectionLocked[lock.Direction] = true
 		}
 
 		problems = append(problems, validateDropTable(&room.DropTable, roomName)...)
