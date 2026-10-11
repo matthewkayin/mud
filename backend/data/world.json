@@ -64,6 +64,18 @@
               "Max": 100
             },
             "DropChancePercent": 100
+          },
+          {
+            "ItemId": "Potion of Health Recipe",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 1
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 100
           }
         ]
       },
