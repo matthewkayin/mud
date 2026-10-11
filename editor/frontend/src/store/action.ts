@@ -149,43 +149,6 @@ export class EditorActionDisconnectRooms implements EditorAction {
   }
 }
 
-// Sets or removes (when lockType is null) the lock on one room's exit.
-// Locks are one-directional, so the room on the other side of the exit is unaffected.
-export class EditorActionSetExitLock implements EditorAction {
-  private data: {
-    cell: EditorCell;
-    direction: world.Direction;
-    lockType: world.LockType | null;
-    previousLockType: world.LockType | null;
-  };
-
-  constructor(params: typeof this.data) {
-    this.data = params;
-  }
-
-  do = (state: EditorState) => {
-    this.setExitLock(state, this.data.lockType);
-  }
-
-  undo = (state: EditorState) => {
-    this.setExitLock(state, this.data.previousLockType);
-  }
-
-  private setExitLock(state: EditorState, lockType: world.LockType | null) {
-    const key = this.data.cell.toString();
-    const room = structuredClone(state.rooms.get(key)!);
-    room.Locks = room.Locks.filter((lock) => lock.Direction !== this.data.direction);
-    if (lockType !== null) {
-      room.Locks.push(world.Lock.createFrom({
-        Type: lockType,
-        Direction: this.data.direction,
-      }));
-    }
-
-    state.rooms.set(key, room);
-  }
-}
-
 export class EditorActionSetStartRoom implements EditorAction {
   private data: {
     cell: EditorCell | null;
