@@ -31,6 +31,12 @@ type World struct {
 	Npcs []Npc
 
 	resetTimer int
+
+	// True while a script function called by scriptCall is running
+	scriptIsRunning bool
+	// NPC events fired while a script was running, handled once it returns
+	deferredNpcEvents []deferredNpcEvent
+	isHandlingDeferredNpcEvents bool
 }
 
 func WorldInit() *World {

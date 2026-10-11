@@ -113,6 +113,11 @@ type NpcEvent struct {
 	Data any
 }
 
+type deferredNpcEvent struct {
+	npc *Npc
+	event NpcEvent
+}
+
 type Npc struct {
 	// NPC "config" variables - tells us how to make a mob based on this NPC
 	Id NpcId `ts_type:"string"`
@@ -134,7 +139,6 @@ type Npc struct {
 	shouldReset bool
 	// The table returned by the script's init() hook, or nil
 	instance lua.Value
-	events []NpcEvent
 }
 
 type NpcJson struct {
@@ -421,7 +425,6 @@ func (npc *Npc) spawnMob(world *World) {
 	npc.disposition = npcData.startingDisposition
 
 	npc.instance = lua.Nil()
-	npc.events = make([]NpcEvent, 0, 1)
 	if npcData.init != nil {
 		npc.callInit(world)
 	}
@@ -541,12 +544,6 @@ func (npc *Npc) update(world *World) {
 		npc.instance = lua.Nil()
 		return
 	}
-
-	// Handle events
-	for index := range len(npc.events) {
-		npc.onEvent(world, &npc.events[index])
-	}
-	npc.events = npc.events[:0]
 
 	npc.callHook(world, NPC_DATA[npc.Id].update, "update")
 
@@ -683,11 +680,45 @@ func (npc *Npc) movementStep(world *World) {
 	}
 }
 
-func (npc *Npc) PushEvent(event NpcEvent) {
-	npc.events = append(npc.events, event)
+// Handles an NPC event immediately, or once the running script returns if a script is running.
+// The event's hook may change world state before this returns.
+func (npc *Npc) FireEvent(world *World, event NpcEvent) {
+	if world.scriptIsRunning {
+		world.deferredNpcEvents = append(world.deferredNpcEvents, deferredNpcEvent {
+			npc: npc,
+			event: event,
+		})
+		return
+	}
+
+	npc.onEvent(world, &event)
+}
+
+// Handles the NPC events that were fired while a script was running
+func (world *World) handleDeferredNpcEvents() {
+	if world.isHandlingDeferredNpcEvents {
+		return
+	}
+	world.isHandlingDeferredNpcEvents = true
+	defer func() {
+		world.isHandlingDeferredNpcEvents = false
+	}()
+
+	// Hooks can fire more events, which are appended to the list while it is being handled
+	for index := 0; index < len(world.deferredNpcEvents); index++ {
+		deferredEvent := world.deferredNpcEvents[index]
+		deferredEvent.npc.onEvent(world, &deferredEvent.event)
+	}
+	world.deferredNpcEvents = world.deferredNpcEvents[:0]
 }
 
 func (npc *Npc) onEvent(world* World, event *NpcEvent) {
+	// A deferred event can outlive the NPC's mob
+	_, npcMobExists := world.Mobs.GetIfExists(npc.mobHandle)
+	if !npcMobExists {
+		return
+	}
+
 	switch event.Type {
 		case NPC_EVENT_TYPE_ATTACKED: {
 			data := event.Data.(NpcEventAttacked)

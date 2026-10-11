@@ -378,3 +378,71 @@ end
 		}
 	}
 }
+
+// Pushes a goblin NPC whose on_attacked hook counts its calls in instance.count.
+// The first call deals magic damage to itself, which fires a nested ATTACKED event while the hook is running.
+func scriptTestPushCountingNpc(t *testing.T, world *World) *Npc {
+	hooks, err := world.luaState.DoString("@test.lua", `
+		return {
+			init = function(self, params)
+				return { count = 0 }
+			end,
+			on_attacked = function(self, instance, attacker)
+				instance.count = instance.count + 1
+				if instance.count == 1 then
+					world.deal_magic_damage(self, self, 1)
+				end
+			end,
+		}
+	`)
+	if err != nil {
+		t.Fatalf("Error loading hooks: %s", err.Error())
+	}
+	hooksTable, _ := hooks[0].AsTable()
+	parser := ScriptParser{}
+	npcData := NPC_DATA[TEST_NPC_GOBLIN]
+	npcData.init = parser.getOptionalFunction(hooksTable, "init")
+	npcData.onAttacked = parser.getOptionalFunction(hooksTable, "on_attacked")
+	if parser.getError() != nil {
+		t.Fatalf("Error parsing hooks: %s", parser.getError().Error())
+	}
+
+	npc := scriptTestPushNpc(world, "Goblin")
+	world.Mobs.Get(npc.mobHandle).Data.Health = 100
+	npc.callInit(world)
+	return npc
+}
+
+func scriptTestGetInstanceCount(t *testing.T, npc *Npc) float64 {
+	instance, ok := npc.instance.AsTable()
+	if !ok {
+		t.Fatalf("Expected the instance to be a table, got %s", npc.instance.Kind().String())
+	}
+	count, _ := instance.RawGetString("count").AsNumber()
+	return count
+}
+
+func TestNpcEventDeferredDuringScript(t *testing.T) {
+	primeTestData()
+	world := scriptTestWorld(t)
+	npc := scriptTestPushCountingNpc(t, world)
+
+	// The event fired from Go is handled immediately, and the nested event fired by
+	// deal_magic_damage is handled once the hook returns
+	npc.FireEvent(world, NpcEvent {
+		Type: NPC_EVENT_TYPE_ATTACKED,
+		Data: NpcEventAttacked {
+			AttackerHandle: npc.mobHandle,
+		},
+	})
+
+	if count := scriptTestGetInstanceCount(t, npc); count != 2 {
+		t.Errorf("Expected on_attacked to be called 2 times, got %v", count)
+	}
+	if len(world.deferredNpcEvents) != 0 {
+		t.Errorf("Expected no deferred events, got %d", len(world.deferredNpcEvents))
+	}
+	if world.scriptIsRunning {
+		t.Errorf("Expected scriptIsRunning to be false after the event was handled")
+	}
+}

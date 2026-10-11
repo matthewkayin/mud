@@ -158,13 +158,14 @@ func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, newRoomIn
 
 	// Fire event to NPCs
 	if occupantMob.IsPlayer() {
-		for _, npcHandle := range newRoom.Occupants {
+		// Clone the occupants, since NPC hooks run during the loop
+		for _, npcHandle := range slices.Clone(newRoom.Occupants) {
 			npcMob := world.Mobs.Get(npcHandle)
 			if !npcMob.IsNpc()  {
 				continue
 			}
 
-			npcMob.Npc.PushEvent(NpcEvent {
+			npcMob.Npc.FireEvent(world, NpcEvent {
 				Type: NPC_EVENT_TYPE_PLAYER_ENTERED,
 				Data: NpcEventPlayerEntered {
 					PlayerHandle: occupantHandle,

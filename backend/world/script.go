@@ -92,8 +92,14 @@ func (world *World) ScriptQuit() {
 // Calls a script function and returns its first result.
 // Returns false if the call failed, in which case the error and its stack traceback are logged.
 // description names the function in the log, e.g. "NPC 'troll' update()"
+// NPC events fired during the call are deferred and handled after it returns, since lunar can't be re-entered
 func (world *World) scriptCall(function lua.Value, description string, args ...lua.Value) (lua.Value, bool) {
+	world.scriptIsRunning = true
 	result, err := world.luaState.CallOne(function, args...)
+	world.scriptIsRunning = false
+
+	world.handleDeferredNpcEvents()
+
 	if err != nil {
 		log.Printf("Warn - %s failed: %s", description, scriptFormatError(err))
 		return lua.Nil(), false

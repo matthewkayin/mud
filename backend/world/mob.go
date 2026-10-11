@@ -385,7 +385,7 @@ func (mob *Mob) damage(world *World, attackerHandle MobHandle, damage int32) {
 	mob.alertness = MOB_ALERTNESS_MAX
 
 	if mob.IsNpc() {
-		mob.Npc.PushEvent(NpcEvent {
+		mob.Npc.FireEvent(world, NpcEvent {
 			Type: NPC_EVENT_TYPE_ATTACKED,
 			Data: NpcEventAttacked {
 				AttackerHandle: attackerHandle,

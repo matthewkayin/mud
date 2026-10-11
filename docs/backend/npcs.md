@@ -91,9 +91,9 @@ Every hook is optional. Each event has its own hook, so an NPC only crosses the 
 
 Hook errors are logged as warnings and treated as unhandled.
 
-On the Go side, events are queued on the NPC with `Npc.PushEvent` and handled at the start of the NPC's next `update` by `Npc.onEvent`, so a hook never runs in the middle of another hook. `Npc.callHook` passes `instance` and `self` before the hook's own arguments, and `Npc.callEventHook` also reads the prevent-default result. To add an event:
+On the Go side, events are fired with `Npc.FireEvent` and handled immediately by `Npc.onEvent`. An event fired while a script is running (for example, `world.deal_magic_damage` fires `on_attacked`) is deferred until that script returns, so a hook never runs in the middle of another hook. Go code that fires an event should expect the hook to have changed world state by the time `FireEvent` returns. `Npc.callHook` passes `instance` and `self` before the hook's own arguments, and `Npc.callEventHook` also reads the prevent-default result. To add an event:
 1. Add a `*lua.Function` field to `NpcData` and read it in `parseNpc` with `getOptionalFunction`.
-2. Add an `NPC_EVENT_TYPE_*` constant and an event data struct, and push the event from wherever it happens.
+2. Add an `NPC_EVENT_TYPE_*` constant and an event data struct, and fire the event from wherever it happens.
 3. Handle the event in `onEvent`: call the hook with `callHook` or `callEventHook`, then run any Go default.
 
 ## NPC state

@@ -45,7 +45,7 @@ go test ./...
 ### Layers
 - `api/` — HTTP endpoints, OAuth (Recurse Center) + optional debug auth, token→user ID map
 - `game/` — players and command handling. Each player is in one menu (`PLAYER_MENU_LOGIN`, `_CREATE`, `_WORLD`); a `Menu` is a map of verb → `MenuEntry{usage, description, handler}` plus `onEnter`/`onExit`. Handlers return `false` to print usage. `help` is handled generically. Most gameplay commands live in `menu_world*.go`. Players queue a `nextAction` that is applied at the next tick (`action.go`).
-- `world/` — pure simulation: rooms, mobs, NPCs, items, spells, recipes. `World.Update()` advances the simulation and appends `world.Event`s; `game` subscribes via `addEventListener(eventType, fn)` and dispatches after each update, then clears events. Keep `world` free of player/networking concerns and communicate outward through events.
+- `world/` — pure simulation: rooms, mobs, NPCs, items, spells, recipes. `World.Update()` advances the simulation and appends `world.Event`s; `game` subscribes via `addEventListener(eventType, fn)` and dispatches after each update and after each socket event, then clears events. Keep `world` free of player/networking concerns and communicate outward through events. NPC events (`Npc.FireEvent`) are handled immediately, or deferred until the running script returns, since Lua can't be re-entered (see `docs/backend/npcs.md`).
 
 ### World data conventions
 - Static game data that isn't scripted yet is defined as Go tables indexed by enum constants (e.g. `MOB_ABILITY_DATA` in `mob_ability.go`).
@@ -62,6 +62,8 @@ go test ./...
 
 ## Style
 Go code uses long descriptive camelCase names, `SCREAMING_SNAKE_CASE` constants/enums declared with `iota`, and `log.Printf("Warn - ...")` for recoverable problems. Types should be defined at the top of the file and should not be interleved with function definitions (excepting types which are defined only within the scope of a function).
+
+In Go code, **never** combine statements with if statements (i.e. `if _, value := myFunc(); value == 5 {}`)
 
 ## Documentation
 
