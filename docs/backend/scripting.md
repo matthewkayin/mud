@@ -138,6 +138,19 @@ Scripts reach the backend through the global `world` table, which `scriptInit` (
 - **Constant tables** from `ScriptConstantTables()` in `backend/world/script_constants.go`. Each `ScriptConstantTable` becomes `world.<Name>`, with string values. For example, an item script sets `item.kind = world.ItemKind.CONSUMABLE`, and the parser maps that string back to the Go enum. To add a table, append it to the slice that `ScriptConstantTables()` returns.
 - **Free constants** from `ScriptFreeConstants()` in the same file. Each `ScriptFreeConstant` is set directly on the table as `world.<Name>`, and its `Value` is any scalar `lua.Value` (`lua.Number`, `lua.String`, `lua.Bool`). For example, a spell script can set `spell.cast_time = world.SPELL_CAST_TIME_INSTANT`. To add one, append it to the slice that `ScriptFreeConstants()` returns.
 
+### Script errors
+
+When Go calls a script function (a spell's `on_hit`, an item's `on_use`, an NPC hook) and the script raises an error, the error is logged as a `Warn` along with Lua's stack traceback, e.g.
+
+```
+Warn - NPC 'troll' update() failed: bad argument #1 (MobHandle expected)
+stack traceback:
+	[Go]: in function 'native function'
+	npcs/troll.lua:68: in function <anonymous>
+```
+
+A `[Go]` frame on top means a `world` library function rejected the call; the frame below it is the script line that called it. Call script functions from Go through `World.scriptCall` (`backend/world/script.go`) so that their errors are logged the same way.
+
 ### Mob handles
 
 Scripts refer to mobs through `MobHandle` values, such as the `caster` and `target` arguments of a spell's `on_hit`. A handle is opaque userdata with no readable fields, so scripts read mob state through the `world.mob_get_*` functions, one per value (`mob_get_name`, `mob_get_room`, `mob_get_health`, `mob_get_max_health` etc.). `mob_get_stat(handle, stat)` takes a `world.Stat` value (`world.Stat.STR`), and `mob_get_equipment(handle, slot)` takes a `world.EquipmentSlot` value and returns the equipped item's name, or `nil` if the slot is empty. Handles compare with `==`, and `tostring` gives `MobHandle(<id>:<generation>)` for logging. NPC state is read and set through handles too, with the `npc_*` functions described in [NPC state](npcs.md#npc-state).

@@ -146,7 +146,7 @@ func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, newRoomIn
 		bitset.Set(occupantMob.PlayerCharacter.RoomsDiscovered, newRoomIndex, true)
 	}
 
-	// Fire event
+	// Push event
 	world.pushEvent(Event {
 		EventType: EVENT_TYPE_MOB_MOVE,
 		Data: EventMobMove {

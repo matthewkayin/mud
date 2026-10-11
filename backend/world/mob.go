@@ -651,9 +651,8 @@ func (mob *Mob) spellcast(world *World, targetMob *Mob) {
 		return
 	}
 
-	_, err = world.luaState.Call(spellData.OnHit.Value(), casterLuaHandle, targetLuaHandle)
-	if err != nil {
-		log.Printf("Warn - Error during spell %s onHit: %s", spellData.Name, err.Error())
+	_, ok := world.scriptCall(spellData.OnHit.Value(), fmt.Sprintf("spell '%s' on_hit()", spellData.Name), casterLuaHandle, targetLuaHandle)
+	if !ok {
 		return
 	}
 
@@ -734,19 +733,13 @@ func (mob *Mob) useItem(world *World, targetMob *Mob) {
 	switch itemData.Kind {
 		case ITEM_KIND_CONSUMABLE: {
 			consumableData := itemData.Data.(*ItemDataConsumable)
-			_, err := world.luaState.Call(consumableData.onUse.Value(), lua.Nil(), lua.Nil())
-			if err != nil {
-				log.Printf("Warn - Error during item %s onUse: %s", itemData.Name, err.Error())
-			}
+			world.scriptCall(consumableData.onUse.Value(), fmt.Sprintf("item '%s' on_use()", itemData.Name), lua.Nil(), lua.Nil())
 		}
 		case ITEM_KIND_SPELL_SCROLL: {
 			scrollData := itemData.Data.(*ItemDataSpellScroll)
 			spellData := SPELL_DATA[scrollData.Spell]
 
-			_, err := world.luaState.Call(spellData.OnHit.Value(), lua.Nil(), lua.Nil())
-			if err != nil {
-				log.Printf("Warn - Error during spell %s onHit: %s", spellData.Name, err.Error())
-			}
+			world.scriptCall(spellData.OnHit.Value(), fmt.Sprintf("spell '%s' on_hit()", spellData.Name), lua.Nil(), lua.Nil())
 		}
 		default:
 			panic(fmt.Sprintf("Unhandled item type %s. This item type should never have been allowed to be used here.", itemData.Kind.String()))

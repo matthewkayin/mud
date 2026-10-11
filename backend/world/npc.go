@@ -20,6 +20,7 @@ const NPC_MOVEMENT_STEP_DURATION = 60 / WORLD_SECONDS_PER_UPDATE
 
 const NPC_MOVEMENT_TYPE_OVERRIDE_NONE = NPC_MOVEMENT_TYPE_COUNT
 
+const NPC_EVENT_ALLOW_DEFAULT = false
 const NPC_EVENT_PREVENT_DEFAULT = true
 
 type NpcMode int
@@ -418,7 +419,6 @@ func (npc *Npc) spawnMob(world *World) {
 	// Init behavior
 	npc.setModeIdle()
 	npc.disposition = npcData.startingDisposition
-	log.Printf("NPC starting disposition - %s", npc.disposition.String())
 
 	npc.instance = lua.Nil()
 	npc.events = make([]NpcEvent, 0, 1)
@@ -485,20 +485,18 @@ func (npc *Npc) callFunction(world *World, function *lua.Function, functionName 
 		return lua.Nil(), false
 	}
 
-	result, err := world.luaState.CallOne(function.Value(), args...)
-	if err != nil {
-		log.Printf("Warn - NPC '%s' %s() failed: %s", NPC_DATA[npc.Id].Id, functionName, err.Error())
-		return lua.Nil(), false
-	}
-
-	return result, true
+	return world.scriptCall(function.Value(), fmt.Sprintf("NPC '%s' %s()", NPC_DATA[npc.Id].Id, functionName), args...)
 }
 
 // Calls a script event hook and returns true if the event's default should be prevented
 func (npc *Npc) callEventHook(world *World, hook *lua.Function, hookName string, args ...lua.Value) bool {
-	result, handled := npc.callHook(world, hook, hookName, args...)
-	if !handled {
-		return false
+	if hook == nil {
+		return NPC_EVENT_ALLOW_DEFAULT
+	}
+
+	result, ok := npc.callHook(world, hook, hookName, args...)
+	if !ok {
+		return NPC_EVENT_PREVENT_DEFAULT
 	}
 
 	// The hook is allowed to not return a boolean, in which case preventDefault is false
@@ -548,7 +546,7 @@ func (npc *Npc) update(world *World) {
 	for index := range len(npc.events) {
 		npc.onEvent(world, &npc.events[index])
 	}
-	npc.events = []NpcEvent{}
+	npc.events = npc.events[:0]
 
 	npc.callHook(world, NPC_DATA[npc.Id].update, "update")
 
@@ -713,7 +711,6 @@ func (npc *Npc) onEvent(world* World, event *NpcEvent) {
 			}
 
 			preventDefault := npc.callEventHook(world, NPC_DATA[npc.Id].onPlayerEntered, "on_player_entered", playerLuaHandle)
-			log.Printf("On player entered, prevent default? %v", preventDefault)
 			if preventDefault {
 				return
 			}

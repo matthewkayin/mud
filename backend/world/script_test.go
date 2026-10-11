@@ -1,6 +1,9 @@
 package world
 
 import (
+	"bytes"
+	"log"
+	"os"
 	"strings"
 	"testing"
 
@@ -340,6 +343,38 @@ func TestScriptInventory(t *testing.T) {
 		_, err := world.luaState.DoString("@test.lua", testCase.source)
 		if err == nil || !strings.Contains(err.Error(), testCase.expectedError) {
 			t.Errorf("%s: expected error containing %q, got %v", testCase.source, testCase.expectedError, err)
+		}
+	}
+}
+
+func TestScriptCallLogsTraceback(t *testing.T) {
+	world := scriptTestWorld(t)
+
+	results, err := world.luaState.DoString("@test.lua", `
+local function inner()
+	return world.mob_get_name("not a handle")
+end
+return function()
+	return inner()
+end
+`)
+	if err != nil {
+		t.Fatalf("DoString: %s", err.Error())
+	}
+
+	var logOutput bytes.Buffer
+	log.SetOutput(&logOutput)
+	t.Cleanup(func() {
+		log.SetOutput(os.Stderr)
+	})
+
+	_, ok := world.scriptCall(results[0], "test function()")
+	if ok {
+		t.Fatalf("expected scriptCall to fail")
+	}
+	for _, expected := range []string{ "test function() failed", "stack traceback:", "test.lua:3" } {
+		if !strings.Contains(logOutput.String(), expected) {
+			t.Errorf("expected log to contain %q, got:\n%s", expected, logOutput.String())
 		}
 	}
 }

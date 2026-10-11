@@ -76,9 +76,9 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		speaker := frameGetMobArg(&frame, 0)
 
 		// Get message from args
-		message, ok := frame.String(2)
+		message, ok := frame.String(1)
 		if !ok {
-			frame.ThrowArgTypeError(2, lua.StringKind)
+			frame.ThrowArgTypeError(1, lua.StringKind)
 		}
 
 		__world.messageRoom(speaker.Data.Room, fmt.Sprintf("%s: '%s'", speaker.Data.Name, message))

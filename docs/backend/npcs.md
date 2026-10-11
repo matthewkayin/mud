@@ -63,16 +63,16 @@ Every hook also receives `self`, the `MobHandle` of the NPC's own mob, so a scri
 | Hook | Called | Arguments | Return |
 | --- | --- | --- | --- |
 | `init` | When the NPC spawns its mob | `self, params` | The instance table, or nil |
-| `update` | Every world update while the mob is alive, before the state machine runs | `instance, self` | |
-| `on_attacked` | When the mob takes damage | `instance, self, attacker` | |
-| `on_player_entered` | When a player moves into the mob's room | `instance, self, player` | `true` to prevent the default |
-| `on_item_given` | When a player gives the mob an item | `instance, self, player, added_to_index, amount` | `true` to prevent the default |
-| `get_status_description` | When a player looks at the mob, after its description | `instance, self` | A string, or nil for no status line |
+| `update` | Every world update while the mob is alive, before the state machine runs | `self, instance` | |
+| `on_attacked` | When the mob takes damage | `self, instance, attacker` | |
+| `on_player_entered` | When a player moves into the mob's room | `self, instance, player` | `true` to prevent the default |
+| `on_item_given` | When a player gives the mob an item | `self, instance, player, added_to_index, amount` | `true` to prevent the default |
+| `get_status_description` | When a player looks at the mob, after its description | `self, instance` | A string, or nil for no status line |
 
 `attacker` and `player` are `MobHandle`s. `added_to_index` is the 0-based index in the NPC's inventory that the given item was added to, and `amount` is how many were given. Pass `self` and `added_to_index` to the [inventory functions](scripting.md#inventories) to inspect the item or move it:
 
 ```lua
-npc.on_item_given = function(instance, self, player, added_to_index, amount)
+npc.on_item_given = function(self, instance, player, added_to_index, amount)
 	if world.mob_get_inventory_item_name(self, added_to_index) ~= "Gold" or amount < 10 then
 		-- Not handled, so the default gives the item back
 		return
