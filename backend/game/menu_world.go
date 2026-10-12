@@ -335,7 +335,6 @@ var MENU_WORLD = Menu {
 					return true
 				}
 
-				// TODO: handle case where they talk to an NPC
 				if targetMob.IsNpc() {
 					*player.inbox <- fmt.Sprintf("%s is not a player. To talk to them, use the 'talk' command.", targetMob.Data.Name)
 					return true
