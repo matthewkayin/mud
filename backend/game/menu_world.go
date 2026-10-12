@@ -534,6 +534,9 @@ var MENU_WORLD = Menu {
 					*player.inbox <- fmt.Sprintf("You moved into %s.", playerRoom.Name)
 				}
 
+				// Stop talking to current NPC
+				player.isTalking = false
+
 				describeRoomToPlayer(gamestate, player, playerRoom)
 				return true
 			},
@@ -564,6 +567,7 @@ var MENU_WORLD = Menu {
 
 				// Set hidden
 				playerMob.SetFlag(world.MOB_FLAG_HIDDEN, true)
+				player.isTalking = false
 				*player.inbox <- "You hid into the shadows."
 
 				return true
