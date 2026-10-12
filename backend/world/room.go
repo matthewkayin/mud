@@ -151,7 +151,7 @@ func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, newRoomIn
 	}
 
 	// Player room discovery
-	if occupantMob.PlayerCharacter != nil {
+	if occupantMob.IsPlayer() {
 		bitset.Set(occupantMob.PlayerCharacter.RoomsDiscovered, newRoomIndex, true)
 	}
 

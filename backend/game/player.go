@@ -24,6 +24,9 @@ type Player struct {
 	nextAction Action
 	mobHandle world.MobHandle
 	tradeSession *TradeSession
+
+	isTalking bool
+	talkingToHandle world.MobHandle
 }
 
 func playerMenusInit() {

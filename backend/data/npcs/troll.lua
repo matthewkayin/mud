@@ -157,4 +157,25 @@ function npc.get_status_description(self, instance)
     return string.format("%s has stepped aside. The way %s is clear.", self_name, instance.exit_to_block)
 end
 
+---@param self MobHandle
+---@param instance Instance
+---@param player MobHandle
+---@param subject string
+function npc.on_dialog(self, instance, player, subject)
+    if subject == "" then
+        local player_race = world.player_get_race(player)
+        world.say_to_player(self, player, string.format("What you want, %s? Want cross <b>bridge</b>? Must pay <b>toll</b>, then.", player_race))
+    elseif subject == "bridge" then
+        world.say_to_player(self, player, "<b>Bridge</b> creaky, but strong. Me <b>build</b> meself. You want pass? Must pay <b>toll</b>.")
+    elseif subject == "toll" then
+        world.say_to_player(self, player, string.format("<b>Toll</b> is %d %s. Small price for strong <b>bridge</b>.", instance.toll.name, instance.toll.amount))
+    elseif subject == "build" then
+        local player_race = world.player_get_race(player)
+        world.message_player(player, "The troll furrows his brow and seems suddenly defensive.")
+        world.say_to_player(self, player, string.format("Yes, me build! Now no more questions, %s. Pay toll!", player_race))
+    else
+        world.say_to_player(self, player, "Me don't know about that.")
+    end
+end
+
 return npc
