@@ -803,3 +803,8 @@ func (mob *Mob) CraftItem(world *World, recipe RecipeId) bool {
 	}
 	return true
 }
+
+func (mob *Mob) Reveal(world *World) {
+	mob.SetFlag(MOB_FLAG_HIDDEN, false)
+	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s was hiding in the room and has revealed themselves!", mob.Data.Name))
+}

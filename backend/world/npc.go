@@ -805,3 +805,30 @@ func (npc *Npc) GetStatusDescription(world *World) (string, bool) {
 
 	return resultString, true
 }
+
+func (npc *Npc) GiveDialog(world *World, playerHandle MobHandle, subject string) bool {
+	playerMob := world.Mobs.Get(playerHandle)
+	npcMob := world.Mobs.Get(npc.mobHandle)
+
+	// Don't talk if we are hostile
+	if npc.disposition == NPC_DISPOSITION_HOSTILE || npcMob.IsInCombat(world) {
+		world.messagePlayer(playerMob.PlayerCharacter.PlayerId, fmt.Sprintf("%s is not interested in talking.", npcMob.Data.Name))
+		return false
+	}
+
+	playerLuaHandle, err := world.getMobLuaHandle(playerHandle)
+	if err != nil {
+		log.Print(err.Error())
+		return false
+	}
+
+	// Call dialog hook
+	npcData := NPC_DATA[npc.Id]
+	_, ok := npc.callHook(world, npcData.onDialog, "on_dialog", playerLuaHandle, lua.String(subject))
+	if !ok {
+		world.messagePlayer(playerMob.PlayerCharacter.PlayerId, fmt.Sprintf("%s is not interested in talking.", npcMob.Data.Name))
+		return false
+	}
+
+	return true
+}

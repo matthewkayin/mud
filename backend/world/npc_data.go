@@ -47,6 +47,7 @@ type NpcData struct {
 	onPlayerEntered *lua.Function
 	onItemGiven *lua.Function
 	getStatusDescription *lua.Function
+	onDialog *lua.Function
 }
 
 func (paramType NpcBehaviorParamType) String() string {
@@ -154,6 +155,7 @@ func (parser *ScriptParser) parseNpc(table *lua.Table) *NpcData {
 	npcData.onPlayerEntered = parser.getOptionalFunction(table, "on_player_entered")
 	npcData.onItemGiven = parser.getOptionalFunction(table, "on_item_given")
 	npcData.getStatusDescription = parser.getOptionalFunction(table, "get_status_description")
+	npcData.onDialog = parser.getOptionalFunction(table, "on_dialog")
 
 	if parser.getError() != nil {
 		return nil
