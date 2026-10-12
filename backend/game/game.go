@@ -6,6 +6,7 @@ import (
 	"log"
 	"mud/util"
 	"mud/world"
+	"regexp"
 )
 
 const GAME_UPDATE_INTERVAL = world.WORLD_SECONDS_PER_UPDATE * time.Second
@@ -80,6 +81,7 @@ func (gamestate *GameState) Run(ctx context.Context) {
 			case <- ctx.Done():
 				break gameloop
 			case event := <- gamestate.SocketEvents:
+				event.sanitizeSocketEvent()
 				switch event.Type {
 					case SOCKET_EVENT_TYPE_CONNECT:
 						gamestate.registerPlayer(event.PlayerId, event.Inbox)
@@ -198,6 +200,18 @@ func (gamestate *GameState) saveAllLoggedInPlayers() {
 	}
 
 	log.Printf("Saved all logged in player characters.")
+}
+
+var forbiddenChars = regexp.MustCompile(`[<>\[\]{}}]`)
+
+func sanitizeString(string string) string {
+	sanitaryString := forbiddenChars.ReplaceAllString(string, "")
+	return sanitaryString
+}
+
+func (socketevent *SocketEvent) sanitizeSocketEvent() {
+	socketevent.Command = sanitizeString(socketevent.Command)
+	return
 }
 
 // Handles a player command
