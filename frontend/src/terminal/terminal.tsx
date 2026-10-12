@@ -9,6 +9,7 @@ type TerminalProps = {
   onSubmit: (command: string) => void;
 }
 
+
 export const Terminal = ({ prompt, lines, command, setCommand, onSubmit }: TerminalProps) => {
   const [isFocused, setIsFocused] = useState(false);
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
@@ -44,8 +45,9 @@ export const Terminal = ({ prompt, lines, command, setCommand, onSubmit }: Termi
 
     // Handle submit
     if (event.key === 'Enter') {
-      if (command.length > 0) {
-        onSubmit(command);
+      const sanitizedCommand = sanitizeLine(command);
+      if (sanitizedCommand.length > 0) {
+        onSubmit(sanitizedCommand);
         setShouldScrollToBottom(true);
       }
       setCommand('');
@@ -94,6 +96,10 @@ export const Terminal = ({ prompt, lines, command, setCommand, onSubmit }: Termi
     </div>
   )
 };
+
+const sanitizeLine = (line: string) => {
+  return line.replace(/[<>\[\]{}}]/g, "");
+}
 
 const terminalLineToSpan = (line: string, index: number) => {
   const parts = [];
