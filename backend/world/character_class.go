@@ -25,6 +25,7 @@ type ClassData struct {
 	Name string
 	Stats StatBlock
 	Scaling StatBlock
+	StartingItems []Item
 	UnlocksAtLevel [MOB_MAX_LEVEL][]ClassUnlock
 }
 
@@ -92,6 +93,30 @@ func (parser *ScriptParser) parseClass(table *lua.Table) *ClassData {
 	classData.Name = parser.getString(table, "name")
 	classData.Stats = parser.getStatBlock(table, "stats", false)
 	classData.Scaling = parser.getStatBlock(table, "scaling", false)
+
+	// Starting items
+	startingItemsTable := parser.getTable(table, "starting_items")
+	if startingItemsTable != nil {
+		itemCount := startingItemsTable.RawLen()
+		classData.StartingItems = make([]Item, 0, itemCount)
+		for index := 1; index <= itemCount; index++ {
+			key := fmt.Sprintf("starting_items[%d]", index)
+			itemTable, ok := startingItemsTable.RawGetInt(index).AsTable()
+			if !ok {
+				parser.addProblem(fmt.Errorf("field '%s' must be a table", key))
+				continue
+			}
+
+			id, amount := parser.parseItem(itemTable, key)
+			classData.StartingItems = append(classData.StartingItems, Item {
+				Id: id,
+				Amount: amount,
+				Durability: ITEM_DATA[id].GetMaxDurability(),
+			})
+		}
+	} else {
+		classData.StartingItems = []Item{}
+	}
 
 	// Unlocks
 	unlocksTable := parser.getTable(table, "unlocks")

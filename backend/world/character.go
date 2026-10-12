@@ -91,7 +91,7 @@ func CharacterInitEmpty(playerId int, characterSheet *CharacterSheet) *Character
 
 	// Init inventory
 	character.Data.Inventory = Inventory {
-		Items: make([]Item, 0, 1),
+		Items: slices.Clone(classData.StartingItems),
 	}
 
 	// Init equipment
