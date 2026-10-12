@@ -261,7 +261,6 @@ var MENU_WORLD = Menu {
 					world.RACE_DATA[targetMob.PlayerCharacter.Race].Name,
 					world.CLASS_DATA[targetMob.PlayerCharacter.Class].Name,
 					world.JOB_DATA[targetMob.PlayerCharacter.Job].Name)
-				*player.inbox <- "They are wearing the following:"
 				printMobEquipmentList(player, targetMob)
 
 				return true
@@ -496,6 +495,7 @@ var MENU_WORLD = Menu {
 				if len(args) == 1 && strings.EqualFold(args[0], "friends") {
 					playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 					playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
+					rows := make([]string, 0, 3 * len(playerRoom.Occupants))
 					for _, occupantHandle := range playerRoom.Occupants {
 						occupantMob := gamestate.world.Mobs.Get(occupantHandle)
 
@@ -504,9 +504,12 @@ var MENU_WORLD = Menu {
 							continue
 						}
 
-						printMobHp(player, occupantMob)
-						*player.inbox <- "\n"
+						rows = append(rows, occupantMob.Data.Name)
+						rows = append(rows, fmt.Sprintf("%d / %d", occupantMob.Data.Health, occupantMob.Data.MaxHealth()))
+						rows = append(rows, fmt.Sprintf("%d / %d", occupantMob.Data.Mana, occupantMob.Data.MaxMana()))
 					}
+
+					printTable(player, "Friends", []string{"Name", "HP", "MP"}, rows)
 
 					return true
 				}
@@ -541,9 +544,12 @@ var MENU_WORLD = Menu {
 
 				statBonuses := &playerMob.Data.Equipment.StatBonuses
 				*player.inbox <- ""
+				statRows := make([]string, 0, 2 * world.STAT_COUNT)
 				for index := range world.STAT_COUNT {
-					*player.inbox <- fmt.Sprintf("%s: %d (%s)", world.STAT_DATA[index].Name, playerMob.Data.Stats.Values[index], statBonusStr(statBonuses.Values[index]))
+					statRows = append(statRows, world.STAT_DATA[index].Name)
+					statRows = append(statRows, fmt.Sprintf("%d (%s)", playerMob.Data.Stats.Values[index], statBonusStr(statBonuses.Values[index])))
 				}
+				printTable(player, "Stats", []string{"Stat", "Value"}, statRows)
 
 				abilities := playerMob.Data.GetAbilityList()
 				if len(abilities) != 0 {
@@ -657,37 +663,7 @@ var MENU_WORLD = Menu {
 					}
 				}
 
-				// Determine inventory table column size
-				columnWidth := []int {
-					len(inventoryHeaders[0]),
-					len(inventoryHeaders[1]),
-					len(inventoryHeaders[2]),
-				}
-				for index := 0; index < len(inventoryRows); index += 3 {
-					columnWidth[0] = max(columnWidth[0], len(inventoryRows[index + 0]))
-					columnWidth[1] = max(columnWidth[1], len(inventoryRows[index + 1]))
-					columnWidth[2] = max(columnWidth[2], len(inventoryRows[index + 2]))
-				}
-
-				// Print table headers
-				*player.inbox <- fmt.Sprintf("| %-*s | %-*s | %-*s |",
-					columnWidth[0], inventoryHeaders[0],
-					columnWidth[1], inventoryHeaders[1],
-					columnWidth[2], inventoryHeaders[2])
-
-				// Print table divider
-				*player.inbox <- fmt.Sprintf("| %s | %s | %s | ",
-					strings.Repeat("-", columnWidth[0]),
-					strings.Repeat("-", columnWidth[1]),
-					strings.Repeat("-", columnWidth[2]))
-
-				// Print inventory table
-				for index := 0; index < len(inventoryRows); index += 3 {
-					*player.inbox <- fmt.Sprintf("| %-*s | %-*s | %-*s |",
-						columnWidth[0], inventoryRows[index + 0],
-						columnWidth[1], inventoryRows[index + 1],
-						columnWidth[2], inventoryRows[index + 2])
-				}
+				printTable(player, "Inventory", inventoryHeaders, inventoryRows)
 
 				*player.inbox <- "\nType 'inspect <item>' to see more details about an item."
 				return true
@@ -994,11 +970,21 @@ var MENU_WORLD = Menu {
 						*player.inbox <- "You do not know any crafting recipes."
 						return true
 					}
-					recipeList := "You know the following recipes:\n"
-					for _, name := range player.character.RecipesKnown {
-						recipeList = (recipeList + world.RECIPE_DATA[name].Name + "\n")
+					rows := make([]string, 0, 3 * len(player.character.RecipesKnown))
+					for _, recipe := range player.character.RecipesKnown {
+						recipeData := world.RECIPE_DATA[recipe]
+
+						materialNames := make([]string, 0, len(recipeData.Materials))
+						for _, material := range recipeData.Materials {
+							materialNames = append(materialNames, fmt.Sprintf("%s x%d", world.ITEM_DATA[material.Id].Name, material.Amount))
+						}
+
+						rows = append(rows, recipeData.Name)
+						rows = append(rows, fmt.Sprintf("%d", recipeData.Level))
+						rows = append(rows, strings.Join(materialNames, ", "))
 					}
-					*player.inbox <- recipeList
+
+					printTable(player, "Known Recipes", []string{"Name", "Level", "Materials"}, rows)
 					return true
 				}
 
@@ -1011,13 +997,14 @@ var MENU_WORLD = Menu {
 					}
 
 					recipeData := world.RECIPE_DATA[query]
-					*player.inbox <- "The following recipe requires the following ingredients:"
+					rows := make([]string, 0, 3 * len(recipeData.Materials))
 					for _, ingredient := range recipeData.Materials {
-						material := world.ITEM_DATA[ingredient.Id].Name
-						possessed := playerMob.Data.Inventory.AmountOf(ingredient.Id)
-						needed := ingredient.Amount
-						*player.inbox <- fmt.Sprintf("%s: %d / %d", material, possessed, needed)
+						rows = append(rows, world.ITEM_DATA[ingredient.Id].Name)
+						rows = append(rows, fmt.Sprintf("%d", playerMob.Data.Inventory.AmountOf(ingredient.Id)))
+						rows = append(rows, fmt.Sprintf("%d", ingredient.Amount))
 					}
+
+					printTable(player, recipeData.Name, []string{"Material", "Have", "Needed"}, rows)
 
 					return true
 				}
@@ -1032,7 +1019,6 @@ var MENU_WORLD = Menu {
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 
-				*player.inbox <- "Your equipment is:"
 				printMobEquipmentList(player, playerMob)
 
 				return true
@@ -1173,33 +1159,16 @@ var MENU_WORLD = Menu {
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 
-				*player.inbox <- fmt.Sprintf("Spells Prepared (%d / %d):", len(playerMob.Data.Spells), playerMob.Data.SpellSlots())
 				if len(playerMob.Data.Spells) != 0 {
-					for _, spell := range playerMob.Data.Spells {
-						spellData := world.SPELL_DATA[spell]
-
-						masteryStr := "Known"
-
-						equippedSpell, spellIsEquipped := player.character.SpellsEquipped[spell]
-						if spellIsEquipped && !equippedSpell.IsKnown {
-							casts := float32(equippedSpell.Casts)
-							castsToLearn := float32(playerMob.Data.CastsToLearn(spell))
-							mastery := int32((casts / castsToLearn) * 100.0)
-							masteryStr = fmt.Sprintf("Mastery: %d", mastery)
-						}
-
-						*player.inbox <- fmt.Sprintf("%s | Cost: %d | %s | %s",
-							spellData.Name, spellData.ManaCost, masteryStr, spellData.Description)
-					}
+					title := fmt.Sprintf("Spells Prepared (%d / %d)", len(playerMob.Data.Spells), playerMob.Data.SpellSlots())
+					printSpellTable(gamestate, player, title, playerMob.Data.Spells, true)
 				} else {
 					*player.inbox <- "You haven't prepared any spells."
 				}
 
-				*player.inbox <- "\nClass Spells:"
-				for _, spell := range player.character.ClassSpells {
-					spellData := world.SPELL_DATA[spell]
-					*player.inbox <- fmt.Sprintf("%s - Cost: %d - %s",
-						spellData.Name, spellData.ManaCost, spellData.Description)
+				if len(player.character.ClassSpells) != 0 {
+					*player.inbox <- ""
+					printSpellTable(gamestate, player, "Class Spells", player.character.ClassSpells, false)
 				}
 
 				return true
@@ -1214,18 +1183,16 @@ var MENU_WORLD = Menu {
 					*player.inbox <- "You don't know any spells."
 				}
 
-				*player.inbox <- "Class Spells:"
-				for _, spell := range player.character.ClassSpells {
-					spellData := world.SPELL_DATA[spell]
-					*player.inbox <- fmt.Sprintf("%s - Cost: %d - %s",
-						spellData.Name, spellData.ManaCost, spellData.Description)
+				if len(player.character.ClassSpells) != 0 {
+					printSpellTable(gamestate, player, "Class Spells", player.character.ClassSpells, false)
 				}
 
-				*player.inbox <- "\nKnown Spells:"
-				for _, spell := range player.character.SpellsKnown {
-					spellData := world.SPELL_DATA[spell]
-					*player.inbox <- fmt.Sprintf("%s - Cost: %d - %s",
-						spellData.Name, spellData.ManaCost, spellData.Description)
+				if len(player.character.SpellsKnown) != 0 {
+					if len(player.character.ClassSpells) != 0 {
+						*player.inbox <- ""
+					}
+
+					printSpellTable(gamestate, player, "Known Spells", player.character.SpellsKnown, false)
 				}
 
 				return true
@@ -1678,6 +1645,7 @@ func printMobEquipmentList(player *Player, mob *world.Mob) {
 	mainHandItem := mob.Data.Equipment.Get(world.EQUIPMENT_SLOT_MAIN_HAND)
 	shouldSkipOffhand := mainHandItem != nil && world.ITEM_DATA[mainHandItem.Id].Kind == world.ITEM_KIND_EQUIPMENT_TWO_HANDED
 
+	rows := make([]string, 0, 2 * world.EQUIPMENT_SLOT_COUNT)
 	for index := range world.EQUIPMENT_SLOT_COUNT {
 		slot := world.EquipmentSlot(index)
 		item := mob.Data.Equipment.Get(slot)
@@ -1694,7 +1662,7 @@ func printMobEquipmentList(player *Player, mob *world.Mob) {
 			itemData = world.ITEM_DATA[item.Id]
 			itemName = item.GetNameWithCondition()
 		} else {
-			itemName = "<Nothing Equipped>"
+			itemName = "-"
 		}
 
 		// Determine slot name
@@ -1705,8 +1673,11 @@ func printMobEquipmentList(player *Player, mob *world.Mob) {
 			slotName = slot.String()
 		}
 
-		*player.inbox <- fmt.Sprintf("\t%s - %s", slotName, itemName)
+		rows = append(rows, slotName)
+		rows = append(rows, itemName)
 	}
+
+	printTable(player, "Equipment", []string{"Slot", "Item"}, rows)
 }
 
 func printMobHp(player *Player, mob *world.Mob) {
@@ -1721,4 +1692,121 @@ func statBonusStr(value int32) string {
 		valueStr = "+" + valueStr
 	}
 	return valueStr
+}
+
+func printTable(player *Player, title string, headers []string, rows []string) {
+	// Determine column size
+	columns := len(headers)
+	columnWidth := make([]int, columns)
+	for index := range columns {
+		columnWidth[index] = len(headers[index])
+	}
+
+	for index := 0; index < len(rows); index += columns {
+		for col := range columns {
+			columnWidth[col] = max(columnWidth[col], len(rows[index + col]))
+		}
+	}
+
+	// Determine the title width
+	tableWidth := (3 * columns) + 1
+	for _, width := range columnWidth {
+		tableWidth += width
+	}
+	if len(title) + 4 > tableWidth {
+		diff := (len(title) + 4) - tableWidth
+		tableWidth += diff
+		columnWidth[columns - 1] += diff
+	}
+
+	// Print title
+	*player.inbox <- fmt.Sprintf("+%s+", strings.Repeat("-", tableWidth - 2))
+	*player.inbox <- fmt.Sprintf("| %-*s |", tableWidth - 4, title)
+	*player.inbox <- fmt.Sprintf("|%s|", strings.Repeat("-", tableWidth - 2))
+
+	printTableRow(player, columnWidth, headers, 0)
+	*player.inbox <- fmt.Sprintf("|%s|", strings.Repeat("-", tableWidth - 2))
+
+	for offset := 0; offset < len(rows); offset += columns {
+		printTableRow(player, columnWidth, rows, offset)
+	}
+
+	*player.inbox <- fmt.Sprintf("+%s+", strings.Repeat("-", tableWidth - 2))
+}
+
+func printTableRow(player *Player, columnWidth []int, rows []string, offset int) {
+	var builder strings.Builder
+	builder.WriteByte('|')
+
+	for col := range len(columnWidth) {
+		if rows[offset + col] == "-" {
+			// Puts "---" in the center of the column
+			message := "---"
+			padding := columnWidth[col] - len(message)
+			leftPad := (padding / 2) + 1
+			rightPad := (padding - leftPad) + 2
+			builder.WriteString(strings.Repeat(" ", leftPad))
+			builder.WriteString(message)
+			builder.WriteString(strings.Repeat(" ", rightPad))
+			builder.WriteByte('|')
+		} else {
+			fmt.Fprintf(&builder, " %-*s |", columnWidth[col], rows[offset + col])
+		}
+	}
+
+	*player.inbox <- builder.String()
+}
+
+func printTableDivider(player *Player, columnWidth []int) {
+	var builder strings.Builder
+	builder.WriteByte('|')
+
+	for col := range len(columnWidth) {
+		builder.WriteString(fmt.Sprintf(" %s |", strings.Repeat("-", columnWidth[col])))
+	}
+
+	*player.inbox <- builder.String()
+}
+
+func printSpellTable(gamestate *GameState, player *Player, title string, spells []world.SpellId, includeMastery bool) {
+	playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+
+	headers := make([]string, 0, 5)
+	headers = append(headers, "Name")
+	headers = append(headers, "Cost")
+	headers = append(headers, "Cast Time")
+	if includeMastery {
+		headers = append(headers, "Mastery")
+	}
+	headers = append(headers, "Description")
+
+	rows := make([]string, 0, len(headers) * len(spells))
+	for _, spell := range spells {
+		spellData := world.SPELL_DATA[spell]
+
+		rows = append(rows, spellData.Name)
+		rows = append(rows, fmt.Sprintf("%d Mana", spellData.ManaCost))
+
+		if spellData.CastTime == world.SPELL_CAST_TIME_INSTANT {
+			rows = append(rows, "Instant")
+		} else {
+			rows = append(rows, fmt.Sprintf("%d Turns", spellData.CastTime))
+		}
+
+		if includeMastery {
+			equippedSpell, spellIsEquipped := player.character.SpellsEquipped[spell]
+			if spellIsEquipped && !equippedSpell.IsKnown {
+				casts := float32(equippedSpell.Casts)
+				castsToLearn := float32(playerMob.Data.CastsToLearn(spell))
+				mastery := int32((casts / castsToLearn) * 100.0)
+				rows = append(rows, fmt.Sprintf("%d%%", mastery))
+			} else {
+				rows = append(rows, "Known")
+			}
+		}
+
+		rows = append(rows, spellData.Description)
+	}
+
+	printTable(player, title, headers, rows)
 }
