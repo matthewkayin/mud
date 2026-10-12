@@ -81,14 +81,20 @@ func (gamestate *GameState) Run(ctx context.Context) {
 			case <- ctx.Done():
 				break gameloop
 			case event := <- gamestate.SocketEvents:
-				event.sanitizeSocketEvent()
 				switch event.Type {
-					case SOCKET_EVENT_TYPE_CONNECT:
+					case SOCKET_EVENT_TYPE_CONNECT: {
 						gamestate.registerPlayer(event.PlayerId, event.Inbox)
-					case SOCKET_EVENT_TYPE_DISCONNECT:
+					}
+
+					case SOCKET_EVENT_TYPE_DISCONNECT: {
 						gamestate.removePlayer(event.PlayerId, event.Inbox)
-					case SOCKET_EVENT_TYPE_COMMAND:
-						gamestate.handleCommand(event.PlayerId, event.Command)
+					}
+
+					case SOCKET_EVENT_TYPE_COMMAND: {
+						command := sanitizeString(event.Command)
+						gamestate.handleCommand(event.PlayerId, command)
+					}
+
 					default:
 						log.Printf("Socket event type %d not handled!", event.Type)
 				}
@@ -207,11 +213,6 @@ var forbiddenChars = regexp.MustCompile(`[<>\[\]{}}]`)
 func sanitizeString(string string) string {
 	sanitaryString := forbiddenChars.ReplaceAllString(string, "")
 	return sanitaryString
-}
-
-func (socketevent *SocketEvent) sanitizeSocketEvent() {
-	socketevent.Command = sanitizeString(socketevent.Command)
-	return
 }
 
 // Handles a player command
