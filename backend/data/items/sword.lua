@@ -3,6 +3,7 @@ local item = {}
 item.name = "Sword"
 item.description = "A pointy metal stick with a handle."
 item.kind = world.ItemKind.EQUIPMENT_ONE_HANDED
+item.price = 50
 item.size = 10
 
 item.damage = 5

@@ -832,3 +832,11 @@ func (npc *Npc) GiveDialog(world *World, playerHandle MobHandle, subject string)
 
 	return true
 }
+
+func (npc *Npc) IsMerchant() bool {
+	return len(NPC_DATA[npc.Id].wares) != 0
+}
+
+func (npc *Npc) GetWares() []ItemId {
+	return NPC_DATA[npc.Id].wares
+}

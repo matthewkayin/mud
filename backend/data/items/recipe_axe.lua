@@ -3,6 +3,7 @@ local item = {}
 item.name = "Axe Schematic"
 item.description = "The schematic for an axe. Useable by Blacksmiths of level 1 or higher."
 item.kind = world.ItemKind.RECIPE
+item.price = 20
 item.size = 1
 
 item.recipe = "Axe"
