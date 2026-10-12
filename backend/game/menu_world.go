@@ -388,7 +388,7 @@ var MENU_WORLD = Menu {
 		},
 
 		"talk": {
-			usage: "hail [to <npc>] [about <subject>]",
+			usage: "talk [to <npc>] [about <subject>]",
 			description: "Talk to an NPC. Type 'talk to <npc>' to initiate a conversation. Type 'talk about <subject>' to discuss a subject with the NPC you are currently talking to",
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
 				if len(args) == 0 {
