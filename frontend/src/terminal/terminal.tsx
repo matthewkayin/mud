@@ -88,7 +88,7 @@ export const Terminal = ({ prompt, lines, command, setCommand, onSubmit }: Termi
         id="terminal-contents"
         onScroll={onScroll}
       >
-        {lines.map((line) => (<p className="terminal-text">{line}</p>))}
+        {lines.map(terminalLineToSpan)}
         <div ref={terminalBottomElementRef}></div>
       </div>
     </div>
@@ -153,7 +153,7 @@ const terminalLineToSpan = (line: string, index: number) => {
   }
 
   return (
-    <span key = {index}>
+    <p key={index} className="terminal-text">
       {parts.map((part) => {
         let color = "#fff";
         switch (part.color) {
@@ -163,8 +163,8 @@ const terminalLineToSpan = (line: string, index: number) => {
           default:
             break
         }
-        return (<span className = "terminal-text" style = {{ color }}>{part.msg}</span>)
+        return (<span style={{color}}>{part.msg}</span>)
       })}
-    </span>
+    </p>
   );
 }

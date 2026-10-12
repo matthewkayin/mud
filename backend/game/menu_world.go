@@ -285,7 +285,7 @@ var MENU_WORLD = Menu {
 		},
 
 		"tell": {
-			usage: "tell <target> <message>",
+			usage: "tell <target>: <message>",
 			description: "Send a message to a specific person in the current room",
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
 				// Parse input
