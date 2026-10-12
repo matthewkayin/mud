@@ -377,6 +377,35 @@ func fuzzyFindInventoryItem(inventory *world.Inventory, inventoryName string, se
 	return itemIndex, nil
 }
 
+func fuzzyFindWare(wares []world.ItemId, merchantName string, searchWords []string) (world.ItemId, error) {
+	if len(wares) == 0 {
+		panic("This function should not be called with an empty wares array.")
+	}
+	if len(searchWords) == 0 {
+		return 0, errors.New("You must specify an item.")
+	}
+
+	// Put all ware names into an array
+	itemNames := make([]string, len(wares))
+	for index := range len(wares) {
+		itemNames[index] = world.ITEM_DATA[wares[index]].Name
+	}
+
+	index := fuzzyFind(itemNames, searchWords, FUZZY_FIND_NUMBER_NONE)
+	switch index {
+		case FUZZY_FIND_RESULT_ITEM_NOT_SPECIFIED:
+			return 0, errors.New("You must specify an item.")
+		case FUZZY_FIND_RESULT_NOT_FOUND:
+			return 0, fmt.Errorf("%s is not selling an item called '%s'.", merchantName, strings.Join(searchWords, " "))
+		case FUZZY_FIND_RESULT_AMBIGUOUS:
+			return 0, fmt.Errorf("%s has multiple items for sale matching '%s'.", merchantName, strings.Join(searchWords, " "))
+		case FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE:
+			panic("fuzzyFindWare hit number out of range even though no fuzzy number was specified")
+	}
+
+	return wares[index], nil
+}
+
 func fuzzyFindEquipmentSlotByItem(equipment *world.Equipment, searchWords []string) (world.EquipmentSlot, error) {
 	if len(searchWords) == 0 {
 		return 0, errors.New("You must specify an item.")

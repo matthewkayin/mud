@@ -3,6 +3,7 @@ local item = {}
 item.name = "Potion of Mana"
 item.description = "A blue tonic that gives mana to the drinker."
 item.kind = world.ItemKind.CONSUMABLE
+item.price = 20
 item.size = 5
 
 item.on_use = function(user)

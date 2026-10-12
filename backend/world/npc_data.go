@@ -34,6 +34,7 @@ type NpcData struct {
 	scaling StatBlock
 	equipment Equipment
 	dropTable DropTable
+	wares []ItemId
 
 	startingDisposition NpcDisposition
 	MovementType NpcMovementType
@@ -146,6 +147,33 @@ func (parser *ScriptParser) parseNpc(table *lua.Table) *NpcData {
 	}
 
 	npcData.BehaviorParams = parser.getNpcBehaviorParams(table, "behavior_params")
+
+	// Wares
+	npcData.wares = make([]ItemId, 0, 1)
+	waresTableValue := table.RawGetString("wares")
+	if waresTableValue.Kind() == lua.TableKind {
+		waresTable, _ := waresTableValue.AsTable()
+		wareCount := waresTable.RawLen()
+		npcData.wares = make([]ItemId, 0, wareCount)
+		for index := 1; index <= wareCount; index++ {
+			wareKey := fmt.Sprintf("wares[%d]", index)
+			wareItemName, ok := waresTable.RawGetInt(index).AsString()
+			if !ok {
+				parser.addProblem(fmt.Errorf("field '%s' must be a string", wareKey))
+				continue
+			}
+
+			itemId, ok := ITEM_NAME_TO_ID[wareItemName]
+			if !ok {
+				parser.addProblem(fmt.Errorf("field '%s' (value %s) is not a valid item", wareKey, wareItemName))
+				continue
+			}
+
+			npcData.wares = append(npcData.wares, itemId)
+		}
+	} else if !waresTableValue.IsNil() {
+		parser.addProblem(fmt.Errorf("invalid type for 'wares'. expected table or nil, got %s", waresTableValue.Kind().String()))
+	}
 
 	// Behavior hooks
 

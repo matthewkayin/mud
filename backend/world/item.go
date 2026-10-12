@@ -109,6 +109,7 @@ type ItemData struct {
 	Name string
 	Description string
 	Kind ItemKind
+	Price int32
 	Size int32
 	Data any
 }
@@ -117,6 +118,7 @@ type ItemData struct {
 
 var ITEM_DATA []*ItemData
 var ITEM_NAME_TO_ID map[string]ItemId
+var ITEM_GOLD ItemId
 
 const ITEM_DATA_FOLDER = "items"
 
@@ -157,6 +159,13 @@ func (world *World) loadItemData() {
 		log.Printf("Loaded item '%s'.", itemData.Name)
 	}
 
+	// Set the gold item ID
+	var exists bool
+	ITEM_GOLD, exists = ITEM_NAME_TO_ID["Gold"]
+	if !exists {
+		log.Fatalf("There must be an item called 'Gold'.")
+	}
+
 	log.Printf("All item data has been loaded.")
 }
 
@@ -165,6 +174,8 @@ func (parser *ScriptParser) parseItemData(table *lua.Table) *ItemData {
 
 	itemData.Name = parser.getString(table, "name")
 	itemData.Description = parser.getString(table, "description")
+	itemData.Price = parser.getInt32(table, "price")
+	parser.checkInt32NonNegative(itemData.Price, "price")
 	itemData.Size = parser.getInt32(table, "size")
 
 	kindString := parser.getString(table, "kind")
@@ -415,4 +426,21 @@ func (itemData *ItemData) GetMaxDurability() int32 {
 		default:
 			return 0
 	}
+}
+
+func (item *Item) GetSellPrice() int32 {
+	itemData := ITEM_DATA[item.Id]
+
+	// The less durability an item has, the less it sells for
+	durabilityPercent := float32(1.0)
+	maxDurability := itemData.GetMaxDurability()
+	if maxDurability != 0 {
+		durabilityPercent = float32(item.Durability) / float32(maxDurability)
+	}
+
+	// Items sell at 50% of their canonical price
+	sellRate := float32(0.5)
+	price := float32(itemData.Price) * sellRate * durabilityPercent
+
+	return int32(price)
 }
