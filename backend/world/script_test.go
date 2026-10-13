@@ -31,8 +31,9 @@ func scriptTestSetHandle(t *testing.T, world *World, name string, handle MobHand
 	if err != nil {
 		t.Fatalf("getLuaHandle: %s", err.Error())
 	}
-	if err := world.luaState.SetGlobal(name, value); err != nil {
-		t.Fatalf("SetGlobal %s: %s", name, err.Error())
+	err = world.luaState.RawSetGlobal(name, value)
+	if err != nil {
+		t.Fatalf("RawSetGlobal %s: %s", name, err.Error())
 	}
 }
 
@@ -105,6 +106,25 @@ func TestScriptMobHandleRejectsTable(t *testing.T) {
 	_, err := world.luaState.DoString("@test.lua", "return world.mob_exists({ id = 0, generation = 0 })")
 	if err == nil || !strings.Contains(err.Error(), "MobHandle expected") {
 		t.Errorf("expected MobHandle argument error, got %v", err)
+	}
+}
+
+func TestScriptGlobalsLocked(t *testing.T) {
+	world := scriptTestWorld(t)
+
+	_, err := world.luaState.DoString("@test.lua", "accidental_global = 5")
+	if err == nil || !strings.Contains(err.Error(), "Cannot create global variable 'accidental_global'") {
+		t.Errorf("expected global creation error, got %v", err)
+	}
+
+	_, err = world.luaState.DoString("@test.lua", "return undefined_global")
+	if err == nil || !strings.Contains(err.Error(), "Cannot read undefined global variable 'undefined_global'") {
+		t.Errorf("expected undefined global read error, got %v", err)
+	}
+
+	result := scriptTestEval(t, world, "local value = 5; return type(world.log) .. value")
+	if result != "function5" {
+		t.Errorf("expected locals and existing globals to work, got %s", result)
 	}
 }
 
