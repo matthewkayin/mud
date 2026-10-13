@@ -22,6 +22,9 @@ world.NPC_EVENT_PREVENT_DEFAULT = true
 ---@type number
 world.ROOM_NONE = -1
 
+---@type number
+world.CONDITION_DURATION_INFINITE = -1
+
 ---@enum ItemKind
 world.ItemKind = {
 	CONSUMABLE = "Consumable",
@@ -89,6 +92,11 @@ world.EquipmentSlot = {
 	ACCESSORY = "Accessory",
 }
 
+---@enum ConditionType
+world.ConditionType = {
+	BLESSING_OF_MIGHT = "Blessing of Might",
+}
+
 --- Deals magic damage to a mob. Returns the number of damage dealt.
 ---
 ---@param caster_handle MobHandle
@@ -131,6 +139,15 @@ function world.message_player(player, message) end
 ---@param message string
 function world.message_room(room, message) end
 
+--- Adds a condition to a mob for the specified duration
+--- Specifying a duration of world.CONDITION_DURATION_INFINITE
+--- will make the condition last forever
+---
+---@param mob MobHandle
+---@param condition ConditionType
+---@param duration integer
+function world.mob_add_condition(mob, condition, duration) end
+
 --- Creates a new item and adds it to the mob's inventory.
 --- Returns the index the item was added at or -1 if the item did not fit.
 ---
@@ -140,6 +157,13 @@ function world.message_room(room, message) end
 ---@param durability_percent integer
 ---@return integer
 function world.mob_add_inventory_item(handle, item_name, amount, durability_percent) end
+
+--- Calculates magical condition duration for the caster
+---
+---@param caster MobHandle
+---@param base_duration integer
+---@return integer
+function world.mob_calc_magic_condition_duration(caster, base_duration) end
 
 --- Drops an amount of the item at an index in the mob's inventory into the mob's room.
 --- The amount is limited to the size of the stack. Returns the amount dropped.
@@ -267,6 +291,12 @@ function world.mob_get_stat(handle, stat) end
 ---@return integer
 function world.mob_give_inventory_item(handle, index, target_handle, amount) end
 
+--- Returns true if the mob has the specified condition
+---
+---@param mob MobHandle
+---@param condition ConditionType
+function world.mob_has_condition(mob, condition) end
+
 --- Returns true if the mob is dead
 ---
 ---@param handle MobHandle
@@ -278,6 +308,12 @@ function world.mob_is_dead(handle) end
 ---@param handle MobHandle
 ---@return boolean
 function world.mob_is_npc(handle) end
+
+--- Remves a condition from a mob
+---
+---@param mob MobHandle
+---@param condition ConditionType
+function world.mob_remove_condition(mob, condition) end
 
 --- Removes an amount of the item at an index in the mob's inventory.
 --- The amount is limited to the size of the stack. Returns the amount dropped.

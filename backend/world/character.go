@@ -81,6 +81,7 @@ func CharacterInitEmpty(playerId int, characterSheet *CharacterSheet) *Character
 	// Determine derived stats
 	character.Data.Health = character.Data.MaxHealth()
 	character.Data.Mana = character.Data.MaxMana()
+	character.Data.Conditions = make([]Condition, 0, 1)
 
 	// Init spell list
 	character.Data.Spells = make([]SpellId, 0, 1)

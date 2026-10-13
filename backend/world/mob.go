@@ -36,6 +36,13 @@ const MOB_STEALTH_K float32 = 0.5
 const MOB_ESCAPE_CHANCE_MAX float32 = 1.0
 const MOB_ESCAPE_CHANCE_RECOVERY_RATE float32 = 0.1
 
+// Magic condition duration = Base * (1 + (FTH / 50.0))
+//                         => Base * (1 + (FTH * K))
+// Each spell condition lasts for at minimum, Base turns
+// But FTH increases the duration by a percentage of "max faith"
+// Once FTH is at 50.0, then the duration will be Base x 2
+const MOB_MAGIC_CONDITION_DURATION_K float32 = 1.0 / 50.0
+
 const MOB_ALERTNESS_MAX float32 = 1.0
 const MOB_ALERTNESS_COOLDOWN_RATE float32 = 0.05
 
@@ -248,6 +255,23 @@ func (mob *Mob) Update(world *World) {
 	mob.alertness = max(mob.alertness - MOB_ALERTNESS_COOLDOWN_RATE, 0.0)
 	mob.tauntCooldown = max(mob.tauntCooldown - MOB_TAUNT_COOLDOWN_RATE, 0.0)
 
+	// Update conditions
+	conditionIndex := 0
+	for conditionIndex < len(mob.Data.Conditions) {
+		condition := &mob.Data.Conditions[conditionIndex]
+		if condition.TimeToLive != CONDITION_DURATION_INFINITE {
+			condition.TimeToLive--
+			if condition.TimeToLive <= 0 {
+				lastIndex := len(mob.Data.Conditions) - 1
+				mob.Data.Conditions[conditionIndex] = mob.Data.Conditions[lastIndex]
+				mob.Data.Conditions = mob.Data.Conditions[:lastIndex]
+				continue
+			}
+		}
+
+		conditionIndex++
+	}
+
 	switch mob.Mode {
 		case MOB_MODE_IDLE:
 
@@ -433,6 +457,11 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 		damage += mob.Data.Strength() / 2
 	} else {
 		damage += mob.Data.Strength() / 4
+	}
+
+	// Check for buff
+	if mob.HasCondition(CONDITION_TYPE_BLESS_MIGHT) {
+		damage = int32(float32(damage) * 1.2)
 	}
 
 	// Check for critical hit
@@ -679,6 +708,11 @@ func (mob *Mob) calculateMagicDamage(baseDamage int32, target *Mob) int32 {
 	return baseDamage + (mob.Data.Faith() / 2) + (target.Data.Faith() / 4)
 }
 
+func (mob *Mob) calculateMagicConditionDuration(baseDuration int) int {
+	percent := 1.0 + (float32(mob.Data.Faith()) * MOB_MAGIC_CONDITION_DURATION_K)
+	return int(float32(baseDuration) * percent)
+}
+
 func (mob *Mob) getEquipmentWhichProvidesSpell(spell SpellId) (EquipmentSlot, bool) {
 	slots := []EquipmentSlot { EQUIPMENT_SLOT_MAIN_HAND, EQUIPMENT_SLOT_OFF_HAND }
 	for _, slot := range slots {
@@ -807,4 +841,43 @@ func (mob *Mob) CraftItem(world *World, recipe RecipeId) bool {
 func (mob *Mob) Reveal(world *World) {
 	mob.SetFlag(MOB_FLAG_HIDDEN, false)
 	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s was hiding in the room and has revealed themselves!", mob.Data.Name))
+}
+
+func (mob *Mob) HasCondition(conditionType ConditionType) bool {
+	for index := range len(mob.Data.Conditions) {
+		if mob.Data.Conditions[index].Type == conditionType {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (mob *Mob) AddCondition(condition Condition) {
+	for index := range len(mob.Data.Conditions) {
+		if mob.Data.Conditions[index].Type == condition.Type {
+			incomingIsLonger :=
+				condition.TimeToLive == CONDITION_DURATION_INFINITE ||
+				(mob.Data.Conditions[index].TimeToLive < condition.TimeToLive &&
+					mob.Data.Conditions[index].TimeToLive != CONDITION_DURATION_INFINITE)
+			if incomingIsLonger {
+				mob.Data.Conditions[index].TimeToLive = condition.TimeToLive
+			}
+
+			return
+		}
+	}
+
+	mob.Data.Conditions = append(mob.Data.Conditions, condition)
+}
+
+func (mob *Mob) RemoveCondition(conditionType ConditionType) {
+	for index := range len(mob.Data.Conditions) {
+		if mob.Data.Conditions[index].Type == conditionType {
+			lastIndex := len(mob.Data.Conditions) - 1
+			mob.Data.Conditions[index] = mob.Data.Conditions[lastIndex]
+			mob.Data.Conditions = mob.Data.Conditions[:lastIndex]
+			return
+		}
+	}
 }

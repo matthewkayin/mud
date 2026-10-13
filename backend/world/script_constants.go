@@ -22,6 +22,7 @@ func ScriptFreeConstants() []ScriptConstant {
 		{ Name: "SPELL_CAST_TIME_INSTANT", Value: lua.Number(float64(SPELL_CAST_TIME_INSTANT)) },
 		{ Name: "NPC_EVENT_PREVENT_DEFAULT", Value: lua.Bool(NPC_EVENT_PREVENT_DEFAULT) },
 		{ Name: "ROOM_NONE", Value: lua.Number(float64(ROOM_NONE)) },
+		{ Name: "CONDITION_DURATION_INFINITE", Value: lua.Number(float64(CONDITION_DURATION_INFINITE)) },
 	}
 }
 
@@ -130,6 +131,19 @@ func ScriptConstantTables() []ScriptConstantTable {
 		})
 	}
 
+	// Condition type
+	conditionTypeTable := ScriptConstantTable {
+		Name: "ConditionType",
+		Constants: make([]ScriptConstant, 0, CONDITION_TYPE_COUNT),
+	}
+	for index := range CONDITION_TYPE_COUNT {
+		conditionType := ConditionType(index)
+		conditionTypeTable.Constants = append(conditionTypeTable.Constants, ScriptConstant {
+			Name: strings.ToUpper(strings.ReplaceAll(conditionType.String(), " ", "_")),
+			Value: lua.String(conditionType.String()),
+		})
+	}
+
 	return []ScriptConstantTable {
 		itemKindTable,
 		npcDispositionTable,
@@ -139,5 +153,6 @@ func ScriptConstantTables() []ScriptConstantTable {
 		directionTable,
 		statTable,
 		equipmentSlotTable,
+		conditionTypeTable,
 	}
 }

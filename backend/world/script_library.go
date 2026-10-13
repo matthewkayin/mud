@@ -463,6 +463,69 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.ReturnNumber(float64(item.Amount))
 	},
 
+	// Returns true if the mob has the specified condition
+	//
+	// @param mob MobHandle
+	// @param condition ConditionType
+	"mob_has_condition": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		conditionType := frameGetConditionTypeArg(&frame, 1)
+
+		return frame.ReturnBool(mob.HasCondition(conditionType))
+	},
+
+	// Adds a condition to a mob for the specified duration
+	// Specifying a duration of world.CONDITION_DURATION_INFINITE
+	// will make the condition last forever
+	//
+	// @param mob MobHandle
+	// @param condition ConditionType
+	// @param duration integer
+	"mob_add_condition": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		conditionType := frameGetConditionTypeArg(&frame, 1)
+		duration := frameGetIntegerArg(&frame, 2, "duration")
+		if duration <= 0 && duration != CONDITION_DURATION_INFINITE {
+			frame.ThrowArgError(2, "duration must be positive or equal to CONDITION_DURATION_INFINITE")
+		}
+
+		mob.AddCondition(Condition {
+			Type: conditionType,
+			TimeToLive: duration,
+		})
+
+		return frame.Return()
+	},
+
+	// Remves a condition from a mob
+	//
+	// @param mob MobHandle
+	// @param condition ConditionType
+	"mob_remove_condition": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		conditionType := frameGetConditionTypeArg(&frame, 1)
+
+		mob.RemoveCondition(conditionType)
+
+		return frame.Return()
+	},
+
+	// Calculates magical condition duration for the caster
+	//
+	// @param caster MobHandle
+	// @param base_duration integer
+	// @return integer
+	"mob_calc_magic_condition_duration": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		baseDuration := frameGetIntegerArg(&frame, 1, "base_duration")
+		if baseDuration <= 0 {
+			frame.ThrowArgError(1, fmt.Sprintf("Invalid base_duration %d. Should be positive and non-zero.", baseDuration))
+		}
+		duration := mob.calculateMagicConditionDuration(baseDuration)
+
+		return frame.ReturnNumber(float64(duration))
+	},
+
 	// Returns the NPC's mode
 	//
 	// @param handle MobHandle
@@ -861,4 +924,17 @@ func frameGetDirectionArg(frame *lua.Frame, index int) Direction {
 	}
 
 	return direction
+}
+
+func frameGetConditionTypeArg(frame *lua.Frame, index int) ConditionType {
+	name, ok := frame.String(index)
+	if !ok {
+		frame.ThrowArgTypeError(index, lua.StringKind)
+	}
+	conditionType, exists := EnumFromString[ConditionType](name, CONDITION_TYPE_COUNT)
+	if !exists {
+		frame.ThrowArgError(index, fmt.Sprintf("%s is not a valid condition.", name))
+	}
+
+	return conditionType
 }
