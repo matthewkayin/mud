@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import './terminal.css';
+import { parseLine } from './parser';
+import { TEXT_COLOR_VALUES } from './text_color';
 
 type TerminalProps = {
   prompt: string;
@@ -98,79 +100,15 @@ export const Terminal = ({ prompt, lines, command, setCommand, onSubmit }: Termi
 };
 
 const sanitizeLine = (line: string) => {
-  return line.replace(/[<>\[\]{}}]/g, "");
+  return line.replace(/[^\x20-\x7E]|[<>[\]{}\\]/g, "");
 }
 
 const terminalLineToSpan = (line: string, index: number) => {
-  const parts = [];
-  while (line.length !== 0) {
-    const bracketIndex = line.indexOf("<");
-
-    if (bracketIndex === -1) {
-      parts.push({
-        msg: line,
-        color: "w"
-      });
-      line = "";
-      continue;
-    }
-
-    if (bracketIndex > 0) {
-      parts.push({
-        msg: line.substring(0, bracketIndex),
-        color: "w"
-      });
-      line = line.substring(bracketIndex);
-    }
-
-    const closeIndex = line.indexOf(">");
-    if (closeIndex === -1 || closeIndex === line.length - 1) {
-      parts.push({
-        msg: line,
-        color: "w"
-      });
-      line = "";
-      continue;
-    }
-
-    const color = line[1];
-    const closingTag = `</${color}>`;
-    const closingTagIndex = line.indexOf(closingTag)
-
-    if (closingTagIndex === -1) {
-      parts.push({
-        msg: line.substring(closeIndex + 1),
-        color: color
-      });
-      line = "";
-      continue;
-    }
-
-    parts.push({
-      msg: line.substring(closeIndex + 1, closingTagIndex),
-      color: color
-    });
-    const remainingIndex = closingTagIndex + closingTag.length;
-    if (remainingIndex >= line.length) {
-      line = "";
-    } else {
-      line = line.substring(remainingIndex);
-    }
-  }
+  const tokens = parseLine(line);
 
   return (
     <p key={index} className="terminal-text">
-      {parts.map((part) => {
-        let color = "#fff";
-        switch (part.color) {
-          case "r":
-            color = "#ff0000";
-            break
-          default:
-            break
-        }
-        return (<span style={{color}}>{part.msg}</span>)
-      })}
+      {tokens.map((token) => (<span style={{ color: TEXT_COLOR_VALUES[token.color] }}>{token.text}</span>) )}
     </p>
   );
 }
