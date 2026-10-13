@@ -100,3 +100,19 @@ func TestRegisterPlayerKicksExistingConnection(t *testing.T) {
 		t.Fatal("Kicked connection's disconnect removed the new connection")
 	}
 }
+
+func TestSanitizeString(t *testing.T) {
+	testCases := map[string]string {
+		"say hello, world!": "say hello, world!",
+		"say ;:=?@^_`|~'\"#$%&()*+-./": "say ;:=?@^_`|~'\"#$%&()*+-./",
+		"say <b>[x]{y}\\z": "say bxyz",
+		"say \t\x1b[31mred\n": "say 31mred",
+		"say café": "say caf",
+	}
+	for input, expected := range testCases {
+		result := sanitizeString(input)
+		if result != expected {
+			t.Errorf("sanitizeString(%q) = %q, expected %q", input, result, expected)
+		}
+	}
+}

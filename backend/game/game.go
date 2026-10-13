@@ -208,7 +208,8 @@ func (gamestate *GameState) saveAllLoggedInPlayers() {
 	log.Printf("Saved all logged in player characters.")
 }
 
-var forbiddenChars = regexp.MustCompile(`[<>\[\]{}}]`)
+// Anything that isn't printable ASCII, plus brackets and backslashes
+var forbiddenChars = regexp.MustCompile(`[^\x20-\x7E]|[<>\[\]{}\\]`)
 
 func sanitizeString(string string) string {
 	sanitaryString := forbiddenChars.ReplaceAllString(string, "")
