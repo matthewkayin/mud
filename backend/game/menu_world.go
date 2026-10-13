@@ -588,6 +588,9 @@ var MENU_WORLD = Menu {
 					}
 				}
 
+				goldIndex, _ := playerMob.Data.Inventory.FindItem(world.ITEM_GOLD)
+				playerMob.Data.Inventory.RemoveItems(goldIndex, itemCost)
+
 				*player.inbox <- fmt.Sprintf("You bought %d %s.", buyAmount, itemData.Name)
 
 				return true

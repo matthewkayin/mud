@@ -2,74 +2,26 @@
   "Rooms": [
     {
       "Name": "Presentation Space",
-      "Description": "This is a new room",
+      "Description": "You are in a wide-open room with chairs stacked against the columns. A makeshift, blue octopus hangs overhead.",
       "IsSafeZone": true,
       "EditorPosition": {
         "X": 1,
         "Y": 2
       },
       "Exits": [
-        2,
-        3,
         -1,
-        -1
+        -1,
+        2,
+        1
       ],
       "Locks": [],
       "DropTable": {
         "Entries": [
           {
-            "ItemId": "Chainmail Armor",
-            "AmountRange": {
-              "Min": 1,
-              "Max": 1
-            },
-            "DurabilityPercentRange": {
-              "Min": 100,
-              "Max": 100
-            },
-            "DropChancePercent": 100
-          },
-          {
             "ItemId": "Gold",
             "AmountRange": {
-              "Min": 100,
-              "Max": 100
-            },
-            "DurabilityPercentRange": {
-              "Min": 100,
-              "Max": 100
-            },
-            "DropChancePercent": 100
-          },
-          {
-            "ItemId": "Potion of Health",
-            "AmountRange": {
-              "Min": 2,
-              "Max": 2
-            },
-            "DurabilityPercentRange": {
-              "Min": 100,
-              "Max": 100
-            },
-            "DropChancePercent": 100
-          },
-          {
-            "ItemId": "Sword",
-            "AmountRange": {
-              "Min": 1,
-              "Max": 1
-            },
-            "DurabilityPercentRange": {
-              "Min": 100,
-              "Max": 100
-            },
-            "DropChancePercent": 100
-          },
-          {
-            "ItemId": "Potion of Health Recipe",
-            "AmountRange": {
-              "Min": 1,
-              "Max": 1
+              "Min": 200,
+              "Max": 200
             },
             "DurabilityPercentRange": {
               "Min": 100,
@@ -85,16 +37,16 @@
       "Chests": []
     },
     {
-      "Name": "West Wing",
-      "Description": "hey man what's up?",
-      "IsSafeZone": false,
+      "Name": "Kitchen",
+      "Description": "In the corner of a room is a long, rectangular dining table. There are also coffee makers. So many coffee makers...",
+      "IsSafeZone": true,
       "EditorPosition": {
         "X": 0,
-        "Y": 1
+        "Y": 2
       },
       "Exits": [
         -1,
-        2,
+        0,
         -1,
         -1
       ],
@@ -108,35 +60,22 @@
       "Chests": []
     },
     {
-      "Name": "Kitchen",
-      "Description": "This is a new room",
+      "Name": "Stairwell",
+      "Description": "The stairwell smells musty and you can hear the echo of your footsteps as you follow the twisted layout of the steps below.",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 1,
-        "Y": 1
+        "Y": 3
       },
       "Exits": [
-        -1,
-        -1,
         0,
-        1
+        -1,
+        3,
+        -1
       ],
       "Locks": [],
       "DropTable": {
-        "Entries": [
-          {
-            "ItemId": "Gold",
-            "AmountRange": {
-              "Min": 25,
-              "Max": 25
-            },
-            "DurabilityPercentRange": {
-              "Min": 100,
-              "Max": 100
-            },
-            "DropChancePercent": 100
-          }
-        ]
+        "Entries": []
       },
       "Inventory": {
         "Items": []
@@ -144,18 +83,64 @@
       "Chests": []
     },
     {
-      "Name": "Sammet",
-      "Description": "This is a new room",
+      "Name": "Cliffside",
+      "Description": "A sharp cliffside juts out from the castle, plunging into the East River below.",
       "IsSafeZone": false,
       "EditorPosition": {
-        "X": 2,
-        "Y": 2
+        "X": 1,
+        "Y": 4
       },
       "Exits": [
+        2,
+        -1,
+        4,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Bridge",
+      "Description": "You stand upon a rickety bridge that leads across the river. Violent currents crash below you. Don't look down!",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 1,
+        "Y": 5
+      },
+      "Exits": [
+        3,
+        -1,
+        5,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Canal Street?",
+      "Description": "You made it to the other side!",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 1,
+        "Y": 6
+      },
+      "Exits": [
+        4,
         -1,
         -1,
-        -1,
-        0
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -169,8 +154,47 @@
   ],
   "Npcs": [
     {
-      "Id": "troll",
+      "Id": "ollie",
+      "SpawnRoom": 1,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "goblin",
       "SpawnRoom": 2,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": [
+          {
+            "ItemId": "Potion of Health",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 1
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 100
+          }
+        ]
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "troll",
+      "SpawnRoom": 3,
       "LevelRange": {
         "Min": 1,
         "Max": 1
@@ -180,10 +204,10 @@
         "Entries": []
       },
       "BehaviorParams": {
-        "ExitToBlock": "west",
+        "ExitToBlock": "south",
         "Toll": {
           "Id": "Gold",
-          "Amount": 25,
+          "Amount": 15,
           "Durability": 0
         }
       }

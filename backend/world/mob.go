@@ -130,12 +130,16 @@ func (mob *Mob) GetName() string {
 func (mob *Mob) GetNameWithInjury() string {
 	name := mob.GetName()
 
+	if mob.Data.Health <= 0 {
+		return name
+	}
+
 	if mob.Data.Health < mob.Data.MaxHealth() / 5 {
-		return name + " <r>(Near Death)</r>"
+		return fmt.Sprintf("%s (Near Death)", name)
 	}
 
 	if mob.Data.Health < mob.Data.MaxHealth() / 2 {
-		return name + " <r>(Injured)</r>"
+		return fmt.Sprintf("%s (Injured)", name)
 	}
 
 	return name
@@ -302,14 +306,14 @@ func (mob *Mob) Update(world *World) {
 			spellData := SPELL_DATA[mob.castSpell]
 			if mob.Data.Mana < spellData.ManaCost {
 				mob.Mode = MOB_MODE_IDLE
-				world.messageRoom(mob.Data.Room, fmt.Sprintf("%s tried to cast %s, but they don't have enough mana.", mob.GetName(), spellData.Name))
+				world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> tried to cast %s, but they don't have enough mana.", mob.GetName(), spellData.Name))
 				break
 			}
 
 			// Check spell timer
 			if mob.castTimer > 0 {
 				mob.castTimer--
-				world.messageRoom(mob.Data.Room, fmt.Sprintf("%s is charging a spell...", mob.GetName()))
+				world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> is charging a spell...", mob.GetName()))
 				break
 			}
 
@@ -361,7 +365,7 @@ func (mob *Mob) Update(world *World) {
 				break
 			}
 
-			world.messageRoom(mob.Data.Room, fmt.Sprintf("%s taunted %s!", mob.Data.Name, targetMob.Data.Name))
+			world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> taunted <y>%s</y>!", mob.Data.Name, targetMob.Data.Name))
 			success := mob.rollForTaunt(targetMob)
 			if success {
 				targetMob.SetModeAttack(world, mob.Target, mob.Handle)
@@ -369,9 +373,9 @@ func (mob *Mob) Update(world *World) {
 					targetMob.Npc.disposition = NPC_DISPOSITION_HOSTILE
 				}
 
-				world.messageRoom(mob.Data.Room, fmt.Sprintf("%s grew angry and is now attacking %s!", targetMob.Data.Name, mob.Data.Name))
+				world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> grew angry and is now attacking <y>%s</y>!", targetMob.Data.Name, mob.Data.Name))
 			} else {
-				world.messageRoom(mob.Data.Room, fmt.Sprintf("%s ignored the taunt.", targetMob.Data.Name))
+				world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> ignored the taunt.", targetMob.Data.Name))
 			}
 
 			mob.Mode = MOB_MODE_IDLE
@@ -441,7 +445,7 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	evasionChance := targetAgility / (targetAgility + (mobAgility * MOB_EVASION_K))
 	evasionRoll := rand.Float32()
 	if evasionRoll < evasionChance {
-		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s dodged %s's attack!", targetMob.GetName(), mob.GetName()))
+		world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> dodged <y>%s's</y> attack!", targetMob.GetName(), mob.GetName()))
 		return
 	}
 
@@ -486,9 +490,9 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	if crit {
 		critStr = "Critical hit! "
 	}
-	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s%s struck %s for <r>%d</r> damage.", critStr, mob.GetName(), targetMob.GetName(), damage))
+	world.messageRoom(mob.Data.Room, fmt.Sprintf("<r>%s</r><y>%s</y> struck <y>%s</y> for <r>%d</r> damage.", critStr, mob.GetName(), targetMob.GetName(), damage))
 	if targetMob.IsDead() {
-		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s has <r>slain</r> %s.", mob.GetName(), targetMob.GetName()))
+		world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> has <r>slain</r> <y>%s.</y>", mob.GetName(), targetMob.GetName()))
 	} else {
 		targetMob.rollForConcentration(world, damage)
 	}
@@ -524,7 +528,7 @@ func (mob *Mob) rollForConcentration(world *World, damage int32) {
 
 	// Concentration broken!
 	mob.Mode = MOB_MODE_IDLE
-	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s lost concentration on their spell!", mob.GetName()))
+	world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> lost concentration on their spell!", mob.GetName()))
 }
 
 func (mob *Mob) RollForEscape(world *World) bool {
@@ -623,7 +627,7 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 
 	item.Durability--
 	if item.Durability <= 0 {
-		world.messageRoom(mob.Data.Room, fmt.Sprintf("%s's %s broke!", mob.GetName(), itemData.Name))
+		world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s's</y> %s broke!", mob.GetName(), itemData.Name))
 		_, messages, _ := mob.unequip(slot)
 		for _, message := range messages {
 			world.messagePlayer(mob.PlayerCharacter.PlayerId, message)
@@ -664,7 +668,7 @@ func (mob *Mob) spellcast(world *World, targetMob *Mob) {
 	spellData := SPELL_DATA[mob.castSpell]
 
 	// Cast spell
-	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s cast %s!", mob.GetName(), spellData.Name))
+	world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> cast %s!", mob.GetName(), spellData.Name))
 	mob.Data.Mana -= spellData.ManaCost
 
 	// TODO: wrap a context around this to timeout calls?
@@ -762,7 +766,7 @@ func (mob *Mob) useItem(world *World, targetMob *Mob) {
 
 	// Use item
 	itemData := ITEM_DATA[item.Id]
-	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s used %s!", mob.GetName(), itemData.Name))
+	world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> used %s!", mob.GetName(), itemData.Name))
 
 	switch itemData.Kind {
 		case ITEM_KIND_CONSUMABLE: {
@@ -840,7 +844,7 @@ func (mob *Mob) CraftItem(world *World, recipe RecipeId) bool {
 
 func (mob *Mob) Reveal(world *World) {
 	mob.SetFlag(MOB_FLAG_HIDDEN, false)
-	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s was hiding in the room and has revealed themselves!", mob.Data.Name))
+	world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> was hiding in the room and has revealed themselves!", mob.Data.Name))
 }
 
 func (mob *Mob) HasCondition(conditionType ConditionType) bool {

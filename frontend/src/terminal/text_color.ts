@@ -11,6 +11,6 @@ export const TEXT_COLOR_VALUES = {
   [TextColor.WHITE]: '#fff',
   [TextColor.RED]: '#ff0000',
   [TextColor.GREEN]: '#00ff00',
-  [TextColor.BLUE]: '#0000ff',
+  [TextColor.BLUE]: '#5fcde4',
   [TextColor.YELLOW]: '#ffff00',
 };

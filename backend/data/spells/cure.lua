@@ -12,7 +12,7 @@ function spell.on_hit(caster, target)
     local healing = world.magic_heal(caster, target, 15)
 
     local target_name = world.mob_get_name(target)
-    world.message_room(world.mob_get_room(target), string.format("%s regained %d HP.", target_name, healing))
+    world.message_room(world.mob_get_room(target), string.format("<y>%s</y> regained <g>%d HP</g>.", target_name, healing))
 end
 
 return spell

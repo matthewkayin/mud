@@ -18,11 +18,6 @@ npc.drop_table = {}
 npc.starting_disposition = world.NpcDisposition.NEUTRAL
 npc.movement_type = world.NpcMovementType.SENTINEL
 
-npc.wares = {
-    "Sword",
-    "Potion of Health"
-}
-
 -- The troll blocks an exit until a player pays it the toll
 npc.behavior_params = {
 	{ name = "Toll", type = world.NpcBehaviorParamType.ITEM },
@@ -133,7 +128,9 @@ function npc.on_item_given(self, instance, player, added_to_index, amount)
 
     -- If the player gave the toll but not the right amount, then complain
     if world.mob_get_inventory_amount_of(self, instance.toll.name) < instance.toll.amount then
+        world.mob_drop_inventory_item(self, added_to_index, amount)
         world.say_to_room(self, string.format("You think me no count? Me need %d %s!", instance.toll.amount, instance.toll.name))
+        world.message_room(room, string.format("%s dropped the %s on the floor.", self_name, item_name))
 
         return world.NPC_EVENT_PREVENT_DEFAULT
     end
