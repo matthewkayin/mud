@@ -851,17 +851,15 @@ var MENU_WORLD = Menu {
 			usage: "hp [<player>] friends",
 			description: "Show your combat status including HP, MP, and conditions. Type 'hp <player>' to see this status for another player in the room. Type 'hp friends' to see this status for all players in the room.",
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
+				// Determine list of targets for the HP table
+
+				targets := make([]world.MobHandle, 0, 1)
+
 				if len(args) == 0 {
-					playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-					printMobHp(player, playerMob)
-
-					return true
-				}
-
-				if len(args) == 1 && strings.EqualFold(args[0], "friends") {
+					targets = append(targets, player.mobHandle)
+				} else if len(args) == 1 && strings.EqualFold(args[0], "friends") {
 					playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 					playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
-					rows := make([]string, 0, 3 * len(playerRoom.Occupants))
 					for _, occupantHandle := range playerRoom.Occupants {
 						occupantMob := gamestate.world.Mobs.Get(occupantHandle)
 
@@ -870,24 +868,51 @@ var MENU_WORLD = Menu {
 							continue
 						}
 
-						rows = append(rows, occupantMob.Data.Name)
-						rows = append(rows, fmt.Sprintf("%d / %d", occupantMob.Data.Health, occupantMob.Data.MaxHealth()))
-						rows = append(rows, fmt.Sprintf("%d / %d", occupantMob.Data.Mana, occupantMob.Data.MaxMana()))
+						targets = append(targets, occupantHandle)
+					}
+				} else {
+					targetHandle, err := fuzzyFindTarget(gamestate, player, args)
+					if err != nil {
+						*player.inbox <- err.Error()
+						return true
 					}
 
-					printTable(player, "Friends", []string{"Name", "HP", "MP"}, rows)
+					targetMob := gamestate.world.Mobs.Get(targetHandle)
+					if targetMob.IsNpc() {
+						*player.inbox <- fmt.Sprintf("Cannot get status of %s because they are not a player.", targetMob.Data.Name)
+						return true
+					}
 
-					return true
+					targets = append(targets, targetHandle)
 				}
 
-				targetHandle, err := fuzzyFindTarget(gamestate, player, args)
-				if err != nil {
-					*player.inbox <- err.Error()
-					return true
+				headers := []string {
+					"Name",
+					"HP",
+					"MP",
+					"Conditions",
 				}
 
-				targetMob := gamestate.world.Mobs.Get(targetHandle)
-				printMobHp(player, targetMob)
+				rows := make([]string, 0, len(headers) * len(targets))
+				for _, target := range targets {
+					targetMob := gamestate.world.Mobs.Get(target)
+					rows = append(rows, targetMob.Data.Name)
+					rows = append(rows, fmt.Sprintf("%d / %d", targetMob.Data.Health, targetMob.Data.MaxHealth()))
+					rows = append(rows, fmt.Sprintf("%d / %d", targetMob.Data.Mana, targetMob.Data.MaxMana()))
+
+					if len(targetMob.Data.Conditions) == 0 {
+						rows = append(rows, "None")
+					} else {
+						conditionNames := make([]string, 0, len(targetMob.Data.Conditions))
+						for index := range len(targetMob.Data.Conditions) {
+							conditionNames = append(conditionNames, targetMob.Data.Conditions[index].Type.String())
+						}
+
+						rows = append(rows, combineNames(conditionNames))
+					}
+				}
+
+				printTable(player, "Status", headers, rows)
 
 				return true
 			},

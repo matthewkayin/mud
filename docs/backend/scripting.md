@@ -128,7 +128,7 @@ class.unlocks = {
 return class
 ```
 
-Character saves (`saves/<Name>.json`, `CharacterJson` in `character.go`) store race, class, job, spell and recipe names instead of IDs. World files (`data/world.json`) store item names in drop tables (`DropTableEntry` in `drop_table.go`) and inventories (`Item` in `item.go`), and NPC keys in unique NPCs (`Npc` in `npc.go`). If a save names something that no longer exists, decoding returns an error and startup fails.
+Character saves (`saves/<Name>.json`, `CharacterJson` in `character.go`) store race, class, job, spell and recipe names instead of IDs. World files (`data/world.json`) store item names in drop tables (`DropTableEntry` in `drop_table.go`) and inventories (`Item` in `item.go`), and NPC keys in unique NPCs (`Npc` in `npc.go`). Both kinds of file store mob conditions by name (`Condition` in `mob_condition.go`). If a save names something that no longer exists, decoding returns an error and startup fails.
 
 ## Script API
 
@@ -180,6 +180,32 @@ The read functions follow the getter guideline in [Performance](#performance). T
 `amount` must be a positive integer. It's limited to the size of the stack, and for giving, also to the space left in the target's inventory (players have a capacity, NPCs don't). An item that doesn't stack can only be dropped or given with an amount of `1`.
 
 Removing a whole stack moves the last stack in the inventory into its index (`Inventory.RemoveItems`), so after a drop or give, read the indices again before using them. These functions don't send any messages, so use `message_room` to tell players what happened. Giving an item to an NPC doesn't trigger its `on_item_given` hook, because that hook is only for items that players give.
+
+### Conditions
+
+A condition is a timed effect on a mob, such as the buff from the Blessing of Might spell. Conditions aren't scripted data. They're defined in Go in `backend/world/mob_condition.go`: each `ConditionType` constant has an entry in `CONDITION_DATA` with a `Name` and a `Description`, and the condition's effect is checked in Go wherever it applies (for example, `CONDITION_TYPE_BLESS_MIGHT` is checked in the weapon damage calculation in `mob.go`). Scripts only add, check and remove conditions.
+
+Scripts name conditions with the `world.ConditionType` table. Its keys are the condition names in upper case with spaces replaced by underscores, and its values are the names, so `world.ConditionType.BLESSING_OF_MIGHT` is `"Blessing of Might"`.
+
+| Function | Returns | Notes |
+| --- | --- | --- |
+| `mob_has_condition(handle, condition)` | boolean | |
+| `mob_add_condition(handle, condition, duration)` | | `duration` is in ticks and must be positive or `world.CONDITION_DURATION_INFINITE`. If the mob already has the condition, it keeps whichever duration is longer, with infinite counting as the longest |
+| `mob_remove_condition(handle, condition)` | | Does nothing if the mob doesn't have the condition |
+| `mob_calc_magic_condition_duration(caster, base_duration)` | integer | Scales a positive base duration by the caster's FTH: `base * (1 + FTH / 50)` |
+
+Durations are counted in world updates (ticks, `WORLD_SECONDS_PER_UPDATE` seconds each), so use `world.time_minutes` to convert from real time. Each `Mob.Update` lowers every finite duration by one and removes a condition once it reaches 0. Conditions with `CONDITION_DURATION_INFINITE` (-1) last until they are removed. These functions don't send any messages, so use `message_room` to tell players what happened. A spell that applies a condition typically looks like:
+
+```lua
+function spell.on_hit(caster, target)
+    local duration = world.mob_calc_magic_condition_duration(caster, world.time_minutes(1))
+    world.mob_add_condition(target, world.ConditionType.BLESSING_OF_MIGHT, duration)
+end
+```
+
+Conditions are stored on `MobData.Conditions`, so they are saved with characters and NPCs. `Condition`'s custom JSON methods save the condition by name along with its remaining duration.
+
+To add a condition, add a `CONDITION_TYPE_*` constant before `CONDITION_TYPE_COUNT`, give it a `CONDITION_DATA` entry, implement its effect in Go, and run `go generate` so that `world.ConditionType` in `world.d.lua` picks it up.
 
 ### Language server definitions
 

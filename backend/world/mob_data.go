@@ -28,6 +28,7 @@ type MobData struct {
 
 	Health int32
 	Mana int32
+	Conditions []Condition
 
 	Spells []SpellId
 	Inventory Inventory
@@ -47,6 +48,7 @@ type MobDataJson struct {
 
 	Health int32
 	Mana int32
+	Conditions []Condition
 
 	Spells []string
 	Inventory Inventory
@@ -67,6 +69,7 @@ func (mobData *MobData) MarshalJSON() ([]byte, error) {
 
 		Health: mobData.Health,
 		Mana: mobData.Mana,
+		Conditions: mobData.Conditions,
 
 		Spells: spellsToStringArray(mobData.Spells),
 		Inventory: mobData.Inventory,
@@ -94,6 +97,7 @@ func (mobData *MobData) UnmarshalJSON(data []byte) error {
 
 	mobData.Health = mobDataJson.Health
 	mobData.Mana = mobDataJson.Mana
+	mobData.Conditions = mobDataJson.Conditions
 
 	mobData.Spells = spellsFromStringArray(mobDataJson.Spells)
 	mobData.Inventory = mobDataJson.Inventory
