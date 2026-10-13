@@ -102,10 +102,13 @@ Each ID is the entry's position in load order, and files load in alphabetical or
 
 Stat blocks are tables keyed by stat abbreviation (`VIT`, `STR`, `AGI`, `INT`, `FTH`), and missing stats are 0. Race stats can be negative. All other stat blocks must not be.
 
+Races and classes require a one-sentence `description`, which the character creator shows in a table when a player types `describe race` or `describe class`.
+
 ```lua
 -- races/dwarf.lua
 local race = {}
 race.name = "Dwarf"
+race.description = "Stout folk of the deep mountains, hardy and strong but slow on their feet."
 race.stats = { VIT = 2, STR = 2, AGI = -1 }
 return race
 
@@ -119,6 +122,7 @@ return job
 -- classes/warrior.lua
 local class = {}
 class.name = "Warrior"
+class.description = "A frontline fighter who relies on strength and draws enemies' attention."
 class.stats = { VIT = 8, STR = 10, AGI = 6, INT = 6, FTH = 8 }
 class.scaling = { VIT = 8, STR = 10, AGI = 6, INT = 6, FTH = 8 }
 -- Each unlock sets a level (1 to MOB_MAX_LEVEL - 1) and exactly one of `ability` (a MOB_ABILITY_DATA name) or `spell`

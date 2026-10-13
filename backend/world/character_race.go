@@ -12,6 +12,7 @@ type RaceId int
 
 type RaceData struct {
 	Name string
+	Description string
 	Stats StatBlock
 }
 
@@ -76,6 +77,7 @@ func (parser *ScriptParser) parseRace(table *lua.Table) *RaceData {
 	raceData := &RaceData{}
 
 	raceData.Name = parser.getString(table, "name")
+	raceData.Description = parser.getString(table, "description")
 	// Race stats are modifiers, so they are allowed to be negative
 	raceData.Stats = parser.getStatBlock(table, "stats", true)
 
