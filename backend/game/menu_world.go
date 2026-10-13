@@ -923,34 +923,44 @@ var MENU_WORLD = Menu {
 			description: "Show your current stats.",
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-				classData := world.CLASS_DATA[player.character.Class]
-				raceData := world.RACE_DATA[player.character.Race]
 
-				*player.inbox <- fmt.Sprintf("%s - Level %d %s %s",
-					playerMob.Data.Name, playerMob.Data.Level, raceData.Name, classData.Name)
-				*player.inbox <- fmt.Sprintf("Experience: %d / %d", playerMob.Data.Experience, playerMob.Data.ExperienceToNextLevel)
-
-				*player.inbox <- fmt.Sprintf("\nHP: %d / %d", playerMob.Data.Health, playerMob.Data.MaxHealth())
-				*player.inbox <- fmt.Sprintf("MP: %d / %d", playerMob.Data.Mana, playerMob.Data.MaxMana())
+				sections := [][]string {
+					{
+						"Race", world.RACE_DATA[player.character.Race].Name,
+						"Class", world.CLASS_DATA[player.character.Class].Name,
+						"Job", world.JOB_DATA[player.character.Job].Name,
+					},
+					{
+						"Level", strconv.Itoa(int(playerMob.Data.Level)),
+						"Experience", fmt.Sprintf("%d / %d", playerMob.Data.Experience, playerMob.Data.ExperienceToNextLevel),
+					},
+					{
+						"HP", fmt.Sprintf("%d / %d", playerMob.Data.Health, playerMob.Data.MaxHealth()),
+						"MP", fmt.Sprintf("%d / %d", playerMob.Data.Mana, playerMob.Data.MaxMana()),
+					},
+				}
 
 				statBonuses := &playerMob.Data.Equipment.StatBonuses
-				*player.inbox <- ""
-				statRows := make([]string, 0, 2 * world.STAT_COUNT)
+				statRows := make([]string, 0, 4 * world.STAT_COUNT)
 				for index := range world.STAT_COUNT {
 					statRows = append(statRows, world.STAT_DATA[index].Name)
-					statRows = append(statRows, fmt.Sprintf("%d (%s)", playerMob.Data.Stats.Values[index], statBonusStr(statBonuses.Values[index])))
+					statRows = append(statRows, strconv.Itoa(int(playerMob.Data.Stats.Values[index])))
+					statRows = append(statRows, statModifierStr(statBonuses.Values[index]))
+					statRows = append(statRows, strconv.Itoa(int(playerMob.Data.GetStat(index))))
 				}
-				printTable(player, "Stats", []string{"Stat", "Value"}, statRows)
+				printSheetTable(player, playerMob.Data.Name, sections, []string{"Stat", "Base", "Equipment", "Total"}, statRows)
 
 				abilities := playerMob.Data.GetAbilityList()
 				if len(abilities) != 0 {
-					abilityNames := make([]string, 0, len(abilities))
+					abilityRows := make([]string, 0, 2 * len(abilities))
 					for _, ability := range abilities {
 						abilityData := world.MOB_ABILITY_DATA[ability]
-						abilityNames = append(abilityNames, abilityData.Name)
+						abilityRows = append(abilityRows, abilityData.Name)
+						abilityRows = append(abilityRows, abilityData.Description)
 					}
 
-					*player.inbox <- fmt.Sprintf("\nTalents: %s", combineNames(abilityNames))
+					*player.inbox <- ""
+					printTable(player, "Talents", []string{"Name", "Description"}, abilityRows)
 				} else {
 					*player.inbox <- "\nYou have no talents."
 				}
@@ -2075,129 +2085,4 @@ func printMobHp(player *Player, mob *world.Mob) {
 	*player.inbox <- fmt.Sprintf("%s:", mob.Data.Name)
 	*player.inbox <- fmt.Sprintf("HP: %d / %d", mob.Data.Health, mob.Data.MaxHealth())
 	*player.inbox <- fmt.Sprintf("MP: %d / %d", mob.Data.Mana, mob.Data.MaxMana())
-}
-
-func statBonusStr(value int32) string {
-	valueStr := strconv.Itoa(int(value))
-	if value >= 0 {
-		valueStr = "+" + valueStr
-	}
-	return valueStr
-}
-
-func printTable(player *Player, title string, headers []string, rows []string) {
-	// Determine column size
-	columns := len(headers)
-	columnWidth := make([]int, columns)
-	for index := range columns {
-		columnWidth[index] = len(headers[index])
-	}
-
-	for index := 0; index < len(rows); index += columns {
-		for col := range columns {
-			columnWidth[col] = max(columnWidth[col], len(rows[index + col]))
-		}
-	}
-
-	// Determine the title width
-	tableWidth := (3 * columns) + 1
-	for _, width := range columnWidth {
-		tableWidth += width
-	}
-	if len(title) + 4 > tableWidth {
-		diff := (len(title) + 4) - tableWidth
-		tableWidth += diff
-		columnWidth[columns - 1] += diff
-	}
-
-	// Print title
-	*player.inbox <- fmt.Sprintf("+%s+", strings.Repeat("-", tableWidth - 2))
-	*player.inbox <- fmt.Sprintf("| %-*s |", tableWidth - 4, title)
-	*player.inbox <- fmt.Sprintf("|%s|", strings.Repeat("-", tableWidth - 2))
-
-	printTableRow(player, columnWidth, headers, 0)
-	*player.inbox <- fmt.Sprintf("|%s|", strings.Repeat("-", tableWidth - 2))
-
-	for offset := 0; offset < len(rows); offset += columns {
-		printTableRow(player, columnWidth, rows, offset)
-	}
-
-	*player.inbox <- fmt.Sprintf("+%s+", strings.Repeat("-", tableWidth - 2))
-}
-
-func printTableRow(player *Player, columnWidth []int, rows []string, offset int) {
-	var builder strings.Builder
-	builder.WriteByte('|')
-
-	for col := range len(columnWidth) {
-		if rows[offset + col] == "-" {
-			// Puts "---" in the center of the column
-			message := "---"
-			padding := columnWidth[col] - len(message)
-			leftPad := (padding / 2) + 1
-			rightPad := (padding - leftPad) + 2
-			builder.WriteString(strings.Repeat(" ", leftPad))
-			builder.WriteString(message)
-			builder.WriteString(strings.Repeat(" ", rightPad))
-			builder.WriteByte('|')
-		} else {
-			fmt.Fprintf(&builder, " %-*s |", columnWidth[col], rows[offset + col])
-		}
-	}
-
-	*player.inbox <- builder.String()
-}
-
-func printTableDivider(player *Player, columnWidth []int) {
-	var builder strings.Builder
-	builder.WriteByte('|')
-
-	for col := range len(columnWidth) {
-		builder.WriteString(fmt.Sprintf(" %s |", strings.Repeat("-", columnWidth[col])))
-	}
-
-	*player.inbox <- builder.String()
-}
-
-func printSpellTable(gamestate *GameState, player *Player, title string, spells []world.SpellId, includeMastery bool) {
-	playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-
-	headers := make([]string, 0, 5)
-	headers = append(headers, "Name")
-	headers = append(headers, "Cost")
-	headers = append(headers, "Cast Time")
-	if includeMastery {
-		headers = append(headers, "Mastery")
-	}
-	headers = append(headers, "Description")
-
-	rows := make([]string, 0, len(headers) * len(spells))
-	for _, spell := range spells {
-		spellData := world.SPELL_DATA[spell]
-
-		rows = append(rows, spellData.Name)
-		rows = append(rows, fmt.Sprintf("%d Mana", spellData.ManaCost))
-
-		if spellData.CastTime == world.SPELL_CAST_TIME_INSTANT {
-			rows = append(rows, "Instant")
-		} else {
-			rows = append(rows, fmt.Sprintf("%d Turns", spellData.CastTime))
-		}
-
-		if includeMastery {
-			equippedSpell, spellIsEquipped := player.character.SpellsEquipped[spell]
-			if spellIsEquipped && !equippedSpell.IsKnown {
-				casts := float32(equippedSpell.Casts)
-				castsToLearn := float32(playerMob.Data.CastsToLearn(spell))
-				mastery := int32((casts / castsToLearn) * 100.0)
-				rows = append(rows, fmt.Sprintf("%d%%", mastery))
-			} else {
-				rows = append(rows, "Known")
-			}
-		}
-
-		rows = append(rows, spellData.Description)
-	}
-
-	printTable(player, title, headers, rows)
 }

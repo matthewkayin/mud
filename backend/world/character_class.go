@@ -23,6 +23,7 @@ type ClassUnlock struct {
 
 type ClassData struct {
 	Name string
+	Description string
 	Stats StatBlock
 	Scaling StatBlock
 	StartingItems []Item
@@ -91,6 +92,7 @@ func (parser *ScriptParser) parseClass(table *lua.Table) *ClassData {
 	classData := &ClassData{}
 
 	classData.Name = parser.getString(table, "name")
+	classData.Description = parser.getString(table, "description")
 	classData.Stats = parser.getStatBlock(table, "stats", false)
 	classData.Scaling = parser.getStatBlock(table, "scaling", false)
 

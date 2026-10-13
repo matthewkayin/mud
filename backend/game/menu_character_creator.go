@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"mud/world"
 )
@@ -124,18 +125,45 @@ var MENU_CREATE = Menu {
 }
 
 func printCharacterSheet(player *Player) {
-	*player.inbox <- "This is your character sheet:"
+	raceData := world.RACE_DATA[player.characterSheet.Race]
+	classData := world.CLASS_DATA[player.characterSheet.Class]
+	jobData := world.JOB_DATA[player.characterSheet.Job]
 
-	// Name
 	name := "<not set>"
 	if player.characterSheet.Name != "" {
 		name = player.characterSheet.Name
 	}
-	*player.inbox <- fmt.Sprintf("\nName: %s", name)
 
-	*player.inbox <- fmt.Sprintf("Race: %s", world.RACE_DATA[player.characterSheet.Race].Name)
-	*player.inbox <- fmt.Sprintf("Class: %s", world.CLASS_DATA[player.characterSheet.Class].Name)
-	*player.inbox <- fmt.Sprintf("Job: %s", world.JOB_DATA[player.characterSheet.Job].Name)
+	sheetRows := []string {
+		"Name", name,
+		"Race", raceData.Name,
+		"Class", classData.Name,
+		"Job", jobData.Name,
+	}
+
+	// Starting stats are the sum of the race, class and job stats
+	totalStats := raceData.Stats
+	totalStats = totalStats.Add(&classData.Stats)
+	totalStats = totalStats.Add(&jobData.Stats)
+
+	statHeaders := []string {
+		"Stat",
+		"Class",
+		"Race",
+		"Job",
+		"Total",
+	}
+
+	statRows := make([]string, 0, 5 * world.STAT_COUNT)
+	for index := range world.STAT_COUNT {
+		statRows = append(statRows, world.STAT_DATA[index].Name)
+		statRows = append(statRows, strconv.Itoa(int(classData.Stats.Values[index])))
+		statRows = append(statRows, statModifierStr(raceData.Stats.Values[index]))
+		statRows = append(statRows, statModifierStr(jobData.Stats.Values[index]))
+		statRows = append(statRows, strconv.Itoa(int(totalStats.Values[index])))
+	}
+
+	printSheetTable(player, "Character Sheet", [][]string{ sheetRows }, statHeaders, statRows)
 }
 
 var CHARACTER_SHEET_PROPERTIES = map[string]*MenuCharacterSheetProperty {
@@ -158,10 +186,17 @@ var CHARACTER_SHEET_PROPERTIES = map[string]*MenuCharacterSheetProperty {
 	},
 	"race": {
 		describe: func (player *Player) {
-			*player.inbox <- "'race' is your character's race. The races are:"
+			*player.inbox <- "'race' is your character's race. Each race modifies your starting stats."
+
+			headers := appendStatHeaders([]string{"Name"})
+			headers = append(headers, "Description")
+			rows := make([]string, 0, len(headers) * len(world.RACE_DATA))
 			for _, raceData := range world.RACE_DATA {
-				*player.inbox <- fmt.Sprintf("\t%s", raceData.Name)
+				rows = append(rows, raceData.Name)
+				rows = appendStatColumns(rows, &raceData.Stats, true)
+				rows = append(rows, raceData.Description)
 			}
+			printTable(player, "Races", headers, rows)
 		},
 		set: func (gameState *GameState, player *Player, value string) {
 			// Search for a race matching the string
@@ -177,10 +212,17 @@ var CHARACTER_SHEET_PROPERTIES = map[string]*MenuCharacterSheetProperty {
 	},
 	"class": {
 		describe: func (player *Player) {
-			*player.inbox <- "'class' is your character's class. The classes are:"
+			*player.inbox <- "'class' is your character's class. Each class sets your base stats."
+
+			headers := appendStatHeaders([]string{"Name"})
+			headers = append(headers, "Description")
+			rows := make([]string, 0, len(headers) * len(world.CLASS_DATA))
 			for _, classData := range world.CLASS_DATA {
-				*player.inbox <- fmt.Sprintf("\t%s", classData.Name)
+				rows = append(rows, classData.Name)
+				rows = appendStatColumns(rows, &classData.Stats, false)
+				rows = append(rows, classData.Description)
 			}
+			printTable(player, "Classes", headers, rows)
 		},
 		set: func (gameState *GameState, player *Player, value string) {
 			// Search for a class matching the string
@@ -196,10 +238,17 @@ var CHARACTER_SHEET_PROPERTIES = map[string]*MenuCharacterSheetProperty {
 	},
 	"job": {
 		describe: func (player *Player) {
-			*player.inbox <- "'job' is your character's job. The jobs are:"
+			*player.inbox <- "'job' is your character's job. Each job modifies your stats and determines which recipes you can craft."
+
+			headers := appendStatHeaders([]string{"Name"})
+			headers = append(headers, "Description")
+			rows := make([]string, 0, len(headers) * len(world.JOB_DATA))
 			for _, jobData := range world.JOB_DATA {
-				*player.inbox <- fmt.Sprintf("\t%s", jobData.Name)
+				rows = append(rows, jobData.Name)
+				rows = appendStatColumns(rows, &jobData.Stats, true)
+				rows = append(rows, jobData.Description)
 			}
+			printTable(player, "Jobs", headers, rows)
 		},
 		set: func (gameState *GameState, player *Player, value string) {
 			// Search for a job matching the string
