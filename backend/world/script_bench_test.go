@@ -74,13 +74,13 @@ func benchScriptMobData(b *testing.B, body string) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	world.luaState.SetGlobal("a", handleValue)
+	world.luaState.RawSetGlobal("a", handleValue)
 
 	tableFunc, err := world.luaState.NewNativeFunction(benchGetMobTable)
 	if err != nil {
 		b.Fatal(err)
 	}
-	world.luaState.SetGlobal("bench_get_mob_table", tableFunc.Value())
+	world.luaState.RawSetGlobal("bench_get_mob_table", tableFunc.Value())
 
 	source := fmt.Sprintf(`
 		local fields_2 = { "name", "room" }

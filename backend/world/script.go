@@ -83,6 +83,35 @@ func (world *World) scriptInit(dataFolder string) {
 
 	// Add world table to global state
 	world.luaState.SetGlobal("world", worldTable.Value())
+
+	// Disallow creating or reading undefined globals so that a missing "local" or a typo errors instead of silently working
+	globalTable, err := world.luaState.RawGlobal("_G")
+	if err != nil {
+		log.Fatalf("Error getting lua global table: %s", err.Error())
+	}
+	globalMetatable, err := world.luaState.NewTable()
+	if err != nil {
+		log.Fatalf("Error creating lua global metatable: %s", err.Error())
+	}
+	err = world.luaState.SetFunctions(globalMetatable, map[string]lua.NativeFunc {
+		"__newindex": func(frame lua.Frame) lua.Outcome {
+			key, _ := frame.Argument(1)
+			frame.ThrowString(fmt.Sprintf("Cannot create global variable '%s'. Declare it local instead.", key.String()))
+			return frame.Return()
+		},
+		"__index": func(frame lua.Frame) lua.Outcome {
+			key, _ := frame.Argument(1)
+			frame.ThrowString(fmt.Sprintf("Cannot read undefined global variable '%s'.", key.String()))
+			return frame.Return()
+		},
+	})
+	if err != nil {
+		log.Fatalf("Error registering lua global metamethods: %s", err.Error())
+	}
+	err = world.luaState.SetMetatable(globalTable, globalMetatable)
+	if err != nil {
+		log.Fatalf("Error setting lua global metatable: %s", err.Error())
+	}
 }
 
 func (world *World) ScriptQuit() {
