@@ -102,7 +102,7 @@ Each ID is the entry's position in load order, and files load in alphabetical or
 
 Stat blocks are tables keyed by stat abbreviation (`VIT`, `STR`, `AGI`, `INT`, `FTH`), and missing stats are 0. Race stats can be negative. All other stat blocks must not be.
 
-Races and classes require a one-sentence `description`, which the character creator shows in a table when a player types `describe race` or `describe class`.
+Races, classes and jobs require a one-sentence `description`, which the character creator shows in a table when a player types `describe race`, `describe class` or `describe job`.
 
 ```lua
 -- races/dwarf.lua
@@ -115,6 +115,7 @@ return race
 -- jobs/blacksmith.lua
 local job = {}
 job.name = "Blacksmith"
+job.description = "A forger of steel who hammers ore into weapons and armor."
 job.stats = {}
 job.scaling = {}
 return job

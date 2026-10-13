@@ -924,17 +924,21 @@ var MENU_WORLD = Menu {
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 
-				characterRows := []string {
-					"Name", playerMob.Data.Name,
-					"Level", strconv.Itoa(int(playerMob.Data.Level)),
-					"Race", world.RACE_DATA[player.character.Race].Name,
-					"Class", world.CLASS_DATA[player.character.Class].Name,
-					"Job", world.JOB_DATA[player.character.Job].Name,
-					"Experience", fmt.Sprintf("%d / %d", playerMob.Data.Experience, playerMob.Data.ExperienceToNextLevel),
-					"HP", fmt.Sprintf("%d / %d", playerMob.Data.Health, playerMob.Data.MaxHealth()),
-					"MP", fmt.Sprintf("%d / %d", playerMob.Data.Mana, playerMob.Data.MaxMana()),
+				sections := [][]string {
+					{
+						"Race", world.RACE_DATA[player.character.Race].Name,
+						"Class", world.CLASS_DATA[player.character.Class].Name,
+						"Job", world.JOB_DATA[player.character.Job].Name,
+					},
+					{
+						"Level", strconv.Itoa(int(playerMob.Data.Level)),
+						"Experience", fmt.Sprintf("%d / %d", playerMob.Data.Experience, playerMob.Data.ExperienceToNextLevel),
+					},
+					{
+						"HP", fmt.Sprintf("%d / %d", playerMob.Data.Health, playerMob.Data.MaxHealth()),
+						"MP", fmt.Sprintf("%d / %d", playerMob.Data.Mana, playerMob.Data.MaxMana()),
+					},
 				}
-				printTable(player, "Character", []string{"Property", "Value"}, characterRows)
 
 				statBonuses := &playerMob.Data.Equipment.StatBonuses
 				statRows := make([]string, 0, 4 * world.STAT_COUNT)
@@ -944,8 +948,7 @@ var MENU_WORLD = Menu {
 					statRows = append(statRows, statModifierStr(statBonuses.Values[index]))
 					statRows = append(statRows, strconv.Itoa(int(playerMob.Data.GetStat(index))))
 				}
-				*player.inbox <- ""
-				printTable(player, "Stats", []string{"Stat", "Base", "Equipment", "Total"}, statRows)
+				printSheetTable(player, playerMob.Data.Name, sections, []string{"Stat", "Base", "Equipment", "Total"}, statRows)
 
 				abilities := playerMob.Data.GetAbilityList()
 				if len(abilities) != 0 {

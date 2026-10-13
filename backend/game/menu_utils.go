@@ -71,6 +71,51 @@ func printTable(player *Player, title string, headers []string, rows []string) {
 	printTableEdge(player, tableWidth)
 }
 
+// Prints a title, then sections of "key : value" lines separated by dividers, then a table, all at the same width
+// Each section is a flat slice of key, value pairs, and the keys of each section are aligned separately
+func printSheetTable(player *Player, title string, sections [][]string, headers []string, rows []string) {
+	columns := len(headers)
+	columnWidth := getTableColumnWidths(headers, rows)
+
+	sectionKeyWidth := make([]int, len(sections))
+	tableWidth := max(getTableWidth(columnWidth), len(title) + 4)
+	for sectionIndex, section := range sections {
+		valueWidth := 0
+		for index := 0; index < len(section); index += 2 {
+			sectionKeyWidth[sectionIndex] = max(sectionKeyWidth[sectionIndex], len(section[index + 0]))
+			valueWidth = max(valueWidth, len(section[index + 1]))
+		}
+		tableWidth = max(tableWidth, sectionKeyWidth[sectionIndex] + valueWidth + 7)
+	}
+
+	// Expand the last column of the table to fit the table width
+	columnWidth[columns - 1] += tableWidth - getTableWidth(columnWidth)
+
+	printTableEdge(player, tableWidth)
+	printTableTitle(player, title, tableWidth)
+	printTableDivider(player, tableWidth)
+
+	for sectionIndex, section := range sections {
+		keyWidth := sectionKeyWidth[sectionIndex]
+		valueWidth := tableWidth - keyWidth - 7
+		for index := 0; index < len(section); index += 2 {
+			*player.inbox <- fmt.Sprintf("| %-*s : %-*s |",
+				keyWidth, section[index + 0],
+				valueWidth, section[index + 1])
+		}
+		printTableDivider(player, tableWidth)
+	}
+
+	printTableRow(player, columnWidth, headers, 0)
+	printTableDivider(player, tableWidth)
+
+	for offset := 0; offset < len(rows); offset += columns {
+		printTableRow(player, columnWidth, rows, offset)
+	}
+
+	printTableEdge(player, tableWidth)
+}
+
 func printTableTitle(player *Player, title string, tableWidth int) {
 	*player.inbox <- fmt.Sprintf("| %-*s |", tableWidth - 4, title)
 }

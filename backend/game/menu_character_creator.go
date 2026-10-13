@@ -140,11 +140,6 @@ func printCharacterSheet(player *Player) {
 		"Class", classData.Name,
 		"Job", jobData.Name,
 	}
-	sheetColumnWidth := []int { 0, 0 }
-	for index := 0; index < len(sheetRows); index += 2 {
-		sheetColumnWidth[0] = max(sheetColumnWidth[0], len(sheetRows[index + 0]))
-		sheetColumnWidth[1] = max(sheetColumnWidth[1], len(sheetRows[index + 1]))
-	}
 
 	// Starting stats are the sum of the race, class and job stats
 	totalStats := raceData.Stats
@@ -168,37 +163,7 @@ func printCharacterSheet(player *Player) {
 		statRows = append(statRows, strconv.Itoa(int(totalStats.Values[index])))
 	}
 
-	statColumnWidth := getTableColumnWidths(statHeaders, statRows)
-	tableWidth := getTableWidth(statColumnWidth)
-
-	// Expand the last column of sheet to fit the table width
-	sheetWidth := 2 + sheetColumnWidth[0] + 3 + sheetColumnWidth[1] + 2
-	diff := tableWidth - sheetWidth
-	sheetColumnWidth[1] += diff
-
-	printTableEdge(player, tableWidth)
-	printTableTitle(player, "Character Sheet", tableWidth)
-	printTableDivider(player, tableWidth)
-
-	// Print sheet values (name, race, class, job)
-	for index := 0; index < len(sheetRows); index += 2 {
-		*player.inbox <- fmt.Sprintf("| %-*s : %-*s |",
-			sheetColumnWidth[0], sheetRows[index + 0],
-			sheetColumnWidth[1], sheetRows[index + 1])
-	}
-
-	printTableDivider(player, tableWidth)
-
-	// Print stat headers
-	printTableRow(player, statColumnWidth, statHeaders, 0)
-	printTableDivider(player, tableWidth)
-
-	// Print stat rows
-	for offset := 0; offset < len(statRows); offset += len(statColumnWidth) {
-		printTableRow(player, statColumnWidth, statRows, offset)
-	}
-
-	printTableEdge(player, tableWidth)
+	printSheetTable(player, "Character Sheet", [][]string{ sheetRows }, statHeaders, statRows)
 }
 
 var CHARACTER_SHEET_PROPERTIES = map[string]*MenuCharacterSheetProperty {
@@ -273,10 +238,17 @@ var CHARACTER_SHEET_PROPERTIES = map[string]*MenuCharacterSheetProperty {
 	},
 	"job": {
 		describe: func (player *Player) {
-			*player.inbox <- "'job' is your character's job. The jobs are:"
+			*player.inbox <- "'job' is your character's job. Each job modifies your stats and determines which recipes you can craft."
+
+			headers := appendStatHeaders([]string{"Name"})
+			headers = append(headers, "Description")
+			rows := make([]string, 0, len(headers) * len(world.JOB_DATA))
 			for _, jobData := range world.JOB_DATA {
-				*player.inbox <- fmt.Sprintf("\t%s", jobData.Name)
+				rows = append(rows, jobData.Name)
+				rows = appendStatColumns(rows, &jobData.Stats, true)
+				rows = append(rows, jobData.Description)
 			}
+			printTable(player, "Jobs", headers, rows)
 		},
 		set: func (gameState *GameState, player *Player, value string) {
 			// Search for a job matching the string

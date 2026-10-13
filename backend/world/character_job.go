@@ -12,6 +12,7 @@ type JobId int
 
 type JobData struct {
 	Name string
+	Description string
 	Stats StatBlock
 	Scaling StatBlock
 }
@@ -77,6 +78,7 @@ func (parser *ScriptParser) parseJob(table *lua.Table) *JobData {
 	jobData := &JobData{}
 
 	jobData.Name = parser.getString(table, "name")
+	jobData.Description = parser.getString(table, "description")
 	jobData.Stats = parser.getStatBlock(table, "stats", false)
 	jobData.Scaling = parser.getStatBlock(table, "scaling", false)
 
