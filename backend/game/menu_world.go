@@ -22,7 +22,7 @@ var MENU_WORLD = Menu {
 		playerMob := world.MobInitFromCharacter(player.character)
 		player.mobHandle = gamestate.world.Mobs.Push(playerMob)
 		playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
-		gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("%s has joined the room.", player.character.Data.Name))
+		gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("<y>%s</y> has joined the room.", player.character.Data.Name))
 		playerRoom.AddOccupant(gamestate.world, player.mobHandle)
 
 		// Enter world menu
@@ -40,7 +40,7 @@ var MENU_WORLD = Menu {
 			// Remove player from current room
 			playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
 			playerRoom.RemoveOccupant(player.mobHandle)
-			gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("%s has left the world.", playerMob.Data.Name))
+			gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("<y>%s</y> has left the world.", playerMob.Data.Name))
 
 			// Save player mob data back to their character
 			player.character.Data = playerMob.Data
@@ -70,7 +70,7 @@ var MENU_WORLD = Menu {
 						continue
 					}
 
-					names = append(names, gamestate.players[index].character.Data.Name)
+					names = append(names, fmt.Sprintf("<y>%s</y>", gamestate.players[index].character.Data.Name))
 				}
 
 				*player.inbox <- fmt.Sprintf("The players in the world are: %s.", combineNames(names))
@@ -112,7 +112,7 @@ var MENU_WORLD = Menu {
 
 				itemNames := make([]string, 0, len(targetInventory.Items))
 				for index := range targetInventory.Length() {
-					itemNames = append(itemNames, targetInventory.Items[index].GetNameWithAmount())
+					itemNames = append(itemNames, fmt.Sprintf("<g>%s</g>", targetInventory.Items[index].GetNameWithAmount()))
 				}
 
 				var itemsString string
@@ -179,7 +179,7 @@ var MENU_WORLD = Menu {
 					item := &targetInventory.Items[itemIndex]
 					itemData := world.ITEM_DATA[item.Id]
 
-					*player.inbox <- fmt.Sprintf("Item: %s", itemData.Name)
+					*player.inbox <- fmt.Sprintf("Item: <g>%s</g>", itemData.Name)
 					*player.inbox <- fmt.Sprintf("Description: %s", itemData.Description)
 					*player.inbox <- fmt.Sprintf("Type: %s", itemData.Kind.String())
 					*player.inbox <- fmt.Sprintf("Size: %d", itemData.Size)
@@ -243,7 +243,7 @@ var MENU_WORLD = Menu {
 				targetMob := gamestate.world.Mobs.Get(targetHandle)
 				if targetMob.Npc != nil {
 					// General description
-					*player.inbox <- fmt.Sprintf("%s (Level %d): %s",
+					*player.inbox <- fmt.Sprintf("<y>%s</y> (Level %d): %s",
 						targetMob.GetName(), targetMob.Data.Level, targetMob.Npc.GetDescription())
 
 					// Status description
@@ -256,7 +256,7 @@ var MENU_WORLD = Menu {
 				}
 
 				// Handle player case
-				*player.inbox <- fmt.Sprintf("%s (Level %d): %s %s %s.",
+				*player.inbox <- fmt.Sprintf("<y>%s</y> (Level %d): %s %s %s.",
 					targetMob.Data.Name, targetMob.Data.Level,
 					world.RACE_DATA[targetMob.PlayerCharacter.Race].Name,
 					world.CLASS_DATA[targetMob.PlayerCharacter.Class].Name,
@@ -282,7 +282,7 @@ var MENU_WORLD = Menu {
 				}
 
 				// Message room
-				gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("%s said '%s'",
+				gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("<y>%s</y> said '%s'",
 					player.character.Data.Name,
 					strings.TrimSpace(strings.Join(args, " "))))
 				return true
@@ -330,8 +330,8 @@ var MENU_WORLD = Menu {
 					}
 					targetPlayer := &gamestate.players[targetPlayerIndex]
 
-					*player.inbox <- fmt.Sprintf("You told %s: '%s'", targetMob.GetName(), message)
-					*targetPlayer.inbox <- fmt.Sprintf("%s told you: '%s'", playerMob.GetName(), message)
+					*player.inbox <- fmt.Sprintf("You told <y>%s</y>: '%s'", targetMob.GetName(), message)
+					*targetPlayer.inbox <- fmt.Sprintf("<y>%s</y> told you: '%s'", playerMob.GetName(), message)
 					return true
 				}
 
@@ -376,7 +376,7 @@ var MENU_WORLD = Menu {
 				}
 
 				// Broadcast the message to each room
-				message := fmt.Sprintf("%s: '%s'",
+				message := fmt.Sprintf("<y>%s</y>: '%s'",
 					playerMob.Data.Name,
 					strings.TrimSpace(strings.Join(args, " ")))
 				for _, roomIndex := range rooms {
@@ -591,7 +591,7 @@ var MENU_WORLD = Menu {
 				goldIndex, _ := playerMob.Data.Inventory.FindItem(world.ITEM_GOLD)
 				playerMob.Data.Inventory.RemoveItems(goldIndex, itemCost)
 
-				*player.inbox <- fmt.Sprintf("You bought %d %s.", buyAmount, itemData.Name)
+				*player.inbox <- fmt.Sprintf("You bought <g>%d %s</g>.", buyAmount, itemData.Name)
 
 				return true
 			},
@@ -983,11 +983,11 @@ var MENU_WORLD = Menu {
 					case world.MOB_MODE_ATTACK: {
 						targetMob, targetExists := gamestate.world.Mobs.GetIfExists(playerMob.Target)
 						if targetExists {
-							gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("%s stopped attacking %s", playerMob.Data.Name, targetMob.Data.Name))
+							gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("<y>%s</y> stopped attacking <y>%s</y>", playerMob.Data.Name, targetMob.Data.Name))
 						}
 					}
 					case world.MOB_MODE_CAST: {
-						gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("%s canceled their spell.", playerMob.Data.Name))
+						gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("<y>%s</y> canceled their spell.", playerMob.Data.Name))
 					}
 				}
 
@@ -1102,7 +1102,7 @@ var MENU_WORLD = Menu {
 				if result.notice != "" {
 					*player.inbox <- result.notice
 				}
-				*player.inbox <- fmt.Sprintf("You dropped %s.", result.item.GetNameWithAmount())
+				*player.inbox <- fmt.Sprintf("You dropped <g>%s</g>.", result.item.GetNameWithAmount())
 
 				return true
 			},
@@ -1150,7 +1150,7 @@ var MENU_WORLD = Menu {
 				if result.notice != "" {
 					*player.inbox <- result.notice
 				}
-				*player.inbox <- fmt.Sprintf("You put %s into %s.", result.item.GetNameWithAmount(), chestName)
+				*player.inbox <- fmt.Sprintf("You put <g>%s</g> into %s.", result.item.GetNameWithAmount(), chestName)
 
 				return true
 			},
@@ -1204,7 +1204,7 @@ var MENU_WORLD = Menu {
 				if result.notice != "" {
 					*player.inbox <- result.notice
 				}
-				gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("%s gave %s to %s.",
+				gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("<y>%s</y> gave <g>%s</g> to <y>%s</y>.",
 					playerMob.Data.Name, result.item.GetNameWithAmount(), targetMob.Data.Name))
 
 				if targetMob.Npc != nil {
@@ -1269,7 +1269,7 @@ var MENU_WORLD = Menu {
 				if result.notice != "" {
 					*player.inbox <- result.notice
 				}
-				*player.inbox <- fmt.Sprintf("You took %s from %s.", result.item.GetNameWithAmount(), chestName)
+				*player.inbox <- fmt.Sprintf("You took <g>%s</g> from %s.", result.item.GetNameWithAmount(), chestName)
 
 				return true
 			},
@@ -1304,7 +1304,7 @@ var MENU_WORLD = Menu {
 					item := targetInventory.RemoveStack(len(targetInventory.Items) - 1)
 
 					playerMob.Data.Inventory.AddItem(item)
-					itemNames = append(itemNames, item.GetNameWithAmount())
+					itemNames = append(itemNames, fmt.Sprintf("<g>%s</g>", item.GetNameWithAmount()))
 				}
 				*player.inbox <- fmt.Sprintf("You got %s.", combineNames(itemNames))
 
@@ -1488,7 +1488,7 @@ var MENU_WORLD = Menu {
 					*player.inbox <- err.Error()
 					return true
 				}
-				*player.inbox <- fmt.Sprintf("You equipped %s.", equippedItem.GetNameWithCondition())
+				*player.inbox <- fmt.Sprintf("You equipped <g>%s</g>.", equippedItem.GetNameWithCondition())
 				for _, message := range messages {
 					*player.inbox <- message
 				}
@@ -1548,7 +1548,7 @@ var MENU_WORLD = Menu {
 					*player.inbox <- err.Error()
 					return true
 				}
-				*player.inbox <- fmt.Sprintf("You unequipped %s.", item.GetNameWithCondition())
+				*player.inbox <- fmt.Sprintf("You unequipped <g>%s</g>.", item.GetNameWithCondition())
 				for _, message := range messages {
 					*player.inbox <- message
 				}
@@ -1648,7 +1648,7 @@ var MENU_WORLD = Menu {
 				}
 
 				playerMob.Data.Spells = append(playerMob.Data.Spells, spell)
-				*player.inbox <- fmt.Sprintf("You prepared %s.", world.SPELL_DATA[spell].Name)
+				*player.inbox <- fmt.Sprintf("You prepared <g>%s</g>.", world.SPELL_DATA[spell].Name)
 				return true
 			},
 		},
@@ -1678,7 +1678,7 @@ var MENU_WORLD = Menu {
 				}
 
 				playerMob.Data.RemoveSpell(spell)
-				*player.inbox <- fmt.Sprintf("You forgot %s.", world.SPELL_DATA[spell].Name)
+				*player.inbox <- fmt.Sprintf("You forgot <g>%s</g>.", world.SPELL_DATA[spell].Name)
 				return true
 			},
 		},
@@ -1897,7 +1897,7 @@ var MENU_WORLD = Menu {
 					return true
 				}
 
-				gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("%s took a nap.", playerMob.Data.Name))
+				gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("<y>%s</y> took a nap.", playerMob.Data.Name))
 				*player.inbox <- "Your HP and MP have been restored!"
 
 				playerMob.Data.Health = playerMob.Data.MaxHealth()
@@ -2055,7 +2055,7 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 			}
 
 			// Add their name to the list
-			otherPlayerNames = append(otherPlayerNames, mob.GetNameWithInjury())
+			otherPlayerNames = append(otherPlayerNames, fmt.Sprintf("<y>%s</y>", mob.GetNameWithInjury()))
 		}
 
 		// Re-check the length in case all other occupants are hidden (spooky)
@@ -2144,7 +2144,7 @@ func printMobEquipmentList(player *Player, mob *world.Mob) {
 }
 
 func printMobHp(player *Player, mob *world.Mob) {
-	*player.inbox <- fmt.Sprintf("%s:", mob.Data.Name)
+	*player.inbox <- fmt.Sprintf("<y>%s</y>:", mob.Data.Name)
 	*player.inbox <- fmt.Sprintf("HP: %d / %d", mob.Data.Health, mob.Data.MaxHealth())
 	*player.inbox <- fmt.Sprintf("MP: %d / %d", mob.Data.Mana, mob.Data.MaxMana())
 }

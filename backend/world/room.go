@@ -126,7 +126,7 @@ func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, newRoomIn
 
 	// If mob not hidden, announce exit
 	if !occupantMob.CheckFlag(MOB_FLAG_HIDDEN) {
-		world.messageRoom(oldRoomIndex, fmt.Sprintf("%s left the room.", occupantMob.GetName()))
+		world.messageRoom(oldRoomIndex, fmt.Sprintf("<y>%s</y> left the room.", occupantMob.GetName()))
 	}
 
 	// Add the occupant to the new room
@@ -146,7 +146,7 @@ func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, newRoomIn
 		world.messageRoomWithOptions(MessageRoomOptions {
 			roomIndex: newRoomIndex,
 			ignore: []MobHandle { occupantHandle },
-			message: fmt.Sprintf("%s entered the room.", occupantMob.GetName()),
+			message: fmt.Sprintf("<y>%s</y> entered the room.", occupantMob.GetName()),
 		})
 	}
 

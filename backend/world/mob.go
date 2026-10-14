@@ -192,7 +192,7 @@ func (mob *Mob) GrantExperience(world *World, experience int32) {
 			mob.PlayerCharacter.Data.Level = mob.Data.Level
 
 			// Announce level up message
-			world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("Level up! %s is now level %d.", mob.Data.Name, mob.Data.Level))
+			world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("Level up! <y>%s</y> is now level %d.", mob.Data.Name, mob.Data.Level))
 
 			// Grant class unlocks
 			classData := CLASS_DATA[mob.PlayerCharacter.Class]
@@ -306,7 +306,7 @@ func (mob *Mob) Update(world *World) {
 			spellData := SPELL_DATA[mob.castSpell]
 			if mob.Data.Mana < spellData.ManaCost {
 				mob.Mode = MOB_MODE_IDLE
-				world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> tried to cast %s, but they don't have enough mana.", mob.GetName(), spellData.Name))
+				world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> tried to cast <g>%s</g>, but they don't have enough mana.", mob.GetName(), spellData.Name))
 				break
 			}
 
@@ -490,9 +490,9 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	if crit {
 		critStr = "Critical hit! "
 	}
-	world.messageRoom(mob.Data.Room, fmt.Sprintf("<r>%s</r><y>%s</y> struck <y>%s</y> for <r>%d</r> damage.", critStr, mob.GetName(), targetMob.GetName(), damage))
+	world.messageRoom(mob.Data.Room, fmt.Sprintf("<r>%s</r><y>%s</y> struck <y>%s</y> for <r>%d damage</r>.", critStr, mob.GetName(), targetMob.GetName(), damage))
 	if targetMob.IsDead() {
-		world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> has <r>slain</r> <y>%s.</y>", mob.GetName(), targetMob.GetName()))
+		world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> has <r>slain</r> <y>%s</y>.", mob.GetName(), targetMob.GetName()))
 	} else {
 		targetMob.rollForConcentration(world, damage)
 	}
@@ -627,7 +627,7 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 
 	item.Durability--
 	if item.Durability <= 0 {
-		world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s's</y> %s broke!", mob.GetName(), itemData.Name))
+		world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s's</y> <g>%s</g> broke!", mob.GetName(), itemData.Name))
 		_, messages, _ := mob.unequip(slot)
 		for _, message := range messages {
 			world.messagePlayer(mob.PlayerCharacter.PlayerId, message)
@@ -646,7 +646,7 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 	itemWasDamaged := (item.Durability + 1) < maxDurability / 2
 	itemIsDamaged := item.Durability < maxDurability / 2
 	if itemIsDamaged && !itemWasDamaged {
-		world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("Your %s is now damaged.", itemData.Name))
+		world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("Your <g>%s</g> is now damaged.", itemData.Name))
 		return
 	}
 
@@ -658,9 +658,9 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 			itemData.Kind == ITEM_KIND_EQUIPMENT_ONE_HANDED ||
 			itemData.Kind == ITEM_KIND_EQUIPMENT_TWO_HANDED
 		if itemIsWeapon {
-			world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("Your %s has lost its sharpness.", itemData.Name))
+			world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("Your <g>%s</g> has lost its sharpness.", itemData.Name))
 		} else {
-			world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("Your %s has lost its fortification.", itemData.Name)) }
+			world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("Your <g>%s</g> has lost its fortification.", itemData.Name)) }
 	}
 }
 
@@ -668,7 +668,7 @@ func (mob *Mob) spellcast(world *World, targetMob *Mob) {
 	spellData := SPELL_DATA[mob.castSpell]
 
 	// Cast spell
-	world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> cast %s!", mob.GetName(), spellData.Name))
+	world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> cast <g>%s</g>!", mob.GetName(), spellData.Name))
 	mob.Data.Mana -= spellData.ManaCost
 
 	// TODO: wrap a context around this to timeout calls?
@@ -698,7 +698,7 @@ func (mob *Mob) spellcast(world *World, targetMob *Mob) {
 			if equippedSpell.Casts >= mob.Data.CastsToLearn(mob.castSpell) {
 				equippedSpell.IsKnown = true
 				mob.PlayerCharacter.SpellsKnown = append(mob.PlayerCharacter.SpellsKnown, mob.castSpell)
-				world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You have mastered %s!", spellData.Name))
+				world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You have mastered <g>%s</g>!", spellData.Name))
 			}
 
 			// Spellbook durability
@@ -766,7 +766,7 @@ func (mob *Mob) useItem(world *World, targetMob *Mob) {
 
 	// Use item
 	itemData := ITEM_DATA[item.Id]
-	world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> used %s!", mob.GetName(), itemData.Name))
+	world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> used <g>%s</g>!", mob.GetName(), itemData.Name))
 
 	switch itemData.Kind {
 		case ITEM_KIND_CONSUMABLE: {
@@ -842,7 +842,7 @@ func (mob *Mob) CraftItem(world *World, recipe RecipeId) bool {
 	recipeOutput := recipeData.CreateOutput()
 	mob.Data.Inventory.AddItem(recipeOutput)
 	if mob.IsPlayer() {
-		world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You crafted %s.", recipeOutput.GetNameWithAmount()))
+		world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You crafted <g>%s</g>.", recipeOutput.GetNameWithAmount()))
 	}
 	return true
 }

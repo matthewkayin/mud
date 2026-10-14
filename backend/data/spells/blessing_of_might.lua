@@ -16,7 +16,7 @@ function spell.on_hit(caster, target)
 
     local duration = world.mob_calc_magic_condition_duration(caster, world.time_minutes(1))
     world.mob_add_condition(target, world.ConditionType.BLESSING_OF_MIGHT, duration)
-    world.message_room(room, string.format("<y>%s</y> gave <y>%s</y> a Blessing of Might!", caster_name, target_name))
+    world.message_room(room, string.format("<y>%s</y> gave <y>%s</y> a <g>Blessing of Might</g>!", caster_name, target_name))
 end
 
 return spell

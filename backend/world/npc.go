@@ -573,7 +573,7 @@ func (npc *Npc) update(world *World) {
 				// If room has player, get ready to fight
 				if roomHasPlayer {
 					npc.setModeSurprise(world)
-					world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s is getting ready to fight!", npcMob.Data.Name))
+					world.messageRoom(npcMob.Data.Room, fmt.Sprintf("<y>%s</y> is getting ready to fight!", npcMob.Data.Name))
 					break
 				}
 			}
@@ -783,7 +783,7 @@ func (npc *Npc) onEvent(world* World, event *NpcEvent) {
 			item := npcMob.Data.Inventory.RemoveItems(data.AddedToIndex, data.Amount)
 			playerMob.Data.Inventory.AddItem(item)
 
-			world.messageRoom(npcMob.Data.Room, fmt.Sprintf("%s is uninterested in this item. They returned it to %s.", npcMob.Data.Name, playerMob.Data.Name))
+			world.messageRoom(npcMob.Data.Room, fmt.Sprintf("<y>%s</y> is uninterested in this item. They returned it to <y>%s</y>.", npcMob.Data.Name, playerMob.Data.Name))
 		}
 	}
 }
