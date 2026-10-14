@@ -1,0 +1,18 @@
+{
+    "version": "1.0",
+    "services": {
+        "web": {
+            "port": 8080,
+            "volumes": [
+                {
+                    "name": "mud-saves",
+                    "destinationPath": "/app/saves"
+                },
+                {
+                    "name": "mud-logs",
+                    "destinationPath": "/app/logs"
+                }
+            ]
+        }
+    }
+}

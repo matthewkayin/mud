@@ -9,7 +9,7 @@ export const GamePage = () => {
   const [lines, setLines] = useState<string[]>([]);
 
   // Web socket
-  const webSocketRef = useRef(null);
+  const webSocketRef = useRef<WebSocket | null>(null);
 
   const terminalWriteLine = (line: string) => setLines((previous) => [...previous, line]);
   const onSubmit = (command: string) => {
@@ -24,8 +24,9 @@ export const GamePage = () => {
   // Init web socket
   useEffect(() => {
     // Create web socket
-    // TODO: configure for prod
-    webSocketRef.current = new WebSocket(`ws://${window.location.hostname}:5173/api/websocket`);
+    const webSocketProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const webSocket = new WebSocket(`${webSocketProtocol}://${window.location.host}/api/websocket`);
+    webSocketRef.current = webSocket;
     console.log('Created web socket.');
 
     // TODO: set onerror listener and log to terminal on error (likely error is unauthorized)
@@ -34,25 +35,25 @@ export const GamePage = () => {
     const onOpen = () => {
       console.log('Web socket connected.');
     };
-    webSocketRef.current.addEventListener('open', onOpen);
+    webSocket.addEventListener('open', onOpen);
 
     // Web socket message listener
-    const onMessage = (messageEvent) => {
+    const onMessage = (messageEvent: MessageEvent) => {
       terminalWriteLine(messageEvent.data);
     };
-    webSocketRef.current.addEventListener('message', onMessage);
+    webSocket.addEventListener('message', onMessage);
 
     // Web socket close listener
     const onClose = () => {
       terminalWriteLine('The server has disconnected.');
     };
-    webSocketRef.current.addEventListener('close', onClose);
+    webSocket.addEventListener('close', onClose);
 
     return () => {
-      webSocketRef.current.removeEventListener('open', onOpen);
-      webSocketRef.current.removeEventListener('message', onMessage);
-      webSocketRef.current.removeEventListener('close', onClose);
-      webSocketRef.current.close();
+      webSocket.removeEventListener('open', onOpen);
+      webSocket.removeEventListener('message', onMessage);
+      webSocket.removeEventListener('close', onClose);
+      webSocket.close();
     };
   }, []);
 

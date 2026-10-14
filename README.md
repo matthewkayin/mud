@@ -12,10 +12,11 @@ Castle Recurse is a [Multi-User Dungeon](https://en.wikipedia.org/wiki/Multi-use
  ## Running the Project
  
 1. Clone the repo
-2. Put the `env.json` file into the root of the `backend/` folder
+2. Copy `backend/.env.example` to `backend/.env` and fill in the values (see [Deployment](./docs/deployment.md#configuration) for what each one does)
 3. Run the backend in one terminal
 ```
 cd backend
+set -a; . ./.env; set +a
 go run .
 ```
 
@@ -28,6 +29,8 @@ npm run dev
 ```
 
 5. Access the frontend by navigating to `localhost:5173` in your browser.
+
+To deploy the game, see [Deployment](./docs/deployment.md).
 
 ## Project Architecture
 

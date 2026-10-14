@@ -8,14 +8,15 @@ RC Disco MUD: a multi-user dungeon with a Go game server (`backend/`), a React/V
 
 ## Commands
 
-Backend (run from `backend/`, since it reads `./env.json`, `./banner.txt` and writes `./logs`, `./saves` relative to the working directory):
+Backend (run from `backend/`, since it reads `./data`, `./banner.txt` and writes `./logs`, `./saves` relative to the working directory):
 ```
-go run .                      # start server (port comes from env.json, normally 7272)
+set -a; . ./.env; set +a      # load config env vars from backend/.env
+go run .                      # start server (port comes from PORT, normally 7272)
 go test ./...                 # all tests
 go test ./world -run TestName # single test
 go generate                   # regenerates data/world.d.lua (Lua language server defs for the script API)
 ```
-`backend/env.json` is not in git and is required (fields: `PORT`, `ENABLE_DEBUG_AUTH`, `RC_*` OAuth settings — see `backend/api/env.go`).
+The server is configured by env vars (`PORT`, `PUBLIC_URL`, `ENABLE_DEBUG_AUTH`, `RC_*` OAuth settings, `STATIC_FOLDER` — see `backend/api/env.go`). `backend/.env` is not in git; copy it from `backend/.env.example`.
 
 Web frontend (run from `frontend/`):
 ```
@@ -24,6 +25,9 @@ npm run dev     # Vite on :5173, proxies /api/auth and /api/websocket to :7272
 npm run build   # tsc -b && vite build
 npm run lint
 ```
+The frontend uses same-origin URLs (`/api/...`, `ws(s)://<host>/api/websocket`), so it works both behind the Vite proxy and when the Go server serves the built files.
+
+Deployment (Disco, game only — not the editor): the root `Dockerfile` builds the frontend and backend into one image and `disco.json` defines the `web` service and its volumes. See `docs/deployment.md`.
 
 World editor (Go server runs from `editor/`, frontend from `editor/frontend/`). Open it in Chrome/Chromium, since opening and saving world files uses the File System Access API:
 ```

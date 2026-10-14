@@ -7,6 +7,7 @@ import (
 	"io"
 	"time"
 	"strconv"
+	"strings"
 	"crypto/rand"
 	"net/http"
 	"encoding/json"
@@ -29,7 +30,23 @@ type rcGetProfilesResponseBody struct {
 	Id int `json:"id"`
 }
 
+type authConfigResponseBody struct {
+	DebugAuth bool `json:"debugAuth"`
+}
+
 const MUD_SESSION_COOKIE_NAME = "mud_session"
+
+func (apiState *ApiState) HandleAuthConfig(writer http.ResponseWriter, request *http.Request) {
+	env := GetEnv()
+
+	writer.Header().Set("Content-Type", "application/json")
+	err := json.NewEncoder(writer).Encode(authConfigResponseBody {
+		DebugAuth: env.ENABLE_DEBUG_AUTH,
+	})
+	if err != nil {
+		log.Printf("Warn - failed to write auth config response: %s", err.Error())
+	}
+}
 
 func (apiState *ApiState) HandleAuthLogin(writer http.ResponseWriter, request *http.Request) {
 	log.Printf("Invoked /api/auth/login")
@@ -40,13 +57,7 @@ func (apiState *ApiState) HandleAuthLogin(writer http.ResponseWriter, request *h
 	// stateBytes := make([]byte, 16)
 	// rand.Read(stateBytes)
 
-	hostname := request.URL.Query().Get("hostname")
-	if hostname == "" {
-		http.Error(writer, "No hostname provided.", http.StatusBadRequest)
-		return
-	}
-
-	redirectUrl := fmt.Sprintf("http://%s:%d/api/auth/callback", hostname, 5173)
+	redirectUrl := fmt.Sprintf("%s/api/auth/callback", env.PUBLIC_URL)
 	log.Printf("Redirect URL %s", redirectUrl)
 
 	url := fmt.Sprintf(
@@ -187,6 +198,8 @@ func getUserIdFromRcApi(token string) (int, error) {
 }
 
 func (apiState *ApiState) createSessionForUser(writer http.ResponseWriter, request *http.Request, userId int) {
+	env := GetEnv()
+
 	// Generate a secure session ID
 	sessionTokenBytes := make([]byte, 32)
 	rand.Read(sessionTokenBytes)
@@ -204,12 +217,12 @@ func (apiState *ApiState) createSessionForUser(writer http.ResponseWriter, reque
 		Path: "/",
 		Expires: time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
-		Secure: false, // Set to true in prod to encrypt w/ https
+		Secure: strings.HasPrefix(env.PUBLIC_URL, "https://"),
 		SameSite: http.SameSiteLaxMode,
 	})
 
 	// Redirect user back to home page
-	http.Redirect(writer, request, "http://localhost:5173/game", http.StatusSeeOther)
+	http.Redirect(writer, request, fmt.Sprintf("%s/game", env.PUBLIC_URL), http.StatusSeeOther)
 }
 
 func (apiState *ApiState) getAuthenticatedUserId(request *http.Request) (int, bool) {
