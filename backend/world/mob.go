@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/rand/v2"
 	"slices"
+	"mud/util"
 	"github.com/mmcdole/lunar"
 )
 
@@ -690,21 +691,7 @@ func (mob *Mob) spellcast(world *World, targetMob *Mob) {
 	}
 
 	if mob.IsPlayer() {
-		equippedSpell, spellIsEquipped := mob.PlayerCharacter.SpellsEquipped[mob.castSpell]
-		if spellIsEquipped && !equippedSpell.IsKnown {
-
-			// Spell mastery progress
-			equippedSpell.Casts++
-			if equippedSpell.Casts >= mob.Data.CastsToLearn(mob.castSpell) {
-				equippedSpell.IsKnown = true
-				mob.PlayerCharacter.SpellsKnown = append(mob.PlayerCharacter.SpellsKnown, mob.castSpell)
-				world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You have mastered <g>%s</g>!", spellData.Name))
-			}
-
-			// Spellbook durability
-			slot, _ := mob.getEquipmentWhichProvidesSpell(mob.castSpell)
-			mob.subtractDurabilityFromEquipment(world, slot)
-		}
+		mob.progressPlayerSpellMastery(world, mob.castSpell)
 	}
 }
 
@@ -715,6 +702,50 @@ func (mob *Mob) calculateMagicDamage(baseDamage int32, target *Mob) int32 {
 func (mob *Mob) calculateMagicConditionDuration(baseDuration int) int {
 	percent := 1.0 + (float32(mob.Data.Faith()) * MOB_MAGIC_CONDITION_DURATION_K)
 	return int(float32(baseDuration) * percent)
+}
+
+func (mob *Mob) progressPlayerSpellMastery(world *World, spell SpellId) {
+	spellData := SPELL_DATA[spell]
+	equippedSpell, spellIsEquipped := mob.PlayerCharacter.SpellsEquipped[mob.castSpell]
+	if spellIsEquipped && !equippedSpell.IsKnown {
+
+		// Spell mastery progress
+		equippedSpell.Casts++
+		if equippedSpell.Casts >= mob.Data.CastsToLearn(mob.castSpell) {
+			equippedSpell.IsKnown = true
+			mob.PlayerCharacter.SpellsKnown = append(mob.PlayerCharacter.SpellsKnown, mob.castSpell)
+			world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You have mastered <g>%s</g>!", spellData.Name))
+
+			// If player is an enchanter, grant recipe to their known recipes
+			if mob.PlayerCharacter.Job == JOB_ENCHANTER {
+				spellName := spellData.Name
+				spellbookName := fmt.Sprintf("Spellbook of %s", spellName)
+				spellScrollName := fmt.Sprintf("Scroll of %s", spellName)
+
+				newRecipeNames := make([]string, 0, 2)
+
+				spellbookRecipe, exists := RECIPE_NAME_TO_ID[spellbookName]
+				if exists {
+					mob.PlayerCharacter.RecipesKnown = append(mob.PlayerCharacter.RecipesKnown, spellbookRecipe)
+					newRecipeNames = append(newRecipeNames, fmt.Sprintf("<g>%s</g>", spellbookName))
+				}
+
+				spellScrollRecipe, exists := RECIPE_NAME_TO_ID[spellScrollName]
+				if exists {
+					mob.PlayerCharacter.RecipesKnown = append(mob.PlayerCharacter.RecipesKnown, spellScrollRecipe)
+					newRecipeNames = append(newRecipeNames, fmt.Sprintf("<g>%s</g>", spellScrollName))
+				}
+
+				if len(newRecipeNames) != 0 {
+					world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You can now craft %s.", util.CombineNames(newRecipeNames)))
+				}
+			}
+		}
+
+		// Spellbook durability
+		slot, _ := mob.getEquipmentWhichProvidesSpell(mob.castSpell)
+		mob.subtractDurabilityFromEquipment(world, slot)
+	}
 }
 
 func (mob *Mob) getEquipmentWhichProvidesSpell(spell SpellId) (EquipmentSlot, bool) {

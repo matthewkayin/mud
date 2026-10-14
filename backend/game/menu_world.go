@@ -5,6 +5,7 @@ import (
 	"log"
 	"mud/bitset"
 	"mud/world"
+	"mud/util"
 	"slices"
 	"strconv"
 	"strings"
@@ -73,7 +74,7 @@ var MENU_WORLD = Menu {
 					names = append(names, fmt.Sprintf("<y>%s</y>", gamestate.players[index].character.Data.Name))
 				}
 
-				*player.inbox <- fmt.Sprintf("The players in the world are: %s.", combineNames(names))
+				*player.inbox <- fmt.Sprintf("The players in the world are: %s.", util.CombineNames(names))
 				return true
 			},
 		},
@@ -119,7 +120,7 @@ var MENU_WORLD = Menu {
 				if len(itemNames) == 0 {
 					itemsString = "nothing"
 				} else {
-					itemsString = combineNames(itemNames)
+					itemsString = util.CombineNames(itemNames)
 				}
 
 				*player.inbox <- fmt.Sprintf("You see %s.", itemsString)
@@ -195,7 +196,7 @@ var MENU_WORLD = Menu {
 						}
 
 						if len(parts) != 0 {
-							*player.inbox <- fmt.Sprintf("Requires: %s", combineNames(parts))
+							*player.inbox <- fmt.Sprintf("Requires: %s", util.CombineNames(parts))
 						}
 					}
 
@@ -210,7 +211,7 @@ var MENU_WORLD = Menu {
 						}
 
 						if len(parts) != 0 {
-							*player.inbox <- fmt.Sprintf("Requires: %s", combineNames(parts))
+							*player.inbox <- fmt.Sprintf("Requires: %s", util.CombineNames(parts))
 						}
 					}
 
@@ -911,7 +912,7 @@ var MENU_WORLD = Menu {
 							conditionNames = append(conditionNames, targetMob.Data.Conditions[index].Type.String())
 						}
 
-						rows = append(rows, combineNames(conditionNames))
+						rows = append(rows, util.CombineNames(conditionNames))
 					}
 				}
 
@@ -1306,7 +1307,7 @@ var MENU_WORLD = Menu {
 					playerMob.Data.Inventory.AddItem(item)
 					itemNames = append(itemNames, fmt.Sprintf("<g>%s</g>", item.GetNameWithAmount()))
 				}
-				*player.inbox <- fmt.Sprintf("You got %s.", combineNames(itemNames))
+				*player.inbox <- fmt.Sprintf("You got %s.", util.CombineNames(itemNames))
 
 				return true
 			},
@@ -2013,7 +2014,7 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 			chestNames = append(chestNames, chest.Name)
 		}
 
-		*player.inbox <- fmt.Sprintf("In this room is %s", combineNames(chestNames))
+		*player.inbox <- fmt.Sprintf("In this room is %s", util.CombineNames(chestNames))
 	}
 
 	// Exits
@@ -2060,7 +2061,7 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 
 		// Re-check the length in case all other occupants are hidden (spooky)
 		if len(otherPlayerNames) != 0 {
-			otherPlayersStr := combineNames(otherPlayerNames)
+			otherPlayersStr := util.CombineNames(otherPlayerNames)
 
 			isString := "are"
 			if otherPlayerCount == 1 {

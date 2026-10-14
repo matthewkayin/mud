@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"mud/world"
+	"mud/util"
 )
 
 type TradeStatus int
@@ -455,7 +456,7 @@ func (trader *Trader) cancelTrade(gamestate *GameState) {
 		if droppedItemAmount > 1 {
 			itString = "them"
 		}
-		*player.inbox <- fmt.Sprintf("You dropped %s because you don't have enough space for %s in your inventory.", combineNames(droppedItemNames), itString)
+		*player.inbox <- fmt.Sprintf("You dropped %s because you don't have enough space for %s in your inventory.", util.CombineNames(droppedItemNames), itString)
 	}
 
 	player.tradeSession = nil
@@ -471,7 +472,7 @@ func (trader *Trader) getOfferString() string {
 		offerStrings = append(offerStrings, fmt.Sprintf("<g>%s</g>", item.GetNameWithAmount()))
 	}
 
-	return combineNames(offerStrings)
+	return util.CombineNames(offerStrings)
 }
 
 // TRADE SESSION FUNCTIONS

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"strconv"
 	"mud/world"
+	"mud/util"
 )
 
 const FUZZY_FIND_NUMBER_NONE = -1
@@ -37,19 +38,6 @@ func getFuzzyNumberFromArgs(args []string) (int, []string) {
 	}
 
 	return number, args[:lastIndex]
-}
-
-func combineNames(names []string) string {
-	switch len(names) {
-		case 0:
-			return ""
-		case 1:
-			return names[0]
-		case 2:
-			return names[0] + " and " + names[1]
-		default:
-			return strings.Join(names[:len(names) - 1], ", ") + ", and " + names[len(names) - 1]
-	}
 }
 
 func scoreFuzzyMatch(name string, searchWords []string) int {
@@ -466,7 +454,7 @@ func fuzzyFindEquipmentSlot(searchWords []string) (world.EquipmentSlot, error) {
 	// Handle edge cases
 	if slotIndex == FUZZY_FIND_RESULT_NOT_FOUND {
 		return 0, fmt.Errorf("'%s' is not an equipment slot. Valid slot names are: %s",
-			strings.Join(searchWords, " "), combineNames(slotNames))
+			strings.Join(searchWords, " "), util.CombineNames(slotNames))
 	}
 	if slotIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
 		return 0, fmt.Errorf("The equipment slot string '%s' is ambiguous.",
