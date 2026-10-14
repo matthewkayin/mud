@@ -81,7 +81,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 			frame.ThrowArgTypeError(1, lua.StringKind)
 		}
 
-		__world.messageRoom(speaker.Data.Room, fmt.Sprintf("%s: '%s'", speaker.Data.Name, message))
+		__world.messageRoom(speaker.Data.Room, fmt.Sprintf("<y>%s</y>: '%s'", speaker.Data.Name, message))
 		return frame.Return()
 	},
 
@@ -102,7 +102,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 			frame.ThrowArgTypeError(2, lua.StringKind)
 		}
 
-		__world.messagePlayer(playerMob.PlayerCharacter.PlayerId, fmt.Sprintf("%s: '%s'", speaker.Data.Name, message))
+		__world.messagePlayer(playerMob.PlayerCharacter.PlayerId, fmt.Sprintf("<y>%s</y>: '%s'", speaker.Data.Name, message))
 		return frame.Return()
 	},
 
