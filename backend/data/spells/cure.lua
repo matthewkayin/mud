@@ -6,9 +6,9 @@ spell.casts_to_learn = 50
 
 spell.mana_cost = 5
 spell.cast_time = world.SPELL_CAST_TIME_INSTANT
-spell.can_target_players = true
+spell.targets = world.SpellTarget.ALLY
 
-function spell.on_hit(caster, target)
+function spell.on_cast(caster, target)
     local healing = world.magic_heal(caster, target, 15)
 
     local target_name = world.mob_get_name(target)

@@ -26,11 +26,13 @@ type ActionAttack struct {
 
 type ActionCast struct {
 	spell world.SpellId
+	hasTarget bool
 	target world.MobHandle
 }
 
 type ActionUseItem struct {
 	itemId world.ItemId
+	hasTarget bool
 	target world.MobHandle
 }
 
@@ -47,27 +49,35 @@ func (player *Player) doAction(gamestate *GameState) {
 	switch player.nextAction.actionType {
 		case ACTION_TYPE_NONE:
 			break
-		case ACTION_TYPE_ATTACK:
+
+		case ACTION_TYPE_ATTACK: {
 			actionData := player.nextAction.data.(ActionAttack)
 
 			// BUG: Tried to call doAction on a nil mob handle (after death)
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			playerMob.SetModeAttack(gamestate.world, player.mobHandle, actionData.target)
-		case ACTION_TYPE_CAST:
+		}
+
+		case ACTION_TYPE_CAST: {
 			actionData := player.nextAction.data.(ActionCast)
 
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-			playerMob.SetModeCast(gamestate.world, player.mobHandle, actionData.spell, actionData.target)
-		case ACTION_TYPE_USE_ITEM:
+			playerMob.SetModeCast(gamestate.world, player.mobHandle, actionData.spell, actionData.hasTarget, actionData.target)
+		}
+
+		case ACTION_TYPE_USE_ITEM: {
 			actionData := player.nextAction.data.(ActionUseItem)
 
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-			playerMob.SetModeUseItem(gamestate.world, player.mobHandle, actionData.itemId, actionData.target)
-		case ACTION_TYPE_CRAFT_ITEM:
+			playerMob.SetModeUseItem(gamestate.world, player.mobHandle, actionData.itemId, actionData.hasTarget, actionData.target)
+		}
+
+		case ACTION_TYPE_CRAFT_ITEM: {
 			actionData := player.nextAction.data.(ActionCraftItem)
 
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			playerMob.SetModeCraftItem(gamestate.world, player.mobHandle, actionData.target, actionData.amount)
+		}
 
 		case ACTION_TYPE_TAUNT: {
 			actionData := player.nextAction.data.(ActionTaunt)

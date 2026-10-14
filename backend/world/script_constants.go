@@ -144,6 +144,19 @@ func ScriptConstantTables() []ScriptConstantTable {
 		})
 	}
 
+	// Spell targets
+	spellTargetTable := ScriptConstantTable {
+		Name: "SpellTarget",
+		Constants: make([]ScriptConstant, 0, SPELL_TARGET_COUNT),
+	}
+	for index := range SPELL_TARGET_COUNT {
+		spellTarget := SpellTarget(index)
+		spellTargetTable.Constants = append(spellTargetTable.Constants, ScriptConstant {
+			Name: strings.ToUpper(strings.ReplaceAll(spellTarget.String(), " ", "_")),
+			Value: lua.String(spellTarget.String()),
+		})
+	}
+
 	return []ScriptConstantTable {
 		itemKindTable,
 		npcDispositionTable,
@@ -154,5 +167,6 @@ func ScriptConstantTables() []ScriptConstantTable {
 		statTable,
 		equipmentSlotTable,
 		conditionTypeTable,
+		spellTargetTable,
 	}
 }

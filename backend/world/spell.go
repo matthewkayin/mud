@@ -1,6 +1,7 @@
 package world
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/mmcdole/lunar"
@@ -10,6 +11,30 @@ const SPELL_CAST_TIME_INSTANT int32 = 0
 
 type SpellId int32
 
+type SpellTarget int
+const (
+	SPELL_TARGET_NONE SpellTarget = iota
+	SPELL_TARGET_ALLY
+	SPELL_TARGET_ENEMY
+	SPELL_TARGET_ARGUMENT
+	SPELL_TARGET_COUNT
+)
+
+func (spellTarget SpellTarget) String() string {
+	switch spellTarget {
+		case SPELL_TARGET_NONE:
+			return "None"
+		case SPELL_TARGET_ALLY:
+			return "Ally"
+		case SPELL_TARGET_ENEMY:
+			return "Enemy"
+		case SPELL_TARGET_ARGUMENT:
+			return "Argument"
+		default:
+			panic("Spell target kind not handled")
+	}
+}
+
 type SpellData struct {
 	Name string
 	Description string
@@ -17,9 +42,9 @@ type SpellData struct {
 
 	ManaCost int32
 	CastTime int32
-	CanTargetPlayers bool
+	Targets SpellTarget
 
-	OnHit *lua.Function
+	OnCast *lua.Function
 }
 
 var SPELL_DATA []*SpellData
@@ -82,8 +107,14 @@ func (parser *ScriptParser) parseSpell(table *lua.Table) *SpellData {
 	spellData.CastTime = parser.getInt32(table, "cast_time")
 	parser.checkInt32NonNegative(spellData.CastTime, "CastTime")
 
-	spellData.CanTargetPlayers = parser.getBool(table, "can_target_players")
-	spellData.OnHit = parser.getFunction(table, "on_hit")
+	targetsString := parser.getString(table, "targets")
+	var ok bool
+	spellData.Targets, ok = EnumFromString[SpellTarget](targetsString, SPELL_TARGET_COUNT)
+	if !ok {
+		parser.addProblem(fmt.Errorf("The SpellTarget '%s' is not a valid spell target.", targetsString))
+	}
+
+	spellData.OnCast = parser.getFunction(table, "on_cast")
 
 	if len(parser.problems) != 0 {
 		return nil

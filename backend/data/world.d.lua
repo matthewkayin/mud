@@ -97,6 +97,14 @@ world.ConditionType = {
 	BLESSING_OF_MIGHT = "Blessing of Might",
 }
 
+---@enum SpellTarget
+world.SpellTarget = {
+	NONE = "None",
+	ALLY = "Ally",
+	ENEMY = "Enemy",
+	ARGUMENT = "Argument",
+}
+
 --- Deals magic damage to a mob. Returns the number of damage dealt.
 ---
 ---@param caster_handle MobHandle
@@ -402,6 +410,7 @@ function world.room_get_exit(room, direction) end
 ---
 ---@param room integer
 ---@param occupant_index integer
+---@return MobHandle
 function world.room_get_occupant(room, occupant_index) end
 
 --- Returns the room's occupant count
