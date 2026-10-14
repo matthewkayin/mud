@@ -227,7 +227,7 @@ func (room *Room) RemoveOccupantByIndex(index int) {
 }
 
 // Returns the room's lock in the specified direction, or nil if there is none
-func (room *Room) getLock(direction Direction) *Lock {
+func (room *Room) GetLock(direction Direction) *Lock {
 	for lockIndex := range room.Locks {
 		if room.Locks[lockIndex].Direction == direction {
 			return &room.Locks[lockIndex]
@@ -239,7 +239,7 @@ func (room *Room) getLock(direction Direction) *Lock {
 
 // Returns true if the room has an active lock in the specified direction
 func (room *Room) IsExitLocked(direction Direction) bool {
-	lock := room.getLock(direction)
+	lock := room.GetLock(direction)
 	return lock != nil && lock.IsActive
 }
 

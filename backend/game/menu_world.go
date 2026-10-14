@@ -1940,6 +1940,65 @@ var MENU_WORLD = Menu {
 				return true
 			},
 		},
+
+		"unlock": {
+			usage: "unlock <direction>",
+			description: "Pick the lock on an exit in the current room.",
+			handler: func (gamestate *GameState, player *Player, args []string) bool {
+				if len(args) != 1 {
+					return false
+				}
+
+				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+				if !playerMob.Data.HasAbility(world.MOB_ABILITY_UNLOCK) {
+					*player.inbox <- "You don't know how to do that."
+					return true
+				}
+
+				if playerMob.IsInCombat(gamestate.world) {
+					*player.inbox <- "You cannot pick locks while you are in combat."
+					return true
+				}
+
+				// Validate direction
+				direction, directionFound := world.EnumFromString[world.Direction](args[0], world.DIRECTION_COUNT)
+				if !directionFound {
+					*player.inbox <- fmt.Sprintf("'%s' is not a direction. The directions are 'north', 'south', 'east', and 'west'.", args[0])
+					return true
+				}
+
+				// Check that there is an exit
+				playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
+				if playerRoom.Exits[direction] == world.ROOM_NONE {
+					*player.inbox <- "There is no exit in that direction."
+					return true
+				}
+
+				// Check that there is a lock to pick
+				lock := playerRoom.GetLock(direction)
+				if lock == nil || !lock.IsActive {
+					*player.inbox <- fmt.Sprintf("The %s exit is not locked.", direction.String())
+					return true
+				}
+
+				// Only pick physical locks
+				if lock.Type != world.LOCK_TYPE_PHYSICAL {
+					*player.inbox <- fmt.Sprintf("The %s exit is sealed by magic. You can't pick it.", direction.String())
+					return true
+				}
+
+				lock.IsActive = false
+
+				// Picking a lock doesn't reveal a hidden player
+				if playerMob.CheckFlag(world.MOB_FLAG_HIDDEN) {
+					*player.inbox <- fmt.Sprintf("You picked the lock on the %s exit.", direction.String())
+				} else {
+					gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("<y>%s</y> picked the lock on the %s exit.", playerMob.Data.Name, direction.String()))
+				}
+
+				return true
+			},
+		},
 	},
 }
 

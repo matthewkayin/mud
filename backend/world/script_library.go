@@ -790,7 +790,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		}
 
 		room := &__world.Rooms[roomIndex]
-		lock := room.getLock(direction)
+		lock := room.GetLock(direction)
 		if lock == nil {
 			frame.ThrowArgError(0, fmt.Sprintf("Room %d (%s) has no lock on its %s exit.", roomIndex, room.Name, direction.String()))
 		}

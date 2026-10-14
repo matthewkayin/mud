@@ -36,7 +36,7 @@ func TestRoomResetActivatesLocks(t *testing.T) {
 		t.Errorf("Expected east room's west exit to be unlocked, since locks are one-directional")
 	}
 
-	westRoom.getLock(DIRECTION_EAST).IsActive = false
+	westRoom.GetLock(DIRECTION_EAST).IsActive = false
 	if westRoom.IsExitLocked(DIRECTION_EAST) {
 		t.Errorf("Expected west room's east exit to be unlocked after deactivating its lock")
 	}

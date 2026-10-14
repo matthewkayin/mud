@@ -7,6 +7,7 @@ class.scaling = { VIT = 8, STR = 8, AGI = 10, INT = 6, FTH = 8 }
 class.starting_items = {}
 class.unlocks = {
 	{ level = 1, ability = "Sneak" },
+	{ level = 2, ability = "Unlock" },
 }
 
 return class
