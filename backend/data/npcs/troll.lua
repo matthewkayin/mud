@@ -68,7 +68,7 @@ function npc.update(self, instance)
             -- Remove toll from inventory
             local index = world.mob_find_inventory_item(self, instance.toll.name)
             if index ~= -1 then
-                amount = world.mob_get_inventory_item_amount(self, index)
+                local amount = world.mob_get_inventory_item_amount(self, index)
                 world.mob_remove_inventory_item(self, index, amount)
             end
         end

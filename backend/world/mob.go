@@ -771,7 +771,12 @@ func (mob *Mob) useItem(world *World, targetMob *Mob) {
 	switch itemData.Kind {
 		case ITEM_KIND_CONSUMABLE: {
 			consumableData := itemData.Data.(*ItemDataConsumable)
-			world.scriptCall(consumableData.onUse.Value(), fmt.Sprintf("item '%s' on_use()", itemData.Name), lua.Nil(), lua.Nil())
+			luaHandle, err := world.getMobLuaHandle(targetMob.Handle)
+			if err != nil {
+				log.Print(err.Error())
+			} else {
+				world.scriptCall(consumableData.onUse.Value(), fmt.Sprintf("item '%s' on_use()", itemData.Name), luaHandle)
+			}
 		}
 		case ITEM_KIND_SPELL_SCROLL: {
 			scrollData := itemData.Data.(*ItemDataSpellScroll)
