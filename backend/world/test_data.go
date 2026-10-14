@@ -25,8 +25,8 @@ func primeTestData() {
 			CastsToLearn: 50,
 			ManaCost: 5,
 			CastTime: 1,
-			CanTargetPlayers: false,
-			OnHit: nil,
+			Targets: SPELL_TARGET_ENEMY,
+			OnCast: nil,
 		},
 	}
 

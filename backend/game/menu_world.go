@@ -1685,12 +1685,12 @@ var MENU_WORLD = Menu {
 		},
 
 		"cast": {
-			usage: "cast <spell> at <target>",
+			usage: "cast <spell> [on <target>]",
 			description: "Cast a spell",
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
-				spellWords, targetWords, userSpecifiedTarget := splitArgsBy(args, "at")
+				spellWords, targetWords, userSpecifiedTarget := splitArgsBy(args, "on")
 
-				if len(spellWords) == 0 || len(targetWords) == 0 || !userSpecifiedTarget {
+				if len(spellWords) == 0 || (userSpecifiedTarget && len(targetWords) == 0) {
 					return false
 				}
 
@@ -1702,17 +1702,20 @@ var MENU_WORLD = Menu {
 				}
 
 				// Find the target in the room
-				targetHandle, err := fuzzyFindTarget(gamestate, player, targetWords)
-				if err != nil {
-					*player.inbox <- err.Error()
-					return true
+				var targetHandle world.MobHandle
+				if userSpecifiedTarget {
+					var err error
+					targetHandle, err = fuzzyFindTarget(gamestate, player, targetWords)
+					if err != nil {
+						*player.inbox <- err.Error()
+						return true
+					}
 				}
 
-				// Check against PvP
-				spellData := world.SPELL_DATA[spell]
-				targetMob := gamestate.world.Mobs.Get(targetHandle)
-				if targetMob.PlayerCharacter != nil && !spellData.CanTargetPlayers {
-					*player.inbox <- "You cannot cast that spell against players."
+				// Validate target
+				err = validateSpellTarget(gamestate, spell, userSpecifiedTarget, targetHandle)
+				if err != nil {
+					*player.inbox <- err.Error()
 					return true
 				}
 
@@ -1721,6 +1724,7 @@ var MENU_WORLD = Menu {
 					actionType: ACTION_TYPE_CAST,
 					data: ActionCast {
 						spell: spell,
+						hasTarget: userSpecifiedTarget,
 						target: targetHandle,
 					},
 				}
@@ -1781,6 +1785,7 @@ var MENU_WORLD = Menu {
 							actionType: ACTION_TYPE_USE_ITEM,
 							data: ActionUseItem {
 								itemId: item.Id,
+								hasTarget: true,
 								target: targetHandle,
 							},
 						}
@@ -1788,18 +1793,19 @@ var MENU_WORLD = Menu {
 						return true
 					case world.ITEM_KIND_SPELL_SCROLL:
 						scrollData := itemData.Data.(*world.ItemDataSpellScroll)
-						spellInfo := world.SPELL_DATA[scrollData.Spell]
 
-						targetMob := gamestate.world.Mobs.Get(targetHandle)
-						if targetMob.PlayerCharacter != nil && !spellInfo.CanTargetPlayers {
-							*player.inbox <- "You cannot cast that spell against players."
+						err := validateSpellTarget(gamestate, scrollData.Spell, userSpecifiedTarget, targetHandle)
+						if err != nil {
+							*player.inbox <- err.Error()
 							return true
 						}
 
+						// Queue up an item use action
 						player.nextAction = Action {
 							actionType: ACTION_TYPE_USE_ITEM,
 							data: ActionUseItem {
 								itemId: item.Id,
+								hasTarget: userSpecifiedTarget,
 								target: targetHandle,
 							},
 						}
@@ -2148,4 +2154,40 @@ func printMobHp(player *Player, mob *world.Mob) {
 	*player.inbox <- fmt.Sprintf("<y>%s</y>:", mob.Data.Name)
 	*player.inbox <- fmt.Sprintf("HP: %d / %d", mob.Data.Health, mob.Data.MaxHealth())
 	*player.inbox <- fmt.Sprintf("MP: %d / %d", mob.Data.Mana, mob.Data.MaxMana())
+}
+
+func validateSpellTarget(gamestate *GameState, spell world.SpellId, userSpecifiedTarget bool, targetHandle world.MobHandle) error {
+	spellData := world.SPELL_DATA[spell]
+	switch spellData.Targets {
+		case world.SPELL_TARGET_NONE: {
+			if userSpecifiedTarget {
+				return fmt.Errorf("%s is not a single-target spell. You cannot cast it 'on' someone.", spellData.Name)
+			}
+		}
+
+		case world.SPELL_TARGET_ALLY: {
+			if !userSpecifiedTarget {
+				return fmt.Errorf("%s is a single-target spell. You must specify a target.", spellData.Name)
+			}
+		}
+
+		case world.SPELL_TARGET_ENEMY: {
+			if !userSpecifiedTarget {
+				return fmt.Errorf("%s is a single-target spell. You must specify a target.", spellData.Name)
+			}
+
+			// Check against PvP
+			targetMob := gamestate.world.Mobs.Get(targetHandle)
+			if targetMob.IsPlayer() {
+				return fmt.Errorf("You cannot cast that spell against players.")
+			}
+		}
+
+		case world.SPELL_TARGET_ARGUMENT: {
+			// TODO
+			return fmt.Errorf("Oh no we haven't set this one up yet!")
+		}
+	}
+
+	return nil
 }

@@ -727,6 +727,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	//
 	// @param room integer
 	// @param occupant_index integer
+	// @return MobHandle
 	"room_get_occupant": func(frame lua.Frame) lua.Outcome {
 		roomIndex := frameGetRoomIndexArg(&frame, 0, "room")
 		occupantIndex := frameGetIntegerArg(&frame, 1, "occupant_index")

@@ -6,17 +6,25 @@ spell.casts_to_learn = 1
 
 spell.mana_cost = 5
 spell.cast_time = 1
-spell.can_target_players = true
+spell.targets = world.SpellTarget.NONE
 
--- TODO: make this an AOE
-function spell.on_hit(caster, target)
+function spell.on_cast(caster)
     local room = world.mob_get_room(caster)
     local caster_name = world.mob_get_name(caster)
-    local target_name = world.mob_get_name(target)
 
     local duration = world.mob_calc_magic_condition_duration(caster, world.time_minutes(1))
-    world.mob_add_condition(target, world.ConditionType.BLESSING_OF_MIGHT, duration)
-    world.message_room(room, string.format("<y>%s</y> gave <y>%s</y> a <g>Blessing of Might</g>!", caster_name, target_name))
+
+    for index = 0, world.room_get_occupant_count(room) do
+        local occupant = world.room_get_occupant(room, index)
+        if world.mob_is_npc(occupant) then
+            goto continue
+        end
+
+        world.mob_add_condition(occupant, world.ConditionType.BLESSING_OF_MIGHT, duration)
+        ::continue::
+    end
+
+    world.message_room(room, string.format("<y>%s</y> gave the party a <g>Blessing of Might</g>!", caster_name))
 end
 
 return spell
