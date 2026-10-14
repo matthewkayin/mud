@@ -38,17 +38,17 @@ var MENU_TRADE_ENTRIES = map[string]MenuEntry {
 			counterparty := player.getCounterparty()
 
 			if player.tradeSession.status == TRADE_STATUS_REQUESTED && player.isTraderA() {
-				*player.inbox <- fmt.Sprintf("You have requested to trade with %s", counterparty.name)
+				*player.inbox <- fmt.Sprintf("You have requested to trade with <y>%s</y>", counterparty.name)
 				return true
 			}
 
 			if player.tradeSession.status == TRADE_STATUS_REQUESTED && player.isTraderB() {
-				*player.inbox <- fmt.Sprintf("%s has requested to trade with you.", counterparty.name)
+				*player.inbox <- fmt.Sprintf("<y>%s</y> has requested to trade with you.", counterparty.name)
 				return true
 			}
 
 			trader := player.getTrader()
-			*player.inbox <- fmt.Sprintf("You are trading with %s.", counterparty.name)
+			*player.inbox <- fmt.Sprintf("You are trading with <y>%s</y>.", counterparty.name)
 			*player.inbox <- fmt.Sprintf("You are offering %s.", trader.getOfferString())
 			*player.inbox <- fmt.Sprintf("They are offering %s.", counterparty.getOfferString())
 
@@ -56,7 +56,7 @@ var MENU_TRADE_ENTRIES = map[string]MenuEntry {
 				*player.inbox <- "You have locked in this trade."
 			}
 			if counterparty.isLockedIn {
-				*player.inbox <- fmt.Sprintf("%s has locked in this trade.", counterparty.name)
+				*player.inbox <- fmt.Sprintf("<y>%s</y> has locked in this trade.", counterparty.name)
 			}
 
 			return true
@@ -134,8 +134,8 @@ var MENU_TRADE_ENTRIES = map[string]MenuEntry {
 			}
 			targetPlayer.tradeSession = player.tradeSession
 
-			*player.inbox <- fmt.Sprintf("You requested to trade with %s.", targetMob.Data.Name)
-			*targetPlayer.inbox <- fmt.Sprintf("%s has requested to trade with you. Type 'trade accept' to accept or 'trade reject' to reject.", playerMob.Data.Name)
+			*player.inbox <- fmt.Sprintf("You requested to trade with <y>%s</y>.", targetMob.Data.Name)
+			*targetPlayer.inbox <- fmt.Sprintf("<y>%s</y> has requested to trade with you. Type 'trade accept' to accept or 'trade reject' to reject.", playerMob.Data.Name)
 
 			return true
 		},
@@ -164,8 +164,8 @@ var MENU_TRADE_ENTRIES = map[string]MenuEntry {
 			trader := player.getTrader()
 			counterparty := player.getCounterparty()
 
-			*player.inbox <- fmt.Sprintf("You accepted %s's trade request.", counterparty.name)
-			*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("%s accepted your trade request.", trader.name)
+			*player.inbox <- fmt.Sprintf("You accepted <y>%s's</y> trade request.", counterparty.name)
+			*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("<y>%s</y> accepted your trade request.", trader.name)
 
 			return true
 		},
@@ -245,8 +245,8 @@ var MENU_TRADE_ENTRIES = map[string]MenuEntry {
 
 			counterparty := player.getCounterparty()
 			itemName := result.item.GetNameWithAmount()
-			*player.inbox <- fmt.Sprintf("You offered %s to the trade.", itemName)
-			*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("%s offered %s to the trade.", trader.name, itemName)
+			*player.inbox <- fmt.Sprintf("You offered <g>%s</g> to the trade.", itemName)
+			*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("<y>%s</y> offered <g>%s</g> to the trade.", trader.name, itemName)
 
 			player.tradeSession.traderA.isLockedIn = false
 			player.tradeSession.traderB.isLockedIn = false
@@ -305,8 +305,8 @@ var MENU_TRADE_ENTRIES = map[string]MenuEntry {
 
 			counterparty := player.getCounterparty()
 			itemName := result.item.GetNameWithAmount()
-			*player.inbox <- fmt.Sprintf("You withdrew %s from the trade.", itemName)
-			*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("%s withdrew %s from the trade.", trader.name, itemName)
+			*player.inbox <- fmt.Sprintf("You withdrew <g>%s</g> from the trade.", itemName)
+			*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("<y>%s</y> withdrew <g>%s</g> from the trade.", trader.name, itemName)
 
 			player.tradeSession.traderA.isLockedIn = false
 			player.tradeSession.traderB.isLockedIn = false
@@ -328,7 +328,7 @@ var MENU_TRADE_ENTRIES = map[string]MenuEntry {
 			counterparty := player.getCounterparty()
 
 			*player.inbox <- "You canceled the trade."
-			*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("%s canceled the trade.", trader.name)
+			*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("<y>%s</y> canceled the trade.", trader.name)
 
 			player.tradeSession.cancel(gamestate)
 
@@ -360,7 +360,7 @@ var MENU_TRADE_ENTRIES = map[string]MenuEntry {
 			trader.isLockedIn = true
 
 			*player.inbox <- "You confirmed the trade."
-			*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("%s confirmed the trade.", trader.name)
+			*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("<y>%s</y> confirmed the trade.", trader.name)
 
 			if player.tradeSession.traderA.isLockedIn && player.tradeSession.traderB.isLockedIn {
 				player.tradeSession.complete(gamestate)
@@ -441,7 +441,7 @@ func (trader *Trader) cancelTrade(gamestate *GameState) {
 		// Rare edge case, but if they happened to pick up a bunch of items while a trade offer is open
 		// then their inventory will fill up, so in that case we just drop the offered items on the floor
 		if !playerMob.Data.Inventory.HasSpaceFor(item.Size(), playerMob.InventoryCapacity()) {
-			droppedItemNames = append(droppedItemNames, item.GetNameWithAmount())
+			droppedItemNames = append(droppedItemNames, fmt.Sprintf("<g>%s</g>", item.GetNameWithAmount()))
 			droppedItemAmount += item.Amount
 			playerRoom.Inventory.AddItem(item)
 			continue
@@ -468,7 +468,7 @@ func (trader *Trader) getOfferString() string {
 
 	offerStrings := make([]string, 0, trader.offer.Length())
 	for _, item := range trader.offer.Items {
-		offerStrings = append(offerStrings, item.GetNameWithAmount())
+		offerStrings = append(offerStrings, fmt.Sprintf("<g>%s</g>", item.GetNameWithAmount()))
 	}
 
 	return combineNames(offerStrings)
@@ -500,8 +500,8 @@ func (session *TradeSession) complete(gamestate *GameState) {
 		return
 	}
 
-	*playerA.inbox <- fmt.Sprintf("Your trade with %s has been finalized!", session.traderB.name)
-	*playerB.inbox <- fmt.Sprintf("Your trade with %s has been finalized!", session.traderA.name)
+	*playerA.inbox <- fmt.Sprintf("Your trade with <y>%s</y> has been finalized!", session.traderB.name)
+	*playerB.inbox <- fmt.Sprintf("Your trade with <y>%s</y> has been finalized!", session.traderA.name)
 
 	// Give Offer A -> Trader B
 	for _, item := range session.traderA.offer.Items {
@@ -531,8 +531,8 @@ func (session *TradeSession) reject(gamestate *GameState) {
 	playerB := session.traderB.getPlayer(gamestate)
 
 	// Trader A is always be the initiator, so they are also always the one who gets rejected
-	*playerA.inbox <- fmt.Sprintf("%s rejected your trade.", session.traderB.name)
-	*playerB.inbox <- fmt.Sprintf("You rejected %s's trade.", session.traderA.name)
+	*playerA.inbox <- fmt.Sprintf("<y>%s</y> rejected your trade.", session.traderB.name)
+	*playerB.inbox <- fmt.Sprintf("You rejected <y>%s's</y> trade.", session.traderA.name)
 
 	session.cancel(gamestate)
 }
@@ -551,8 +551,8 @@ func tradeSessionOnMobMove(gamestate *GameState, event *world.Event) {
 	trader := player.getTrader()
 	counterparty := player.getCounterparty()
 
-	*player.inbox <- fmt.Sprintf("Your trade with %s has been cancelled because you left the room.", counterparty.name)
-	*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("Your trade with %s has been cancelled because they left the room.", trader.name)
+	*player.inbox <- fmt.Sprintf("Your trade with <y>%s</y> has been cancelled because you left the room.", counterparty.name)
+	*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("Your trade with <y>%s</y> has been cancelled because they left the room.", trader.name)
 	player.tradeSession.cancel(gamestate)
 }
 
@@ -568,7 +568,7 @@ func tradeSessionOnMobDeath(gamestate *GameState, event *world.Event) {
 	trader := player.getTrader()
 	counterparty := player.getCounterparty()
 
-	*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("Your trade with %s has been cancelled because they died.", trader.name)
+	*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("Your trade with <y>%s</y> has been cancelled because they died.", trader.name)
 	player.tradeSession.cancel(gamestate)
 }
 
@@ -581,6 +581,6 @@ func tradeSessionOnPlayerLogout(gamestate *GameState, player *Player) {
 	trader := player.getTrader()
 	counterparty := player.getCounterparty()
 
-	*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("Your trade with %s has been cancelled because they logged out.", trader.name)
+	*counterparty.getPlayer(gamestate).inbox <- fmt.Sprintf("Your trade with <y>%s</y> has been cancelled because they logged out.", trader.name)
 	player.tradeSession.cancel(gamestate)
 }

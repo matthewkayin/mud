@@ -40,7 +40,7 @@ func (mob *Mob) EquipFromInventory(itemIndex int, slot EquipmentSlot) (Item, []s
 	messages := []string{}
 	for _, unequippedItem := range unequippedItems {
 		mob.Data.Inventory.AddItem(unequippedItem)
-		messages = append(messages, fmt.Sprintf("%s was unequipped and added to your inventory.", unequippedItem.GetNameWithCondition()))
+		messages = append(messages, fmt.Sprintf("<g>%s</g> was unequipped and added to your inventory.", unequippedItem.GetNameWithCondition()))
 		messages = append(messages, mob.onItemUnequipped(unequippedItem)...)
 	}
 	messages = append(messages, mob.onItemEquipped(item)...)
@@ -110,7 +110,7 @@ func (mob *Mob) onItemEquipped(item Item) []string {
 	}
 
 	spellData := SPELL_DATA[spellbookData.Spell]
-	return []string { fmt.Sprintf("You can now prepare the spell %s.", spellData.Name) }
+	return []string { fmt.Sprintf("You can now prepare the spell <g>%s</g>.", spellData.Name) }
 }
 
 func (mob *Mob) onItemUnequipped(item Item) []string {
@@ -146,5 +146,5 @@ func (mob *Mob) onItemUnequipped(item Item) []string {
 
 	mob.Data.RemoveSpell(spellbookData.Spell)
 	spellData := SPELL_DATA[spellbookData.Spell]
-	return []string { fmt.Sprintf("You lost the spell %s.", spellData.Name) }
+	return []string { fmt.Sprintf("You lost the spell <g>%s</g>.", spellData.Name) }
 }

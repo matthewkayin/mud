@@ -9,7 +9,7 @@ item.size = 5
 item.on_use = function(user)
     local healing = world.heal(user, 20)
     local user_name = world.mob_get_name(user)
-    world.message_room(world.mob_get_room(user), string.format("%s drank a %s and regained %d HP.", user_name, item.name, healing))
+    world.message_room(world.mob_get_room(user), string.format("<y>%s</y> drank a <g>%s</g> and regained <g>%d HP</g>.", user_name, item.name, healing))
 end
 
 return item

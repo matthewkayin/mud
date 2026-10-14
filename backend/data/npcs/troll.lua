@@ -96,7 +96,7 @@ end
 function npc.on_player_entered(self, instance, player)
     if instance.peace_timer == 0 and instance.angry_timer == 0 then
         local player_race = world.player_get_race(player)
-        world.say_to_player(self, player, string.format("Stop, %s. You want pass? Must pay toll. Give me %d %s.",
+        world.say_to_player(self, player, string.format("Stop, %s. You want pass? Must pay <b>toll</b>. Give me %d <g>%s</g>.",
             player_race, instance.toll.amount, instance.toll.name))
     end
 
@@ -120,8 +120,8 @@ function npc.on_item_given(self, instance, player, added_to_index, amount)
     local room = world.mob_get_room(self)
     if item_name ~= instance.toll.name then
         world.mob_drop_inventory_item(self, added_to_index, amount)
-        world.say_to_room(self, string.format("This not toll! Give me %s!", instance.toll.name))
-        world.message_room(room, string.format("%s dropped the %s on the floor.", self_name, item_name))
+        world.say_to_room(self, string.format("This not <b>toll</b>! Give me <g>%s</g>!", instance.toll.name))
+        world.message_room(room, string.format("<y>%s</y> dropped the <g>%s</g> on the floor.", self_name, item_name))
 
         return world.NPC_EVENT_PREVENT_DEFAULT
     end
@@ -129,8 +129,8 @@ function npc.on_item_given(self, instance, player, added_to_index, amount)
     -- If the player gave the toll but not the right amount, then complain
     if world.mob_get_inventory_amount_of(self, instance.toll.name) < instance.toll.amount then
         world.mob_drop_inventory_item(self, added_to_index, amount)
-        world.say_to_room(self, string.format("You think me no count? Me need %d %s!", instance.toll.amount, instance.toll.name))
-        world.message_room(room, string.format("%s dropped the %s on the floor.", self_name, item_name))
+        world.say_to_room(self, string.format("You think me no count? Me need %d <g>%s</g>!", instance.toll.amount, instance.toll.name))
+        world.message_room(room, string.format("<y>%s</y> dropped the <g>%s</g> on the floor.", self_name, item_name))
 
         return world.NPC_EVENT_PREVENT_DEFAULT
     end
@@ -139,9 +139,9 @@ function npc.on_item_given(self, instance, player, added_to_index, amount)
     world.npc_set_blocking_exit(self, instance.exit_to_block, false)
     instance.peace_timer = TROLL_PEACE_DURATION
 
-    world.message_room(room, string.format("%s grins and pockets the toll.", self_name))
+    world.message_room(room, string.format("<y>%s</y> grins and pockets the toll.", self_name))
     world.say_to_room(self, "Me see you are smart one. Me step aside now. Go on.")
-    world.message_room(room, string.format("%s stepped aside. The way %s is clear.", self_name, instance.exit_to_block))
+    world.message_room(room, string.format("<y>%s</y> stepped aside. The way %s is clear.", self_name, instance.exit_to_block))
 
     return world.NPC_EVENT_PREVENT_DEFAULT
 end
@@ -153,10 +153,10 @@ function npc.get_status_description(self, instance)
     local self_name = world.mob_get_name(self)
 
     if instance.peace_timer == 0 then
-        return string.format("%s is blocking the way %s.", self_name, instance.exit_to_block)
+        return string.format("<y>%s</y> is blocking the way %s.", self_name, instance.exit_to_block)
     end
 
-    return string.format("%s has stepped aside. The way %s is clear.", self_name, instance.exit_to_block)
+    return string.format("<y>%s</y> has stepped aside. The way %s is clear.", self_name, instance.exit_to_block)
 end
 
 ---@param self MobHandle
@@ -170,11 +170,11 @@ function npc.on_dialog(self, instance, player, subject)
     elseif subject == "bridge" then
         world.say_to_player(self, player, "<b>Bridge</b> creaky, but strong. Me <b>build</b> meself. You want pass? Must pay <b>toll</b>.")
     elseif subject == "toll" then
-        world.say_to_player(self, player, string.format("<b>Toll</b> is %d %s. Small price for strong <b>bridge</b>.", instance.toll.name, instance.toll.amount))
+        world.say_to_player(self, player, string.format("<b>Toll</b> is %d <g>%s</g>. Small price for strong <b>bridge</b>.", instance.toll.amount, instance.toll.name))
     elseif subject == "build" then
         local player_race = world.player_get_race(player)
         world.message_player(player, "The troll furrows his brow and seems suddenly defensive.")
-        world.say_to_player(self, player, string.format("Yes, me build! Now no more questions, %s. Pay toll!", player_race))
+        world.say_to_player(self, player, string.format("Yes, me build! Now no more questions, %s. Pay <b>toll</b>!", player_race))
     else
         world.say_to_player(self, player, "Me don't know about that.")
     end

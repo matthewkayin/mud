@@ -29,7 +29,7 @@ npc.wares = {
 function npc.on_dialog(self, instance, player, subject)
     if subject == "" then
         local player_name = world.mob_get_name(player)
-        world.say_to_player(self, player, string.format("Hello %s! Welcome to <b>Castle Recurse!</b>", player_name))
+        world.say_to_player(self, player, string.format("Hello <y>%s</y>! Welcome to <b>Castle Recurse</b>!", player_name))
     elseif subject == "castle recurse" then
         world.say_to_player(self, player, "<b>Castle Recurse</b> is our humble stronghold by the <b>bridge</b>. It's a place for Recursers to rest and prepare for their next <b>adventure</b>.")
     elseif subject == "bridge" then

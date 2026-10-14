@@ -304,7 +304,7 @@ func (character *Character) grantClassUnlock(unlock ClassUnlock) string {
 			spellData := SPELL_DATA[spell]
 
 			character.ClassSpells = append(character.ClassSpells, spell)
-			return fmt.Sprintf("You learned the spell %s!", spellData.Name)
+			return fmt.Sprintf("You learned the spell <g>%s</g>!", spellData.Name)
 		}
 
 		default:
