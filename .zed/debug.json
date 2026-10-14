@@ -9,5 +9,6 @@
     "request": "launch",
     "program": ".",
     "cwd": "$ZED_WORKTREE_ROOT/backend",
+    "envFile": "$ZED_WORKTREE_ROOT/backend/.env",
   },
 ]
