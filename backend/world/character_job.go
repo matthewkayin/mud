@@ -20,6 +20,8 @@ type JobData struct {
 var JOB_DATA []*JobData
 var JOB_NAME_TO_ID map[string]JobId
 
+var JOB_ENCHANTER JobId
+
 const JOB_DATA_FOLDER = "jobs"
 
 func JobIdFromString(jobName string) (JobId, error) {
@@ -69,6 +71,12 @@ func (world *World) loadJobData() {
 		JOB_NAME_TO_ID[jobData.Name] = JobId(len(JOB_DATA))
 		JOB_DATA = append(JOB_DATA, jobData)
 		log.Printf("Loaded job '%s'.", jobData.Name)
+	}
+
+	var exists bool
+	JOB_ENCHANTER, exists = JOB_NAME_TO_ID["Enchanter"]
+	if !exists {
+		log.Fatalf("Enchanter job not found!")
 	}
 
 	log.Printf("All job data has been loaded.")

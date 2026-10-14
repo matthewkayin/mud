@@ -2,7 +2,7 @@ local spell = {}
 
 spell.name = "Firebolt"
 spell.description = "Casts a bolt of fire toward the target"
-spell.casts_to_learn = 50
+spell.casts_to_learn = 1
 
 spell.mana_cost = 5
 spell.cast_time = 1
