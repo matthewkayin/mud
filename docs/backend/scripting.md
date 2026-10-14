@@ -143,6 +143,8 @@ Scripts reach the backend through the global `world` table, which `scriptInit` (
 - **Constant tables** from `ScriptConstantTables()` in `backend/world/script_constants.go`. Each `ScriptConstantTable` becomes `world.<Name>`, with string values. For example, an item script sets `item.kind = world.ItemKind.CONSUMABLE`, and the parser maps that string back to the Go enum. To add a table, append it to the slice that `ScriptConstantTables()` returns.
 - **Free constants** from `ScriptFreeConstants()` in the same file. Each `ScriptFreeConstant` is set directly on the table as `world.<Name>`, and its `Value` is any scalar `lua.Value` (`lua.Number`, `lua.String`, `lua.Bool`). For example, a spell script can set `spell.cast_time = world.SPELL_CAST_TIME_INSTANT`. To add one, append it to the slice that `ScriptFreeConstants()` returns.
 
+Messages that scripts send to players (`message_room`, `message_player`, `say_to_room`, `say_to_player`) use color tags. Follow the rules in [text_colors.md](text_colors.md).
+
 ### Globals are locked
 
 At the end of `scriptInit`, the global table gets a metatable whose `__newindex` and `__index` raise errors. Scripts therefore cannot create new globals (`x = 5` without `local` fails with `Cannot create global variable 'x'`) or read undefined ones (a typo like `wrold.log` fails with `Cannot read undefined global variable 'wrold'`). Declare everything `local`. Existing globals such as `world` and the standard library still work. Go code that needs to add a global after `scriptInit`, such as test setup, must use `RawSetGlobal`, since `SetGlobal` goes through `__newindex`.

@@ -65,6 +65,9 @@ Go code uses long descriptive camelCase names, `SCREAMING_SNAKE_CASE` constants/
 
 In Go code, **never** combine statements with if statements (i.e. `if _, value := myFunc(); value == 5 {}`)
 
+## Text colors
+Player-facing messages color parts of their text with tags such as `<y>name</y>`. Follow the rules in @docs/backend/text_colors.md whenever you write or change a message, and add a rule there when you color a new kind of text. Developers can run `/text-color-audit` (whole repo) or `/text-color-audit diff [base-ref]` (current changes) to check for violations.
+
 ## Documentation
 
 Documentation lives in the `docs/` folder of this repo. When making plans, always check if documentation updates should be made as a part of the work. 
