@@ -2169,6 +2169,12 @@ func validateSpellTarget(gamestate *GameState, spell world.SpellId, userSpecifie
 			if !userSpecifiedTarget {
 				return fmt.Errorf("%s is a single-target spell. You must specify a target.", spellData.Name)
 			}
+
+			// Check ally target
+			targetMob := gamestate.world.Mobs.Get(targetHandle)
+			if targetMob.IsNpc() {
+				return fmt.Errorf("You can only cast that spell on players.")
+			}
 		}
 
 		case world.SPELL_TARGET_ENEMY: {

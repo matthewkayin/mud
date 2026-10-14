@@ -14,7 +14,7 @@ function spell.on_cast(caster)
 
     local duration = world.mob_calc_magic_condition_duration(caster, world.time_minutes(1))
 
-    for index = 0, world.room_get_occupant_count(room) do
+    for index = 1, world.room_get_occupant_count(room) do
         local occupant = world.room_get_occupant(room, index)
         if world.mob_is_npc(occupant) then
             goto continue

@@ -329,10 +329,6 @@ func (mob *Mob) Update(world *World) {
 			// Cast spell
 			mob.spellcast(world, false)
 			mob.Mode = MOB_MODE_IDLE
-
-			// Update status
-			mob.alertness = MOB_ALERTNESS_MAX
-			mob.SetFlag(MOB_FLAG_HIDDEN, false)
 		}
 
 		case MOB_MODE_USE_ITEM: {
@@ -713,7 +709,12 @@ func (mob *Mob) spellcast(world *World, fromSpellScroll bool) {
 		case SPELL_TARGET_ARGUMENT: {}
 	}
 
-	_, ok := world.scriptCall(spellData.OnCast.Value(), fmt.Sprintf("spell '%s' on_hit()", spellData.Name), castArgs...)
+	// Update status
+	mob.alertness = MOB_ALERTNESS_MAX
+	mob.SetFlag(MOB_FLAG_HIDDEN, false)
+
+	// Call spell on_cast
+	_, ok := world.scriptCall(spellData.OnCast.Value(), fmt.Sprintf("spell '%s' on_cast()", spellData.Name), castArgs...)
 	if !ok {
 		return
 	}
