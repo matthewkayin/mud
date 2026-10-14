@@ -1,10 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export const LoginPage = () => {
-  const debugAuth = import.meta.env.VITE_ENABLE_DEBUG_AUTH === 'true';
+  const [debugAuth, setDebugAuth] = useState(false);
   const [debugUser, setDebugUser] = useState('');
 
-  const handleLogin = (event) => {
+  // Ask the server whether debug auth is enabled
+  useEffect(() => {
+    fetch('/api/auth/config')
+      .then((response) => response.json())
+      .then((config) => setDebugAuth(config.debugAuth === true))
+      .catch((error) => console.error('Failed to fetch auth config.', error));
+  }, []);
+
+  const handleLogin = (event: React.SyntheticEvent) => {
     event.preventDefault();
 
     if (debugAuth) {
@@ -16,11 +24,11 @@ export const LoginPage = () => {
         return;
       }
 
-      window.location.href = `http://${window.location.hostname}:5173/api/auth/debug?user=${debugUser}`;
+      window.location.href = `/api/auth/debug?user=${debugUser}`;
       return;
     }
 
-    window.location.href = `http://${window.location.hostname}:5173/api/auth/login?hostname=${window.location.hostname}`;
+    window.location.href = '/api/auth/login';
   };
 
   return (

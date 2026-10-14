@@ -23,7 +23,7 @@ func (apiState* ApiState) HandleGetWebSocket(writer http.ResponseWriter, request
 
 	// Upgrade the HTTP connection to a WebSocket connection
 	connection, acceptError := websocket.Accept(writer, request, &websocket.AcceptOptions {
-		// TODO: configure this for prod
+		// Same-origin requests are always accepted. These allow the Vite dev server, whose proxy rewrites the Host header.
 		OriginPatterns: []string {
 			"localhost:5173",
 			"192.168.*:5173",

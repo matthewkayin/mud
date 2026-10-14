@@ -1,0 +1,12 @@
+.git
+.cache
+.claude
+.zed
+editor
+**/node_modules
+frontend/dist
+frontend/.env
+backend/env.json
+backend/.env
+backend/saves
+backend/logs

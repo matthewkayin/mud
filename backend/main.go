@@ -13,6 +13,8 @@ import (
 	"flag"
 	"time"
 	"net/http"
+	"path"
+	"path/filepath"
 	"mud/api"
 	"mud/game"
 )
@@ -48,12 +50,16 @@ func main() {
 	gamestate := game.GameStateInit()
 	apiState := api.InitState(gamestate)
 	mux := http.NewServeMux()
+	mux.HandleFunc("/api/auth/config", apiState.HandleAuthConfig)
 	mux.HandleFunc("/api/auth/login", apiState.HandleAuthLogin)
 	mux.HandleFunc("/api/auth/callback", apiState.HandleAuthCallback)
 	if env.ENABLE_DEBUG_AUTH {
 		mux.HandleFunc("/api/auth/debug", apiState.HandleDebugLogin)
 	}
 	mux.HandleFunc("/api/websocket", apiState.HandleGetWebSocket)
+	if env.STATIC_FOLDER != "" {
+		mux.Handle("/", staticFolderHandler(env.STATIC_FOLDER))
+	}
 
 	// Kick off server in a separate goroutine
 	// Begin server
@@ -120,6 +126,21 @@ func corsMiddleware(next http.Handler) http.Handler {
 		}
 
 		next.ServeHTTP(writer, request)
+	})
+}
+
+// Serves the built frontend. Paths that aren't files get index.html, so that the client side router handles them.
+func staticFolderHandler(staticFolder string) http.Handler {
+	fileServer := http.FileServer(http.Dir(staticFolder))
+	return http.HandlerFunc(func (writer http.ResponseWriter, request *http.Request) {
+		filePath := filepath.Join(staticFolder, filepath.FromSlash(path.Clean("/" + request.URL.Path)))
+		fileInfo, err := os.Stat(filePath)
+		if err != nil || fileInfo.IsDir() {
+			http.ServeFile(writer, request, filepath.Join(staticFolder, "index.html"))
+			return
+		}
+
+		fileServer.ServeHTTP(writer, request)
 	})
 }
 
