@@ -16,7 +16,9 @@ Locks are **one-directional**. A lock only blocks leaving its own room, not ente
 - `IsActive` is transient (`json:"-"`). Every lock becomes active when its room resets, and the first world update resets every room, so locks start active after the world loads.
 - `World.Validate()` reports a lock on a direction with no exit, more than one lock on the same exit, and invalid lock types or directions. The editor drops locks on exits that are no longer connected when it saves.
 
-Go code checks a lock with `room.IsExitLocked(direction)`. Scripts use `world.room_is_exit_locked(room, direction)` and `world.room_set_exit_locked(room, direction, locked)`. The setter only turns an existing lock on or off, and it throws an error if the room has no lock on that exit. Scripts can't add or remove locks.
+Go code checks a lock with `room.IsExitLocked(direction)`, and `room.GetLock(direction)` returns the lock itself (or `nil`). Scripts use `world.room_is_exit_locked(room, direction)` and `world.room_set_exit_locked(room, direction, locked)`. The setter only turns an existing lock on or off, and it throws an error if the room has no lock on that exit. Scripts can't add or remove locks.
+
+Players with the `Unlock` ability (granted by the Thief class) can deactivate an active **physical** lock on an exit of their current room with `unlock <direction>` (`game/menu_world.go`). It always succeeds and resolves immediately rather than as a queued action. It can't be used in combat and can't open magical locks. A hidden player stays hidden, and only they are told about it. A picked lock comes back when the room resets, like any other lock.
 
 ## NPC exit blocking
 

@@ -14,7 +14,12 @@
         2,
         1
       ],
-      "Locks": [],
+      "Locks": [
+        {
+          "Type": 0,
+          "Direction": 2
+        }
+      ],
       "DropTable": {
         "Entries": [
           {

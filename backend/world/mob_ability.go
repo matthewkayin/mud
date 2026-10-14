@@ -5,6 +5,7 @@ type MobAbility uint32
 const (
 	MOB_ABILITY_SNEAK MobAbility = iota
 	MOB_ABILITY_TAUNT
+	MOB_ABILITY_UNLOCK
 	MOB_ABILITY_COUNT
 )
 
@@ -22,6 +23,10 @@ var MOB_ABILITY_DATA = []*MobAbilityData {
 	MOB_ABILITY_TAUNT: {
 		Name: "Taunt",
 		Description: "Allows you to taunt an enemy using the 'taunt <enemy>' command.",
+	},
+	MOB_ABILITY_UNLOCK: {
+		Name: "Unlock",
+		Description: "Allows you to pick physical locks using the 'unlock <direction>' command.",
 	},
 }
 
