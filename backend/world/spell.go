@@ -44,6 +44,7 @@ type SpellData struct {
 	CastTime int32
 	Targets SpellTarget
 
+	validateArgument *lua.Function
 	OnCast *lua.Function
 }
 
@@ -114,6 +115,10 @@ func (parser *ScriptParser) parseSpell(table *lua.Table) *SpellData {
 		parser.addProblem(fmt.Errorf("The SpellTarget '%s' is not a valid spell target.", targetsString))
 	}
 
+	if spellData.Targets == SPELL_TARGET_ARGUMENT {
+		spellData.validateArgument = parser.getFunction(table, "validate_argument")
+	}
+
 	spellData.OnCast = parser.getFunction(table, "on_cast")
 
 	if len(parser.problems) != 0 {
@@ -121,4 +126,24 @@ func (parser *ScriptParser) parseSpell(table *lua.Table) *SpellData {
 	}
 
 	return spellData
+}
+
+func (spellData *SpellData) ValidateArgument(world *World, casterHandle MobHandle, argument string) error {
+	casterLuaHandle, err := world.getMobLuaHandle(casterHandle)
+	if err != nil {
+		log.Printf("Warn - Failed to get caster lua handle during SpellData ValidateArgument: %s", err.Error())
+		return fmt.Errorf("The spell failed.")
+	}
+
+	result, ok := world.scriptCall(spellData.validateArgument.Value(), fmt.Sprintf("spell %s validate_argument()", spellData.Name), casterLuaHandle, lua.String(argument))
+	if !ok {
+		return fmt.Errorf("The spell failed.")
+	}
+
+	errorString, hasError := result.AsString()
+	if hasError {
+		return fmt.Errorf("%s", errorString)
+	}
+
+	return nil
 }

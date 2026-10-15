@@ -982,9 +982,12 @@ var MENU_WORLD = Menu {
 				switch playerMob.Mode {
 					case world.MOB_MODE_IDLE: {}
 					case world.MOB_MODE_ATTACK: {
-						targetMob, targetExists := gamestate.world.Mobs.GetIfExists(playerMob.Target)
-						if targetExists {
-							gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("<y>%s</y> stopped attacking <y>%s</y>", playerMob.Data.Name, targetMob.Data.Name))
+						if playerMob.Target.Type == world.MOB_TARGET_MOB {
+							targetHandle := playerMob.Target.Value.(world.MobHandle)
+							targetMob, targetExists := gamestate.world.Mobs.GetIfExists(targetHandle)
+							if targetExists {
+								gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("<y>%s</y> stopped attacking <y>%s</y>", playerMob.Data.Name, targetMob.Data.Name))
+							}
 						}
 					}
 					case world.MOB_MODE_CAST: {
@@ -992,7 +995,7 @@ var MENU_WORLD = Menu {
 					}
 				}
 
-				playerMob.Mode = world.MOB_MODE_IDLE
+				playerMob.SetModeIdle()
 				player.nextAction = Action {
 					actionType: ACTION_TYPE_NONE,
 					data: nil,
@@ -1702,18 +1705,7 @@ var MENU_WORLD = Menu {
 				}
 
 				// Find the target in the room
-				var targetHandle world.MobHandle
-				if userSpecifiedTarget {
-					var err error
-					targetHandle, err = fuzzyFindTarget(gamestate, player, targetWords)
-					if err != nil {
-						*player.inbox <- err.Error()
-						return true
-					}
-				}
-
-				// Validate target
-				err = validateSpellTarget(gamestate, spell, userSpecifiedTarget, targetHandle)
+				target, err := findSpellTarget(gamestate, player, spell, userSpecifiedTarget, targetWords)
 				if err != nil {
 					*player.inbox <- err.Error()
 					return true
@@ -1724,8 +1716,7 @@ var MENU_WORLD = Menu {
 					actionType: ACTION_TYPE_CAST,
 					data: ActionCast {
 						spell: spell,
-						hasTarget: userSpecifiedTarget,
-						target: targetHandle,
+						target: target,
 					},
 				}
 
@@ -1735,13 +1726,10 @@ var MENU_WORLD = Menu {
 
 		"use": {
 			usage: "use <item> [on <target>]",
-			description: "Use an item. If you don't specify a target, the target is assumed to be yourself.",
+			description: "Use an item",
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
+				// Get item words and target words
 				itemWords, targetWords, userSpecifiedTarget := splitArgsBy(args, "on")
-
-				// For now, all consumables can only be used on "self"
-				// Spell scrolls can be used on others based on the spell's targeting rules
-
 				if len(itemWords) == 0 {
 					return false
 				}
@@ -1750,6 +1738,7 @@ var MENU_WORLD = Menu {
 					return false
 				}
 
+				// Find item
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 				itemIndex, err := fuzzyFindInventoryItem(&playerMob.Data.Inventory, "your inventory", itemWords)
 				if err != nil {
@@ -1757,36 +1746,38 @@ var MENU_WORLD = Menu {
 					return true
 				}
 
-				// Determine target
-				var targetHandle world.MobHandle
-				if userSpecifiedTarget {
-					var err error
-					targetHandle, err = fuzzyFindTarget(gamestate, player, targetWords)
-					if err != nil {
-						*player.inbox <- err.Error()
-						return true
-					}
-				} else {
-					targetHandle = player.mobHandle
-				}
-
-				// Check for item <-> target compatibility
+				// Get item data
 				item := &playerMob.Data.Inventory.Items[itemIndex]
 				itemData := world.ITEM_DATA[item.Id]
 
 				switch itemData.Kind {
 					case world.ITEM_KIND_CONSUMABLE:
+						// Determine target
+						var targetHandle world.MobHandle
+						if userSpecifiedTarget {
+							var err error
+							targetHandle, err = fuzzyFindTarget(gamestate, player, targetWords)
+							if err != nil {
+								*player.inbox <- err.Error()
+								return true
+							}
+						} else {
+							targetHandle = player.mobHandle
+						}
+
+						// Temporary, we might change later if we add "bombs" / other items that can be used on other people
 						if targetHandle != player.mobHandle {
 							*player.inbox <- "That item can only be used on yourself."
 							return true
 						}
-
 						player.nextAction = Action {
 							actionType: ACTION_TYPE_USE_ITEM,
 							data: ActionUseItem {
 								itemId: item.Id,
-								hasTarget: true,
-								target: targetHandle,
+								target: world.MobTarget {
+									Type: world.MOB_TARGET_MOB,
+									Value: targetHandle,
+								},
 							},
 						}
 
@@ -1794,7 +1785,8 @@ var MENU_WORLD = Menu {
 					case world.ITEM_KIND_SPELL_SCROLL:
 						scrollData := itemData.Data.(*world.ItemDataSpellScroll)
 
-						err := validateSpellTarget(gamestate, scrollData.Spell, userSpecifiedTarget, targetHandle)
+						// Find target
+						target, err := findSpellTarget(gamestate, player, scrollData.Spell, userSpecifiedTarget, targetWords)
 						if err != nil {
 							*player.inbox <- err.Error()
 							return true
@@ -1805,8 +1797,7 @@ var MENU_WORLD = Menu {
 							actionType: ACTION_TYPE_USE_ITEM,
 							data: ActionUseItem {
 								itemId: item.Id,
-								hasTarget: userSpecifiedTarget,
-								target: targetHandle,
+								target: target,
 							},
 						}
 
@@ -2156,44 +2147,64 @@ func printMobHp(player *Player, mob *world.Mob) {
 	*player.inbox <- fmt.Sprintf("MP: %d / %d", mob.Data.Mana, mob.Data.MaxMana())
 }
 
-func validateSpellTarget(gamestate *GameState, spell world.SpellId, userSpecifiedTarget bool, targetHandle world.MobHandle) error {
+func findSpellTarget(gamestate *GameState, player *Player, spell world.SpellId, userSpecifiedTarget bool, targetWords []string) (world.MobTarget, error) {
 	spellData := world.SPELL_DATA[spell]
+
 	switch spellData.Targets {
 		case world.SPELL_TARGET_NONE: {
 			if userSpecifiedTarget {
-				return fmt.Errorf("%s is not a single-target spell. You cannot cast it 'on' someone.", spellData.Name)
+				return world.MobTarget{}, fmt.Errorf("%s is not a single-target spell. You cannot cast it 'on' someone.", spellData.Name)
 			}
 		}
 
-		case world.SPELL_TARGET_ALLY: {
+		case world.SPELL_TARGET_ALLY, world.SPELL_TARGET_ENEMY: {
 			if !userSpecifiedTarget {
-				return fmt.Errorf("%s is a single-target spell. You must specify a target.", spellData.Name)
+				return world.MobTarget{}, fmt.Errorf("%s is a single-target spell. You must specify a target.", spellData.Name)
 			}
 
-			// Check ally target
+			targetHandle, err := fuzzyFindTarget(gamestate, player, targetWords)
+			if err != nil {
+				return world.MobTarget{}, err
+			}
+
 			targetMob := gamestate.world.Mobs.Get(targetHandle)
-			if targetMob.IsNpc() {
-				return fmt.Errorf("You can only cast that spell on players.")
-			}
-		}
-
-		case world.SPELL_TARGET_ENEMY: {
-			if !userSpecifiedTarget {
-				return fmt.Errorf("%s is a single-target spell. You must specify a target.", spellData.Name)
+			if spellData.Targets == world.SPELL_TARGET_ALLY && targetMob.IsNpc() {
+				return world.MobTarget{}, fmt.Errorf("You can only cast that spell on players.")
 			}
 
-			// Check against PvP
-			targetMob := gamestate.world.Mobs.Get(targetHandle)
-			if targetMob.IsPlayer() {
-				return fmt.Errorf("You cannot cast that spell against players.")
+			if spellData.Targets == world.SPELL_TARGET_ENEMY && targetMob.IsPlayer() {
+				return world.MobTarget{}, fmt.Errorf("You can only cast that spell on enemies.")
 			}
+
+			return world.MobTarget {
+				Type: world.MOB_TARGET_MOB,
+				Value: targetHandle,
+			}, nil
 		}
 
 		case world.SPELL_TARGET_ARGUMENT: {
-			// TODO
-			return fmt.Errorf("Oh no we haven't set this one up yet!")
+			if !userSpecifiedTarget || len(targetWords) == 0 {
+				return world.MobTarget{}, fmt.Errorf("You must specify an argument to cast that spell.")
+			}
+
+			// Validate the argument
+			argument := strings.ToLower(strings.Join(targetWords, " "))
+			err := spellData.ValidateArgument(gamestate.world, player.mobHandle, argument)
+			if err != nil {
+				return world.MobTarget{}, err
+			}
+
+			return world.MobTarget {
+				Type: world.MOB_TARGET_ARGUMENT,
+				Value: argument,
+			}, nil
+		}
+
+		default: {
+			panic("Spell target type not handled!")
 		}
 	}
 
-	return nil
+	// Unreachable
+	return world.MobTarget{}, nil
 }

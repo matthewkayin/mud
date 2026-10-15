@@ -33,6 +33,18 @@
               "Max": 100
             },
             "DropChancePercent": 100
+          },
+          {
+            "ItemId": "Scroll of Unlock",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 1
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 100
           }
         ]
       },
