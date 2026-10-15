@@ -96,7 +96,7 @@ Each folder under `backend/data/` holds one kind of data, and every `.lua` file 
 | 6 | `classes/` | `ClassData` | `loadClassData` (`character_class.go`) | spells, items |
 | 7 | `npcs/` | `NpcData` | `loadNpcData` (`npc_data.go`) | items |
 
-Recipes are loaded in two passes. `loadRecipeTables` registers recipe names first so that items can refer to them. `loadRecipeData` parses the rest of each recipe once items exist. Classes and NPCs load after items so they can refer to items. NPC scripts, their behavior hooks and their behavior params are described in [npcs.md](npcs.md).
+Spell scripts and their targets are described in [spells.md](spells.md). Recipes are loaded in two passes. `loadRecipeTables` registers recipe names first so that items can refer to them. `loadRecipeData` parses the rest of each recipe once items exist. Classes and NPCs load after items so they can refer to items. NPC scripts, their behavior hooks and their behavior params are described in [npcs.md](npcs.md).
 
 Each ID is the entry's position in load order, and files load in alphabetical order. Names must be unique within a kind, and the player-facing lookups (`RaceIdFromString` etc.) ignore case.
 
@@ -151,7 +151,7 @@ At the end of `scriptInit`, the global table gets a metatable whose `__newindex`
 
 ### Script errors
 
-When Go calls a script function (a spell's `on_hit`, an item's `on_use`, an NPC hook) and the script raises an error, the error is logged as a `Warn` along with Lua's stack traceback, e.g.
+When Go calls a script function (a spell's `on_cast`, an item's `on_use`, an NPC hook) and the script raises an error, the error is logged as a `Warn` along with Lua's stack traceback, e.g.
 
 ```
 Warn - NPC 'troll' update() failed: bad argument #1 (MobHandle expected)
@@ -166,7 +166,7 @@ Lua can't be re-entered while a `world` library function is running: lunar's `St
 
 ### Mob handles
 
-Scripts refer to mobs through `MobHandle` values, such as the `caster` and `target` arguments of a spell's `on_hit`. A handle is opaque userdata with no readable fields, so scripts read mob state through the `world.mob_get_*` functions, one per value (`mob_get_name`, `mob_get_room`, `mob_get_health`, `mob_get_max_health` etc.). `mob_get_stat(handle, stat)` takes a `world.Stat` value (`world.Stat.STR`), and `mob_get_equipment(handle, slot)` takes a `world.EquipmentSlot` value and returns the equipped item's name, or `nil` if the slot is empty. Handles compare with `==`, and `tostring` gives `MobHandle(<id>:<generation>)` for logging. NPC state is read and set through handles too, with the `npc_*` functions described in [NPC state](npcs.md#npc-state).
+Scripts refer to mobs through `MobHandle` values, such as the `caster` and `target` arguments of a spell's `on_cast`. A handle is opaque userdata with no readable fields, so scripts read mob state through the `world.mob_get_*` functions, one per value (`mob_get_name`, `mob_get_room`, `mob_get_health`, `mob_get_max_health` etc.). `mob_get_stat(handle, stat)` takes a `world.Stat` value (`world.Stat.STR`), and `mob_get_equipment(handle, slot)` takes a `world.EquipmentSlot` value and returns the equipped item's name, or `nil` if the slot is empty. Handles compare with `==`, and `tostring` gives `MobHandle(<id>:<generation>)` for logging. NPC state is read and set through handles too, with the `npc_*` functions described in [NPC state](npcs.md#npc-state).
 
 A handle can outlive its mob. Library functions that take a mob throw an error when given a handle to a mob that no longer exists, so a script holding onto a handle (for example in an NPC instance table) should check `world.mob_exists` before using it.
 
@@ -208,7 +208,7 @@ Scripts name conditions with the `world.ConditionType` table. Its keys are the c
 Durations are counted in world updates (ticks, `WORLD_SECONDS_PER_UPDATE` seconds each), so use `world.time_minutes` to convert from real time. Each `Mob.Update` lowers every finite duration by one and removes a condition once it reaches 0. Conditions with `CONDITION_DURATION_INFINITE` (-1) last until they are removed. These functions don't send any messages, so use `message_room` to tell players what happened. A spell that applies a condition typically looks like:
 
 ```lua
-function spell.on_hit(caster, target)
+function spell.on_cast(caster, target)
     local duration = world.mob_calc_magic_condition_duration(caster, world.time_minutes(1))
     world.mob_add_condition(target, world.ConditionType.BLESSING_OF_MIGHT, duration)
 end

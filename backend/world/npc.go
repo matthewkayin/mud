@@ -623,7 +623,7 @@ func (npc *Npc) update(world *World) {
 				}
 
 				// Found target, set to attack
-				npcMob.SetModeAttack(world, npc.mobHandle, targetHandle)
+				npcMob.SetModeAttack(world, targetHandle)
 				break
 			}
 

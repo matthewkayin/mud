@@ -50,6 +50,18 @@ const MOB_ALERTNESS_COOLDOWN_RATE float32 = 0.05
 const MOB_TAUNT_COOLDOWN_MAX float32 = 1.0
 const MOB_TAUNT_COOLDOWN_RATE float32 = 0.05
 
+type MobTargetType int
+const (
+	MOB_TARGET_NONE MobTargetType = iota
+	MOB_TARGET_MOB
+	MOB_TARGET_ARGUMENT
+)
+
+type MobTarget struct {
+	Type MobTargetType
+	Value any
+}
+
 type MobFlag uint32
 const (
 	MOB_FLAG_HIDDEN MobFlag = 1 << iota
@@ -72,11 +84,10 @@ type Mob struct {
 	Data MobData
 
 	Mode MobMode
-	Target MobHandle
+	Target MobTarget
 
 	flags MobFlag
 
-	hasTarget bool
 	castSpell SpellId
 	castTimer int32
 	useItemId ItemId
@@ -98,6 +109,10 @@ func MobInit(data *MobData) Mob {
 		PlayerCharacter: nil,
 		Data: *data,
 		Mode: MOB_MODE_IDLE,
+		Target: MobTarget {
+			Type: MOB_TARGET_NONE,
+			Value: nil,
+		},
 
 		escapeChance: MOB_ESCAPE_CHANCE_MAX,
 		fuzzyNumber: 1,
@@ -221,27 +236,30 @@ func (mob *Mob) GrantExperience(world *World, experience int32) {
 
 func (mob *Mob) SetModeIdle() {
 	mob.Mode = MOB_MODE_IDLE
-	mob.hasTarget = false
+	mob.Target = MobTarget {
+		Type: MOB_TARGET_NONE,
+		Value: nil,
+	}
 }
 
-func (mob *Mob) SetModeAttack(world *World, mobHandle MobHandle, targetHandle MobHandle) {
+func (mob *Mob) SetModeAttack(world *World, targetHandle MobHandle) {
 	mob.Mode = MOB_MODE_ATTACK
-	mob.Target = targetHandle
-	mob.hasTarget = true
+	mob.Target = MobTarget {
+		Type: MOB_TARGET_MOB,
+		Value: targetHandle,
+	}
 }
 
-func (mob *Mob) SetModeCast(world *World, mobHandle MobHandle, spell SpellId, hasTarget bool, targetHandle MobHandle) {
+func (mob *Mob) SetModeCast(world *World, mobHandle MobHandle, spell SpellId, target MobTarget) {
 	mob.Mode = MOB_MODE_CAST
-	mob.Target = targetHandle
-	mob.hasTarget = hasTarget
+	mob.Target = target
 	mob.castSpell = spell
 	mob.castTimer = SPELL_DATA[spell].CastTime
 }
 
-func (mob *Mob) SetModeUseItem(world *World, mobHandle MobHandle, itemId ItemId, hasTarget bool, targetHandle MobHandle) {
+func (mob *Mob) SetModeUseItem(world *World, mobHandle MobHandle, itemId ItemId, target MobTarget) {
 	mob.Mode = MOB_MODE_USE_ITEM
-	mob.Target = targetHandle
-	mob.hasTarget = hasTarget
+	mob.Target = target
 	mob.useItemId = itemId
 }
 
@@ -253,8 +271,10 @@ func (mob *Mob) SetModeCraftItem(world *World, mobHandle MobHandle, recipe Recip
 
 func (mob *Mob) SetModeTaunt(world *World, mobHandle MobHandle, targetHandle MobHandle) {
 	mob.Mode = MOB_MODE_TAUNT
-	mob.Target = targetHandle
-	mob.hasTarget = true
+	mob.Target = MobTarget {
+		Type: MOB_TARGET_MOB,
+		Value: targetHandle,
+	}
 }
 
 func (mob *Mob) Update(world *World) {
@@ -288,12 +308,13 @@ func (mob *Mob) Update(world *World) {
 
 		case MOB_MODE_ATTACK: {
 			// Check if target exists
-			targetMob, targetExists := mob.getTargetIfExists(world)
-			if !targetExists {
+			if mob.isTargetInvalid(world) {
+				mob.SetModeIdle()
 				break
 			}
 
 			// Attack with weapon
+			targetMob := mob.getTargetMob(world)
 			mob.attackTargetWithWeapon(world, targetMob, EQUIPMENT_SLOT_MAIN_HAND)
 			mob.attackTargetWithWeapon(world, targetMob, EQUIPMENT_SLOT_OFF_HAND)
 
@@ -304,17 +325,15 @@ func (mob *Mob) Update(world *World) {
 
 		case MOB_MODE_CAST: {
 			// Check if target exists
-			if mob.hasTarget {
-				_, targetExists := mob.getTargetIfExists(world)
-				if !targetExists {
-					break
-				}
+			if mob.isTargetInvalid(world) {
+				mob.SetModeIdle()
+				break
 			}
 
 			// Check if caster has enough mana
 			spellData := SPELL_DATA[mob.castSpell]
 			if mob.Data.Mana < spellData.ManaCost {
-				mob.Mode = MOB_MODE_IDLE
+				mob.SetModeIdle()
 				world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> tried to cast <g>%s</g>, but they don't have enough mana.", mob.GetName(), spellData.Name))
 				break
 			}
@@ -327,17 +346,25 @@ func (mob *Mob) Update(world *World) {
 			}
 
 			// Cast spell
-			mob.spellcast(world, false)
-			mob.Mode = MOB_MODE_IDLE
+			world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> cast <g>%s</g>!", mob.GetName(), spellData.Name))
+			success := mob.spellcast(world)
+			if success {
+				mob.Data.Mana -= spellData.ManaCost
+
+				// Progress spell mastery
+				if mob.IsPlayer() {
+					mob.progressPlayerSpellMastery(world, mob.castSpell)
+				}
+			}
+
+			mob.SetModeIdle()
 		}
 
 		case MOB_MODE_USE_ITEM: {
 			// Check if target exists
-			if mob.hasTarget {
-				_, targetExists := mob.getTargetIfExists(world)
-				if !targetExists {
-					break
-				}
+			if mob.isTargetInvalid(world) {
+				mob.SetModeIdle()
+				break
 			}
 
 			// Use item
@@ -367,15 +394,16 @@ func (mob *Mob) Update(world *World) {
 
 		case MOB_MODE_TAUNT: {
 			// Check if target exists
-			targetMob, targetExists := mob.getTargetIfExists(world)
-			if !targetExists {
+			if mob.isTargetInvalid(world) {
+				mob.SetModeIdle()
 				break
 			}
 
+			targetMob := mob.getTargetMob(world)
 			world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> taunted <y>%s</y>!", mob.Data.Name, targetMob.Data.Name))
 			success := mob.rollForTaunt(targetMob)
 			if success {
-				targetMob.SetModeAttack(world, mob.Target, mob.Handle)
+				targetMob.SetModeAttack(world, mob.Handle)
 				if targetMob.IsNpc() {
 					targetMob.Npc.disposition = NPC_DISPOSITION_HOSTILE
 				}
@@ -399,20 +427,24 @@ func (mob *Mob) IsPlayer() bool {
 	return mob.PlayerCharacter != nil
 }
 
-func (mob *Mob) getTargetIfExists(world *World) (*Mob, bool) {
-	targetMob, targetExists := world.Mobs.GetIfExists(mob.Target)
-	targetIsInvalid :=
-		!targetExists ||
-		targetMob.IsDead() ||
-		targetMob.Data.Room != mob.Data.Room ||
-		targetMob.CheckFlag(MOB_FLAG_HIDDEN)
+func (mob *Mob) isTargetInvalid(world *World) bool {
+	if mob.Target.Type == MOB_TARGET_MOB {
+		targetHandle := mob.Target.Value.(MobHandle)
+		targetMob, targetExists := world.Mobs.GetIfExists(targetHandle)
 
-	if targetIsInvalid {
-		mob.SetModeIdle()
-		return nil, false
+		return !targetExists ||
+			targetMob.IsDead() ||
+			targetMob.Data.Room != mob.Data.Room ||
+			targetMob.CheckFlag(MOB_FLAG_HIDDEN)
 	}
 
-	return targetMob, true
+	return false
+}
+
+// Returns target mob, assumes that the mob exists
+func (mob *Mob) getTargetMob(world *World) *Mob {
+	handle := mob.Target.Value.(MobHandle)
+	return world.Mobs.Get(handle)
 }
 
 func (mob *Mob) damage(world *World, attackerHandle MobHandle, damage int32) {
@@ -671,13 +703,21 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 	}
 }
 
-func (mob *Mob) spellcast(world *World, fromSpellScroll bool) {
+func (mob *Mob) spellcast(world *World) bool {
 	spellData := SPELL_DATA[mob.castSpell]
 
-	// Cast spell
-	world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> cast <g>%s</g>!", mob.GetName(), spellData.Name))
-	if !fromSpellScroll {
-		mob.Data.Mana -= spellData.ManaCost
+	// Update mob status
+	mob.alertness = MOB_ALERTNESS_MAX
+	mob.SetFlag(MOB_FLAG_HIDDEN, false)
+
+	// Double-check spell target validation before we cast
+	if spellData.Targets == SPELL_TARGET_ARGUMENT {
+		argument := mob.Target.Value.(string)
+		err := spellData.ValidateArgument(world, mob.Handle, argument)
+		if err != nil {
+			world.messageRoom(mob.Data.Room, "But it failed!")
+			return false
+		}
 	}
 
 	// Build cast arguments array
@@ -687,7 +727,7 @@ func (mob *Mob) spellcast(world *World, fromSpellScroll bool) {
 	casterLuaHandle, err := world.getMobLuaHandle(mob.Handle)
 	if err != nil {
 		log.Print(err.Error())
-		return
+		return false
 	}
 	castArgs = append(castArgs, casterLuaHandle)
 
@@ -696,32 +736,30 @@ func (mob *Mob) spellcast(world *World, fromSpellScroll bool) {
 		case SPELL_TARGET_NONE: {}
 
 		case SPELL_TARGET_ALLY, SPELL_TARGET_ENEMY: {
-			targetMob := world.Mobs.Get(mob.Target)
+			targetMob := mob.getTargetMob(world)
 			targetLuaHandle, err := world.getMobLuaHandle(targetMob.Handle)
 			if err != nil {
 				log.Print(err.Error())
-				return
+				return false
 			}
 
 			castArgs = append(castArgs, targetLuaHandle)
 		}
 
-		case SPELL_TARGET_ARGUMENT: {}
+		case SPELL_TARGET_ARGUMENT: {
+			argument := mob.Target.Value.(string)
+			castArgs = append(castArgs, lua.String(argument))
+		}
 	}
-
-	// Update status
-	mob.alertness = MOB_ALERTNESS_MAX
-	mob.SetFlag(MOB_FLAG_HIDDEN, false)
 
 	// Call spell on_cast
 	_, ok := world.scriptCall(spellData.OnCast.Value(), fmt.Sprintf("spell '%s' on_cast()", spellData.Name), castArgs...)
 	if !ok {
-		return
+		world.messageRoom(mob.Data.Room, "But it failed!")
+		return false
 	}
 
-	if mob.IsPlayer() && !fromSpellScroll {
-		mob.progressPlayerSpellMastery(world, mob.castSpell)
-	}
+	return true
 }
 
 func (mob *Mob) calculateMagicDamage(baseDamage int32, target *Mob) int32 {
@@ -831,7 +869,7 @@ func (mob *Mob) useItem(world *World) {
 	switch itemData.Kind {
 		case ITEM_KIND_CONSUMABLE: {
 			consumableData := itemData.Data.(*ItemDataConsumable)
-			targetMob := world.Mobs.Get(mob.Target)
+			targetMob := mob.getTargetMob(world)
 			luaHandle, err := world.getMobLuaHandle(targetMob.Handle)
 			if err != nil {
 				log.Print(err.Error())
@@ -843,7 +881,11 @@ func (mob *Mob) useItem(world *World) {
 			scrollData := itemData.Data.(*ItemDataSpellScroll)
 
 			mob.castSpell = scrollData.Spell
-			mob.spellcast(world, true)
+			success := mob.spellcast(world)
+			if !success {
+				// Add the item back to their inventory
+				mob.Data.Inventory.AddItem(item)
+			}
 		}
 		default:
 			panic(fmt.Sprintf("Unhandled item type %s. This item type should never have been allowed to be used here.", itemData.Kind.String()))
