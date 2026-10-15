@@ -218,7 +218,7 @@ var MENU_WORLD = Menu {
 					// Item type specific description
 					switch itemData.Kind {
 						case world.ITEM_KIND_EQUIPMENT_OUTFIT: {
-							outfitData := itemData.Data.(*world.ItemDataOutfit)
+							outfitData := itemData.Data.(*world.ItemDataArmor)
 							*player.inbox <- fmt.Sprintf("Armor: %d", outfitData.Armor)
 							*player.inbox <- fmt.Sprintf("Stealth Penalty: %d%%", int(outfitData.StealthPenalty * 100))
 						}
@@ -942,15 +942,15 @@ var MENU_WORLD = Menu {
 						"HP", fmt.Sprintf("%d / %d", playerMob.Data.Health, playerMob.Data.MaxHealth()),
 						"MP", fmt.Sprintf("%d / %d", playerMob.Data.Mana, playerMob.Data.MaxMana()),
 					},
+					{
+						"Armor", fmt.Sprintf("%d", playerMob.Data.Armor()),
+						"Stealth Penalty", fmt.Sprintf("%.2f", playerMob.GetStealthPenalty()),
+					},
 				}
 
 				statBonuses := &playerMob.Data.Equipment.StatBonuses
 				statRows := make([]string, 0, 4 * world.STAT_COUNT)
-				//TEMPORARY -- display armor
-				statRows = append(statRows, "Armor")
-				statRows = append(statRows, "0")
-				statRows = append(statRows, fmt.Sprintf("    %d", playerMob.Data.Armor()))
-				statRows = append(statRows, fmt.Sprintf("%d", playerMob.Data.Armor()))
+
 				for index := range world.STAT_COUNT {
 					statRows = append(statRows, world.STAT_DATA[index].Name)
 					statRows = append(statRows, strconv.Itoa(int(playerMob.Data.Stats.Values[index])))

@@ -162,12 +162,12 @@ func (mobData *MobData) Armor() int32 {
 
 	if outfit != nil {
 		itemData := ITEM_DATA[outfit.Id]
-		outfitArmorVal = itemData.Data.(*ItemDataOutfit).Armor
+		outfitArmorVal = itemData.Data.(*ItemDataArmor).Armor
 	}
 
 	if shield != nil {
 		itemData := ITEM_DATA[shield.Id]
-		shieldArmorVal = itemData.Data.(*ItemDataShield).Armor
+		shieldArmorVal = itemData.Data.(*ItemDataArmor).Armor
 	}
 
 	return outfitArmorVal + shieldArmorVal

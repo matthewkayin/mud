@@ -84,15 +84,7 @@ type ItemDataWeapon struct {
 	StatRequirements StatBlock
 }
 
-type ItemDataShield struct {
-	Armor int32
-	MaxDurability int32
-	StealthPenalty float32
-	StatBonuses StatBlock
-	StatRequirements StatBlock
-}
-
-type ItemDataOutfit struct {
+type ItemDataArmor struct {
 	Armor int32
 	MaxDurability int32
 	StealthPenalty float32
@@ -212,7 +204,7 @@ func (parser *ScriptParser) parseItemData(table *lua.Table) *ItemData {
 		}
 
 		case ITEM_KIND_EQUIPMENT_SHIELD: {
-			data := &ItemDataShield{}
+			data := &ItemDataArmor{}
 			data.Armor = parser.getInt32(table, "armor")
 			data.MaxDurability = parser.getInt32(table, "max_durability")
 			data.StealthPenalty = parser.getFloat32(table, "stealth_penalty")
@@ -222,7 +214,7 @@ func (parser *ScriptParser) parseItemData(table *lua.Table) *ItemData {
 		}
 
 		case ITEM_KIND_EQUIPMENT_OUTFIT: {
-			data := &ItemDataOutfit{}
+			data := &ItemDataArmor{}
 			data.Armor = parser.getInt32(table, "armor")
 			data.MaxDurability = parser.getInt32(table, "max_durability")
 			data.StealthPenalty = parser.getFloat32(table, "stealth_penalty")
@@ -378,8 +370,8 @@ func (item *Item) GetStatBonuses() *StatBlock {
 		case ITEM_KIND_EQUIPMENT_ONE_HANDED, ITEM_KIND_EQUIPMENT_TWO_HANDED:
 			weaponData := itemData.Data.(*ItemDataWeapon)
 			return &weaponData.StatBonuses
-		case ITEM_KIND_EQUIPMENT_OUTFIT:
-			outfitData := itemData.Data.(*ItemDataOutfit)
+		case ITEM_KIND_EQUIPMENT_OUTFIT, ITEM_KIND_EQUIPMENT_SHIELD:
+			outfitData := itemData.Data.(*ItemDataArmor)
 			return &outfitData.StatBonuses
 		case ITEM_KIND_EQUIPMENT_ACCESSORY:
 			accessoryData := itemData.Data.(*ItemDataAccessory)
@@ -395,11 +387,8 @@ func (item *Item) GetStatRequirements() *StatBlock {
 		case ITEM_KIND_EQUIPMENT_ONE_HANDED, ITEM_KIND_EQUIPMENT_TWO_HANDED:
 			weaponData := itemData.Data.(*ItemDataWeapon)
 			return &weaponData.StatRequirements
-		case ITEM_KIND_EQUIPMENT_SHIELD:
-			shieldData := itemData.Data.(*ItemDataShield)
-			return &shieldData.StatRequirements
-		case ITEM_KIND_EQUIPMENT_OUTFIT:
-			outfitData := itemData.Data.(*ItemDataOutfit)
+		case ITEM_KIND_EQUIPMENT_OUTFIT, ITEM_KIND_EQUIPMENT_SHIELD:
+			outfitData := itemData.Data.(*ItemDataArmor)
 			return &outfitData.StatRequirements
 		case ITEM_KIND_EQUIPMENT_ACCESSORY:
 			accessoryData := itemData.Data.(*ItemDataAccessory)
@@ -446,8 +435,8 @@ func (itemData *ItemData) GetMaxDurability() int32 {
 		case ITEM_KIND_EQUIPMENT_ONE_HANDED, ITEM_KIND_EQUIPMENT_TWO_HANDED:
 			weaponData := itemData.Data.(*ItemDataWeapon)
 			return weaponData.MaxDurability
-		case ITEM_KIND_EQUIPMENT_OUTFIT:
-			outfitData := itemData.Data.(*ItemDataOutfit)
+		case ITEM_KIND_EQUIPMENT_OUTFIT, ITEM_KIND_EQUIPMENT_SHIELD:
+			outfitData := itemData.Data.(*ItemDataArmor)
 			return outfitData.MaxDurability
 		case ITEM_KIND_EQUIPMENT_SPELLBOOK:
 			spellbookData := itemData.Data.(*ItemDataSpellbook)
