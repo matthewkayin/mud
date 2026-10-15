@@ -601,7 +601,7 @@ func (mob *Mob) RollForStealth(world *World) bool {
 	outfit := mob.Data.Equipment.Get(EQUIPMENT_SLOT_OUTFIT)
 	if outfit != nil {
 		outfitData := ITEM_DATA[outfit.Id].Data.(*ItemDataOutfit)
-		armorStealthPenalty = outfitData.StealthPenality
+		armorStealthPenalty = outfitData.StealthPenalty
 	}
 
 	// Roll to hide

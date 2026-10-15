@@ -220,7 +220,7 @@ var MENU_WORLD = Menu {
 						case world.ITEM_KIND_EQUIPMENT_OUTFIT: {
 							outfitData := itemData.Data.(*world.ItemDataOutfit)
 							*player.inbox <- fmt.Sprintf("Armor: %d", outfitData.Armor)
-							*player.inbox <- fmt.Sprintf("Stealth Penalty: %d%%", int(outfitData.StealthPenality * 100))
+							*player.inbox <- fmt.Sprintf("Stealth Penalty: %d%%", int(outfitData.StealthPenalty * 100))
 						}
 						case world.ITEM_KIND_EQUIPMENT_ONE_HANDED, world.ITEM_KIND_EQUIPMENT_TWO_HANDED: {
 							weaponData := itemData.Data.(*world.ItemDataWeapon)
@@ -946,12 +946,18 @@ var MENU_WORLD = Menu {
 
 				statBonuses := &playerMob.Data.Equipment.StatBonuses
 				statRows := make([]string, 0, 4 * world.STAT_COUNT)
+				//TEMPORARY -- display armor
+				statRows = append(statRows, "Armor")
+				statRows = append(statRows, "0")
+				statRows = append(statRows, fmt.Sprintf("    %d", playerMob.Data.Armor()))
+				statRows = append(statRows, fmt.Sprintf("%d", playerMob.Data.Armor()))
 				for index := range world.STAT_COUNT {
 					statRows = append(statRows, world.STAT_DATA[index].Name)
 					statRows = append(statRows, strconv.Itoa(int(playerMob.Data.Stats.Values[index])))
 					statRows = append(statRows, statModifierStr(statBonuses.Values[index]))
 					statRows = append(statRows, strconv.Itoa(int(playerMob.Data.GetStat(index))))
 				}
+
 				printSheetTable(player, playerMob.Data.Name, sections, []string{"Stat", "Base", "Equipment", "Total"}, statRows)
 
 				abilities := playerMob.Data.GetAbilityList()
