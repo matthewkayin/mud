@@ -538,9 +538,18 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 
 	// Reduce weapon durability
 	mob.subtractDurabilityFromEquipment(world, slot)
+	// and from defender's weapon or armor
 	if !targetMob.IsDead() {
-		targetMob.subtractDurabilityFromEquipment(world, EQUIPMENT_SLOT_OUTFIT)
-		// TODO: shield durability gets subtracted here as well
+		shieldDurabilityLoss := false
+		if targetMob.Data.Equipment.IsShieldEquipped() && rand.IntN(2) == 1 {
+			targetMob.subtractDurabilityFromEquipment(world, EQUIPMENT_SLOT_OFF_HAND)
+			shieldDurabilityLoss = true
+		}
+
+		if shieldDurabilityLoss == false {
+			targetMob.subtractDurabilityFromEquipment(world, EQUIPMENT_SLOT_OUTFIT)
+		}
+
 	}
 }
 
@@ -619,13 +628,7 @@ func (mob *Mob) RollForStealth(world *World) bool {
 
 	// TODO: Room Brightness modifier
 
-	// Determine armor stealth penalty
-	var armorStealthPenalty float32 = 0.0
-	outfit := mob.Data.Equipment.Get(EQUIPMENT_SLOT_OUTFIT)
-	if outfit != nil {
-		outfitData := ITEM_DATA[outfit.Id].Data.(*ItemDataOutfit)
-		armorStealthPenalty = outfitData.StealthPenality
-	}
+	armorStealthPenalty := mob.GetStealthPenalty()
 
 	// Roll to hide
 	mobAgility := float32(mob.Data.Agility())
@@ -948,6 +951,23 @@ func (mob *Mob) CraftItem(world *World, recipe RecipeId) bool {
 		world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You crafted <g>%s</g>.", recipeOutput.GetNameWithAmount()))
 	}
 	return true
+}
+
+func (mob *Mob) GetStealthPenalty() float32 {
+		var armorStealthPenalty float32 = 0.0
+		outfit := mob.Data.Equipment.Get(EQUIPMENT_SLOT_OUTFIT)
+		if outfit != nil {
+			outfitData := ITEM_DATA[outfit.Id].Data.(*ItemDataArmor)
+			armorStealthPenalty += outfitData.StealthPenalty
+		}
+
+		if mob.Data.Equipment.IsShieldEquipped() {
+			shield := mob.Data.Equipment.Get(EQUIPMENT_SLOT_OFF_HAND)
+			shieldData := ITEM_DATA[shield.Id].Data.(*ItemDataArmor)
+			armorStealthPenalty += shieldData.StealthPenalty
+		}
+
+		return armorStealthPenalty
 }
 
 func (mob *Mob) Reveal(world *World) {

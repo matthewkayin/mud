@@ -59,6 +59,7 @@ const (
 	ITEM_KIND_CONSUMABLE = iota
 	ITEM_KIND_EQUIPMENT_ONE_HANDED
 	ITEM_KIND_EQUIPMENT_TWO_HANDED
+	ITEM_KIND_EQUIPMENT_SHIELD
 	ITEM_KIND_EQUIPMENT_OUTFIT
 	ITEM_KIND_EQUIPMENT_ACCESSORY
 	ITEM_KIND_EQUIPMENT_SPELLBOOK
@@ -83,10 +84,10 @@ type ItemDataWeapon struct {
 	StatRequirements StatBlock
 }
 
-type ItemDataOutfit struct {
+type ItemDataArmor struct {
 	Armor int32
 	MaxDurability int32
-	StealthPenality float32
+	StealthPenalty float32
 	StatBonuses StatBlock
 	StatRequirements StatBlock
 }
@@ -202,11 +203,21 @@ func (parser *ScriptParser) parseItemData(table *lua.Table) *ItemData {
 			itemData.Data = data
 		}
 
-		case ITEM_KIND_EQUIPMENT_OUTFIT: {
-			data := &ItemDataOutfit{}
+		case ITEM_KIND_EQUIPMENT_SHIELD: {
+			data := &ItemDataArmor{}
 			data.Armor = parser.getInt32(table, "armor")
 			data.MaxDurability = parser.getInt32(table, "max_durability")
-			data.StealthPenality = parser.getFloat32(table, "stealth_penalty")
+			data.StealthPenalty = parser.getFloat32(table, "stealth_penalty")
+			data.StatBonuses = parser.getStatBlock(table, "stat_bonuses", false)
+			data.StatRequirements = parser.getStatBlock(table, "stat_requirements", false)
+			itemData.Data = data
+		}
+
+		case ITEM_KIND_EQUIPMENT_OUTFIT: {
+			data := &ItemDataArmor{}
+			data.Armor = parser.getInt32(table, "armor")
+			data.MaxDurability = parser.getInt32(table, "max_durability")
+			data.StealthPenalty = parser.getFloat32(table, "stealth_penalty")
 			data.StatBonuses = parser.getStatBlock(table, "stat_bonuses", false)
 			data.StatRequirements = parser.getStatBlock(table, "stat_requirements", false)
 			itemData.Data = data
@@ -285,6 +296,10 @@ func (itemData *ItemData) ItemIsOneHanded() bool {
 		itemData.Kind == ITEM_KIND_EQUIPMENT_SPELLBOOK
 }
 
+func (itemData *ItemData) ItemIsShield() bool {
+	return itemData.Kind == ITEM_KIND_EQUIPMENT_SHIELD
+}
+
 func (itemData *ItemData) ItemCanStack() bool {
 	return itemData.Kind == ITEM_KIND_CONSUMABLE ||
 		itemData.Kind == ITEM_KIND_SPELL_SCROLL ||
@@ -299,6 +314,8 @@ func itemKindToScriptEnum(kind ItemKind) string {
 			return "EQUIPMENT_ONE_HANDED"
 		case ITEM_KIND_EQUIPMENT_TWO_HANDED:
 			return "EQUIPMENT_TWO_HANDED"
+		case ITEM_KIND_EQUIPMENT_SHIELD:
+			return "EQUIPMENT_SHIELD"
 		case ITEM_KIND_EQUIPMENT_OUTFIT:
 			return "EQUIPMENT_OUTFIT"
 		case ITEM_KIND_EQUIPMENT_ACCESSORY:
@@ -324,6 +341,8 @@ func (kind ItemKind) String() string {
 			return "One-Handed Weapon"
 		case ITEM_KIND_EQUIPMENT_TWO_HANDED:
 			return "Two-handed Weapon"
+		case ITEM_KIND_EQUIPMENT_SHIELD:
+			return "Shield"
 		case ITEM_KIND_EQUIPMENT_OUTFIT:
 			return "Outfit"
 		case ITEM_KIND_EQUIPMENT_ACCESSORY:
@@ -351,8 +370,8 @@ func (item *Item) GetStatBonuses() *StatBlock {
 		case ITEM_KIND_EQUIPMENT_ONE_HANDED, ITEM_KIND_EQUIPMENT_TWO_HANDED:
 			weaponData := itemData.Data.(*ItemDataWeapon)
 			return &weaponData.StatBonuses
-		case ITEM_KIND_EQUIPMENT_OUTFIT:
-			outfitData := itemData.Data.(*ItemDataOutfit)
+		case ITEM_KIND_EQUIPMENT_OUTFIT, ITEM_KIND_EQUIPMENT_SHIELD:
+			outfitData := itemData.Data.(*ItemDataArmor)
 			return &outfitData.StatBonuses
 		case ITEM_KIND_EQUIPMENT_ACCESSORY:
 			accessoryData := itemData.Data.(*ItemDataAccessory)
@@ -368,8 +387,8 @@ func (item *Item) GetStatRequirements() *StatBlock {
 		case ITEM_KIND_EQUIPMENT_ONE_HANDED, ITEM_KIND_EQUIPMENT_TWO_HANDED:
 			weaponData := itemData.Data.(*ItemDataWeapon)
 			return &weaponData.StatRequirements
-		case ITEM_KIND_EQUIPMENT_OUTFIT:
-			outfitData := itemData.Data.(*ItemDataOutfit)
+		case ITEM_KIND_EQUIPMENT_OUTFIT, ITEM_KIND_EQUIPMENT_SHIELD:
+			outfitData := itemData.Data.(*ItemDataArmor)
 			return &outfitData.StatRequirements
 		case ITEM_KIND_EQUIPMENT_ACCESSORY:
 			accessoryData := itemData.Data.(*ItemDataAccessory)
@@ -416,8 +435,8 @@ func (itemData *ItemData) GetMaxDurability() int32 {
 		case ITEM_KIND_EQUIPMENT_ONE_HANDED, ITEM_KIND_EQUIPMENT_TWO_HANDED:
 			weaponData := itemData.Data.(*ItemDataWeapon)
 			return weaponData.MaxDurability
-		case ITEM_KIND_EQUIPMENT_OUTFIT:
-			outfitData := itemData.Data.(*ItemDataOutfit)
+		case ITEM_KIND_EQUIPMENT_OUTFIT, ITEM_KIND_EQUIPMENT_SHIELD:
+			outfitData := itemData.Data.(*ItemDataArmor)
 			return outfitData.MaxDurability
 		case ITEM_KIND_EQUIPMENT_SPELLBOOK:
 			spellbookData := itemData.Data.(*ItemDataSpellbook)

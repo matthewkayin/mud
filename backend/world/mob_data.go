@@ -156,13 +156,21 @@ func (mobData *MobData) MaxMana() int32 {
 
 func (mobData *MobData) Armor() int32 {
 	outfit := mobData.Equipment.Get(EQUIPMENT_SLOT_OUTFIT)
-	if outfit == nil {
-		return 0
+	shield := mobData.Equipment.Get(EQUIPMENT_SLOT_OFF_HAND)
+	var outfitArmorVal int32 = 0
+	var shieldArmorVal int32 = 0
+
+	if outfit != nil {
+		itemData := ITEM_DATA[outfit.Id]
+		outfitArmorVal = itemData.Data.(*ItemDataArmor).Armor
 	}
 
-	itemData := ITEM_DATA[outfit.Id]
-	outfitData := itemData.Data.(*ItemDataOutfit)
-	return outfitData.Armor
+	if shield != nil {
+		itemData := ITEM_DATA[shield.Id]
+		shieldArmorVal = itemData.Data.(*ItemDataArmor).Armor
+	}
+
+	return outfitArmorVal + shieldArmorVal
 }
 
 func (mobData *MobData) GetStat(index int) int32 {
