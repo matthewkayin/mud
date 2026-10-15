@@ -1,7 +1,7 @@
 local spell = {}
 
 spell.name = "Blessing of Might"
-spell.description = "Grants increased power to you and your allies for a brief time"
+spell.description = "Grants increased power to you and your allies"
 spell.casts_to_learn = 1
 
 spell.mana_cost = 5

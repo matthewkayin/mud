@@ -39,7 +39,7 @@ function spell.on_cast(caster, argument)
     local room = world.mob_get_room(caster)
     local caster_name = world.mob_get_name(caster)
     world.room_set_exit_locked(room, argument, false)
-    world.message_room(room, string.format("<y>%s</y> unlocked the %s exit with magic!", caster_name, argument))
+    world.message_room(room, string.format("<y>%s</y> unlocked the %s exit!", caster_name, argument))
 end
 
 return spell

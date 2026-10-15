@@ -109,3 +109,87 @@ Each tick, `Mob.Update` calls `isTargetInvalid` before acting on a target. A `MO
 Check `Target.Type` before type-asserting `Target.Value`. `getTargetMob` assumes a valid `MOB_TARGET_MOB` target, so call it only after `isTargetInvalid` returns `false` for one.
 
 To add a target type, add a `MOB_TARGET_*` constant, handle it in `isTargetInvalid`, and handle it wherever `Target.Value` is read for the modes that can use it (`spellcast`, `useItem`, the `stop` command).
+
+## Spell List - List and requirements for each spell
+
+Each entry in this list contains the spell's Type, Description, and Behavior. Below are some details about eaech property.
+
+*Type* - Indicates if a spell is a Class spells or Learned spell. If a spell is a Learned spell, you should create a Spellbook and Spell Scroll item for the spell. If it is a Class spell, you should not create a Spellbook or Spell Scroll item for the spell. Spellbooks should always be called "Spellbook of <Spell Name>". Scrolls should always be called "Scroll of <Spell Name>".
+
+*Targets* - Describes the SpellTarget
+
+*Description* - Provides brief flavor description of the spell. Use this as the Spell's description field.
+
+*Behavior* - Describes the spell's behavior including messages and edge cases.
+
+*Notes* - Any additional implementation notes which you may want to keep in mind when implementing the spell.
+
+Entries in this list do not describe the spell's casts_to_learn, mana_cost, cast_time, or damage value. For these fields, choose reasonable values and don't think about it too much. These values can be changed later. You main focus should be on implementing the spell and its behavior.
+
+All spell damages and healing amounts should scale with the caster's FTH using provided Lua API functions (script_library.go) unless stated otherwise in the spell description.
+
+### Firebolt
+
+Type: Learned Spell
+Targets: Enemy 
+Description: Casts a bolt of fire toward the target.
+Behavior: Deals damage to the target and messages the room: "<target> took X damage from the firebolt." on hit. If the target died, also messages: "<target> as burnt to a crisp."
+
+### Cure
+
+Type: Learned Spell
+Targets: Ally
+Description: Heal the target with holy magic
+Behavior: Heals the target and messages the room: "<target> regained X HP." The spell does not heal beyond max health. If the amount healed is 0, the message is still sent.
+
+### Unlock
+
+Type: Learned Spell
+Targets: Argument
+Description: Unlocks a physical or magical lock
+Behavior: The argument is a direction. Validates that the direction is valid and that the exit in the specified direction is locked. Unlocks the exit and says "<caster> unlocked the %s exit!"
+
+### Blessing of Might
+
+Type: Class Spell
+Targets: None
+Description: Grants increased power to you and your allies
+Behavior: Provides an increased damage buff to all allies in the room (including the caster) for 1 minute (scaling).
+
+### Purify
+
+Type: Class Spell
+Targets: Ally
+Description: Cures a target of their ailments
+Behavior: Removes malicious conditions from the target. For each condition removed, messages the room "<target> was cured of <condition>"! If the target has no conditions to cure, it should simply message "It had no effect"
+Notes: To implement this, you will need to make engine changes. Add a bool property on ConditionData that marks each condition as isAilment true/false. Then add scripts to the API to query mob conditions. These functions should be `mob_get_condition_count(mob)`, `mob_get_condition_name(mob, index)`, `mob_condition_is_ailment(mob, index)`.
+
+### Mage Weapon
+
+Type: Learned Spell
+Targets: None
+Description: Imbunes your attacks with arcane strength
+Behavior: Adds a buff to the caster which increases their attack damage. Can only be cast on self. Damage increase should be a percentage similar to blessing of might's percentage, but it should be a different buff from blessing of might to allow stacking of these two buffs side-by-side. Sends no room message.
+
+### Mage Armor
+
+Type: Learned Spell
+Targets: None
+Description: Shield yourself with arcane protection
+Behavior: Adds a buff to the caster which increases their defense damage. Can only be cast on self. Defense increase should be a percentage similar to blessing of might's percentage. Sends no room message.
+
+### Invisibility
+
+Type: Learned Spell
+Targets: Ally
+Description: Turn yourself invisible
+Behavior: Sets the target invisible by adding an INVISIBLE condition which lasts 1 minute (scaled). Invisible targets remain hidden without needing a stealth check. Performing actions while invisible does not remove the invisibility. Messages the room: "<target> disappeared from sight!"
+Notes: To implement, you will need to add a new getting to check if the Mob isHidden() which checks both for the invisibility condition and the hidden flag.
+
+### Chain Lightning
+
+Type: Learned Spell
+Targets: None
+Description: Casts a chain of lightning against all targets in the room
+Behavior: Does damage to each enemy in the room. Messages the room: "Lightning sparks from <caster>'s fingertips!". Messages the room "<target> took X damage from the lightning!". If a target dies, messages: "<target> has been reduced to a pile of ash!". This spell can still be cast when there are no enemies in the room, it just won't do anything.
+Notes: It can be assumed for now that NPCs are enemies, as friendly NPCs only exist in safe zones.
