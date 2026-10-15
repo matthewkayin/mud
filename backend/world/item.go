@@ -59,6 +59,7 @@ const (
 	ITEM_KIND_CONSUMABLE = iota
 	ITEM_KIND_EQUIPMENT_ONE_HANDED
 	ITEM_KIND_EQUIPMENT_TWO_HANDED
+	ITEM_KIND_EQUIPMENT_SHIELD
 	ITEM_KIND_EQUIPMENT_OUTFIT
 	ITEM_KIND_EQUIPMENT_ACCESSORY
 	ITEM_KIND_EQUIPMENT_SPELLBOOK
@@ -79,6 +80,14 @@ type ItemDataSpellScroll struct {
 type ItemDataWeapon struct {
 	Damage int32
 	MaxDurability int32
+	StatBonuses StatBlock
+	StatRequirements StatBlock
+}
+
+type ItemDataShield struct {
+	Armor int32
+	MaxDurability int32
+	StealthPenalty float32
 	StatBonuses StatBlock
 	StatRequirements StatBlock
 }

@@ -506,9 +506,18 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 
 	// Reduce weapon durability
 	mob.subtractDurabilityFromEquipment(world, slot)
+	// and from defender's weapon or armor
 	if !targetMob.IsDead() {
-		targetMob.subtractDurabilityFromEquipment(world, EQUIPMENT_SLOT_OUTFIT)
-		// TODO: shield durability gets subtracted here as well
+		shieldDurabilityLoss := false
+		if targetMob.Data.Equipment.IsShieldEquipped() && rand.IntN(2) == 1 {
+			targetMob.subtractDurabilityFromEquipment(world, EQUIPMENT_SLOT_OFF_HAND)
+			shieldDurabilityLoss = true
+		}
+
+		if shieldDurabilityLoss == false {
+			targetMob.subtractDurabilityFromEquipment(world, EQUIPMENT_SLOT_OUTFIT)
+		}
+
 	}
 }
 

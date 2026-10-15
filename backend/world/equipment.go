@@ -29,6 +29,8 @@ func ItemTypeMatchesEquipmentSlot(kind ItemKind, slot EquipmentSlot) bool {
 	switch kind {
 		case ITEM_KIND_EQUIPMENT_ONE_HANDED, ITEM_KIND_EQUIPMENT_SPELLBOOK:
 			return slot == EQUIPMENT_SLOT_MAIN_HAND || slot == EQUIPMENT_SLOT_OFF_HAND
+		case ITEM_KIND_EQUIPMENT_SHIELD:
+			return slot == EQUIPMENT_SLOT_OFF_HAND
 		case ITEM_KIND_EQUIPMENT_TWO_HANDED:
 			return slot == EQUIPMENT_SLOT_MAIN_HAND
 		case ITEM_KIND_EQUIPMENT_OUTFIT:
@@ -239,6 +241,15 @@ func (equipment *Equipment) IsHoldingSpellbookOf(spell SpellId) bool {
 		if heldSpellbookData.Spell == spell {
 			return true
 		}
+	}
+
+	return false
+}
+
+func (equipment *Equipment) IsShieldEquipped() bool {
+	heldItemData := ITEM_DATA[equipment.Get(EQUIPMENT_SLOT_OFF_HAND).Id]
+	if heldItemData.Kind == ITEM_KIND_EQUIPMENT_SHIELD {
+		return true
 	}
 
 	return false
