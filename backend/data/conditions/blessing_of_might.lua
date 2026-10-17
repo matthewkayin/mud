@@ -6,7 +6,7 @@ condition.is_ailment = false
 condition.effects = {
     {
         type = world.ConditionEffectType.STAT_CHANGE_DAMAGE,
-        value = { type = world.ConditionStatChangeType.PERCENT, value = 20 }
+        data = { type = world.ConditionStatChangeType.PERCENT, value = 20 }
     }
 }
 

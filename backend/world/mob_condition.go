@@ -53,6 +53,8 @@ type ConditionEffectType int
 const (
 	CONDITION_EFFECT_TYPE_STAT_CHANGE_DAMAGE ConditionEffectType = iota
 	CONDITION_EFFECT_TYPE_STAT_CHANGE_ARMOR
+	CONDITION_EFFECT_TYPE_STAT_CHANGE_HIT_CHANCE
+	CONDITION_EFFECT_TYPE_STAT_CHANGE_DODGE_CHANCE
 	CONDITION_EFFECT_TYPE_COUNT
 )
 
@@ -62,6 +64,10 @@ func (conditionEffectType ConditionEffectType) String() string {
 			return "Stat Change Damage"
 		case CONDITION_EFFECT_TYPE_STAT_CHANGE_ARMOR:
 			return "Stat Change Armor"
+		case CONDITION_EFFECT_TYPE_STAT_CHANGE_HIT_CHANCE:
+			return "Stat Change Hit Chance"
+		case CONDITION_EFFECT_TYPE_STAT_CHANGE_DODGE_CHANCE:
+			return "Stat Change Dodge Chance"
 		default:
 			panic(fmt.Errorf("Unhandled condition effect type %d", conditionEffectType))
 	}
@@ -176,8 +182,15 @@ func (parser *ScriptParser) parseConditionData(table *lua.Table) *ConditionData 
 		}
 
 		switch effect.Type {
-			case CONDITION_EFFECT_TYPE_STAT_CHANGE_ARMOR, CONDITION_EFFECT_TYPE_STAT_CHANGE_DAMAGE: {
+			case CONDITION_EFFECT_TYPE_STAT_CHANGE_ARMOR,
+				 CONDITION_EFFECT_TYPE_STAT_CHANGE_DAMAGE:
+			{
 				effect.Data = parser.getConditionStatChange(effectTable, "data")
+			}
+			case CONDITION_EFFECT_TYPE_STAT_CHANGE_HIT_CHANCE,
+				 CONDITION_EFFECT_TYPE_STAT_CHANGE_DODGE_CHANCE:
+			{
+				effect.Data = parser.getInt32(effectTable, "data")
 			}
 		}
 

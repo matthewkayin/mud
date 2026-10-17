@@ -97,6 +97,8 @@ world.EquipmentSlot = {
 world.ConditionEffectType = {
 	STAT_CHANGE_DAMAGE = "Stat Change Damage",
 	STAT_CHANGE_ARMOR = "Stat Change Armor",
+	STAT_CHANGE_HIT_CHANCE = "Stat Change Hit Chance",
+	STAT_CHANGE_DODGE_CHANCE = "Stat Change Dodge Chance",
 }
 
 ---@enum ConditionStatChangeType
@@ -160,7 +162,7 @@ function world.message_room(room, message) end
 --- will make the condition last forever
 ---
 ---@param mob MobHandle
----@param condition ConditionType
+---@param condition string
 ---@param duration integer
 function world.mob_add_condition(mob, condition, duration) end
 
