@@ -44,8 +44,7 @@ var MENU_WORLD = Menu {
 			gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("<y>%s</y> has left the world.", playerMob.Data.Name))
 
 			// Save player mob data back to their character
-			player.character.Data = playerMob.Data
-			world.SaveCharacter(player.character)
+			playerMob.SavePlayerCharacter()
 		}
 
 		player.character = nil
@@ -1142,7 +1141,7 @@ var MENU_WORLD = Menu {
 				// Transfer
 				result, err := inventoryTransfer(InventoryTransferParams {
 					from: InventoryTransferLocation {
-						inventory: &playerMob.PlayerCharacter.Data.Inventory,
+						inventory: &playerMob.Data.Inventory,
 						name: "your inventory",
 						capacity: playerMob.InventoryCapacity(),
 					},

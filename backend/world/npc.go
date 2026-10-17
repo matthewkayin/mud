@@ -406,12 +406,8 @@ func (npc *Npc) spawnMob(world *World) {
 		Stats: stats,
 		Spells: []SpellId {},
 		Inventory: dropTable.getLoot(),
-		// Copy the equipment so that mobs don't share the NPC data's slices
-		Equipment: Equipment {
-			IsSlotInUse: slices.Clone(npcData.equipment.IsSlotInUse),
-			SlotItem: slices.Clone(npcData.equipment.SlotItem),
-			StatBonuses: npcData.equipment.StatBonuses,
-		},
+		// MobInit clones this so that mobs don't share the NPC data's slices
+		Equipment: npcData.equipment,
 	}
 
 	mobData.Health = mobData.MaxHealth()

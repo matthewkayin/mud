@@ -202,7 +202,13 @@ func (gamestate *GameState) saveAllLoggedInPlayers() {
 			continue
 		}
 
-		world.SaveCharacter(player.character)
+		playerMob, mobExists := gamestate.world.Mobs.GetIfExists(player.mobHandle)
+		if !mobExists {
+			log.Printf("Warn - Logged in player %d has no mob, so their character was not saved.", player.id)
+			continue
+		}
+
+		playerMob.SavePlayerCharacter()
 	}
 
 	log.Printf("Saved all logged in player characters.")
