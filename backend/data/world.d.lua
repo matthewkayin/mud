@@ -160,7 +160,7 @@ function world.message_room(room, message) end
 --- will make the condition last forever
 ---
 ---@param mob MobHandle
----@param condition ConditionType
+---@param condition string
 ---@param duration integer
 function world.mob_add_condition(mob, condition, duration) end
 

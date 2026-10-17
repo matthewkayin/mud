@@ -502,18 +502,6 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 		damage += mob.Data.Strength() / 4
 	}
 
-	// Check for buff
-	for index := range len(mob.Data.Conditions) {
-		condition := &mob.Data.Conditions[index]
-		conditionData := CONDITION_DATA[condition.Id]
-		for effectIndex := range len(conditionData.Effects) {
-			conditionEffect := &conditionData.Effects[effectIndex]
-			if conditionEffect.Type == CONDITION_EFFECT_TYPE_STAT_CHANGE_DAMAGE {
-
-			}
-		}
-	}
-
 	// Apply condition damage changes
 	damage = mob.GetConditionStatChange(damage, CONDITION_EFFECT_TYPE_STAT_CHANGE_DAMAGE)
 
@@ -1038,7 +1026,7 @@ func (mob *Mob) GetConditionStatChange(base int32, conditionEffectType Condition
 					case CONDITION_STAT_CHANGE_FLAT:
 						base += statChange.Value
 					case CONDITION_STAT_CHANGE_PERCENT:
-						percent += float32(statChange.Value / 100.0)
+						percent += float32(statChange.Value) / 100.0
 				}
 			}
 		}
