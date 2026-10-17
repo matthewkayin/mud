@@ -909,7 +909,8 @@ var MENU_WORLD = Menu {
 					} else {
 						conditionNames := make([]string, 0, len(targetMob.Data.Conditions))
 						for index := range len(targetMob.Data.Conditions) {
-							conditionNames = append(conditionNames, targetMob.Data.Conditions[index].Type.String())
+							conditionData := world.CONDITION_DATA[targetMob.Data.Conditions[index].Id]
+							conditionNames = append(conditionNames, conditionData.Name)
 						}
 
 						rows = append(rows, util.CombineNames(conditionNames))

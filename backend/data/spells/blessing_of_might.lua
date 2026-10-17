@@ -20,7 +20,7 @@ function spell.on_cast(caster)
             goto continue
         end
 
-        world.mob_add_condition(occupant, world.ConditionType.BLESSING_OF_MIGHT, duration)
+        world.mob_add_condition(occupant, "Blessing of Might", duration)
         ::continue::
     end
 

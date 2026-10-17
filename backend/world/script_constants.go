@@ -131,16 +131,29 @@ func ScriptConstantTables() []ScriptConstantTable {
 		})
 	}
 
-	// Condition type
-	conditionTypeTable := ScriptConstantTable {
-		Name: "ConditionType",
-		Constants: make([]ScriptConstant, 0, CONDITION_TYPE_COUNT),
+	// Condition effect type
+	conditionEffectTypeTable := ScriptConstantTable {
+		Name: "ConditionEffectType",
+		Constants: make([]ScriptConstant, 0, CONDITION_EFFECT_TYPE_COUNT),
 	}
-	for index := range CONDITION_TYPE_COUNT {
-		conditionType := ConditionType(index)
-		conditionTypeTable.Constants = append(conditionTypeTable.Constants, ScriptConstant {
-			Name: strings.ToUpper(strings.ReplaceAll(conditionType.String(), " ", "_")),
-			Value: lua.String(conditionType.String()),
+	for index := range CONDITION_EFFECT_TYPE_COUNT {
+		conditionEffectType := ConditionEffectType(index)
+		conditionEffectTypeTable.Constants = append(conditionEffectTypeTable.Constants, ScriptConstant {
+			Name: strings.ToUpper(strings.ReplaceAll(conditionEffectType.String(), " ", "_")),
+			Value: lua.String(conditionEffectType.String()),
+		})
+	}
+
+	// Condition stat change type
+	conditionStatChangeTypeTable := ScriptConstantTable {
+		Name: "ConditionStatChangeType",
+		Constants: make([]ScriptConstant, 0, CONDITION_STAT_CHANGE_COUNT),
+	}
+	for index := range CONDITION_STAT_CHANGE_COUNT {
+		conditionStatChangeType := ConditionStatChangeType(index)
+		conditionStatChangeTypeTable.Constants = append(conditionStatChangeTypeTable.Constants, ScriptConstant {
+			Name: strings.ToUpper(strings.ReplaceAll(conditionStatChangeType.String(), " ", "_")),
+			Value: lua.String(conditionStatChangeType.String()),
 		})
 	}
 
@@ -166,7 +179,8 @@ func ScriptConstantTables() []ScriptConstantTable {
 		directionTable,
 		statTable,
 		equipmentSlotTable,
-		conditionTypeTable,
+		conditionEffectTypeTable,
+		conditionStatChangeTypeTable,
 		spellTargetTable,
 	}
 }

@@ -90,6 +90,7 @@ func (world *World) LoadData(dataFolder string) {
 	world.scriptInit(dataFolder)
 	world.loadRaceData()
 	world.loadJobData()
+	world.loadConditionData()
 	world.loadSpellData()
 	recipeTables := world.loadRecipeTables()
 	world.loadItemData()

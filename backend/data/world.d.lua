@@ -30,6 +30,7 @@ world.ItemKind = {
 	CONSUMABLE = "Consumable",
 	EQUIPMENT_ONE_HANDED = "One-Handed Weapon",
 	EQUIPMENT_TWO_HANDED = "Two-handed Weapon",
+	EQUIPMENT_SHIELD = "Shield",
 	EQUIPMENT_OUTFIT = "Outfit",
 	EQUIPMENT_ACCESSORY = "Accessory",
 	EQUIPMENT_SPELLBOOK = "Spellbook",
@@ -92,9 +93,16 @@ world.EquipmentSlot = {
 	ACCESSORY = "Accessory",
 }
 
----@enum ConditionType
-world.ConditionType = {
-	BLESSING_OF_MIGHT = "Blessing of Might",
+---@enum ConditionEffectType
+world.ConditionEffectType = {
+	STAT_CHANGE_DAMAGE = "Stat Change Damage",
+	STAT_CHANGE_ARMOR = "Stat Change Armor",
+}
+
+---@enum ConditionStatChangeType
+world.ConditionStatChangeType = {
+	FLAT = "Flat",
+	PERCENT = "Percent",
 }
 
 ---@enum SpellTarget
