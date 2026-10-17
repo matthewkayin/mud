@@ -503,9 +503,19 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	}
 
 	// Check for buff
-	if mob.HasCondition(CONDITION_TYPE_BLESS_MIGHT) {
-		damage = int32(float32(damage) * 1.2)
+	for index := range len(mob.Data.Conditions) {
+		condition := &mob.Data.Conditions[index]
+		conditionData := CONDITION_DATA[condition.Id]
+		for effectIndex := range len(conditionData.Effects) {
+			conditionEffect := &conditionData.Effects[effectIndex]
+			if conditionEffect.Type == CONDITION_EFFECT_TYPE_STAT_CHANGE_DAMAGE {
+
+			}
+		}
 	}
+
+	// Apply condition damage changes
+	damage = mob.GetConditionStatChange(damage, CONDITION_EFFECT_TYPE_STAT_CHANGE_DAMAGE)
 
 	// Check for critical hit
 	critChance := mobAgility * MOB_CRIT_K
@@ -975,9 +985,9 @@ func (mob *Mob) Reveal(world *World) {
 	world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> was hiding in the room and has revealed themselves!", mob.Data.Name))
 }
 
-func (mob *Mob) HasCondition(conditionType ConditionType) bool {
+func (mob *Mob) HasCondition(conditionId ConditionId) bool {
 	for index := range len(mob.Data.Conditions) {
-		if mob.Data.Conditions[index].Type == conditionType {
+		if mob.Data.Conditions[index].Id == conditionId {
 			return true
 		}
 	}
@@ -987,7 +997,7 @@ func (mob *Mob) HasCondition(conditionType ConditionType) bool {
 
 func (mob *Mob) AddCondition(condition Condition) {
 	for index := range len(mob.Data.Conditions) {
-		if mob.Data.Conditions[index].Type == condition.Type {
+		if mob.Data.Conditions[index].Id == condition.Id {
 			incomingIsLonger :=
 				condition.TimeToLive == CONDITION_DURATION_INFINITE ||
 				(mob.Data.Conditions[index].TimeToLive < condition.TimeToLive &&
@@ -1003,13 +1013,36 @@ func (mob *Mob) AddCondition(condition Condition) {
 	mob.Data.Conditions = append(mob.Data.Conditions, condition)
 }
 
-func (mob *Mob) RemoveCondition(conditionType ConditionType) {
+func (mob *Mob) RemoveCondition(conditionId ConditionId) {
 	for index := range len(mob.Data.Conditions) {
-		if mob.Data.Conditions[index].Type == conditionType {
+		if mob.Data.Conditions[index].Id == conditionId {
 			lastIndex := len(mob.Data.Conditions) - 1
 			mob.Data.Conditions[index] = mob.Data.Conditions[lastIndex]
 			mob.Data.Conditions = mob.Data.Conditions[:lastIndex]
 			return
 		}
 	}
+}
+
+func (mob *Mob) GetConditionStatChange(base int32, conditionEffectType ConditionEffectType) int32 {
+	percent := float32(1.0)
+
+	for _, condition := range mob.Data.Conditions {
+		conditionData := CONDITION_DATA[condition.Id]
+
+		for index := range len(conditionData.Effects) {
+			effect := &conditionData.Effects[index]
+			if effect.Type == conditionEffectType {
+				statChange := effect.Data.(ConditionStatChange)
+				switch statChange.Type {
+					case CONDITION_STAT_CHANGE_FLAT:
+						base += statChange.Value
+					case CONDITION_STAT_CHANGE_PERCENT:
+						percent += float32(statChange.Value / 100.0)
+				}
+			}
+		}
+	}
+
+	return int32(float32(base) * percent)
 }

@@ -479,18 +479,18 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	// will make the condition last forever
 	//
 	// @param mob MobHandle
-	// @param condition ConditionType
+	// @param condition string
 	// @param duration integer
 	"mob_add_condition": func(frame lua.Frame) lua.Outcome {
 		mob := frameGetMobArg(&frame, 0)
-		conditionType := frameGetConditionTypeArg(&frame, 1)
+		conditionId := frameGetConditionTypeArg(&frame, 1)
 		duration := frameGetIntegerArg(&frame, 2, "duration")
 		if duration <= 0 && duration != CONDITION_DURATION_INFINITE {
 			frame.ThrowArgError(2, "duration must be positive or equal to CONDITION_DURATION_INFINITE")
 		}
 
 		mob.AddCondition(Condition {
-			Type: conditionType,
+			Id: conditionId,
 			TimeToLive: duration,
 		})
 
@@ -503,9 +503,9 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	// @param condition ConditionType
 	"mob_remove_condition": func(frame lua.Frame) lua.Outcome {
 		mob := frameGetMobArg(&frame, 0)
-		conditionType := frameGetConditionTypeArg(&frame, 1)
+		conditionId := frameGetConditionTypeArg(&frame, 1)
 
-		mob.RemoveCondition(conditionType)
+		mob.RemoveCondition(conditionId)
 
 		return frame.Return()
 	},
@@ -927,15 +927,16 @@ func frameGetDirectionArg(frame *lua.Frame, index int) Direction {
 	return direction
 }
 
-func frameGetConditionTypeArg(frame *lua.Frame, index int) ConditionType {
+func frameGetConditionTypeArg(frame *lua.Frame, index int) ConditionId {
 	name, ok := frame.String(index)
 	if !ok {
 		frame.ThrowArgTypeError(index, lua.StringKind)
 	}
-	conditionType, exists := EnumFromString[ConditionType](name, CONDITION_TYPE_COUNT)
+
+	conditionId, exists := CONDITION_NAME_TO_ID[name]
 	if !exists {
 		frame.ThrowArgError(index, fmt.Sprintf("%s is not a valid condition.", name))
 	}
 
-	return conditionType
+	return conditionId
 }
