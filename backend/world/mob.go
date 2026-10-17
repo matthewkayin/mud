@@ -107,7 +107,7 @@ type Mob struct {
 func MobInit(data *MobData) Mob {
 	mob := Mob {
 		PlayerCharacter: nil,
-		Data: *data,
+		Data: data.Clone(),
 		Mode: MOB_MODE_IDLE,
 		Target: MobTarget {
 			Type: MOB_TARGET_NONE,
@@ -224,7 +224,7 @@ func (mob *Mob) GrantExperience(world *World, experience int32) {
 			mob.Data.Abilities = mob.PlayerCharacter.Data.Abilities
 
 			// Save the character to disk
-			SaveCharacter(mob.PlayerCharacter)
+			mob.SavePlayerCharacter()
 
 			continue
 		}

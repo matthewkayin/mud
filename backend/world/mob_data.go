@@ -2,6 +2,7 @@ package world
 
 import (
 	"log"
+	"slices"
 	"encoding/json"
 )
 
@@ -53,6 +54,20 @@ type MobDataJson struct {
 	Spells []string
 	Inventory Inventory
 	Equipment Equipment
+}
+
+// Returns a copy of the mob data that shares no slices with the original
+func (mobData *MobData) Clone() MobData {
+	clone := *mobData
+	clone.Conditions = slices.Clone(mobData.Conditions)
+	clone.Spells = slices.Clone(mobData.Spells)
+	clone.Inventory = Inventory {
+		Items: slices.Clone(mobData.Inventory.Items),
+	}
+	clone.Equipment.IsSlotInUse = slices.Clone(mobData.Equipment.IsSlotInUse)
+	clone.Equipment.SlotItem = slices.Clone(mobData.Equipment.SlotItem)
+
+	return clone
 }
 
 func (mobData *MobData) MarshalJSON() ([]byte, error) {

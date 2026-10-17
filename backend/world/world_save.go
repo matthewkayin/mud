@@ -36,6 +36,18 @@ func SaveCharacter(character *Character) {
 	log.Printf("Saved character file %s.", path)
 }
 
+// Copies the player mob's data into its character and saves the character.
+// While the player is logged in, the mob's data is the live copy.
+func (mob *Mob) SavePlayerCharacter() {
+	if !mob.IsPlayer() {
+		log.Printf("Warn - Tried to save player character of non-player mob %s.", mob.Data.Name)
+		return
+	}
+
+	mob.PlayerCharacter.Data = mob.Data.Clone()
+	SaveCharacter(mob.PlayerCharacter)
+}
+
 func deleteCharacter(character *Character) {
 	path := characterSavePath(character)
 	err := os.Remove(path)
