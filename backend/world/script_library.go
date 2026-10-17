@@ -471,7 +471,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		mob := frameGetMobArg(&frame, 0)
 		conditionType := frameGetConditionTypeArg(&frame, 1)
 
-		return frame.ReturnBool(mob.HasCondition(conditionType))
+		return frame.ReturnBool(mob.Data.HasCondition(conditionType))
 	},
 
 	// Adds a condition to a mob for the specified duration
@@ -489,7 +489,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 			frame.ThrowArgError(2, "duration must be positive or equal to CONDITION_DURATION_INFINITE")
 		}
 
-		mob.AddCondition(Condition {
+		mob.Data.AddCondition(Condition {
 			Id: conditionId,
 			TimeToLive: duration,
 		})
@@ -505,7 +505,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		mob := frameGetMobArg(&frame, 0)
 		conditionId := frameGetConditionTypeArg(&frame, 1)
 
-		mob.RemoveCondition(conditionId)
+		mob.Data.RemoveCondition(conditionId)
 
 		return frame.Return()
 	},

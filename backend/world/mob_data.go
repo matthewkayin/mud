@@ -157,20 +157,21 @@ func (mobData *MobData) MaxMana() int32 {
 func (mobData *MobData) Armor() int32 {
 	outfit := mobData.Equipment.Get(EQUIPMENT_SLOT_OUTFIT)
 	shield := mobData.Equipment.Get(EQUIPMENT_SLOT_OFF_HAND)
-	var outfitArmorVal int32 = 0
-	var shieldArmorVal int32 = 0
+	var armorVal int32 = 0
 
 	if outfit != nil {
 		itemData := ITEM_DATA[outfit.Id]
-		outfitArmorVal = itemData.Data.(*ItemDataArmor).Armor
+		armorVal += itemData.Data.(*ItemDataArmor).Armor
 	}
 
 	if shield != nil {
 		itemData := ITEM_DATA[shield.Id]
-		shieldArmorVal = itemData.Data.(*ItemDataArmor).Armor
+		armorVal += itemData.Data.(*ItemDataArmor).Armor
 	}
 
-	return outfitArmorVal + shieldArmorVal
+	armorVal = mobData.GetConditionStatChange(armorVal, CONDITION_EFFECT_TYPE_STAT_CHANGE_ARMOR)
+
+	return armorVal
 }
 
 func (mobData *MobData) GetStat(index int) int32 {
@@ -251,4 +252,82 @@ func (mobData *MobData) GetAbilityList() []MobAbility {
 	}
 
 	return list
+}
+
+func (mobData *MobData) HasCondition(conditionId ConditionId) bool {
+	for index := range len(mobData.Conditions) {
+		if mobData.Conditions[index].Id == conditionId {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (mobData *MobData) AddCondition(condition Condition) {
+	for index := range len(mobData.Conditions) {
+		if mobData.Conditions[index].Id == condition.Id {
+			incomingIsLonger :=
+				condition.TimeToLive == CONDITION_DURATION_INFINITE ||
+				(mobData.Conditions[index].TimeToLive < condition.TimeToLive &&
+					mobData.Conditions[index].TimeToLive != CONDITION_DURATION_INFINITE)
+			if incomingIsLonger {
+				mobData.Conditions[index].TimeToLive = condition.TimeToLive
+			}
+
+			return
+		}
+	}
+
+	mobData.Conditions = append(mobData.Conditions, condition)
+}
+
+func (mobData *MobData) RemoveCondition(conditionId ConditionId) {
+	for index := range len(mobData.Conditions) {
+		if mobData.Conditions[index].Id == conditionId {
+			lastIndex := len(mobData.Conditions) - 1
+			mobData.Conditions[index] = mobData.Conditions[lastIndex]
+			mobData.Conditions = mobData.Conditions[:lastIndex]
+			return
+		}
+	}
+}
+
+func (mobData *MobData) GetConditionStatChange(base int32, conditionEffectType ConditionEffectType) int32 {
+	percent := float32(1.0)
+
+	for _, condition := range mobData.Conditions {
+		conditionData := CONDITION_DATA[condition.Id]
+
+		for index := range len(conditionData.Effects) {
+			effect := &conditionData.Effects[index]
+			if effect.Type == conditionEffectType {
+				statChange := effect.Data.(ConditionStatChange)
+				switch statChange.Type {
+					case CONDITION_STAT_CHANGE_FLAT:
+						base += statChange.Value
+					case CONDITION_STAT_CHANGE_PERCENT:
+						percent += float32(statChange.Value / 100.0)
+				}
+			}
+		}
+	}
+
+	return int32(float32(base) * percent)
+}
+
+func (mobData *MobData) GetConditionChanceModifier(base float32, conditionEffectType ConditionEffectType) float32 {
+	var chanceModifier int32 = 0.0
+
+	for _, condition := range mobData.Conditions {
+		conditionData := CONDITION_DATA[condition.Id]
+		for index := range len(conditionData.Effects) {
+			effect := &conditionData.Effects[index]
+			if effect.Type == conditionEffectType {
+				chanceModifier += effect.Data.(int32)
+			}
+		}
+	}
+
+	return float32(chanceModifier) / 100
 }

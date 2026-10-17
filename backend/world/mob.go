@@ -482,6 +482,10 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	targetAgility := float32(targetMob.Data.Agility())
 	mobAgility := float32(mob.Data.Agility())
 	evasionChance := targetAgility / (targetAgility + (mobAgility * MOB_EVASION_K))
+	evasionChance += targetMob.Data.GetConditionChanceModifier(evasionChance, CONDITION_EFFECT_TYPE_STAT_CHANGE_DODGE_CHANCE)
+	evasionChance -= mob.Data.GetConditionChanceModifier(evasionChance, CONDITION_EFFECT_TYPE_STAT_CHANGE_HIT_CHANCE)
+	evasionChance = max(min(evasionChance, float32(100.0)), float32(0.0))
+
 	evasionRoll := rand.Float32()
 	if evasionRoll < evasionChance {
 		world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> dodged <y>%s's</y> attack!", targetMob.GetName(), mob.GetName()))
@@ -515,7 +519,7 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	}
 
 	// Apply condition damage changes
-	damage = mob.GetConditionStatChange(damage, CONDITION_EFFECT_TYPE_STAT_CHANGE_DAMAGE)
+	damage = mob.Data.GetConditionStatChange(damage, CONDITION_EFFECT_TYPE_STAT_CHANGE_DAMAGE)
 
 	// Check for critical hit
 	critChance := mobAgility * MOB_CRIT_K
@@ -983,66 +987,4 @@ func (mob *Mob) GetStealthPenalty() float32 {
 func (mob *Mob) Reveal(world *World) {
 	mob.SetFlag(MOB_FLAG_HIDDEN, false)
 	world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> was hiding in the room and has revealed themselves!", mob.Data.Name))
-}
-
-func (mob *Mob) HasCondition(conditionId ConditionId) bool {
-	for index := range len(mob.Data.Conditions) {
-		if mob.Data.Conditions[index].Id == conditionId {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (mob *Mob) AddCondition(condition Condition) {
-	for index := range len(mob.Data.Conditions) {
-		if mob.Data.Conditions[index].Id == condition.Id {
-			incomingIsLonger :=
-				condition.TimeToLive == CONDITION_DURATION_INFINITE ||
-				(mob.Data.Conditions[index].TimeToLive < condition.TimeToLive &&
-					mob.Data.Conditions[index].TimeToLive != CONDITION_DURATION_INFINITE)
-			if incomingIsLonger {
-				mob.Data.Conditions[index].TimeToLive = condition.TimeToLive
-			}
-
-			return
-		}
-	}
-
-	mob.Data.Conditions = append(mob.Data.Conditions, condition)
-}
-
-func (mob *Mob) RemoveCondition(conditionId ConditionId) {
-	for index := range len(mob.Data.Conditions) {
-		if mob.Data.Conditions[index].Id == conditionId {
-			lastIndex := len(mob.Data.Conditions) - 1
-			mob.Data.Conditions[index] = mob.Data.Conditions[lastIndex]
-			mob.Data.Conditions = mob.Data.Conditions[:lastIndex]
-			return
-		}
-	}
-}
-
-func (mob *Mob) GetConditionStatChange(base int32, conditionEffectType ConditionEffectType) int32 {
-	percent := float32(1.0)
-
-	for _, condition := range mob.Data.Conditions {
-		conditionData := CONDITION_DATA[condition.Id]
-
-		for index := range len(conditionData.Effects) {
-			effect := &conditionData.Effects[index]
-			if effect.Type == conditionEffectType {
-				statChange := effect.Data.(ConditionStatChange)
-				switch statChange.Type {
-					case CONDITION_STAT_CHANGE_FLAT:
-						base += statChange.Value
-					case CONDITION_STAT_CHANGE_PERCENT:
-						percent += float32(statChange.Value / 100.0)
-				}
-			}
-		}
-	}
-
-	return int32(float32(base) * percent)
 }
