@@ -23,6 +23,7 @@ func ScriptFreeConstants() []ScriptConstant {
 		{ Name: "NPC_EVENT_PREVENT_DEFAULT", Value: lua.Bool(NPC_EVENT_PREVENT_DEFAULT) },
 		{ Name: "ROOM_NONE", Value: lua.Number(float64(ROOM_NONE)) },
 		{ Name: "CONDITION_DURATION_INFINITE", Value: lua.Number(float64(CONDITION_DURATION_INFINITE)) },
+		{ Name: "ITEM_INFUSION_USES_UNLIMITED", Value: lua.Number(float64(ITEM_INFUSION_USES_UNLIMITED)) },
 	}
 }
 

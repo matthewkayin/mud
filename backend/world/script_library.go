@@ -115,6 +115,21 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.ReturnNumber(float64((minutes * 60) / WORLD_SECONDS_PER_UPDATE))
 	},
 
+	// Return the number of updates that will occur in X seconds
+	//
+	// @param seconds integer
+	// @return integer
+	"time_seconds": func(frame lua.Frame) lua.Outcome {
+		seconds := frameGetIntegerArg(&frame, 0, "seconds")
+		if seconds < WORLD_SECONDS_PER_UPDATE {
+			frame.ThrowArgError(0, "time_seconds must be at least 1 turn long")
+		}
+		if seconds % WORLD_SECONDS_PER_UPDATE != 0 {
+			frame.ThrowArgError(0, "time_seconds must be divisible by WORLD_SECONDS_PER_UPDATE")
+		}
+		return frame.ReturnNumber(float64(seconds / WORLD_SECONDS_PER_UPDATE))
+	},
+
 	// Returns the player's race
 	//
 	// @param player MobHandle
@@ -467,11 +482,58 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	//
 	// @param mob MobHandle
 	// @param condition ConditionType
+	// @return boolean
 	"mob_has_condition": func(frame lua.Frame) lua.Outcome {
 		mob := frameGetMobArg(&frame, 0)
 		conditionType := frameGetConditionTypeArg(&frame, 1)
 
 		return frame.ReturnBool(mob.Data.HasCondition(conditionType))
+	},
+
+	// Returns the number of conditions the mob has
+	//
+	// @param mob MobHandle
+	// @return number
+	"mob_get_condition_count": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+
+		return frame.ReturnNumber(float64(len(mob.Data.Conditions)))
+	},
+
+	// Returns the name of the mob condition at the specified index
+	//
+	// @param mob MobHandle
+	// @param index integer
+	// @return string
+	"mob_get_condition_name": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		index := frameGetIntegerArg(&frame, 1, "index") - 1
+		if index < 0 || index >= len(mob.Data.Conditions) {
+			frame.ThrowArgError(1, fmt.Sprintf("Condition index %d is out of bounds.", index))
+		}
+
+		condition := &mob.Data.Conditions[index]
+		conditionData := CONDITION_DATA[condition.Id]
+
+		return frame.ReturnString(conditionData.Name)
+	},
+
+	// Returns whether the condition at the specified index is an ailment
+	//
+	// @param mob MobHandle
+	// @param index integer
+	// @return boolean
+	"mob_condition_is_ailment": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		index := frameGetIntegerArg(&frame, 1, "index") - 1
+		if index < 0 || index >= len(mob.Data.Conditions) {
+			frame.ThrowArgError(1, fmt.Sprintf("Condition index %d is out of bounds.", index))
+		}
+
+		condition := &mob.Data.Conditions[index]
+		conditionData := CONDITION_DATA[condition.Id]
+
+		return frame.ReturnBool(conditionData.IsAilment)
 	},
 
 	// Adds a condition to a mob for the specified duration
@@ -484,15 +546,12 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	"mob_add_condition": func(frame lua.Frame) lua.Outcome {
 		mob := frameGetMobArg(&frame, 0)
 		conditionId := frameGetConditionTypeArg(&frame, 1)
-		duration := frameGetIntegerArg(&frame, 2, "duration")
+		duration := frameGetInt32Arg(&frame, 2, "duration")
 		if duration <= 0 && duration != CONDITION_DURATION_INFINITE {
 			frame.ThrowArgError(2, "duration must be positive or equal to CONDITION_DURATION_INFINITE")
 		}
 
-		mob.Data.AddCondition(Condition {
-			Id: conditionId,
-			TimeToLive: duration,
-		})
+		mob.Data.AddCondition(conditionId, duration)
 
 		return frame.Return()
 	},
@@ -500,7 +559,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	// Remves a condition from a mob
 	//
 	// @param mob MobHandle
-	// @param condition ConditionType
+	// @param condition string
 	"mob_remove_condition": func(frame lua.Frame) lua.Outcome {
 		mob := frameGetMobArg(&frame, 0)
 		conditionId := frameGetConditionTypeArg(&frame, 1)
