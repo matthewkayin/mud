@@ -6,8 +6,6 @@ class.stats = { VIT = 6, STR = 6, AGI = 8, INT = 10, FTH = 8 }
 class.scaling = { VIT = 6, STR = 6, AGI = 8, INT = 10, FTH = 8 }
 class.starting_items = {
     { item = "Spellbook of Firebolt", amount = 1 },
-    { item = "Spellbook of Mage Weapon", amount = 1 },
-    { item = "Spellbook of Mage Armor", amount = 1 },
 }
 class.unlocks = {}
 
