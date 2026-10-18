@@ -1,24 +1,43 @@
 package world
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
-	"encoding/json"
+
 	"github.com/mmcdole/lunar"
 )
 
+const ITEM_INFUSION_USES_UNLIMITED int32 = -1
+
 type ItemId int32
+
+type ItemInfusion struct {
+	ConditionId ConditionId
+	ApplyChance float32
+	ApplyDuration int32
+	UsesRemaining int32
+}
 
 type Item struct {
 	Id ItemId `ts_type:"string"`
 	Amount int32
 	Durability int32
+	Infusion ItemInfusion
+}
+
+type ItemInfusionJson struct {
+	ConditionId string
+	ApplyChance float32
+	ApplyDuration int32
+	UsesRemaining int32
 }
 
 type ItemJson struct {
 	Id string
 	Amount int32
 	Durability int32
+	Infusion *ItemInfusionJson `json:",omitempty"`
 }
 
 func (item *Item) MarshalJSON() ([]byte, error) {
@@ -31,6 +50,17 @@ func (item *Item) MarshalJSON() ([]byte, error) {
 		Amount: item.Amount,
 		Durability: item.Durability,
 	}
+
+	// Only write the infusion if the item has one
+	if item.HasInfusion() {
+		itemJson.Infusion = &ItemInfusionJson {
+			ConditionId: CONDITION_DATA[item.Infusion.ConditionId].Name,
+			ApplyChance: item.Infusion.ApplyChance,
+			ApplyDuration: item.Infusion.ApplyDuration,
+			UsesRemaining: item.Infusion.UsesRemaining,
+		}
+	}
+
 	return json.Marshal(&itemJson)
 }
 
@@ -48,6 +78,18 @@ func (item *Item) UnmarshalJSON(data []byte) error {
 	}
 	item.Amount = itemJson.Amount
 	item.Durability = itemJson.Durability
+
+	item.Infusion = ItemInfusion{}
+	if itemJson.Infusion != nil {
+		var conditionExists bool
+		item.Infusion.ConditionId, conditionExists = CONDITION_NAME_TO_ID[itemJson.Infusion.ConditionId]
+		if !conditionExists {
+			return fmt.Errorf("Item infusion has condition '%s', which does not exist.", itemJson.Infusion.ConditionId)
+		}
+		item.Infusion.ApplyChance = itemJson.Infusion.ApplyChance
+		item.Infusion.ApplyDuration = itemJson.Infusion.ApplyDuration
+		item.Infusion.UsesRemaining = itemJson.Infusion.UsesRemaining
+	}
 
 	return nil
 }
@@ -296,6 +338,11 @@ func (itemData *ItemData) ItemIsOneHanded() bool {
 		itemData.Kind == ITEM_KIND_EQUIPMENT_SPELLBOOK
 }
 
+func (itemData *ItemData) ItemIsWeapon() bool {
+	return itemData.Kind == ITEM_KIND_EQUIPMENT_ONE_HANDED ||
+		itemData.Kind == ITEM_KIND_EQUIPMENT_TWO_HANDED
+}
+
 func (itemData *ItemData) ItemIsShield() bool {
 	return itemData.Kind == ITEM_KIND_EQUIPMENT_SHIELD
 }
@@ -462,4 +509,8 @@ func (item *Item) GetSellPrice() int32 {
 	price := float32(itemData.Price) * sellRate * durabilityPercent
 
 	return int32(price)
+}
+
+func (item *Item) HasInfusion() bool {
+	return item.Infusion.UsesRemaining != 0
 }

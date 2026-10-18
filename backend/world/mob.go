@@ -290,13 +290,39 @@ func (mob *Mob) Update(world *World) {
 	conditionIndex := 0
 	for conditionIndex < len(mob.Data.Conditions) {
 		condition := &mob.Data.Conditions[conditionIndex]
-		if condition.TimeToLive != CONDITION_DURATION_INFINITE {
-			condition.TimeToLive--
-			if condition.TimeToLive <= 0 {
+
+		// Update condition TTL
+		if condition.Duration != CONDITION_DURATION_INFINITE {
+			condition.Timer++
+
+			// Remove condition
+			if condition.Timer >= condition.Duration {
 				lastIndex := len(mob.Data.Conditions) - 1
 				mob.Data.Conditions[conditionIndex] = mob.Data.Conditions[lastIndex]
 				mob.Data.Conditions = mob.Data.Conditions[:lastIndex]
 				continue
+			}
+
+			// Update condition damage over time effects
+			conditionData := CONDITION_DATA[condition.Id]
+			for effectIndex := range len(conditionData.Effects) {
+				effect := &conditionData.Effects[effectIndex]
+
+				if effect.Type == CONDITION_EFFECT_TYPE_DAMAGE_OVER_TIME {
+					effectData := effect.Data.(ConditionDamageOverTime)
+					if condition.Timer % effectData.Frequency == 0 {
+						// This intetionally does not use the damage() function
+						// it does not trigger NPC onAttacked (we don't know the attacker handle at this point)
+						// and it does not raise mob alertness
+						mob.Data.Health -= effectData.Amount
+						world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> took <r>%d damage</r> from <r>%s</r>.", mob.GetName(), effectData.Amount, conditionData.Name))
+
+						if mob.IsDead() {
+							world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> has died from <r>%s</r>.", mob.GetName(), conditionData.Name))
+							return
+						}
+					}
+				}
 			}
 		}
 
@@ -468,9 +494,7 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	heldItemIsWeapon := false
 	if weapon != nil {
 		itemData = ITEM_DATA[weapon.Id]
-		heldItemIsWeapon =
-			itemData.Kind == ITEM_KIND_EQUIPMENT_ONE_HANDED ||
-			itemData.Kind == ITEM_KIND_EQUIPMENT_TWO_HANDED
+		heldItemIsWeapon = itemData.ItemIsWeapon()
 	}
 
 	// Don't attack with off-hand unless there is a weapon in off-hand
@@ -538,6 +562,34 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 		targetMob.rollForConcentration(world, damage)
 	}
 
+	// Handle attack infusion
+	infusion := mob.getInfusionInSlot(slot)
+	if infusion != nil {
+		// Infusion uses should always decrement because the attacker used the weapon
+		// But we shouldn't roll to apply condition if the target is already dead
+
+		// Roll to apply condition
+		if !targetMob.IsDead() {
+			shouldApplyCondition := rand.Float32() < infusion.ApplyChance
+			if shouldApplyCondition {
+				if !targetMob.Data.HasCondition(infusion.ConditionId) {
+					world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> afflicted <y>%s</y> with <r>%s</r>!",
+						mob.GetName(), targetMob.GetName(), CONDITION_DATA[infusion.ConditionId].Name))
+				}
+
+				targetMob.Data.AddCondition(infusion.ConditionId, infusion.ApplyDuration)
+			}
+		}
+
+		// Decrement uses remaining
+		if infusion.UsesRemaining != ITEM_INFUSION_USES_UNLIMITED {
+			infusion.UsesRemaining--
+			if mob.IsPlayer() && infusion.UsesRemaining == 0 {
+				world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("Your <g>%s's</g> infusion wore off.", itemData.Name))
+			}
+		}
+	}
+
 	// Reduce weapon durability
 	mob.subtractDurabilityFromEquipment(world, slot)
 	// and from defender's weapon or armor
@@ -551,8 +603,23 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 		if shieldDurabilityLoss == false {
 			targetMob.subtractDurabilityFromEquipment(world, EQUIPMENT_SLOT_OUTFIT)
 		}
-
 	}
+}
+
+func (mob *Mob) getInfusionInSlot(slot EquipmentSlot) *ItemInfusion {
+	weapon := mob.Data.Equipment.Get(slot)
+	if weapon != nil && weapon.HasInfusion() {
+		return &weapon.Infusion
+	}
+
+	if mob.IsNpc() {
+		npcData := NPC_DATA[mob.Npc.Id]
+		if npcData.infusion.UsesRemaining != 0 {
+			return &npcData.infusion
+		}
+	}
+
+	return nil
 }
 
 func (mob *Mob) rollForConcentration(world *World, damage int32) {

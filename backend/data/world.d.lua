@@ -25,6 +25,9 @@ world.ROOM_NONE = -1
 ---@type number
 world.CONDITION_DURATION_INFINITE = -1
 
+---@type number
+world.ITEM_INFUSION_USES_UNLIMITED = -1
+
 ---@enum ItemKind
 world.ItemKind = {
 	CONSUMABLE = "Consumable",
@@ -99,6 +102,7 @@ world.ConditionEffectType = {
 	STAT_CHANGE_ARMOR = "Stat Change Armor",
 	STAT_CHANGE_HIT_CHANCE = "Stat Change Hit Chance",
 	STAT_CHANGE_DODGE_CHANCE = "Stat Change Dodge Chance",
+	DAMAGE_OVER_TIME = "Damage Over Time",
 }
 
 ---@enum ConditionStatChangeType
@@ -183,6 +187,13 @@ function world.mob_add_inventory_item(handle, item_name, amount, durability_perc
 ---@return integer
 function world.mob_calc_magic_condition_duration(caster, base_duration) end
 
+--- Returns whether the condition at the specified index is an ailment
+---
+---@param mob MobHandle
+---@param index integer
+---@return boolean
+function world.mob_condition_is_ailment(mob, index) end
+
 --- Drops an amount of the item at an index in the mob's inventory into the mob's room.
 --- The amount is limited to the size of the stack. Returns the amount dropped.
 --- Removing a whole stack moves the last item in the inventory to its index.
@@ -206,6 +217,19 @@ function world.mob_exists(handle) end
 ---@param item_name string
 ---@return integer, boolean
 function world.mob_find_inventory_item(handle, item_name) end
+
+--- Returns the number of conditions the mob has
+---
+---@param mob MobHandle
+---@return number
+function world.mob_get_condition_count(mob) end
+
+--- Returns the name of the mob condition at the specified index
+---
+---@param mob MobHandle
+---@param index integer
+---@return string
+function world.mob_get_condition_name(mob, index) end
 
 --- Returns the name of the item the mob has equipped in a slot, or nil if the slot is empty
 ---
@@ -313,6 +337,7 @@ function world.mob_give_inventory_item(handle, index, target_handle, amount) end
 ---
 ---@param mob MobHandle
 ---@param condition ConditionType
+---@return boolean
 function world.mob_has_condition(mob, condition) end
 
 --- Returns true if the mob is dead
@@ -465,3 +490,9 @@ function world.say_to_room(speaker, message) end
 ---@param minutes integer
 ---@return integer
 function world.time_minutes(minutes) end
+
+--- Return the number of updates that will occur in X seconds
+---
+---@param seconds integer
+---@return integer
+function world.time_seconds(seconds) end

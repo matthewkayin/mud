@@ -7,24 +7,27 @@ import (
 	"github.com/mmcdole/lunar"
 )
 
-const CONDITION_DURATION_INFINITE int = -1
+const CONDITION_DURATION_INFINITE int32 = -1
 
 type ConditionId int
 
 type Condition struct {
 	Id ConditionId
-	TimeToLive int
+	Timer int32
+	Duration int32
 }
 
 type ConditionJson struct {
 	Id string
-	TimeToLive int
+	Timer int32
+	Duration int32
 }
 
 func (condition *Condition) MarshalJSON() ([]byte, error) {
 	conditionJson := ConditionJson {
 		Id: CONDITION_DATA[condition.Id].Name,
-		TimeToLive: condition.TimeToLive,
+		Timer: condition.Timer,
+		Duration: condition.Duration,
 	}
 	return json.Marshal(&conditionJson)
 }
@@ -42,7 +45,8 @@ func (condition *Condition) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("No condition called '%s' exists.", conditionJson.Id)
 	}
 
-	condition.TimeToLive = conditionJson.TimeToLive
+	condition.Timer = conditionJson.Timer
+	condition.Duration = conditionJson.Duration
 
 	return nil
 }
@@ -55,6 +59,7 @@ const (
 	CONDITION_EFFECT_TYPE_STAT_CHANGE_ARMOR
 	CONDITION_EFFECT_TYPE_STAT_CHANGE_HIT_CHANCE
 	CONDITION_EFFECT_TYPE_STAT_CHANGE_DODGE_CHANCE
+	CONDITION_EFFECT_TYPE_DAMAGE_OVER_TIME
 	CONDITION_EFFECT_TYPE_COUNT
 )
 
@@ -68,6 +73,8 @@ func (conditionEffectType ConditionEffectType) String() string {
 			return "Stat Change Hit Chance"
 		case CONDITION_EFFECT_TYPE_STAT_CHANGE_DODGE_CHANCE:
 			return "Stat Change Dodge Chance"
+		case CONDITION_EFFECT_TYPE_DAMAGE_OVER_TIME:
+			return "Damage Over Time"
 		default:
 			panic(fmt.Errorf("Unhandled condition effect type %d", conditionEffectType))
 	}
@@ -99,6 +106,11 @@ func (conditionStatChangeType ConditionStatChangeType) String() string {
 type ConditionStatChange struct {
 	Type ConditionStatChangeType
 	Value int32
+}
+
+type ConditionDamageOverTime struct {
+	Amount int32
+	Frequency int32
 }
 
 type ConditionData struct {
@@ -187,10 +199,15 @@ func (parser *ScriptParser) parseConditionData(table *lua.Table) *ConditionData 
 			{
 				effect.Data = parser.getConditionStatChange(effectTable, "data")
 			}
+
 			case CONDITION_EFFECT_TYPE_STAT_CHANGE_HIT_CHANCE,
 				 CONDITION_EFFECT_TYPE_STAT_CHANGE_DODGE_CHANCE:
 			{
 				effect.Data = parser.getInt32(effectTable, "data")
+			}
+
+			case CONDITION_EFFECT_TYPE_DAMAGE_OVER_TIME: {
+				effect.Data = parser.getConditionDamageOverTime(effectTable, "data")
 			}
 		}
 
@@ -222,4 +239,22 @@ func (parser *ScriptParser) getConditionStatChange(table *lua.Table, key string)
 	}
 
 	return statChange
+}
+
+func (parser *ScriptParser) getConditionDamageOverTime(table *lua.Table, key string) ConditionDamageOverTime {
+	damageOverTime := ConditionDamageOverTime{}
+
+	value := parser.getValue(table, key, lua.TableKind)
+	damageOverTimeTable, ok := value.AsTable()
+	if !ok {
+		return damageOverTime
+	}
+
+	damageOverTime.Amount = parser.getInt32(damageOverTimeTable, "amount")
+	parser.checkInt32Positive(damageOverTime.Amount, "amount")
+
+	damageOverTime.Frequency = parser.getInt32(damageOverTimeTable, "frequency")
+	parser.checkInt32Positive(damageOverTime.Frequency, "frequency")
+
+	return damageOverTime
 }
