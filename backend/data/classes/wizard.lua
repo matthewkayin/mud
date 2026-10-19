@@ -8,6 +8,9 @@ class.starting_items = {
     { item = "Spellbook of Firebolt", amount = 1 },
     { item = "Walking Stick", amount = 1 },
 }
+class.starting_equipment = {
+    outfit = "Rags"
+}
 class.unlocks = {}
 
 return class

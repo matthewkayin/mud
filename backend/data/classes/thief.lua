@@ -7,6 +7,9 @@ class.scaling = { VIT = 8, STR = 8, AGI = 10, INT = 6, FTH = 8 }
 class.starting_items = {
     { item = "Kitchen Knife", amount = 1 },
 }
+class.starting_equipment = {
+    outfit = "Rags"
+}
 class.unlocks = {
 	{ level = 1, ability = "Sneak" },
 	{ level = 2, ability = "Unlock" },

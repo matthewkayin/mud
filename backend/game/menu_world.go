@@ -1032,6 +1032,12 @@ var MENU_WORLD = Menu {
 					return true
 				}
 
+				// Check for protected NPC
+				if targetMob.Npc.IsProtected() {
+					*player.inbox <- fmt.Sprintf("You cannot attack %s, they are a friend!", targetMob.Data.Name)
+					return true
+				}
+
 				player.nextAction = Action {
 					actionType: ACTION_TYPE_ATTACK,
 					data: ActionAttack {
@@ -1717,6 +1723,16 @@ var MENU_WORLD = Menu {
 					return true
 				}
 
+				// Check for protected NPC
+				if target.Type == world.MOB_TARGET_MOB {
+					targetHandle := target.Value.(world.MobHandle)
+					targetMob := gamestate.world.Mobs.Get(targetHandle)
+					if targetMob.Npc.IsProtected() {
+						*player.inbox <- fmt.Sprintf("You cannot attack %s, they are a friend!", targetMob.Data.Name)
+						return true
+					}
+				}
+
 				// Queue up a cast action
 				player.nextAction = Action {
 					actionType: ACTION_TYPE_CAST,
@@ -2178,7 +2194,8 @@ func findSpellTarget(gamestate *GameState, player *Player, spell world.SpellId, 
 				return world.MobTarget{}, fmt.Errorf("You can only cast that spell on players.")
 			}
 
-			if spellData.Targets == world.SPELL_TARGET_ENEMY && targetMob.IsPlayer() {
+			targetIsAlly := targetMob.IsPlayer() || targetMob.Npc.IsProtected()
+			if spellData.Targets == world.SPELL_TARGET_ENEMY && targetIsAlly {
 				return world.MobTarget{}, fmt.Errorf("You can only cast that spell on enemies.")
 			}
 

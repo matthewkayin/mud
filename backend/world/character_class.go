@@ -27,6 +27,7 @@ type ClassData struct {
 	Stats StatBlock
 	Scaling StatBlock
 	StartingItems []Item
+	StartingEquipment Equipment
 	UnlocksAtLevel [MOB_MAX_LEVEL][]ClassUnlock
 }
 
@@ -119,6 +120,9 @@ func (parser *ScriptParser) parseClass(table *lua.Table) *ClassData {
 	} else {
 		classData.StartingItems = []Item{}
 	}
+
+	// Starting equipment
+	classData.StartingEquipment = parser.getEquipment(table, "starting_equipment")
 
 	// Unlocks
 	unlocksTable := parser.getTable(table, "unlocks")

@@ -8,6 +8,9 @@ class.starting_items = {
     { amount = 1, item = "Spellbook of Cure"},
     { amount = 1, item = "Walking Stick" },
 }
+class.starting_equipment = {
+    outfit = "Rags"
+}
 class.unlocks = {
     { level = 1, spell = "Blessing of Might" },
     { level = 2, spell = "Purify" }

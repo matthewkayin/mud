@@ -96,7 +96,12 @@ func CharacterInitEmpty(playerId int, characterSheet *CharacterSheet) *Character
 	}
 
 	// Init equipment
-	character.Data.Equipment = EquipmentInitEmpty()
+	character.Data.Equipment = Equipment {
+		IsSlotInUse: slices.Clone(classData.StartingEquipment.IsSlotInUse),
+		SlotItem: slices.Clone(classData.StartingEquipment.SlotItem),
+		StatBonuses: StatBlock{},
+	}
+	character.Data.Equipment.CalculateStatBonuses()
 
 	// Init rooms discovered
 	character.RoomsDiscovered = bitset.New(CHARACTER_ROOMS_DISCOVERED_BYTE_SIZE)

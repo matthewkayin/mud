@@ -7,6 +7,9 @@ class.scaling = { VIT = 8, STR = 10, AGI = 6, INT = 6, FTH = 8 }
 class.starting_items = {
     { item = "Crude Maul", amount = 1 },
 }
+class.starting_equipment = {
+    outfit = "Rags"
+}
 class.unlocks = {
 	{ level = 2, ability = "Taunt" },
 }
