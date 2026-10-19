@@ -837,6 +837,10 @@ func (npc *Npc) IsMerchant() bool {
 	return len(NPC_DATA[npc.Id].wares) != 0
 }
 
+func (npc *Npc) IsProtected() bool {
+	return npc.disposition == NPC_DISPOSITION_FRIENDLY
+}
+
 func (npc *Npc) GetWares() []ItemId {
 	return NPC_DATA[npc.Id].wares
 }
