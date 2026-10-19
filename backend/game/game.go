@@ -4,9 +4,11 @@ import (
 	"context"
 	"time"
 	"log"
+	"fmt"
 	"mud/util"
 	"mud/world"
 	"regexp"
+	"strings"
 )
 
 const GAME_UPDATE_INTERVAL = world.WORLD_SECONDS_PER_UPDATE * time.Second
@@ -28,6 +30,13 @@ type SocketEvent struct {
 	Command string
 }
 
+type ServerMode int
+const (
+	SERVER_MODE_RUNNING ServerMode = iota
+	SERVER_MODE_SHUTDOWN_SCHEDULED
+	SERVER_MODE_MAINTENANCE
+)
+
 type EventListener func (gamestate *GameState, event* world.Event)
 
 type GameState struct {
@@ -39,9 +48,14 @@ type GameState struct {
 
 	world *world.World
 	eventListeners [][]EventListener
+
+	godPlayerIds map[int]bool
+
+	serverMode ServerMode
+	shutdownTimer int
 }
 
-func GameStateInit() *GameState {
+func GameStateInit(godUserIds []int) *GameState {
 	playerMenusInit()
 
 	bannerLines, err := util.ReadFileLines("./banner.txt")
@@ -58,6 +72,14 @@ func GameStateInit() *GameState {
 
 		world: world.WorldInit(),
 		eventListeners: make([][]EventListener, world.EVENT_TYPE_COUNT),
+
+		godPlayerIds: make(map[int]bool),
+		serverMode: SERVER_MODE_RUNNING,
+	}
+
+	for _, godUserId := range godUserIds {
+		gamestate.godPlayerIds[godUserId] = true
+		log.Printf("God player ID %d", godUserId)
 	}
 
 	gamestate.addEventListener(world.EVENT_TYPE_MESSAGE, handleEventMessage)
@@ -113,6 +135,13 @@ func (gamestate *GameState) Run(ctx context.Context) {
 
 // Must only be called from the game loop
 func (gamestate *GameState) registerPlayer(playerId int, playerInbox *chan string) {
+	// Refuse connections during maintenance
+	if gamestate.serverMode == SERVER_MODE_MAINTENANCE {
+		*playerInbox <- "The server is down for maintenance. Please try again later."
+		close(*playerInbox)
+		return
+	}
+
 	// If this player is already connected, kick the old connection
 	existingPlayer := gamestate.getPlayerById(playerId)
 	if existingPlayer != nil && existingPlayer.inbox != playerInbox {
@@ -232,13 +261,25 @@ func (gamestate *GameState) handleCommand(playerId int, command string) {
 	}
 
 	player := &gamestate.players[playerIndex]
+
+	// God commands are prefixed with a '/'
+	if gamestate.isGod(playerId) && strings.HasPrefix(command, "/") {
+		MENU_GOD.handleCommand(gamestate, player, command[1:])
+		return
+	}
+
 	player.getMenu().handleCommand(gamestate, player, command)
+}
+
+func (gamestate *GameState) isGod(playerId int) bool {
+	return gamestate.godPlayerIds[playerId]
 }
 
 // Sends a message to all player inboxes
 func (gamestate *GameState) broadcast(message string) {
-	for _, player := range gamestate.players {
-		*player.inbox <- message
+	message = fmt.Sprintf("<y>Announcement:</y> %s", message)
+	for index := range len(gamestate.players) {
+		*gamestate.players[index].inbox <- message
 	}
 }
 
@@ -291,8 +332,10 @@ func (gamestate *GameState) update() {
 
 	// World update
 	gamestate.world.Update()
-
 	gamestate.handleWorldEvents()
+
+	// Done after the world events are handled, since entering maintenance removes players that the events may refer to
+	gamestate.updateShutdown()
 }
 
 // Dispatches world events to their listeners and clears them.

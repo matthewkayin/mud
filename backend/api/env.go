@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Env struct {
@@ -22,6 +23,9 @@ type Env struct {
 
 	// Folder of built frontend files to serve. Empty means the frontend is served separately.
 	STATIC_FOLDER string
+
+	// User IDs of the players who can use God commands (e.g. /shutdown)
+	GOD_USER_IDS []int
 }
 
 var env Env
@@ -39,6 +43,7 @@ func LoadEnv() {
 	env.PUBLIC_URL = getRequiredEnvVar("PUBLIC_URL")
 	env.ENABLE_DEBUG_AUTH = os.Getenv("ENABLE_DEBUG_AUTH") == "true"
 	env.STATIC_FOLDER = os.Getenv("STATIC_FOLDER")
+	env.GOD_USER_IDS = parseUserIdList("GOD_USER_IDS")
 
 	// RC OAuth settings may be left out when debug auth is used instead
 	if env.ENABLE_DEBUG_AUTH {
@@ -64,6 +69,25 @@ func getRequiredEnvVar(name string) string {
 		log.Fatalf("Missing required env var %s", name)
 	}
 	return value
+}
+
+// Parses an optional, comma-separated list of user IDs
+func parseUserIdList(name string) []int {
+	userIds := []int {}
+	for _, part := range strings.Split(os.Getenv(name), ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+
+		userId, err := strconv.Atoi(part)
+		if err != nil {
+			log.Fatalf("Env var %s contains an invalid user ID: %s", name, part)
+		}
+		userIds = append(userIds, userId)
+	}
+
+	return userIds
 }
 
 func GetEnv() *Env {

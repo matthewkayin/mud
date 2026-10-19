@@ -15,7 +15,7 @@ npc.infusion = {
     condition = "Poison",
     apply_chance = 25,
     apply_duration = world.time_minutes(5),
-    uses_remaining = world.ITEM_INFUSION_USES_UNLIMITED,
+    uses_remaining = 2,
 }
 
 npc.drop_table = {}
