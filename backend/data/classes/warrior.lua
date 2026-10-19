@@ -9,6 +9,9 @@ class.starting_items = {
     { item = "Shield", amount = 1 },
     { item = "Chainmail Armor", amount = 1 },
 }
+class.starting_equipment = {
+    outfit = "Rags"
+}
 class.unlocks = {
 	{ level = 2, ability = "Taunt" },
 }

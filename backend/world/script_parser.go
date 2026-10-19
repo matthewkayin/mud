@@ -254,15 +254,17 @@ func (parser *ScriptParser) getOptionalItemInfusion(table *lua.Table, key string
 
 	infusion.ConditionId = conditionId
 
-	applyChance := parser.getInt32(infusionTable, "apply_chance")
-	parser.checkInt32IsPositivePercent(applyChance, "apply_chance")
-	infusion.ApplyChance = float32(applyChance) / 100.0
+	infusion.ApplyChance = parser.getFloat32(infusionTable, "apply_chance")
 
 	infusion.ApplyDuration = parser.getInt32(infusionTable, "apply_duration")
-	parser.checkInt32Positive(infusion.ApplyDuration, "apply_duration")
+	if infusion.ApplyDuration != CONDITION_DURATION_INFINITE {
+		parser.checkInt32Positive(infusion.ApplyDuration, "apply_duration")
+	}
 
 	infusion.UsesRemaining = parser.getInt32(infusionTable, "uses_remaining")
-	parser.checkInt32Positive(infusion.UsesRemaining, "uses_remaining")
+	if infusion.UsesRemaining != ITEM_INFUSION_USES_UNLIMITED {
+		parser.checkInt32Positive(infusion.UsesRemaining, "uses_remaining")
+	}
 
 	return infusion
 }

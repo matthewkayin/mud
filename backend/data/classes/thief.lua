@@ -5,6 +5,9 @@ class.description = "A nimble rogue who strikes from the shadows and slips away 
 class.stats = { VIT = 8, STR = 8, AGI = 10, INT = 6, FTH = 8 }
 class.scaling = { VIT = 8, STR = 8, AGI = 10, INT = 6, FTH = 8 }
 class.starting_items = {}
+class.starting_equipment = {
+    outfit = "Rags"
+}
 class.unlocks = {
 	{ level = 1, ability = "Sneak" },
 	{ level = 2, ability = "Unlock" },
