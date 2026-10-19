@@ -32,6 +32,7 @@ The server reads its config from environment variables (`backend/api/env.go`). N
 | `ENABLE_DEBUG_AUTH` | No | `true` enables `/api/auth/debug`, which logs in as any user ID. Never set it in production. |
 | `RC_API_URL`, `RC_AUTH_URL`, `RC_TOKEN_URL`, `RC_CLIENT_ID`, `RC_CLIENT_SECRET` | Yes, unless debug auth is on | Recurse Center OAuth settings. |
 | `STATIC_FOLDER` | No | Folder of built web client files to serve. The `Dockerfile` sets it. Local dev leaves it unset, since Vite serves the client. |
+| `GOD_USER_IDS` | No | Comma-separated Recurse Center user IDs (e.g. `1234,5678`) of the players who can use God commands, such as `/shutdown`. |
 
 The web client asks `GET /api/auth/config` whether debug auth is on, so one client build works with any server config.
 
@@ -57,4 +58,21 @@ Then open `http://localhost:8080`. `podman` works the same way.
 
 ## Redeploys
 
-Every deploy restarts the server, which disconnects all players. On `SIGTERM` the server saves every logged-in character before it exits (`GameState.Run` in `backend/game/game.go`). Disco starts the new container before it stops the old one, so the new server can load a character's save before the old server writes its final save of that character.
+Every deploy restarts the server, which disconnects all players. On `SIGTERM` the server saves every logged-in character before it exits (`GameState.Run` in `backend/game/game.go`). However, Disco starts the new container before it stops the old one, so the new server can load a character's save before the old server writes its final save of that character.
+
+To avoid this, put the server in maintenance mode before deploying:
+
+1. Log in as a God (a user listed in `GOD_USER_IDS`) and run `/shutdown in <minutes>`. Players are warned when the shutdown is scheduled, and again at 30, 15, 10, 5 and 1 minutes left.
+2. When the time runs out, the server saves and kicks every player, then refuses new connections. The server doesn't exit, since Disco would restart it and players could reconnect.
+3. Deploy. The old server has no logged-in characters, so the new server loads up-to-date saves.
+
+The `/shutdown` subcommands (`backend/game/menu_god.go`):
+
+| Command | Effect |
+| --- | --- |
+| `/shutdown in <minutes>` | Schedules a shutdown, replacing any scheduled one. |
+| `/shutdown now` | Enters maintenance mode immediately. |
+| `/shutdown cancel` | Cancels a scheduled shutdown. |
+| `/shutdown status` | Shows the time left before a scheduled shutdown. |
+
+Maintenance mode lasts until the server restarts. `/help` lists the God commands.

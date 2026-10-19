@@ -47,7 +47,7 @@ func main() {
 	defer gameCancel()
 
 	// Set server endpoint handlers
-	gamestate := game.GameStateInit()
+	gamestate := game.GameStateInit(env.GOD_USER_IDS)
 	apiState := api.InitState(gamestate)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/auth/config", apiState.HandleAuthConfig)

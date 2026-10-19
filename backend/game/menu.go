@@ -20,6 +20,9 @@ type Menu struct {
 func (menu *Menu) handleCommand(gamestate *GameState, player *Player, command string) {
 	// Get verb and arguments
 	words := strings.Fields(command)
+	if len(words) == 0 {
+		return
+	}
 	verb := strings.ToLower(words[0])
 	args := words[1:]
 

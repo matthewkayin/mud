@@ -16,7 +16,7 @@ go test ./...                 # all tests
 go test ./world -run TestName # single test
 go generate                   # regenerates data/world.d.lua (Lua language server defs for the script API)
 ```
-The server is configured by env vars (`PORT`, `PUBLIC_URL`, `ENABLE_DEBUG_AUTH`, `RC_*` OAuth settings, `STATIC_FOLDER` — see `backend/api/env.go`). `backend/.env` is not in git; copy it from `backend/.env.example`.
+The server is configured by env vars (`PORT`, `PUBLIC_URL`, `ENABLE_DEBUG_AUTH`, `RC_*` OAuth settings, `STATIC_FOLDER`, `GOD_USER_IDS` — see `backend/api/env.go`). `backend/.env` is not in git; copy it from `backend/.env.example`.
 
 Web frontend (run from `frontend/`):
 ```
@@ -48,7 +48,7 @@ go test ./...
 
 ### Layers
 - `api/` — HTTP endpoints, OAuth (Recurse Center) + optional debug auth, token→user ID map
-- `game/` — players and command handling. Each player is in one menu (`PLAYER_MENU_LOGIN`, `_CREATE`, `_WORLD`); a `Menu` is a map of verb → `MenuEntry{usage, description, handler}` plus `onEnter`/`onExit`. Handlers return `false` to print usage. `help` is handled generically. Most gameplay commands live in `menu_world*.go`. Players queue a `nextAction` that is applied at the next tick (`action.go`).
+- `game/` — players and command handling. Each player is in one menu (`PLAYER_MENU_LOGIN`, `_CREATE`, `_WORLD`); a `Menu` is a map of verb → `MenuEntry{usage, description, handler}` plus `onEnter`/`onExit`. Handlers return `false` to print usage. `help` is handled generically. Gods (`GOD_USER_IDS`) run `MENU_GOD` commands from any menu by prefixing them with `/` (e.g. `/shutdown`, `/help`). Most gameplay commands live in `menu_world*.go`. Players queue a `nextAction` that is applied at the next tick (`action.go`).
 - `world/` — pure simulation: rooms, mobs, NPCs, items, spells, recipes. `World.Update()` advances the simulation and appends `world.Event`s; `game` subscribes via `addEventListener(eventType, fn)` and dispatches after each update and after each socket event, then clears events. Keep `world` free of player/networking concerns and communicate outward through events. NPC events (`Npc.FireEvent`) are handled immediately, or deferred until the running script returns, since Lua can't be re-entered (see `docs/backend/npcs.md`).
 
 ### World data conventions
