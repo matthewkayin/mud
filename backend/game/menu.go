@@ -72,3 +72,20 @@ func (menu *Menu) handleHelpCommand(player *Player, args []string) {
 		*player.inbox <- fmt.Sprintf("\t%s - %s", entry.usage, entry.description)
 	}
 }
+
+func mergeMenuEmntries(entryMaps ...map[string]MenuEntry) map[string]MenuEntry {
+	result := make(map[string]MenuEntry)
+
+	for _, entries := range entryMaps {
+		for verb, entry := range entries {
+			_, alreadyExists := result[verb]
+			if alreadyExists {
+				panic(fmt.Sprintf("Duplicate menu entry '%s'", verb))
+			}
+
+			result[verb] = entry
+		}
+	}
+
+	return result
+}
