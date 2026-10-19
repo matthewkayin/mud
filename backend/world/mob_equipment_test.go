@@ -157,3 +157,34 @@ func TestEquipRefusedWhenSwapOverflowsInventory(t *testing.T) {
 		t.Errorf("Equip should succeed once there is space: %s", err)
 	}
 }
+
+func TestPlayerMobDoesNotShareDataWithCharacter(t *testing.T) {
+	primeTestData()
+
+	character := &Character {
+		SpellsEquipped: make(map[SpellId]*CharacterEquippedSpell),
+		SpellsKnown: []SpellId{},
+		Data: MobData {
+			Inventory: Inventory { Items: []Item {
+				{ Id: TEST_ITEM_SWORD, Amount: 1, Durability: 100 },
+				{ Id: TEST_ITEM_AXE, Amount: 1, Durability: 100 },
+			}},
+			Equipment: EquipmentInitEmpty(),
+			Spells: []SpellId{},
+		},
+	}
+	mob := MobInitFromCharacter(character)
+
+	_, _, err := mob.EquipFromInventory(0, EQUIPMENT_SLOT_MAIN_HAND)
+	if err != nil {
+		t.Fatalf("Equip sword: %s", err)
+	}
+
+	// The character keeps its data from before the equip
+	if character.Data.Equipment.Get(EQUIPMENT_SLOT_MAIN_HAND) != nil {
+		t.Errorf("Equipping on the mob changed the character's equipment")
+	}
+	if character.Data.Inventory.AmountOf(TEST_ITEM_SWORD) != 1 || character.Data.Inventory.AmountOf(TEST_ITEM_AXE) != 1 {
+		t.Errorf("Equipping on the mob changed the character's inventory: %v", character.Data.Inventory.Items)
+	}
+}

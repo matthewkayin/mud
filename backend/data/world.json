@@ -184,28 +184,15 @@
       "BehaviorParams": {}
     },
     {
-      "Id": "goblin",
+      "Id": "spider",
       "SpawnRoom": 2,
       "LevelRange": {
         "Min": 1,
         "Max": 1
       },
-      "MovementTypeOverride": "",
+      "MovementTypeOverride": "Sentinel",
       "DropTableOverride": {
-        "Entries": [
-          {
-            "ItemId": "Potion of Health",
-            "AmountRange": {
-              "Min": 1,
-              "Max": 1
-            },
-            "DurabilityPercentRange": {
-              "Min": 100,
-              "Max": 100
-            },
-            "DropChancePercent": 100
-          }
-        ]
+        "Entries": []
       },
       "BehaviorParams": {}
     },

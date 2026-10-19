@@ -33,6 +33,7 @@ type NpcData struct {
 	stats StatBlock
 	scaling StatBlock
 	equipment Equipment
+	infusion ItemInfusion
 	dropTable DropTable
 	wares []ItemId
 
@@ -131,6 +132,14 @@ func (parser *ScriptParser) parseNpc(table *lua.Table) *NpcData {
 	npcData.stats = parser.getStatBlock(table, "stats", false)
 	npcData.scaling = parser.getStatBlock(table, "scaling", false)
 	npcData.equipment = parser.getEquipment(table, "equipment")
+
+	infusion := parser.getOptionalItemInfusion(table, "infusion")
+	if infusion == nil {
+		npcData.infusion = ItemInfusion{}
+	} else {
+		npcData.infusion = *infusion
+	}
+
 	npcData.dropTable = parser.getDropTable(table, "drop_table")
 
 	var ok bool

@@ -236,6 +236,37 @@ func (parser *ScriptParser) getEquipment(table *lua.Table, key string) Equipment
 	return equipment
 }
 
+func (parser *ScriptParser) getOptionalItemInfusion(table *lua.Table, key string) *ItemInfusion {
+	value := table.RawGetString(key)
+	infusionTable, ok := value.AsTable()
+	if !ok {
+		return nil
+	}
+
+	conditionName := parser.getString(infusionTable, "condition")
+	conditionId, ok := CONDITION_NAME_TO_ID[conditionName]
+	if !ok {
+		parser.addProblem(fmt.Errorf("'%s' is not a valid condition.", conditionName))
+		return nil
+	}
+
+	infusion := &ItemInfusion{}
+
+	infusion.ConditionId = conditionId
+
+	applyChance := parser.getInt32(infusionTable, "apply_chance")
+	parser.checkInt32IsPositivePercent(applyChance, "apply_chance")
+	infusion.ApplyChance = float32(applyChance) / 100.0
+
+	infusion.ApplyDuration = parser.getInt32(infusionTable, "apply_duration")
+	parser.checkInt32Positive(infusion.ApplyDuration, "apply_duration")
+
+	infusion.UsesRemaining = parser.getInt32(infusionTable, "uses_remaining")
+	parser.checkInt32Positive(infusion.UsesRemaining, "uses_remaining")
+
+	return infusion
+}
+
 func (parser *ScriptParser) getDropTable(table *lua.Table, key string) DropTable {
 	drops := DropTable { Entries: []DropTableEntry{} }
 

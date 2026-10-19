@@ -9,6 +9,7 @@ class.starting_items = {
 }
 class.unlocks = {
     { level = 1, spell = "Blessing of Might" },
+    { level = 2, spell = "Purify" }
 }
 
 return class

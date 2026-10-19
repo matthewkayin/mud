@@ -140,6 +140,7 @@ type Npc struct {
 	// Exits which the NPC's mob prevents players and other mobs from leaving its room through
 	isBlockingExit [DIRECTION_COUNT]bool
 	// The table returned by the script's init() hook, or nil
+	infusion ItemInfusion
 	instance lua.Value
 }
 
@@ -406,12 +407,8 @@ func (npc *Npc) spawnMob(world *World) {
 		Stats: stats,
 		Spells: []SpellId {},
 		Inventory: dropTable.getLoot(),
-		// Copy the equipment so that mobs don't share the NPC data's slices
-		Equipment: Equipment {
-			IsSlotInUse: slices.Clone(npcData.equipment.IsSlotInUse),
-			SlotItem: slices.Clone(npcData.equipment.SlotItem),
-			StatBonuses: npcData.equipment.StatBonuses,
-		},
+		// MobInit clones this so that mobs don't share the NPC data's slices
+		Equipment: npcData.equipment,
 	}
 
 	mobData.Health = mobData.MaxHealth()
@@ -431,6 +428,7 @@ func (npc *Npc) spawnMob(world *World) {
 
 	npc.instance = lua.Nil()
 	npc.isBlockingExit = [DIRECTION_COUNT]bool{}
+	npc.infusion = npcData.infusion
 	if npcData.init != nil {
 		npc.callInit(world)
 	}

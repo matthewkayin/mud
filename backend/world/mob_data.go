@@ -2,6 +2,7 @@ package world
 
 import (
 	"log"
+	"slices"
 	"encoding/json"
 )
 
@@ -53,6 +54,20 @@ type MobDataJson struct {
 	Spells []string
 	Inventory Inventory
 	Equipment Equipment
+}
+
+// Returns a copy of the mob data that shares no slices with the original
+func (mobData *MobData) Clone() MobData {
+	clone := *mobData
+	clone.Conditions = slices.Clone(mobData.Conditions)
+	clone.Spells = slices.Clone(mobData.Spells)
+	clone.Inventory = Inventory {
+		Items: slices.Clone(mobData.Inventory.Items),
+	}
+	clone.Equipment.IsSlotInUse = slices.Clone(mobData.Equipment.IsSlotInUse)
+	clone.Equipment.SlotItem = slices.Clone(mobData.Equipment.SlotItem)
+
+	return clone
 }
 
 func (mobData *MobData) MarshalJSON() ([]byte, error) {
@@ -264,22 +279,38 @@ func (mobData *MobData) HasCondition(conditionId ConditionId) bool {
 	return false
 }
 
-func (mobData *MobData) AddCondition(condition Condition) {
+func (mobData *MobData) AddCondition(conditionId ConditionId, duration int32) {
 	for index := range len(mobData.Conditions) {
-		if mobData.Conditions[index].Id == condition.Id {
-			incomingIsLonger :=
-				condition.TimeToLive == CONDITION_DURATION_INFINITE ||
-				(mobData.Conditions[index].TimeToLive < condition.TimeToLive &&
-					mobData.Conditions[index].TimeToLive != CONDITION_DURATION_INFINITE)
-			if incomingIsLonger {
-				mobData.Conditions[index].TimeToLive = condition.TimeToLive
-			}
+		existingCondition := &mobData.Conditions[index]
+		if existingCondition.Id != conditionId {
+			continue
+		}
 
+		// If the existing condition is infinite, then leave it alone
+		if existingCondition.Duration == CONDITION_DURATION_INFINITE {
 			return
 		}
+
+		// If the incoming condition is infinite, then make the existing condition that way
+		if duration == CONDITION_DURATION_INFINITE {
+			existingCondition.Duration = duration
+			existingCondition.Timer = 0
+			return
+		}
+
+		// Otherwise refresh the condition
+		existingCondition.Duration = max(existingCondition.Duration, duration)
+		// The timer is decremented only by the incoming duration
+		// This is because, if I have an existing condition with duration 5 and an incoming with 1,
+		// I only want to extend the condition by 1 (not by 5)
+		existingCondition.Timer = max(existingCondition.Timer - duration, 0)
 	}
 
-	mobData.Conditions = append(mobData.Conditions, condition)
+	mobData.Conditions = append(mobData.Conditions, Condition {
+		Id: conditionId,
+		Timer: 0,
+		Duration: duration,
+	})
 }
 
 func (mobData *MobData) RemoveCondition(conditionId ConditionId) {
