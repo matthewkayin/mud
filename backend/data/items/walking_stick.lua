@@ -1,7 +1,7 @@
 local item = {}
 
 item.name = "Walking Stick"
-item.description = "A nice wooden stick; useful for walking."
+item.description = "A nice wooden stick, useful for walking."
 item.kind = world.ItemKind.EQUIPMENT_ONE_HANDED
 item.price = 5
 item.size = 10

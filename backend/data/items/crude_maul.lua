@@ -1,7 +1,7 @@
 local item = {}
 
 item.name = "Crude Maul"
-item.description = "A rudimentary implement made for chopping wood; useful for bashing."
+item.description = "A rudimentary implement made for chopping wood, useful for bashing."
 item.kind = world.ItemKind.EQUIPMENT_TWO_HANDED
 item.price = 15
 item.size = 10
