@@ -262,7 +262,9 @@ func (parser *ScriptParser) getOptionalItemInfusion(table *lua.Table, key string
 	parser.checkInt32Positive(infusion.ApplyDuration, "apply_duration")
 
 	infusion.UsesRemaining = parser.getInt32(infusionTable, "uses_remaining")
-	parser.checkInt32Positive(infusion.UsesRemaining, "uses_remaining")
+	if infusion.UsesRemaining != ITEM_INFUSION_USES_UNLIMITED {
+		parser.checkInt32Positive(infusion.UsesRemaining, "uses_remaining")
+	}
 
 	return infusion
 }

@@ -10,6 +10,6 @@ item.armor = 5
 item.max_durability = 200
 item.stealth_penalty = 0.25
 item.stat_bonuses = {}
-item.stat_requirements = { STR = 10 }
+item.stat_requirements = { STR = 11 }
 
 return item
