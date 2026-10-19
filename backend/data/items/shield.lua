@@ -2,7 +2,7 @@
 local item = {}
 
 item.name = "Shield"
-item.description = "It's just a fucking shield, okay?"
+item.description = "It's just a fucking shield, okay? Do you not know what that is?"
 item.kind = world.ItemKind.EQUIPMENT_SHIELD
 item.price = 50
 item.size = 10

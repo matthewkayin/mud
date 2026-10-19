@@ -1,7 +1,7 @@
 local item = {}
 
 item.name = "Potion of Health"
-item.description = "A red tonic that gives health to the drinker"
+item.description = "A red tonic that gives health to the drinker."
 item.kind = world.ItemKind.CONSUMABLE
 item.price = 20
 item.size = 5

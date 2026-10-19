@@ -4,7 +4,9 @@ recipe.name = "Potion of Mana"
 recipe.job = "Alchemist"
 recipe.level = 2
 recipe.materials = {
-	{ item = "Dummy Material", amount = 10 },
+	{ item = "Glass Bottle", amount = 1 },
+	{ item = "Monster Horn", amount = 2 },
+	{ item = "Monster Slime", amount = 2 },
 }
 recipe.output = { item = "Potion of Mana", amount = 1 }
 
