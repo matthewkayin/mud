@@ -81,6 +81,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				targetInventory, chestName, err = fuzzyFindChestInventory(playerRoom, containerWords)
 				if err != nil {
 					*player.inbox <- err.Error()
+					return true
 				}
 			}
 

@@ -358,6 +358,33 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.ReturnNumber(float64(index))
 	},
 
+	"mob_repair_item": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
+		amount := frameGetIntegerArg(&frame, 2, "amount")
+		item := mob.Data.Inventory.Items[index]
+		itemData := ITEM_DATA[item.Id]
+
+		if itemData.Kind != ITEM_KIND_EQUIPMENT_ONE_HANDED &&
+		   itemData.Kind != ITEM_KIND_EQUIPMENT_TWO_HANDED &&
+		   itemData.Kind != ITEM_KIND_EQUIPMENT_OUTFIT &&
+		   itemData.Kind != ITEM_KIND_EQUIPMENT_SHIELD {
+								return frame.ReturnNil()
+							}
+
+		var amountRepaired int32 = 0
+
+		if item.Durability + int32(amount) > itemData.GetMaxDurability() {
+			amountRepaired = itemData.GetMaxDurability() - item.Durability
+			item.Durability = itemData.GetMaxDurability()
+		} else {
+			amountRepaired = int32(amount)
+			item.Durability += int32(amount)
+		}
+
+		return frame.ReturnNumber(float64(amountRepaired))
+	},
+
 	// Returns the total amount of an item in the mob's inventory
 	//
 	// @param handle MobHandle

@@ -219,6 +219,15 @@ function world.mob_exists(handle) end
 ---@return integer, boolean
 function world.mob_find_inventory_item(handle, item_name) end
 
+--- Repair an item in a mob inventory.
+--- Returns amount of durability repaired, or nil if item not found.
+---
+---@param handle MobHandle
+---@param index integer
+---@param amount integer
+---@return integer?
+function world.mob_repair_item(handle, index, amount) end
+
 --- Returns the number of conditions the mob has
 ---
 ---@param mob MobHandle
