@@ -111,11 +111,12 @@ world.ConditionStatChangeType = {
 	PERCENT = "Percent",
 }
 
----@enum SpellTarget
-world.SpellTarget = {
+---@enum TargetType
+world.TargetType = {
 	NONE = "None",
 	ALLY = "Ally",
 	ENEMY = "Enemy",
+	INVENTORY_ITEM = "Inventory Item",
 	ARGUMENT = "Argument",
 }
 
@@ -355,7 +356,7 @@ function world.mob_is_npc(handle) end
 --- Remves a condition from a mob
 ---
 ---@param mob MobHandle
----@param condition ConditionType
+---@param condition string
 function world.mob_remove_condition(mob, condition) end
 
 --- Removes an amount of the item at an index in the mob's inventory.

@@ -9,6 +9,7 @@ import (
 )
 
 const ITEM_INFUSION_USES_UNLIMITED int32 = -1
+const ITEM_USABLE_BY_JOB_ANY JobId = -1
 
 type ItemId int32
 
@@ -112,6 +113,9 @@ const (
 )
 
 type ItemDataConsumable struct {
+	UsableByJob JobId
+	TargetType TargetType
+	ValidateArgument *lua.Function
 	onUse *lua.Function
 }
 
@@ -232,6 +236,23 @@ func (parser *ScriptParser) parseItemData(table *lua.Table) *ItemData {
 	switch itemData.Kind {
 		case ITEM_KIND_CONSUMABLE: {
 			data := &ItemDataConsumable{}
+
+			jobName := parser.getString(table, "usable_by_job")
+			if jobName == "any" {
+				data.UsableByJob = ITEM_USABLE_BY_JOB_ANY
+			} else {
+				var exists bool
+				data.UsableByJob, exists = JOB_NAME_TO_ID[jobName]
+				if !exists {
+					parser.addProblem(fmt.Errorf("No job exists called '%s'.", jobName))
+				}
+			}
+
+			data.TargetType = parser.getTargetType(table, "target_type")
+			if data.TargetType == TARGET_TYPE_ARGUMENT {
+				data.ValidateArgument = parser.getFunction(table, "validate_argument")
+			}
+
 			data.onUse = parser.getFunction(table, "on_use")
 			itemData.Data = data
 		}
@@ -341,10 +362,6 @@ func (itemData *ItemData) ItemIsOneHanded() bool {
 func (itemData *ItemData) ItemIsWeapon() bool {
 	return itemData.Kind == ITEM_KIND_EQUIPMENT_ONE_HANDED ||
 		itemData.Kind == ITEM_KIND_EQUIPMENT_TWO_HANDED
-}
-
-func (itemData *ItemData) ItemIsShield() bool {
-	return itemData.Kind == ITEM_KIND_EQUIPMENT_SHIELD
 }
 
 func (itemData *ItemData) ItemCanStack() bool {

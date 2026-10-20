@@ -170,15 +170,15 @@ func (mobData *MobData) MaxMana() int32 {
 }
 
 func (mobData *MobData) Armor() int32 {
-	outfit := mobData.Equipment.Get(EQUIPMENT_SLOT_OUTFIT)
-	shield := mobData.Equipment.Get(EQUIPMENT_SLOT_OFF_HAND)
 	var armorVal int32 = 0
 
+	outfit := mobData.Equipment.Get(EQUIPMENT_SLOT_OUTFIT)
 	if outfit != nil {
 		itemData := ITEM_DATA[outfit.Id]
 		armorVal += itemData.Data.(*ItemDataArmor).Armor
 	}
 
+	shield := mobData.Equipment.GetShield()
 	if shield != nil {
 		itemData := ITEM_DATA[shield.Id]
 		armorVal += itemData.Data.(*ItemDataArmor).Armor

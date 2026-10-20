@@ -50,6 +50,14 @@ func (inventory *Inventory) FindItem(id ItemId) (int, bool) {
 	return 0, false
 }
 
+func (inventory *Inventory) FindExpectedItem(expectedId ItemId, expectedIndex int) (int, bool) {
+	if expectedIndex < inventory.Length() && inventory.Items[expectedIndex].Id == expectedId {
+		return expectedIndex, true
+	}
+
+	return inventory.FindItem(expectedId)
+}
+
 // Returns the index that the item was added at
 func (inventory *Inventory) AddItem(item Item) int {
 	itemData := ITEM_DATA[item.Id]

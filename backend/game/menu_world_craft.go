@@ -3,6 +3,7 @@ package game
 import (
 	"fmt"
 	"strings"
+	"strconv"
 	"mud/world"
 )
 
@@ -65,46 +66,46 @@ var MENU_WORLD_ENTRIES_CRAFT = map[string]MenuEntry {
 		},
 	},
 
-	"cast": {
-		usage: "cast <spell> [on <target>]",
-		description: "Cast a spell",
+	"craft": {
+		usage: "craft [<amount>] <item>",
+		description: "Craft an item for which you know the recipe",
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
-			spellWords, targetWords, userSpecifiedTarget := splitArgsBy(args, "on")
-
-			if len(spellWords) == 0 || (userSpecifiedTarget && len(targetWords) == 0) {
+			if len(args) < 1 {
 				return false
 			}
 
-			// Find the spell in their spell list
-			spell, err := fuzzyFindCastableSpell(gamestate, player, spellWords)
+			// Check if they are in comabt
+			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+			if playerMob.IsInCombat(gamestate.world) {
+				*player.inbox <- "You cannot craft items while you are in combat."
+				return true
+			}
+
+			//check whether they put in a quantity
+			amount, atoiErr := strconv.Atoi(args[0])
+			var batchAmount int32 = 1
+			if atoiErr == nil {
+				args = args[1:]
+				batchAmount = int32(amount)
+			}
+
+			recipe, fuzErr := fuzzyFindKnownRecipe(player.character, args)
+			if fuzErr != nil {
+				*player.inbox <- fuzErr.Error()
+				return true
+			}
+
+			err := playerMob.CanCraft(recipe, batchAmount)
 			if err != nil {
 				*player.inbox <- err.Error()
 				return true
 			}
 
-			// Find the target in the room
-			target, err := findSpellTarget(gamestate, player, spell, userSpecifiedTarget, targetWords)
-			if err != nil {
-				*player.inbox <- err.Error()
-				return true
-			}
-
-			// Check for protected NPC
-			if target.Type == world.MOB_TARGET_MOB {
-				targetHandle := target.Value.(world.MobHandle)
-				targetMob := gamestate.world.Mobs.Get(targetHandle)
-				if targetMob.Npc.IsProtected() {
-					*player.inbox <- fmt.Sprintf("You cannot attack %s, they are a friend!", targetMob.Data.Name)
-					return true
-				}
-			}
-
-			// Queue up a cast action
 			player.nextAction = Action {
-				actionType: ACTION_TYPE_CAST,
-				data: ActionCast {
-					spell: spell,
-					target: target,
+				actionType: ACTION_TYPE_CRAFT_ITEM,
+				data: ActionCraftItem {
+					target: recipe,
+					amount: batchAmount,
 				},
 			}
 

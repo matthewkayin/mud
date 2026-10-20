@@ -6,7 +6,7 @@ spell.casts_to_learn = 50
 
 spell.mana_cost = 5
 spell.cast_time = world.SPELL_CAST_TIME_INSTANT
-spell.targets = world.SpellTarget.ARGUMENT
+spell.target_type = world.TargetType.ARGUMENT
 
 function spell.validate_argument(caster, argument)
     local room = world.mob_get_room(caster)

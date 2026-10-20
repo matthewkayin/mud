@@ -6,7 +6,19 @@ import (
 	"mud/world"
 	"mud/util"
 	"strings"
+
+	"github.com/mmcdole/lunar"
 )
+
+type FindTargetParams struct {
+	targetType world.TargetType
+	userSpecifiedTarget bool
+	targetWords []string
+	verb string
+	name string
+	noun string
+	validateArgument *lua.Function
+}
 
 var MENU_WORLD = Menu {
 	onEnter: func(gamestate *GameState, player *Player) {
@@ -47,7 +59,7 @@ var MENU_WORLD = Menu {
 		player.character = nil
 	},
 
-	entries: mergeMenuEmntries(
+	entries: mergeMenuEntries(
 		MENU_WORLD_ENTRIES_GENERAL,
 		MENU_WORLD_ENTRIES_ACTIONS,
 		MENU_WORLD_ENTRIES_CRAFT,
@@ -260,34 +272,33 @@ func printMobHp(player *Player, mob *world.Mob) {
 	*player.inbox <- fmt.Sprintf("MP: %d / %d", mob.Data.Mana, mob.Data.MaxMana())
 }
 
-func findSpellTarget(gamestate *GameState, player *Player, spell world.SpellId, userSpecifiedTarget bool, targetWords []string) (world.MobTarget, error) {
-	spellData := world.SPELL_DATA[spell]
-
-	switch spellData.Targets {
-		case world.SPELL_TARGET_NONE: {
-			if userSpecifiedTarget {
-				return world.MobTarget{}, fmt.Errorf("%s is not a single-target spell. You cannot cast it 'on' someone.", spellData.Name)
+func findTarget(gamestate *GameState, player *Player, params FindTargetParams) (world.MobTarget, error) {
+	switch params.targetType {
+		case world.TARGET_TYPE_NONE: {
+			if params.userSpecifiedTarget {
+				return world.MobTarget{}, fmt.Errorf("%s is not a single-target %s. You cannot %s it 'on' someone.",
+					params.name, params.noun, params.verb)
 			}
 		}
 
-		case world.SPELL_TARGET_ALLY, world.SPELL_TARGET_ENEMY: {
-			if !userSpecifiedTarget {
-				return world.MobTarget{}, fmt.Errorf("%s is a single-target spell. You must specify a target.", spellData.Name)
+		case world.TARGET_TYPE_ALLY, world.TARGET_TYPE_ENEMY: {
+			if !params.userSpecifiedTarget {
+				return world.MobTarget{}, fmt.Errorf("%s is a single-target %s. You must specify a target.", params.name, params.noun)
 			}
 
-			targetHandle, err := fuzzyFindTarget(gamestate, player, targetWords)
+			targetHandle, err := fuzzyFindTarget(gamestate, player, params.targetWords)
 			if err != nil {
 				return world.MobTarget{}, err
 			}
 
 			targetMob := gamestate.world.Mobs.Get(targetHandle)
-			if spellData.Targets == world.SPELL_TARGET_ALLY && targetMob.IsNpc() {
-				return world.MobTarget{}, fmt.Errorf("You can only cast that spell on players.")
+			if params.targetType == world.TARGET_TYPE_ALLY && targetMob.IsNpc() {
+				return world.MobTarget{}, fmt.Errorf("You can only %s that %s on players.", params.verb, params.noun)
 			}
 
 			targetIsAlly := targetMob.IsPlayer() || targetMob.Npc.IsProtected()
-			if spellData.Targets == world.SPELL_TARGET_ENEMY && targetIsAlly {
-				return world.MobTarget{}, fmt.Errorf("You can only cast that spell on enemies.")
+			if params.targetType == world.TARGET_TYPE_ENEMY && targetIsAlly {
+				return world.MobTarget{}, fmt.Errorf("You can only %s that %s on enemies.", params.verb, params.noun)
 			}
 
 			return world.MobTarget {
@@ -296,14 +307,41 @@ func findSpellTarget(gamestate *GameState, player *Player, spell world.SpellId, 
 			}, nil
 		}
 
-		case world.SPELL_TARGET_ARGUMENT: {
-			if !userSpecifiedTarget || len(targetWords) == 0 {
-				return world.MobTarget{}, fmt.Errorf("You must specify an argument to cast that spell.")
+		case world.TARGET_TYPE_INVENTORY_ITEM: {
+			if !params.userSpecifiedTarget {
+				return world.MobTarget{}, fmt.Errorf("%s is an item-targeting %s. You must specify an inventory item to target.", params.name, params.noun)
+			}
+
+			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+			index, err := fuzzyFindInventoryItem(&playerMob.Data.Inventory, "your inventory", params.targetWords)
+			if err != nil {
+				return world.MobTarget{}, err
+			}
+
+			return world.MobTarget {
+				Type: world.MOB_TARGET_INVENTORY_ITEM,
+				Value: world.MobItemTarget {
+					Id: playerMob.Data.Inventory.Items[index].Id,
+					Index: index,
+				},
+			}, nil
+		}
+
+		case world.TARGET_TYPE_ARGUMENT: {
+			if !params.userSpecifiedTarget || len(params.targetWords) == 0 {
+				return world.MobTarget{}, fmt.Errorf("You must specify an argument to %s that %s.", params.verb, params.noun)
 			}
 
 			// Validate the argument
-			argument := strings.ToLower(strings.Join(targetWords, " "))
-			err := spellData.ValidateArgument(gamestate.world, player.mobHandle, argument)
+			argument := strings.ToLower(strings.Join(params.targetWords, " "))
+			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+			err := playerMob.ValidateArgument(gamestate.world, world.MobValidateArgumentParams {
+				Hook: params.validateArgument,
+				Argument: argument,
+				Verb: params.verb,
+				Name: params.name,
+				Noun: params.noun,
+			})
 			if err != nil {
 				return world.MobTarget{}, err
 			}

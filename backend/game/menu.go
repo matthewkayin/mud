@@ -73,7 +73,7 @@ func (menu *Menu) handleHelpCommand(player *Player, args []string) {
 	}
 }
 
-func mergeMenuEmntries(entryMaps ...map[string]MenuEntry) map[string]MenuEntry {
+func mergeMenuEntries(entryMaps ...map[string]MenuEntry) map[string]MenuEntry {
 	result := make(map[string]MenuEntry)
 
 	for _, entries := range entryMaps {

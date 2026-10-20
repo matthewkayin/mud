@@ -10,3 +10,6 @@ backend/saves
 .cache
 .DS_Store
 backend/.DS_Store
+
+__debug_bin
+*__debug_bin

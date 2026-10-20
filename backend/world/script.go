@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 	"strings"
+	"io/fs"
+	"path/filepath"
 
 	"github.com/mmcdole/lunar"
 )
@@ -183,21 +185,28 @@ func (world *World) scriptLoadTable(path string) (*lua.Table, error) {
 
 // Returns the paths of the scripts in a subfolder of the data folder, relative to the data folder
 func scriptGetFilesFrom(dataFolder string, subfolder string) ([]string, error) {
-	files, err := os.ReadDir(dataFolder + "/" + subfolder)
-	if err != nil {
-		return []string{}, err
-	}
+	paths := make([]string, 0, 1)
 
-	paths := make([]string, 0, len(files))
-	for _, file := range files {
-		// Skip non-lua files
-		if !strings.HasSuffix(file.Name(), ".lua") {
-			log.Printf("Skipping non-lua file %s.", file.Name())
-			continue
+	err := filepath.WalkDir(dataFolder + "/" + subfolder, func (path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
 		}
 
-		paths = append(paths, subfolder + "/" + file.Name())
-	}
+		// Ignore directories
+		if entry.IsDir() {
+			return nil
+		}
 
-	return paths, nil
+		// Skip non-lua files
+		if !strings.HasSuffix(path, ".lua") {
+			log.Printf("Skipping non-lua file %s.", path)
+			return nil
+		}
+
+		pathWithoutDataFolder := path[len(dataFolder) - 1:]
+		paths = append(paths, pathWithoutDataFolder)
+		return nil
+	})
+
+	return paths, err
 }

@@ -6,7 +6,7 @@ spell.casts_to_learn = 1
 
 spell.mana_cost = 5
 spell.cast_time = 1
-spell.targets = world.SpellTarget.ALLY
+spell.target_type = world.TargetType.ALLY
 
 function spell.on_cast(caster, target)
     local room = world.mob_get_room(caster)

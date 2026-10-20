@@ -6,6 +6,9 @@ item.kind = world.ItemKind.CONSUMABLE
 item.price = 20
 item.size = 5
 
+item.usable_by_job = "any"
+item.target_type = world.TargetType.NONE
+
 item.on_use = function(user)
     local regen = world.regen_mana(user, 20)
     local user_name = world.mob_get_name(user)

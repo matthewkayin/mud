@@ -54,12 +54,35 @@ type MobTargetType int
 const (
 	MOB_TARGET_NONE MobTargetType = iota
 	MOB_TARGET_MOB
+	MOB_TARGET_INVENTORY_ITEM
 	MOB_TARGET_ARGUMENT
 )
 
 type MobTarget struct {
 	Type MobTargetType
 	Value any
+}
+
+type MobItemTarget struct {
+	Id ItemId
+	Index int
+}
+
+type MobValidateArgumentParams struct {
+	Hook *lua.Function
+	Argument string
+	Noun string
+	Verb string
+	Name string
+}
+
+type MobOnUseOrCastParams struct {
+	targetType TargetType
+	hook *lua.Function
+	validateArgument *lua.Function
+	noun string
+	verb string
+	name string
 }
 
 type MobFlag uint32
@@ -90,7 +113,7 @@ type Mob struct {
 
 	castSpell SpellId
 	castTimer int32
-	useItemId ItemId
+	itemToUse MobItemTarget
 
 	craftItemRecipe RecipeId
 	craftItemAmount int32
@@ -257,10 +280,10 @@ func (mob *Mob) SetModeCast(world *World, mobHandle MobHandle, spell SpellId, ta
 	mob.castTimer = SPELL_DATA[spell].CastTime
 }
 
-func (mob *Mob) SetModeUseItem(world *World, mobHandle MobHandle, itemId ItemId, target MobTarget) {
+func (mob *Mob) SetModeUseItem(world *World, mobHandle MobHandle, itemToUse MobItemTarget, target MobTarget) {
 	mob.Mode = MOB_MODE_USE_ITEM
 	mob.Target = target
-	mob.useItemId = itemId
+	mob.itemToUse = itemToUse
 }
 
 func (mob *Mob) SetModeCraftItem(world *World, mobHandle MobHandle, recipe RecipeId, amount int32) {
@@ -594,13 +617,10 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	mob.subtractDurabilityFromEquipment(world, slot)
 	// and from defender's weapon or armor
 	if !targetMob.IsDead() {
-		shieldDurabilityLoss := false
-		if targetMob.Data.Equipment.IsShieldEquipped() && rand.IntN(2) == 1 {
+		shield := targetMob.Data.Equipment.GetShield()
+		if shield != nil && rand.IntN(2) == 1 {
 			targetMob.subtractDurabilityFromEquipment(world, EQUIPMENT_SLOT_OFF_HAND)
-			shieldDurabilityLoss = true
-		}
-
-		if shieldDurabilityLoss == false {
+		} else {
 			targetMob.subtractDurabilityFromEquipment(world, EQUIPMENT_SLOT_OUTFIT)
 		}
 	}
@@ -775,6 +795,105 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 	}
 }
 
+func (mob *Mob) ValidateArgument(world *World, params MobValidateArgumentParams) error {
+	userLuaHandle, err := world.getMobLuaHandle(mob.Handle)
+	if err != nil {
+		log.Printf("Warn - Failed to get lua handle during ValidateArgument: %s", err.Error())
+		return fmt.Errorf("Failed to %s %s because of a technical issue.", params.Verb, params.Noun)
+	}
+
+	result, ok := world.scriptCall(params.Hook.Value(), fmt.Sprintf("%s %s validate_argument()", params.Noun, params.Name), userLuaHandle, lua.String(params.Argument))
+	if !ok {
+		return fmt.Errorf("Failed to %s %s because of a technical issue.", params.Verb, params.Noun)
+	}
+
+	errorString, hasError := result.AsString()
+	if hasError {
+		return fmt.Errorf("%s", errorString)
+	}
+
+	return nil
+}
+
+// Calls the on_use() or on_cast() of an item or spell
+func (mob *Mob) onUseOrCast(world *World, params MobOnUseOrCastParams) bool {
+	// Double check argument validation before use/cast
+	if params.targetType == TARGET_TYPE_ARGUMENT {
+		argument := mob.Target.Value.(string)
+		err := mob.ValidateArgument(world, MobValidateArgumentParams {
+			Hook: params.validateArgument,
+			Argument: argument,
+			Verb: params.verb,
+			Name: params.name,
+			Noun: params.noun,
+		})
+		if err != nil {
+			world.messageRoom(mob.Data.Room, "But it failed!")
+			return false
+		}
+	}
+
+	// Build hook arguments array
+	args := make([]lua.Value, 0, 1)
+
+	// User handle
+	mobLuaHandle, err := world.getMobLuaHandle(mob.Handle)
+	if err != nil {
+		log.Printf("Failed to get mob lua handle during onUseOrCast: %s", err.Error())
+		world.messageRoom(mob.Data.Room, "But it failed!")
+		return false
+	}
+	args = append(args, mobLuaHandle)
+
+	// Target args
+	switch params.targetType {
+		case TARGET_TYPE_NONE: {}
+
+		case TARGET_TYPE_ALLY, TARGET_TYPE_ENEMY: {
+			targetMob := mob.getTargetMob(world)
+			targetLuaHandle, err := world.getMobLuaHandle(targetMob.Handle)
+			if err != nil {
+				log.Printf("Failed to get target lua handle during onUseOrCast: %s", err.Error())
+				world.messageRoom(mob.Data.Room, "But it failed!")
+				return false
+			}
+
+			args = append(args, targetLuaHandle)
+		}
+
+		case TARGET_TYPE_INVENTORY_ITEM: {
+			itemTarget := mob.Target.Value.(MobItemTarget)
+			index, found := mob.Data.Inventory.FindExpectedItem(itemTarget.Id, itemTarget.Index)
+			if !found {
+				world.messageRoom(mob.Data.Room, "But it failed!")
+				return false
+			}
+
+			args = append(args, lua.Number(float64(index)))
+		}
+
+		case TARGET_TYPE_ARGUMENT: {
+			argument := mob.Target.Value.(string)
+			args = append(args, lua.String(argument))
+		}
+
+		default: {
+			log.Printf("Target type %s not handled on onUseOrCast.", params.targetType.String())
+			world.messageRoom(mob.Data.Room, "But it failed!")
+			return false
+		}
+	}
+
+	// Invoke hook
+	_, ok := world.scriptCall(params.hook.Value(), fmt.Sprintf("%s '%s' on_%s()", params.noun, params.name, params.verb), args...)
+	if !ok {
+		world.messageRoom(mob.Data.Room, "But it failed!")
+		return false
+	}
+
+	return true
+}
+
 func (mob *Mob) spellcast(world *World) bool {
 	spellData := SPELL_DATA[mob.castSpell]
 
@@ -782,56 +901,14 @@ func (mob *Mob) spellcast(world *World) bool {
 	mob.alertness = MOB_ALERTNESS_MAX
 	mob.SetFlag(MOB_FLAG_HIDDEN, false)
 
-	// Double-check spell target validation before we cast
-	if spellData.Targets == SPELL_TARGET_ARGUMENT {
-		argument := mob.Target.Value.(string)
-		err := spellData.ValidateArgument(world, mob.Handle, argument)
-		if err != nil {
-			world.messageRoom(mob.Data.Room, "But it failed!")
-			return false
-		}
-	}
-
-	// Build cast arguments array
-	castArgs := make([]lua.Value, 0, 1)
-
-	// Caster handle
-	casterLuaHandle, err := world.getMobLuaHandle(mob.Handle)
-	if err != nil {
-		log.Print(err.Error())
-		return false
-	}
-	castArgs = append(castArgs, casterLuaHandle)
-
-	// Targets
-	switch spellData.Targets {
-		case SPELL_TARGET_NONE: {}
-
-		case SPELL_TARGET_ALLY, SPELL_TARGET_ENEMY: {
-			targetMob := mob.getTargetMob(world)
-			targetLuaHandle, err := world.getMobLuaHandle(targetMob.Handle)
-			if err != nil {
-				log.Print(err.Error())
-				return false
-			}
-
-			castArgs = append(castArgs, targetLuaHandle)
-		}
-
-		case SPELL_TARGET_ARGUMENT: {
-			argument := mob.Target.Value.(string)
-			castArgs = append(castArgs, lua.String(argument))
-		}
-	}
-
-	// Call spell on_cast
-	_, ok := world.scriptCall(spellData.OnCast.Value(), fmt.Sprintf("spell '%s' on_cast()", spellData.Name), castArgs...)
-	if !ok {
-		world.messageRoom(mob.Data.Room, "But it failed!")
-		return false
-	}
-
-	return true
+	return mob.onUseOrCast(world, MobOnUseOrCastParams {
+		targetType: spellData.TargetType,
+		hook: spellData.OnCast,
+		validateArgument: spellData.ValidateArgument,
+		noun: "spell",
+		verb: "cast",
+		name: spellData.Name,
+	})
 }
 
 func (mob *Mob) calculateMagicDamage(baseDamage int32, target *Mob) int32 {
@@ -916,51 +993,48 @@ func (mob *Mob) getSpellProvidedBySlot(slot EquipmentSlot) (SpellId, bool) {
 
 func (mob *Mob) useItem(world *World) {
 	// Find item in mob inventory
-	var itemIndex int = -1
-	for index := range len(mob.Data.Inventory.Items) {
-		if mob.Data.Inventory.Items[index].Id == mob.useItemId {
-			itemIndex = index
-			break
-		}
-	}
-
-	// Check if the item still exists
-	// This is a legit edge case - player might drop the item from their inventory before their turn happens
-	if itemIndex == -1 {
+	itemIndex, itemFound := mob.Data.Inventory.FindExpectedItem(mob.itemToUse.Id, mob.itemToUse.Index)
+	if !itemFound {
 		mob.Mode = MOB_MODE_IDLE
 		return
 	}
 
-	// Remove item from their inventory
-	item := mob.Data.Inventory.RemoveItem(itemIndex)
-
 	// Use item
+	item := &mob.Data.Inventory.Items[itemIndex]
 	itemData := ITEM_DATA[item.Id]
 	world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> used <g>%s</g>!", mob.GetName(), itemData.Name))
 
+	success := false
 	switch itemData.Kind {
 		case ITEM_KIND_CONSUMABLE: {
 			consumableData := itemData.Data.(*ItemDataConsumable)
-			targetMob := mob.getTargetMob(world)
-			luaHandle, err := world.getMobLuaHandle(targetMob.Handle)
-			if err != nil {
-				log.Print(err.Error())
-			} else {
-				world.scriptCall(consumableData.onUse.Value(), fmt.Sprintf("item '%s' on_use()", itemData.Name), luaHandle)
-			}
+
+			success = mob.onUseOrCast(world, MobOnUseOrCastParams {
+				targetType: consumableData.TargetType,
+				hook: consumableData.onUse,
+				validateArgument: consumableData.ValidateArgument,
+				noun: "item",
+				verb: "use",
+				name: itemData.Name,
+			})
 		}
 		case ITEM_KIND_SPELL_SCROLL: {
 			scrollData := itemData.Data.(*ItemDataSpellScroll)
 
 			mob.castSpell = scrollData.Spell
-			success := mob.spellcast(world)
-			if !success {
-				// Add the item back to their inventory
-				mob.Data.Inventory.AddItem(item)
-			}
+			success = mob.spellcast(world)
 		}
 		default:
 			panic(fmt.Sprintf("Unhandled item type %s. This item type should never have been allowed to be used here.", itemData.Kind.String()))
+	}
+
+	// If used successfully, remove the item from their inventory
+	if success {
+		// Re-check the itemIndex in case the hook changed their inventory in some way
+		itemIndex, itemFound = mob.Data.Inventory.FindExpectedItem(mob.itemToUse.Id, mob.itemToUse.Index)
+		if itemFound {
+			mob.Data.Inventory.RemoveItem(itemIndex)
+		}
 	}
 }
 
@@ -1030,8 +1104,8 @@ func (mob *Mob) GetStealthPenalty() float32 {
 			armorStealthPenalty += outfitData.StealthPenalty
 		}
 
-		if mob.Data.Equipment.IsShieldEquipped() {
-			shield := mob.Data.Equipment.Get(EQUIPMENT_SLOT_OFF_HAND)
+		shield := mob.Data.Equipment.GetShield()
+		if shield != nil {
 			shieldData := ITEM_DATA[shield.Id].Data.(*ItemDataArmor)
 			armorStealthPenalty += shieldData.StealthPenalty
 		}

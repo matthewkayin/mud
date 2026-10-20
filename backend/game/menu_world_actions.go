@@ -220,42 +220,61 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 			itemData := world.ITEM_DATA[item.Id]
 
 			switch itemData.Kind {
-				case world.ITEM_KIND_CONSUMABLE:
-					// Determine target
-					var targetHandle world.MobHandle
-					if userSpecifiedTarget {
-						var err error
-						targetHandle, err = fuzzyFindTarget(gamestate, player, targetWords)
-						if err != nil {
-							*player.inbox <- err.Error()
-							return true
-						}
-					} else {
-						targetHandle = player.mobHandle
-					}
+				case world.ITEM_KIND_CONSUMABLE: {
+					consumableData := itemData.Data.(*world.ItemDataConsumable)
 
-					// Temporary, we might change later if we add "bombs" / other items that can be used on other people
-					if targetHandle != player.mobHandle {
-						*player.inbox <- "That item can only be used on yourself."
+					// Check that player has the required job to use this item
+					playerCanUseItem :=
+						consumableData.UsableByJob == world.ITEM_USABLE_BY_JOB_ANY ||
+						consumableData.UsableByJob == playerMob.PlayerCharacter.Job
+					if !playerCanUseItem {
+						*player.inbox <- fmt.Sprintf("That item can only be used by %ss.", world.JOB_DATA[consumableData.UsableByJob].Name)
 						return true
 					}
+
+					// Find target
+					target, err := findTarget(gamestate, player, FindTargetParams {
+						targetType: consumableData.TargetType,
+						userSpecifiedTarget: userSpecifiedTarget,
+						targetWords: targetWords,
+						verb: "use",
+						noun: "item",
+						name: itemData.Name,
+						validateArgument: consumableData.ValidateArgument,
+					})
+					if err != nil {
+						*player.inbox <- err.Error()
+						return true
+					}
+
 					player.nextAction = Action {
 						actionType: ACTION_TYPE_USE_ITEM,
 						data: ActionUseItem {
-							itemId: item.Id,
-							target: world.MobTarget {
-								Type: world.MOB_TARGET_MOB,
-								Value: targetHandle,
+							itemToUse: world.MobItemTarget {
+								Id: item.Id,
+								Index: itemIndex,
 							},
+							target: target,
 						},
 					}
 
 					return true
-				case world.ITEM_KIND_SPELL_SCROLL:
+				}
+
+				case world.ITEM_KIND_SPELL_SCROLL: {
 					scrollData := itemData.Data.(*world.ItemDataSpellScroll)
+					spellData := world.SPELL_DATA[scrollData.Spell]
 
 					// Find target
-					target, err := findSpellTarget(gamestate, player, scrollData.Spell, userSpecifiedTarget, targetWords)
+					target, err := findTarget(gamestate, player, FindTargetParams {
+						targetType: spellData.TargetType,
+						userSpecifiedTarget: userSpecifiedTarget,
+						targetWords: targetWords,
+						verb: "cast",
+						noun: "spell",
+						name: spellData.Name,
+						validateArgument: spellData.ValidateArgument,
+					})
 					if err != nil {
 						*player.inbox <- err.Error()
 						return true
@@ -265,13 +284,18 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 					player.nextAction = Action {
 						actionType: ACTION_TYPE_USE_ITEM,
 						data: ActionUseItem {
-							itemId: item.Id,
+							itemToUse: world.MobItemTarget {
+								Id: item.Id,
+								Index: itemIndex,
+							},
 							target: target,
 						},
 					}
 
 					return true
-				case world.ITEM_KIND_RECIPE:
+				}
+
+				case world.ITEM_KIND_RECIPE: {
 					var recipe world.RecipeId = itemData.Data.(*world.ItemDataRecipe).Recipe
 					recipeData := world.RECIPE_DATA[recipe]
 
@@ -295,10 +319,58 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 
 					playerMob.Data.Inventory.RemoveItem(itemIndex)
 					return true
+				}
+
 				default:
 					*player.inbox <- "That item is not a consumable."
 					return true
 			}
+		},
+	},
+
+	"cast": {
+		usage: "cast <spell> [on <target>]",
+		description: "Cast a spell",
+		handler: func (gamestate *GameState, player *Player, args []string) bool {
+			spellWords, targetWords, userSpecifiedTarget := splitArgsBy(args, "on")
+
+			if len(spellWords) == 0 || (userSpecifiedTarget && len(targetWords) == 0) {
+				return false
+			}
+
+			// Find the spell in their spell list
+			spell, err := fuzzyFindCastableSpell(gamestate, player, spellWords)
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
+			}
+
+			// Find the target in the room
+			spellData := world.SPELL_DATA[spell]
+			target, err := findTarget(gamestate, player, FindTargetParams {
+				targetType: spellData.TargetType,
+				userSpecifiedTarget: userSpecifiedTarget,
+				targetWords: targetWords,
+				verb: "cast",
+				noun: "spell",
+				name: spellData.Name,
+				validateArgument: spellData.ValidateArgument,
+			})
+			if err != nil {
+				*player.inbox <- err.Error()
+				return true
+			}
+
+			// Queue up a cast action
+			player.nextAction = Action {
+				actionType: ACTION_TYPE_CAST,
+				data: ActionCast {
+					spell: spell,
+					target: target,
+				},
+			}
+
+			return true
 		},
 	},
 
