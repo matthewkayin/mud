@@ -369,6 +369,20 @@ function world.mob_remove_condition(mob, condition) end
 ---@return integer
 function world.mob_remove_inventory_item(handle, index, amount) end
 
+--- Returns true if the two mobs are allies
+---
+---@param handleA MobHandle
+---@param handleB MobHandle
+---@return boolean
+function world.mobs_are_allies(handleA, handleB) end
+
+--- Returns true if the two mobs are enemies
+---
+---@param handleA MobHandle
+---@param handleB MobHandle
+---@return boolean
+function world.mobs_are_enemies(handleA, handleB) end
+
 --- Returns the NPC's disposition
 ---
 ---@param handle MobHandle

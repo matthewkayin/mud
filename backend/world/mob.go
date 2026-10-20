@@ -1117,3 +1117,25 @@ func (mob *Mob) Reveal(world *World) {
 	mob.SetFlag(MOB_FLAG_HIDDEN, false)
 	world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> was hiding in the room and has revealed themselves!", mob.Data.Name))
 }
+
+func mobsAreEnemies(mobA *Mob, mobB *Mob) bool {
+	// If both players, then not enemies
+	if mobA.IsPlayer() && mobB.IsPlayer() {
+		return false
+	}
+
+	// If they're both not players and A is a player, then B is a NPC
+	if mobA.IsPlayer() {
+		// B is an enemy to players if B is not protected
+		return !mobB.Npc.IsProtected()
+	}
+
+	// If they're both not players and B is a plyaer, then A is an NPC
+	if mobB.IsPlayer() {
+		// A is an enemy to players if B is not protected
+		return !mobA.Npc.IsProtected()
+	}
+
+	// If they are both NPCs, then they are enemies if they have different protected statuses
+	return mobA.Npc.IsProtected() != mobB.Npc.IsProtected()
+}
