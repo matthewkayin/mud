@@ -30,7 +30,7 @@ type ActionCast struct {
 }
 
 type ActionUseItem struct {
-	itemId world.ItemId
+	itemToUse world.MobItemTarget
 	target world.MobTarget
 }
 
@@ -66,7 +66,7 @@ func (player *Player) doAction(gamestate *GameState) {
 			actionData := player.nextAction.data.(ActionUseItem)
 
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-			playerMob.SetModeUseItem(gamestate.world, player.mobHandle, actionData.itemId, actionData.target)
+			playerMob.SetModeUseItem(gamestate.world, player.mobHandle, actionData.itemToUse, actionData.target)
 		}
 
 		case ACTION_TYPE_CRAFT_ITEM: {

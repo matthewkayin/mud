@@ -6,7 +6,7 @@ spell.casts_to_learn = 50
 
 spell.mana_cost = 5
 spell.cast_time = 1
-spell.targets = world.SpellTarget.ENEMY
+spell.target_type = world.TargetType.ENEMY
 
 function spell.on_cast(caster, target)
     local damage = world.deal_magic_damage(caster, target, 10)

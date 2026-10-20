@@ -311,6 +311,17 @@ func (parser *ScriptParser) getDropTable(table *lua.Table, key string) DropTable
 	return drops
 }
 
+func (parser *ScriptParser) getTargetType(table *lua.Table, key string) TargetType {
+	targetTypeString := parser.getString(table, key)
+	targetType, ok := EnumFromString[TargetType](targetTypeString, TARGET_TYPE_COUNT)
+	if !ok {
+		parser.addProblem(fmt.Errorf("'%s' is not a valid TargetType.", targetTypeString))
+	}
+
+	return targetType
+}
+
+
 // Parses a table of the form { item = "<item name>", amount = N }
 func (parser *ScriptParser) parseItem(table *lua.Table, key string) (ItemId, int32) {
 	itemName := parser.getString(table, "item")

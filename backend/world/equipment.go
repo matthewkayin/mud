@@ -105,6 +105,19 @@ func (equipment *Equipment) Get(slot EquipmentSlot) *Item {
 	return &equipment.SlotItem[slot]
 }
 
+func (equipment *Equipment) GetShield() *Item {
+	item := equipment.Get(EQUIPMENT_SLOT_OFF_HAND)
+	if item == nil {
+		return nil
+	}
+
+	if ITEM_DATA[item.Id].Kind != ITEM_KIND_EQUIPMENT_SHIELD {
+		return nil
+	}
+
+	return item
+}
+
 func (equipment *Equipment) isTwoHandedWeaponEquipped() bool {
 	item := equipment.Get(EQUIPMENT_SLOT_MAIN_HAND)
 	if item == nil {
@@ -243,22 +256,6 @@ func (equipment *Equipment) IsHoldingSpellbookOf(spell SpellId) bool {
 		if heldSpellbookData.Spell == spell {
 			return true
 		}
-	}
-
-	return false
-}
-
-func (equipment *Equipment) IsShieldEquipped() bool {
-	offhand := equipment.Get(EQUIPMENT_SLOT_OFF_HAND)
-
-	if offhand == nil {
-		return false
-	}
-
-	offhandData := ITEM_DATA[offhand.Id]
-
-	if offhandData.Kind == ITEM_KIND_EQUIPMENT_SHIELD {
-		return true
 	}
 
 	return false

@@ -1,7 +1,6 @@
 package world
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/mmcdole/lunar"
@@ -11,30 +10,6 @@ const SPELL_CAST_TIME_INSTANT int32 = 0
 
 type SpellId int32
 
-type SpellTarget int
-const (
-	SPELL_TARGET_NONE SpellTarget = iota
-	SPELL_TARGET_ALLY
-	SPELL_TARGET_ENEMY
-	SPELL_TARGET_ARGUMENT
-	SPELL_TARGET_COUNT
-)
-
-func (spellTarget SpellTarget) String() string {
-	switch spellTarget {
-		case SPELL_TARGET_NONE:
-			return "None"
-		case SPELL_TARGET_ALLY:
-			return "Ally"
-		case SPELL_TARGET_ENEMY:
-			return "Enemy"
-		case SPELL_TARGET_ARGUMENT:
-			return "Argument"
-		default:
-			panic("Spell target kind not handled")
-	}
-}
-
 type SpellData struct {
 	Name string
 	Description string
@@ -42,9 +17,9 @@ type SpellData struct {
 
 	ManaCost int32
 	CastTime int32
-	Targets SpellTarget
+	TargetType TargetType
 
-	validateArgument *lua.Function
+	ValidateArgument *lua.Function
 	OnCast *lua.Function
 }
 
@@ -108,15 +83,9 @@ func (parser *ScriptParser) parseSpell(table *lua.Table) *SpellData {
 	spellData.CastTime = parser.getInt32(table, "cast_time")
 	parser.checkInt32NonNegative(spellData.CastTime, "CastTime")
 
-	targetsString := parser.getString(table, "targets")
-	var ok bool
-	spellData.Targets, ok = EnumFromString[SpellTarget](targetsString, SPELL_TARGET_COUNT)
-	if !ok {
-		parser.addProblem(fmt.Errorf("The SpellTarget '%s' is not a valid spell target.", targetsString))
-	}
-
-	if spellData.Targets == SPELL_TARGET_ARGUMENT {
-		spellData.validateArgument = parser.getFunction(table, "validate_argument")
+	spellData.TargetType = parser.getTargetType(table, "target_type")
+	if spellData.TargetType == TARGET_TYPE_ARGUMENT {
+		spellData.ValidateArgument = parser.getFunction(table, "validate_argument")
 	}
 
 	spellData.OnCast = parser.getFunction(table, "on_cast")
@@ -126,24 +95,4 @@ func (parser *ScriptParser) parseSpell(table *lua.Table) *SpellData {
 	}
 
 	return spellData
-}
-
-func (spellData *SpellData) ValidateArgument(world *World, casterHandle MobHandle, argument string) error {
-	casterLuaHandle, err := world.getMobLuaHandle(casterHandle)
-	if err != nil {
-		log.Printf("Warn - Failed to get caster lua handle during SpellData ValidateArgument: %s", err.Error())
-		return fmt.Errorf("The spell failed.")
-	}
-
-	result, ok := world.scriptCall(spellData.validateArgument.Value(), fmt.Sprintf("spell %s validate_argument()", spellData.Name), casterLuaHandle, lua.String(argument))
-	if !ok {
-		return fmt.Errorf("The spell failed.")
-	}
-
-	errorString, hasError := result.AsString()
-	if hasError {
-		return fmt.Errorf("%s", errorString)
-	}
-
-	return nil
 }

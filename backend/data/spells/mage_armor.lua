@@ -6,7 +6,7 @@ spell.casts_to_learn = 50
 
 spell.mana_cost = 5
 spell.cast_time = world.SPELL_CAST_TIME_INSTANT
-spell.targets = world.SpellTarget.NONE
+spell.target_type = world.TargetType.NONE
 
 function spell.on_cast(caster)
     local caster_name = world.mob_get_name(caster)

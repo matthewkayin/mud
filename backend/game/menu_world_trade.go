@@ -3,6 +3,7 @@ package game
 import (
 	"fmt"
 	"log"
+	"strings"
 	"mud/world"
 	"mud/util"
 )
@@ -24,6 +25,57 @@ type TradeSession struct {
 	status TradeStatus
 	traderA Trader
 	traderB Trader
+}
+
+var MENU_WORLD_ENTRIES_TRADE = map[string]MenuEntry {
+	"trade": {
+		usage: "trade <action>",
+		description: "Trade atomically with another player. Type 'trade help' to see a list of trade actions.",
+		handler: func (gamestate *GameState, player *Player, args []string) bool {
+			if len(args) == 0 {
+				return false
+			}
+
+			action := strings.ToLower(args[0])
+			if action == "help" {
+				// User asked for help about a specific command
+				if len(args) >= 2 {
+					// Lookup the command in the menu
+					entry, entryExists := MENU_TRADE_ENTRIES[strings.ToLower(args[1])]
+					if !entryExists {
+						*player.inbox <- fmt.Sprintf("Cannot provide help because %s is not a known trading command.", args[1])
+						return true
+					}
+
+					// Send the help info to the user
+					*player.inbox <- fmt.Sprintf("%s - %s", entry.usage, entry.description)
+					return true
+				}
+
+				// Provide help info
+				*player.inbox <- "The trade menu lets you trade with another player. You can only trade with one player at a time."
+				*player.inbox <- "Commands:"
+				for _, entry := range MENU_TRADE_ENTRIES {
+					*player.inbox <- fmt.Sprintf("\t%s - %s", entry.usage, entry.description)
+				}
+
+				return true
+			}
+
+			entry, entryExists := MENU_TRADE_ENTRIES[action]
+			if !entryExists {
+				*player.inbox <- fmt.Sprintf("%s is not a trade action. Type 'trade help' to see a list of actions.", action)
+				return true
+			}
+
+			success := entry.handler(gamestate, player, args[1:])
+			if !success {
+				*player.inbox <- fmt.Sprintf("Invalid command. Usage: %s", entry.usage)
+			}
+
+			return true
+		},
+	},
 }
 
 var MENU_TRADE_ENTRIES = map[string]MenuEntry {

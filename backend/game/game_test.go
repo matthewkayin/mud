@@ -183,7 +183,7 @@ func TestScheduledShutdownWarnsThenEntersMaintenance(t *testing.T) {
 
 	warnings := len(inboxMessages(inbox))
 	for range 5 * SHUTDOWN_TICKS_PER_MINUTE - 1 {
-		gamestate.update()
+		gamestate.updateShutdown()
 		warnings += len(inboxMessages(inbox))
 	}
 
