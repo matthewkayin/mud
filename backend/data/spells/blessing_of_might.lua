@@ -16,12 +16,9 @@ function spell.on_cast(caster)
 
     for index = 1, world.room_get_occupant_count(room) do
         local occupant = world.room_get_occupant(room, index)
-        if world.mob_is_npc(occupant) then
-            goto continue
+        if world.mobs_are_allies(caster, occupant) then
+            world.mob_add_condition(occupant, "Blessing of Might", duration)
         end
-
-        world.mob_add_condition(occupant, "Blessing of Might", duration)
-        ::continue::
     end
 
     world.message_room(room, string.format("<y>%s</y> gave the party a <g>Blessing of Might</g>!", caster_name))

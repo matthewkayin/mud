@@ -294,6 +294,30 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.ReturnBool(mob.IsNpc())
 	},
 
+	// Returns true if the two mobs are enemies
+	//
+	// @param handleA MobHandle
+	// @param handleB MobHandle
+	// @return boolean
+	"mobs_are_enemies": func(frame lua.Frame) lua.Outcome {
+		mobA := frameGetMobArg(&frame, 0)
+		mobB := frameGetMobArg(&frame, 1)
+
+		return frame.ReturnBool(mobsAreEnemies(mobA, mobB))
+	},
+
+	// Returns true if the two mobs are allies
+	//
+	// @param handleA MobHandle
+	// @param handleB MobHandle
+	// @return boolean
+	"mobs_are_allies": func(frame lua.Frame) lua.Outcome {
+		mobA := frameGetMobArg(&frame, 0)
+		mobB := frameGetMobArg(&frame, 1)
+
+		return frame.ReturnBool(!mobsAreEnemies(mobA, mobB))
+	},
+
 	// Returns the number of item stacks in the mob's inventory
 	//
 	// @param handle MobHandle
