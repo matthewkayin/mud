@@ -1,6 +1,7 @@
 local item = {}
 
 item.name = "Rags"
+item.prefix = "Reinforced"
 item.description = "A frayed, linen tunic. It hasn't been washed in months."
 item.kind = world.ItemKind.EQUIPMENT_OUTFIT
 item.price = 100

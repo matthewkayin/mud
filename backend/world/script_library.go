@@ -344,35 +344,14 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	// Returns the kind of item at an index in the mob's inventory.
 	// Indices start at 0.
 	//
-	// @paragm handle MobHandle
+	// @param handle MobHandle
 	// @param index integer
 	// @return integer?
 	"mob_get_inventory_item_kind": func(frame lua.Frame) lua.Outcome {
 		mob := frameGetMobArg(&frame, 0)
 		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
 		item := &mob.Data.Inventory.Items[index]
-		switch ITEM_DATA[item.Id].Kind {
-			case ITEM_KIND_CONSUMABLE:
-				return frame.ReturnString("consumable")
-			case ITEM_KIND_RECIPE:
-				return frame.ReturnString("recipe")
-			case ITEM_KIND_SPELL_SCROLL:
-				return frame.ReturnString("spell scroll")
-			case ITEM_KIND_EQUIPMENT_SPELLBOOK:
-				return frame.ReturnString("spellbook")
-			case ITEM_KIND_EQUIPMENT_ONE_HANDED:
-				return frame.ReturnString("one-handed")
-			case ITEM_KIND_EQUIPMENT_TWO_HANDED:
-				return frame.ReturnString("two-handed")
-			case ITEM_KIND_EQUIPMENT_SHIELD:
-				return frame.ReturnString("shield")
-			case ITEM_KIND_EQUIPMENT_OUTFIT:
-				return frame.ReturnString("outfit")
-			case ITEM_KIND_EQUIPMENT_ACCESSORY:
-				return frame.ReturnString("accessory")
-			default:
-				return frame.ReturnString("miscellaneous")
-		}
+		return frame.ReturnString(ITEM_DATA[item.Id].Kind.String())
 	},
 
 	// Returns the index of the first occurance of an item in the mob's inventory
@@ -402,15 +381,15 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		mob := frameGetMobArg(&frame, 0)
 		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
 		amount := frameGetIntegerArg(&frame, 2, "amount")
-		item := mob.Data.Inventory.Items[index]
+		item := &mob.Data.Inventory.Items[index]
 		itemData := ITEM_DATA[item.Id]
 
 		if itemData.Kind != ITEM_KIND_EQUIPMENT_ONE_HANDED &&
 		   itemData.Kind != ITEM_KIND_EQUIPMENT_TWO_HANDED &&
 		   itemData.Kind != ITEM_KIND_EQUIPMENT_OUTFIT &&
 		   itemData.Kind != ITEM_KIND_EQUIPMENT_SHIELD {
-								return frame.ReturnNil()
-							}
+			return frame.ReturnNil()
+		}
 
 		var amountRepaired int32 = 0
 
@@ -438,15 +417,15 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		mob := frameGetMobArg(&frame, 0)
 		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
 		amount := frameGetIntegerArg(&frame, 2, "amount")
-		item := mob.Data.Inventory.Items[index]
+		item := &mob.Data.Inventory.Items[index]
 		itemData := ITEM_DATA[item.Id]
 
 		if itemData.Kind != ITEM_KIND_EQUIPMENT_ONE_HANDED &&
 		   itemData.Kind != ITEM_KIND_EQUIPMENT_TWO_HANDED &&
 		   itemData.Kind != ITEM_KIND_EQUIPMENT_OUTFIT &&
 		   itemData.Kind != ITEM_KIND_EQUIPMENT_SHIELD {
-								return frame.ReturnBool(false)
-							}
+			return frame.ReturnBool(false)
+		}
 
 		item.Durability += int32(amount)
 		return frame.ReturnBool(true)

@@ -1,6 +1,7 @@
 local item = {}
 
 item.name = "Sword of Alguir"
+item.prefix = "Sharpened"
 item.description = "This powerful greatsword was forged long ago for one of the mighty knights of Alguir, before being lost to history."
 item.kind = world.ItemKind.EQUIPMENT_TWO_HANDED
 item.price = 1000

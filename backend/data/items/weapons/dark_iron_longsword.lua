@@ -1,6 +1,7 @@
 local item = {}
 
 item.name = "Dark Iron Longsword"
+item.prefix = "Sharpened"
 item.description = "This longsword is made from dark iron, and gives its wielder dreadful strength and speed."
 item.kind = world.ItemKind.EQUIPMENT_ONE_HANDED
 item.price = 300

@@ -2,6 +2,7 @@
 local item = {}
 
 item.name = "Round Shield"
+item.prefix = "Reinforced"
 item.description = "A circular shield made of wood and iron."
 item.kind = world.ItemKind.EQUIPMENT_SHIELD
 item.price = 50

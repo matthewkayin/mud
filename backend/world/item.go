@@ -128,6 +128,7 @@ type ItemDataWeapon struct {
 	MaxDurability int32
 	StatBonuses StatBlock
 	StatRequirements StatBlock
+	Prefix string
 }
 
 type ItemDataArmor struct {
@@ -136,6 +137,7 @@ type ItemDataArmor struct {
 	StealthPenalty float32
 	StatBonuses StatBlock
 	StatRequirements StatBlock
+	Prefix string
 }
 
 type ItemDataAccessory struct {
@@ -265,26 +267,18 @@ func (parser *ScriptParser) parseItemData(table *lua.Table) *ItemData {
 			data.MaxDurability = parser.getInt32(table, "max_durability")
 			data.StatBonuses = parser.getStatBlock(table, "stat_bonuses", false)
 			data.StatRequirements = parser.getStatBlock(table, "stat_requirements", false)
+			data.Prefix = parser.getString(table, "prefix")
 			itemData.Data = data
 		}
 
-		case ITEM_KIND_EQUIPMENT_SHIELD: {
+		case ITEM_KIND_EQUIPMENT_SHIELD, ITEM_KIND_EQUIPMENT_OUTFIT: {
 			data := &ItemDataArmor{}
 			data.Armor = parser.getInt32(table, "armor")
 			data.MaxDurability = parser.getInt32(table, "max_durability")
 			data.StealthPenalty = parser.getFloat32(table, "stealth_penalty")
 			data.StatBonuses = parser.getStatBlock(table, "stat_bonuses", false)
 			data.StatRequirements = parser.getStatBlock(table, "stat_requirements", false)
-			itemData.Data = data
-		}
-
-		case ITEM_KIND_EQUIPMENT_OUTFIT: {
-			data := &ItemDataArmor{}
-			data.Armor = parser.getInt32(table, "armor")
-			data.MaxDurability = parser.getInt32(table, "max_durability")
-			data.StealthPenalty = parser.getFloat32(table, "stealth_penalty")
-			data.StatBonuses = parser.getStatBlock(table, "stat_bonuses", false)
-			data.StatRequirements = parser.getStatBlock(table, "stat_requirements", false)
+			data.Prefix = parser.getString(table, "prefix")
 			itemData.Data = data
 		}
 
@@ -364,6 +358,21 @@ func (itemData *ItemData) ItemIsOneHanded() bool {
 func (itemData *ItemData) ItemIsWeapon() bool {
 	return itemData.Kind == ITEM_KIND_EQUIPMENT_ONE_HANDED ||
 		itemData.Kind == ITEM_KIND_EQUIPMENT_TWO_HANDED
+}
+
+func (itemData *ItemData) ItemIsArmor() bool {
+	return itemData.Kind == ITEM_KIND_EQUIPMENT_OUTFIT ||
+		itemData.Kind == ITEM_KIND_EQUIPMENT_SHIELD
+}
+
+func (itemData *ItemData) GetItemNamePrefix() string {
+	if itemData.ItemIsWeapon() {
+		return itemData.Data.(ItemDataWeapon).Prefix
+	} else if itemData.ItemIsArmor() {
+		return itemData.Data.(ItemDataArmor).Prefix
+	} else {
+		return ""
+	}
 }
 
 func (itemData *ItemData) ItemCanStack() bool {
@@ -479,9 +488,7 @@ func (item *Item) GetNameWithCondition() string {
 	if item.Durability < maxDurability / 2 {
 		return "Damaged " + itemData.Name
 	} else if item.Durability > maxDurability && itemIsWeapon {
-		return "Sharpened " + itemData.Name
-	} else if item.Durability > maxDurability && !itemIsWeapon {
-		return "Fortified " + itemData.Name
+		return itemData.GetItemNamePrefix() + itemData.Name
 	} else {
 		return itemData.Name
 	}
@@ -511,6 +518,21 @@ func (itemData *ItemData) GetMaxDurability() int32 {
 		default:
 			return 0
 	}
+}
+
+func (item *Item) GetDamage() int32 {
+	itemData := ITEM_DATA[item.Id]
+	if !itemData.ItemIsWeapon() {
+		return -1
+	}
+	weaponData := itemData.Data.(*ItemDataWeapon)
+	damage := weaponData.Damage
+
+	//give damage bonus for reinforcement
+	if item.Durability > weaponData.MaxDurability {
+		damage = (damage * 120 ) / 100
+	}
+	return damage
 }
 
 func (item *Item) GetSellPrice() int32 {

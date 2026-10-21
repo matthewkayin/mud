@@ -1,6 +1,7 @@
 local item = {}
 
 item.name = "Iron Axe"
+item.prefix = "Sharpened"
 item.description = "A heavy, powerful axe for splitting monsters in two."
 item.kind = world.ItemKind.EQUIPMENT_TWO_HANDED
 item.price = 100

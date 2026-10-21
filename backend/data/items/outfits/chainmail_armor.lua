@@ -1,6 +1,7 @@
 local item = {}
 
 item.name = "Chainmail Armor"
+item.prefix = "Reinforced"
 item.description = "Armor made of interlocking links of metal."
 item.kind = world.ItemKind.EQUIPMENT_OUTFIT
 item.price = 100

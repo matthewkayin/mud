@@ -542,13 +542,7 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	// Get weapon damage from the item
 	var damage int32 = 0
 	if heldItemIsWeapon {
-		weaponData := itemData.Data.(*ItemDataWeapon)
-		damage = weaponData.Damage
-
-		//give damage bonus for reinforcement
-		if weapon.Durability > weaponData.MaxDurability {
-			damage = (damage * 120 ) / 100
-		}
+		damage = weapon.GetDamage()
 	}
 
 	// Add strength to the damage

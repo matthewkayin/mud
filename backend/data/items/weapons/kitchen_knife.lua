@@ -1,6 +1,7 @@
 local item = {}
 
 item.name = "Kitchen Knife"
+item.prefix = "Sharpened"
 item.description = "Originally made for cutting up ingredients and not for slaying monsters."
 item.kind = world.ItemKind.EQUIPMENT_ONE_HANDED
 item.price = 15

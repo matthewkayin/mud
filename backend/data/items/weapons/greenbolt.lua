@@ -1,6 +1,7 @@
 local item = {}
 
 item.name = "Greenbolt"
+item.prefix = "Sharpened"
 item.description = "This green and gold Shortsword was crafted by anicent Elves as a gift for a Hobbit."
 item.kind = world.ItemKind.EQUIPMENT_ONE_HANDED
 item.price = 1000

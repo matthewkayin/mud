@@ -1,6 +1,7 @@
 local item = {}
 
 item.name = "Leather Armor"
+item.prefix = "Reinforced"
 item.description = "Armor made of boiled leather."
 item.kind = world.ItemKind.EQUIPMENT_OUTFIT
 item.price = 70
