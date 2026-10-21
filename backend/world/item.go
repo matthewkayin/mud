@@ -158,6 +158,7 @@ type ItemData struct {
 	Kind ItemKind
 	Price int32
 	Size int32
+	Notes string
 	Data any
 }
 
@@ -224,6 +225,7 @@ func (parser *ScriptParser) parseItemData(table *lua.Table) *ItemData {
 	itemData.Price = parser.getInt32(table, "price")
 	parser.checkInt32NonNegative(itemData.Price, "price")
 	itemData.Size = parser.getInt32(table, "size")
+	itemData.Notes = parser.getString(table, "notes")
 
 	kindString := parser.getString(table, "kind")
 

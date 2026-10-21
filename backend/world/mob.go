@@ -544,6 +544,11 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	if heldItemIsWeapon {
 		weaponData := itemData.Data.(*ItemDataWeapon)
 		damage = weaponData.Damage
+
+		//give damage bonus for reinforcement
+		if weapon.Durability > weaponData.MaxDurability {
+			damage = (damage * 120 ) / 100
+		}
 	}
 
 	// Add strength to the damage
@@ -756,7 +761,11 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 
 	itemData := ITEM_DATA[item.Id]
 
+	if item.Durability > ITEM_DATA[item.Id].GetMaxDurability() {
+		item.Durability -= 2
+	}
 	item.Durability--
+
 	if item.Durability <= 0 {
 		world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s's</y> <g>%s</g> broke!", mob.GetName(), itemData.Name))
 		_, messages, _ := mob.unequip(slot)

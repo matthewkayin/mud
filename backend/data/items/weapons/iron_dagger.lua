@@ -11,4 +11,6 @@ item.max_durability = 150
 item.stat_bonuses = { AGI = 6 }
 item.stat_requirements = {}
 
+item.notes = ""
+
 return item

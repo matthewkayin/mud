@@ -8,4 +8,6 @@ item.size = 1
 
 item.spell = "Mage Armor"
 
+item.notes = ""
+
 return item

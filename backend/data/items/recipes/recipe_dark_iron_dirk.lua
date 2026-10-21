@@ -8,4 +8,6 @@ item.size = 1
 
 item.recipe = "Dark Iron Dirk"
 
+item.notes = "tier 1 rare"
+
 return item

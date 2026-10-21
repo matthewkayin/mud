@@ -8,4 +8,6 @@ item.size = 1
 
 item.recipe = "Repair Kit"
 
+item.notes = ""
+
 return item

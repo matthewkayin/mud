@@ -11,4 +11,6 @@ item.max_durability = 200
 item.stat_bonuses = { STR = 1 }
 item.stat_requirements = { STR = 9 }
 
+item.notes = "stareter gear"
+
 return item

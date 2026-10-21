@@ -6,4 +6,6 @@ item.kind = world.ItemKind.MISC
 item.price = 1
 item.size = 0
 
+item.notes = ""
+
 return item

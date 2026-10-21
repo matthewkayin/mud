@@ -15,4 +15,6 @@ item.on_use = function(user)
     world.message_room(world.mob_get_room(user), string.format("<y>%s</y> drank a <g>%s</g> and regained <g>%d HP</g>.", user_name, item.name, healing))
 end
 
+item.notes = ""
+
 return item

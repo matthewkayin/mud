@@ -228,6 +228,15 @@ function world.mob_find_inventory_item(handle, item_name) end
 ---@return integer?
 function world.mob_repair_item(handle, index, amount) end
 
+--- Reinforce an item in a mob inventory.
+--- Returns amount of durability granted, or nil if item not found.
+---
+---@param handle MobHandle
+---@param index integer
+---@param amount integer
+---@return integer?
+function world.mob_reinforce_item(handle, index, amount) end
+
 --- Returns the number of conditions the mob has
 ---
 ---@param mob MobHandle
@@ -282,6 +291,14 @@ function world.mob_get_inventory_item_durability(handle, index) end
 ---@param index integer
 ---@return string
 function world.mob_get_inventory_item_name(handle, index) end
+
+--- Returns the kind of an item at an index as a string. Indices start at 0.
+---
+--- @param handle MobHandle
+--- @param index integer
+--- @return string
+function world.mob_get_inventory_item_kind(handle, index) end
+
 
 --- Returns the number of item stacks in the mob's inventory
 ---

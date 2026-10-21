@@ -11,4 +11,6 @@ item.max_durability = 150
 item.stat_bonuses = { AGI = 9 }
 item.stat_requirements = { STR = 6 }
 
+item.notes = "crafter only"
+
 return item

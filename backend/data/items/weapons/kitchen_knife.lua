@@ -11,4 +11,6 @@ item.max_durability = 50
 item.stat_bonuses = { AGI = 1 }
 item.stat_requirements = { STR = 2 }
 
+item.notes = "starter gear"
+
 return item

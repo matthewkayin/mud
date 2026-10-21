@@ -12,4 +12,6 @@ item.stealth_penalty = 0.05
 item.stat_bonuses = {}
 item.stat_requirements = {}
 
+item.notes = ""
+
 return item

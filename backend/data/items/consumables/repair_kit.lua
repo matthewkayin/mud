@@ -6,11 +6,11 @@ item.kind = world.ItemKind.CONSUMABLE
 item.price = 10
 item.size = 1
 
-item.usable_by_job = "Blacksmith"
+item.usable_by_job = "any"
 item.target_type = world.TargetType.INVENTORY_ITEM
 
 item.on_use = function(user, target)
-    local repair = 20
+    local repair = 100
     local user_name = world.mob_get_name(user)
     local target_name = world.mob_get_inventory_item_name(user, target)
 
@@ -22,5 +22,7 @@ item.on_use = function(user, target)
         world.message_room(world.mob_get_room(user), string.format("<y>%s</y> used a <g>%s</g> on their <g>%s</g>.", user_name, item.name, target_name))
     end
 end
+
+item.notes = ""
 
 return item

@@ -11,4 +11,6 @@ item.max_durability = 200
 item.stat_bonuses = { AGI = 5, STR = 5 }
 item.stat_requirements = { STR = 12 }
 
+item.notes = "tier 1 rare"
+
 return item

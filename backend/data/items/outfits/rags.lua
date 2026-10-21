@@ -12,4 +12,6 @@ item.stealth_penalty = 0
 item.stat_bonuses = {}
 item.stat_requirements = {}
 
+item.notes = "starter gear"
+
 return item

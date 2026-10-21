@@ -9,4 +9,6 @@ item.size = 10
 item.spell = "Firebolt"
 item.stat_requirements = {}
 
+item.notes = "starter gear"
+
 return item

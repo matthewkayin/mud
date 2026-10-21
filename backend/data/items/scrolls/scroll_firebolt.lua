@@ -8,4 +8,6 @@ item.size = 1
 
 item.spell = "Firebolt"
 
+item.notes = ""
+
 return item
