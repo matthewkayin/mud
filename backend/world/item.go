@@ -367,9 +367,9 @@ func (itemData *ItemData) ItemIsArmor() bool {
 
 func (itemData *ItemData) GetItemNamePrefix() string {
 	if itemData.ItemIsWeapon() {
-		return itemData.Data.(ItemDataWeapon).Prefix
+		return itemData.Data.(*ItemDataWeapon).Prefix
 	} else if itemData.ItemIsArmor() {
-		return itemData.Data.(ItemDataArmor).Prefix
+		return itemData.Data.(*ItemDataArmor).Prefix
 	} else {
 		return ""
 	}
@@ -484,11 +484,10 @@ func (item *Item) GetNameWithCondition() string {
 		return itemData.Name
 	}
 
-	itemIsWeapon := itemData.Kind == ITEM_KIND_EQUIPMENT_ONE_HANDED || itemData.Kind == ITEM_KIND_EQUIPMENT_TWO_HANDED
 	if item.Durability < maxDurability / 2 {
 		return "Damaged " + itemData.Name
-	} else if item.Durability > maxDurability && itemIsWeapon {
-		return itemData.GetItemNamePrefix() + itemData.Name
+	} else if item.Durability > maxDurability {
+		return itemData.GetItemNamePrefix() + " " + itemData.Name
 	} else {
 		return itemData.Name
 	}
