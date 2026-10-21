@@ -34,7 +34,7 @@ export function Sidebar() {
   if (selectedConnection) {
     return (
       <Box sx={sidebarBoxSx}>
-        <ConnectionEditor />
+        <ConnectionEditor connection={selectedConnection} />
       </Box>
     );
   }

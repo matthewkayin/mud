@@ -9,10 +9,10 @@
         "Y": 2
       },
       "Exits": [
+        8,
         -1,
-        -1,
-        2,
-        1
+        15,
+        11
       ],
       "Locks": [],
       "DropTable": {
@@ -49,8 +49,238 @@
       "Chests": []
     },
     {
+      "Name": "Bridge",
+      "Description": "The bridge is old, but seems sturdy enough. The wind whips about you, and you can hear the rush of the river below.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": -2,
+        "Y": -1
+      },
+      "Exits": [
+        -1,
+        2,
+        -1,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Bridgeside Bluff",
+      "Description": "A rocky bluff locks out over the East River. The tides of the river clash against each other. In the distance is a great wooden bridge.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": -1,
+        "Y": -1
+      },
+      "Exits": [
+        -1,
+        -1,
+        3,
+        1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Clearing in the Trees",
+      "Description": "The woods are thinner here, and there are many stumps where the trees would be.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": -1,
+        "Y": 0
+      },
+      "Exits": [
+        2,
+        4,
+        7,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Mushroom Cart",
+      "Description": "There is a break in the trees here, and a circular courtyard of dirt where many boots have worn away the surrounding grass. A wooden cart full of various mushrooms waits patiently under the trees.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 0,
+        "Y": 0
+      },
+      "Exits": [
+        -1,
+        5,
+        -1,
+        3
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Below the Church Window",
+      "Description": "Castle Recurse looms overhead, and you have a nice view of the stained glass octopus that adorns the Church window. If you listen closely, you can hear choral hymns, or is that karaoke?",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 1,
+        "Y": 0
+      },
+      "Exits": [
+        -1,
+        6,
+        -1,
+        4
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Overgrown Shrine",
+      "Description": "A little statue of a dog peeks out from among the foliage. He is a good boy, and he points the way west.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 2,
+        "Y": 0
+      },
+      "Exits": [
+        -1,
+        -1,
+        9,
+        5
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "By a Fallen Oak",
+      "Description": "An old fallen tree interrupts the trail. Many ants and plants have made it their home.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": -1,
+        "Y": 1
+      },
+      "Exits": [
+        3,
+        -1,
+        10,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Church",
+      "Description": "This spatious room is furnished with couches that are arranged like pews. On the far window is a stained glass panel depicting an orange octopus.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 1,
+        "Y": 1
+      },
+      "Exits": [
+        -1,
+        -1,
+        0,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Woodland Trail",
+      "Description": "A dirt path leads south to north along this part of the woods.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 2,
+        "Y": 1
+      },
+      "Exits": [
+        6,
+        -1,
+        12,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Underneath a Shady Tree",
+      "Description": "There is a large tree here whose branches reach out and shield you from the sunlight. You feel safe here, as do the squirrels that call this tree home.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": -1,
+        "Y": 2
+      },
+      "Exits": [
+        7,
+        -1,
+        13,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
       "Name": "Kitchen",
-      "Description": "In the corner of a room is a long, rectangular dining table. There are also coffee makers. So many coffee makers...",
+      "Description": "In the corner of a room is a long, rectangular dining table. Many coffee makers line the kitchen counter.",
       "IsSafeZone": true,
       "EditorPosition": {
         "X": 0,
@@ -72,8 +302,77 @@
       "Chests": []
     },
     {
-      "Name": "Stairwell",
-      "Description": "The stairwell smells musty and you can hear the echo of your footsteps as you follow the twisted layout of the steps below.",
+      "Name": "Gazebo",
+      "Description": "A quaint gazebo rests outside the castle's walls. In the ground, you see a colony of ants helping themselves to another Recurser's forgotten lunch.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 2,
+        "Y": 2
+      },
+      "Exits": [
+        9,
+        -1,
+        16,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Hill near the Castle",
+      "Description": "From atop this hill, treetops stretch as far as you can see. To the west, you glimse the East River rushing. To the northeast, Castle Recurse, light leaking out the Kitchen window. To the southeast, the tops of wooden houses peek out from the forest canopy.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": -1,
+        "Y": 3
+      },
+      "Exits": [
+        10,
+        14,
+        -1,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Below the Kitchen Winow",
+      "Description": "The wall of Castle Recurse looms above you, and you can see the Kitchen window, cracked open to let in the cool air, but you cannot see inside it from here.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 0,
+        "Y": 3
+      },
+      "Exits": [
+        -1,
+        15,
+        -1,
+        13
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Castle Recurse Steps",
+      "Description": "The steps to the fourth floor are long and winding. Your footsteps echo in the stairwell.",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 1,
@@ -81,9 +380,9 @@
       },
       "Exits": [
         0,
-        -1,
-        3,
-        -1
+        16,
+        17,
+        14
       ],
       "Locks": [],
       "DropTable": {
@@ -95,17 +394,40 @@
       "Chests": []
     },
     {
-      "Name": "Cliffside",
-      "Description": "A sharp cliffside juts out from the castle, plunging into the East River below.",
+      "Name": "Willoughby Woods",
+      "Description": "These woods surround Castle Recurse. Their vines climb up the castle's walls. Birds sing their morning songs, and you hear the rustle of leaves in the wind.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 2,
+        "Y": 3
+      },
+      "Exits": [
+        12,
+        -1,
+        18,
+        15
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Fulton Outskirts",
+      "Description": "You find yourself at the outskirts of a small town which stretches to the east and is comprised of ramshakle wooden houses. 'Welcome to Fulton' the sign out front reads.",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 1,
         "Y": 4
       },
       "Exits": [
-        2,
+        15,
+        18,
         -1,
-        4,
         -1
       ],
       "Locks": [],
@@ -118,18 +440,18 @@
       "Chests": []
     },
     {
-      "Name": "Bridge",
-      "Description": "You stand upon a rickety bridge that leads across the river. Violent currents crash below you. Don't look down!",
+      "Name": "Dekalb Market",
+      "Description": "In the center of Fulton is a large, circular courtyard with steps on all sides leading down to it like a colosseum. Here the townsfolk all gather, and merchants call out to passerbys, advertising their wares.",
       "IsSafeZone": false,
       "EditorPosition": {
-        "X": 1,
-        "Y": 5
+        "X": 2,
+        "Y": 4
       },
       "Exits": [
-        3,
+        16,
+        19,
         -1,
-        5,
-        -1
+        17
       ],
       "Locks": [],
       "DropTable": {
@@ -141,18 +463,18 @@
       "Chests": []
     },
     {
-      "Name": "Canal Street?",
-      "Description": "You made it to the other side!",
+      "Name": "Fulton Residential",
+      "Description": "Here on the eastern-most edge of Fulton",
       "IsSafeZone": false,
       "EditorPosition": {
-        "X": 1,
-        "Y": 6
+        "X": 3,
+        "Y": 4
       },
       "Exits": [
-        4,
         -1,
         -1,
-        -1
+        -1,
+        18
       ],
       "Locks": [],
       "DropTable": {
@@ -167,7 +489,7 @@
   "Npcs": [
     {
       "Id": "ollie",
-      "SpawnRoom": 1,
+      "SpawnRoom": 11,
       "LevelRange": {
         "Min": 1,
         "Max": 1
@@ -177,52 +499,6 @@
         "Entries": []
       },
       "BehaviorParams": {}
-    },
-    {
-      "Id": "spider",
-      "SpawnRoom": 2,
-      "LevelRange": {
-        "Min": 1,
-        "Max": 1
-      },
-      "MovementTypeOverride": "Sentinel",
-      "DropTableOverride": {
-        "Entries": []
-      },
-      "BehaviorParams": {}
-    },
-    {
-      "Id": "goblin",
-      "SpawnRoom": 2,
-      "LevelRange": {
-        "Min": 1,
-        "Max": 1
-      },
-      "MovementTypeOverride": "",
-      "DropTableOverride": {
-        "Entries": []
-      },
-      "BehaviorParams": {}
-    },
-    {
-      "Id": "troll",
-      "SpawnRoom": 3,
-      "LevelRange": {
-        "Min": 1,
-        "Max": 1
-      },
-      "MovementTypeOverride": "",
-      "DropTableOverride": {
-        "Entries": []
-      },
-      "BehaviorParams": {
-        "ExitToBlock": "south",
-        "Toll": {
-          "Id": "Gold",
-          "Amount": 15,
-          "Durability": 0
-        }
-      }
     }
   ]
 }
