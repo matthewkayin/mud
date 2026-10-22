@@ -474,7 +474,32 @@
       ],
       "Locks": [],
       "DropTable": {
-        "Entries": []
+        "Entries": [
+          {
+            "ItemId": "Apple",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 2
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 100
+          },
+          {
+            "ItemId": "Wormy Apple",
+            "AmountRange": {
+              "Min": 2,
+              "Max": 3
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 100
+          }
+        ]
       },
       "Inventory": {
         "Items": []
@@ -522,7 +547,20 @@
       ],
       "Locks": [],
       "DropTable": {
-        "Entries": []
+        "Entries": [
+          {
+            "ItemId": "Wormy Apple",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 2
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 100
+          }
+        ]
       },
       "Inventory": {
         "Items": []
@@ -642,7 +680,44 @@
       ],
       "Locks": [],
       "DropTable": {
-        "Entries": []
+        "Entries": [
+          {
+            "ItemId": "Apple",
+            "AmountRange": {
+              "Min": 2,
+              "Max": 3
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 100
+          },
+          {
+            "ItemId": "Azurite Pendant",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 1
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 100
+          },
+          {
+            "ItemId": "Wormy Apple",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 2
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 100
+          }
+        ]
       },
       "Inventory": {
         "Items": []
@@ -666,7 +741,20 @@
       ],
       "Locks": [],
       "DropTable": {
-        "Entries": []
+        "Entries": [
+          {
+            "ItemId": "Apple",
+            "AmountRange": {
+              "Min": 2,
+              "Max": 3
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 100
+          }
+        ]
       },
       "Inventory": {
         "Items": []
@@ -690,7 +778,20 @@
       ],
       "Locks": [],
       "DropTable": {
-        "Entries": []
+        "Entries": [
+          {
+            "ItemId": "Apple",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 2
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 100
+          }
+        ]
       },
       "Inventory": {
         "Items": []
@@ -905,6 +1006,19 @@
       "BehaviorParams": {}
     },
     {
+      "Id": "spider",
+      "SpawnRoom": 13,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
       "Id": "yelena",
       "SpawnRoom": 15,
       "LevelRange": {
@@ -918,8 +1032,47 @@
       "BehaviorParams": {}
     },
     {
+      "Id": "spider",
+      "SpawnRoom": 18,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "pip",
+      "SpawnRoom": 19,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
       "Id": "scabbers",
       "SpawnRoom": 22,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "farmer_gill",
+      "SpawnRoom": 26,
       "LevelRange": {
         "Min": 1,
         "Max": 1
