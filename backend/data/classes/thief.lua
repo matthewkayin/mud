@@ -5,7 +5,7 @@ class.description = "A nimble rogue who strikes from the shadows and slips away 
 class.stats = { VIT = 8, STR = 8, AGI = 10, INT = 6, FTH = 8 }
 class.scaling = { VIT = 8, STR = 8, AGI = 10, INT = 6, FTH = 8 }
 class.starting_items = {
-    { amount = 1, item = "Kitchen Knife" },
+    { item = "Kitchen Knife", amount = 1 },
 }
 class.starting_equipment = {
     outfit = "Rags"

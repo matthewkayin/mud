@@ -18,7 +18,6 @@ item.on_use = function(user, target)
     local kind = world.mob_get_inventory_item_kind(user, target)
 
     if kind == "One-Handed Weapon" or kind == "Two-Handed Weapon" then
-        world.message_room(world.mob_get_room(user), "!!!this is a weapon")
         success = world.mob_reinforce_item(user, target, reinforcement)
     end
 

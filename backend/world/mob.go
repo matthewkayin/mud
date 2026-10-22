@@ -615,14 +615,8 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	// Reduce weapon durability
 	mob.subtractDurabilityFromEquipment(world, slot)
 	// and from defender's weapon or armor
-	if !targetMob.IsDead() {
-		shield := targetMob.Data.Equipment.GetShield()
-		if shield != nil && rand.IntN(2) == 1 {
-			targetMob.subtractDurabilityFromEquipment(world, EQUIPMENT_SLOT_OFF_HAND)
-		} else {
-			targetMob.subtractDurabilityFromEquipment(world, EQUIPMENT_SLOT_OUTFIT)
-		}
-	}
+	targetMob.subtractDurabilityFromEquipment(world, EQUIPMENT_SLOT_OFF_HAND)
+	targetMob.subtractDurabilityFromEquipment(world, EQUIPMENT_SLOT_OUTFIT)
 }
 
 func (mob *Mob) getInfusionInSlot(slot EquipmentSlot) *ItemInfusion {
@@ -755,9 +749,6 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 
 	itemData := ITEM_DATA[item.Id]
 
-	if item.Durability > ITEM_DATA[item.Id].GetMaxDurability() {
-		item.Durability -= 2
-	}
 	item.Durability--
 
 	if item.Durability <= 0 {
