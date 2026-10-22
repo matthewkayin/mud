@@ -8,4 +8,6 @@ item.size = 1
 
 item.recipe = "Round Shield"
 
+item.notes = ""
+
 return item

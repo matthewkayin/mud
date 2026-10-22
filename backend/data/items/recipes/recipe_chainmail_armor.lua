@@ -8,4 +8,6 @@ item.size = 1
 
 item.recipe = "Chainmail Armor"
 
+item.notes = ""
+
 return item

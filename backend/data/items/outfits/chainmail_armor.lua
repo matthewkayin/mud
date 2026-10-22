@@ -1,6 +1,7 @@
 local item = {}
 
 item.name = "Chainmail Armor"
+item.prefix = "Reinforced"
 item.description = "Armor made of interlocking links of metal."
 item.kind = world.ItemKind.EQUIPMENT_OUTFIT
 item.price = 100
@@ -11,5 +12,7 @@ item.max_durability = 200
 item.stealth_penalty = 0.25
 item.stat_bonuses = {}
 item.stat_requirements = { STR = 11 }
+
+item.notes = ""
 
 return item

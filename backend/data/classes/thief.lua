@@ -10,6 +10,7 @@ class.starting_items = {
 class.starting_equipment = {
     outfit = "Rags"
 }
+
 class.unlocks = {
 	{ level = 1, ability = "Sneak" },
 	{ level = 2, ability = "Unlock" },

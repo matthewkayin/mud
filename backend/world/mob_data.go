@@ -174,14 +174,12 @@ func (mobData *MobData) Armor() int32 {
 
 	outfit := mobData.Equipment.Get(EQUIPMENT_SLOT_OUTFIT)
 	if outfit != nil {
-		itemData := ITEM_DATA[outfit.Id]
-		armorVal += itemData.Data.(*ItemDataArmor).Armor
+		armorVal += outfit.GetArmorValue()
 	}
 
 	shield := mobData.Equipment.GetShield()
 	if shield != nil {
-		itemData := ITEM_DATA[shield.Id]
-		armorVal += itemData.Data.(*ItemDataArmor).Armor
+		armorVal += shield.GetArmorValue()
 	}
 
 	armorVal = mobData.GetConditionStatChange(armorVal, CONDITION_EFFECT_TYPE_STAT_CHANGE_ARMOR)

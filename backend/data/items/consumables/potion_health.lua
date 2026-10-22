@@ -9,10 +9,12 @@ item.size = 5
 item.usable_by_job = "any"
 item.target_type = world.TargetType.NONE
 
-item.on_use = function(user)
+function item.on_use(user)
     local healing = world.heal(user, 20)
     local user_name = world.mob_get_name(user)
     world.message_room(world.mob_get_room(user), string.format("<y>%s</y> drank a <g>%s</g> and regained <g>%d HP</g>.", user_name, item.name, healing))
 end
+
+item.notes = ""
 
 return item

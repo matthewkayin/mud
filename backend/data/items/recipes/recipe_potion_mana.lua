@@ -8,4 +8,6 @@ item.size = 1
 
 item.recipe = "Potion of Mana"
 
+item.notes = ""
+
 return item

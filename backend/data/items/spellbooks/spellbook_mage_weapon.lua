@@ -9,4 +9,6 @@ item.size = 10
 item.spell = "Mage Weapon"
 item.stat_requirements = {}
 
+item.notes = ""
+
 return item

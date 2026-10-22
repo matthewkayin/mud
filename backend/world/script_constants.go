@@ -24,6 +24,7 @@ func ScriptFreeConstants() []ScriptConstant {
 		{ Name: "ROOM_NONE", Value: lua.Number(float64(ROOM_NONE)) },
 		{ Name: "CONDITION_DURATION_INFINITE", Value: lua.Number(float64(CONDITION_DURATION_INFINITE)) },
 		{ Name: "ITEM_INFUSION_USES_UNLIMITED", Value: lua.Number(float64(ITEM_INFUSION_USES_UNLIMITED)) },
+		{ Name: "ITEM_REINFORCED_DURABILITY_PERCENT", Value: lua.Number(float64(ITEM_REINFORCED_DURABILITY_PERCENT)) },
 	}
 }
 

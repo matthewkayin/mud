@@ -81,6 +81,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				targetInventory, chestName, err = fuzzyFindChestInventory(playerRoom, containerWords)
 				if err != nil {
 					*player.inbox <- err.Error()
+					return true
 				}
 			}
 
@@ -110,7 +111,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				item := &targetInventory.Items[itemIndex]
 				itemData := world.ITEM_DATA[item.Id]
 
-				*player.inbox <- fmt.Sprintf("Item: <g>%s</g>", itemData.Name)
+				*player.inbox <- fmt.Sprintf("Item: <g>%s</g>", item.GetNameWithCondition())
 				*player.inbox <- fmt.Sprintf("Description: %s", itemData.Description)
 				*player.inbox <- fmt.Sprintf("Type: %s", itemData.Kind.String())
 				*player.inbox <- fmt.Sprintf("Size: %d", itemData.Size)
@@ -147,14 +148,15 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 
 				// Item type specific description
 				switch itemData.Kind {
-					case world.ITEM_KIND_EQUIPMENT_OUTFIT: {
+					case world.ITEM_KIND_EQUIPMENT_OUTFIT, world.ITEM_KIND_EQUIPMENT_SHIELD: {
 						outfitData := itemData.Data.(*world.ItemDataArmor)
+						*player.inbox <- fmt.Sprintf("Durability: %d", item.GetDurabilityPercent())
 						*player.inbox <- fmt.Sprintf("Armor: %d", outfitData.Armor)
 						*player.inbox <- fmt.Sprintf("Stealth Penalty: %d%%", int(outfitData.StealthPenalty * 100))
 					}
 					case world.ITEM_KIND_EQUIPMENT_ONE_HANDED, world.ITEM_KIND_EQUIPMENT_TWO_HANDED: {
-						weaponData := itemData.Data.(*world.ItemDataWeapon)
-						*player.inbox <- fmt.Sprintf("Damage: %d", weaponData.Damage)
+						*player.inbox <- fmt.Sprintf("Durability: %d%%", item.GetDurabilityPercent())
+						*player.inbox <- fmt.Sprintf("Damage: %d", item.GetDamageValue())
 					}
 				}
 

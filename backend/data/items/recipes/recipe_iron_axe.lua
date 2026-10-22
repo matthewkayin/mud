@@ -8,4 +8,6 @@ item.size = 1
 
 item.recipe = "Iron Axe"
 
+item.notes = ""
+
 return item

@@ -240,7 +240,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 						verb: "use",
 						noun: "item",
 						name: itemData.Name,
-						validateArgument: consumableData.ValidateArgument,
+						validateTarget: consumableData.ValidateTarget,
 					})
 					if err != nil {
 						*player.inbox <- err.Error()
@@ -273,7 +273,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 						verb: "cast",
 						noun: "spell",
 						name: spellData.Name,
-						validateArgument: spellData.ValidateArgument,
+						validateTarget: spellData.ValidateTarget,
 					})
 					if err != nil {
 						*player.inbox <- err.Error()
@@ -354,7 +354,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 				verb: "cast",
 				noun: "spell",
 				name: spellData.Name,
-				validateArgument: spellData.ValidateArgument,
+				validateTarget: spellData.ValidateTarget,
 			})
 			if err != nil {
 				*player.inbox <- err.Error()

@@ -1,6 +1,7 @@
 local item = {}
 
 item.name = "Axe"
+item.prefix = "Sharpened"
 item.description = "Cleaver? I barely know her!"
 item.kind = world.ItemKind.EQUIPMENT_ONE_HANDED
 item.price = 100
@@ -10,5 +11,7 @@ item.damage = 6
 item.max_durability = 100
 item.stat_bonuses = {}
 item.stat_requirements = {}
+
+item.notes = ""
 
 return item

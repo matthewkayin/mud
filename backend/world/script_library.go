@@ -349,20 +349,30 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.ReturnNumber(float64(mob.Data.Inventory.Items[index].Amount))
 	},
 
-	// Returns the durability of the item at an index in the mob's inventory, or nil if the item has no durability.
+	// Returns the durability percent of the item at an index in the mob's inventory
+	// Indices start at 0.
+	//
+	// @param handle MobHandle
+	// @param index integer
+	// @return integer
+	"mob_get_inventory_item_durability_percent": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
+		item := &mob.Data.Inventory.Items[index]
+		return frame.ReturnNumber(float64(item.GetDurabilityPercent()))
+	},
+
+	// Returns the kind of item at an index in the mob's inventory.
 	// Indices start at 0.
 	//
 	// @param handle MobHandle
 	// @param index integer
 	// @return integer?
-	"mob_get_inventory_item_durability": func(frame lua.Frame) lua.Outcome {
+	"mob_get_inventory_item_kind": func(frame lua.Frame) lua.Outcome {
 		mob := frameGetMobArg(&frame, 0)
 		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
 		item := &mob.Data.Inventory.Items[index]
-		if ITEM_DATA[item.Id].GetMaxDurability() == 0 {
-			return frame.ReturnValue(lua.Nil())
-		}
-		return frame.ReturnNumber(float64(item.Durability))
+		return frame.ReturnString(ITEM_DATA[item.Id].Kind.String())
 	},
 
 	// Returns the index of the first occurance of an item in the mob's inventory
@@ -380,6 +390,45 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		}
 
 		return frame.ReturnNumber(float64(index))
+	},
+
+	// Returns true if the item can be repaired
+	//
+	// @param handle MobHandle
+	// @param index integer
+	// @return bool
+	"mob_item_is_repairable": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
+		item := &mob.Data.Inventory.Items[index]
+
+		return frame.ReturnBool(item.isRepairable())
+	},
+
+	// Repairs the item
+	//
+	// @param handle Mobhandle
+	// @param index integer
+	"mob_repair_item": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
+		item := &mob.Data.Inventory.Items[index]
+		item.repair()
+
+		return frame.Return()
+	},
+
+	// Reinforces the item
+	//
+	// @param handle Mobhandle
+	// @param index integer
+	"mob_reinforce_item": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
+		item := &mob.Data.Inventory.Items[index]
+		item.reinforce()
+
+		return frame.Return()
 	},
 
 	// Returns the total amount of an item in the mob's inventory

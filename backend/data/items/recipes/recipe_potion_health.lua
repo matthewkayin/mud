@@ -8,4 +8,6 @@ item.size = 1
 
 item.recipe = "Potion of Health"
 
+item.notes = ""
+
 return item

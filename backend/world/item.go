@@ -10,6 +10,7 @@ import (
 
 const ITEM_INFUSION_USES_UNLIMITED int32 = -1
 const ITEM_USABLE_BY_JOB_ANY JobId = -1
+const ITEM_REINFORCED_DURABILITY_PERCENT int32 = 120
 
 type ItemId int32
 
@@ -115,7 +116,7 @@ const (
 type ItemDataConsumable struct {
 	UsableByJob JobId
 	TargetType TargetType
-	ValidateArgument *lua.Function
+	ValidateTarget *lua.Function
 	onUse *lua.Function
 }
 
@@ -128,6 +129,7 @@ type ItemDataWeapon struct {
 	MaxDurability int32
 	StatBonuses StatBlock
 	StatRequirements StatBlock
+	Prefix string
 }
 
 type ItemDataArmor struct {
@@ -136,6 +138,7 @@ type ItemDataArmor struct {
 	StealthPenalty float32
 	StatBonuses StatBlock
 	StatRequirements StatBlock
+	Prefix string
 }
 
 type ItemDataAccessory struct {
@@ -158,6 +161,7 @@ type ItemData struct {
 	Kind ItemKind
 	Price int32
 	Size int32
+	Notes string
 	Data any
 }
 
@@ -224,6 +228,7 @@ func (parser *ScriptParser) parseItemData(table *lua.Table) *ItemData {
 	itemData.Price = parser.getInt32(table, "price")
 	parser.checkInt32NonNegative(itemData.Price, "price")
 	itemData.Size = parser.getInt32(table, "size")
+	itemData.Notes = parser.getString(table, "notes")
 
 	kindString := parser.getString(table, "kind")
 
@@ -249,8 +254,8 @@ func (parser *ScriptParser) parseItemData(table *lua.Table) *ItemData {
 			}
 
 			data.TargetType = parser.getTargetType(table, "target_type")
-			if data.TargetType == TARGET_TYPE_ARGUMENT {
-				data.ValidateArgument = parser.getFunction(table, "validate_argument")
+			if data.TargetType == TARGET_TYPE_INVENTORY_ITEM || data.TargetType == TARGET_TYPE_ARGUMENT {
+				data.ValidateTarget = parser.getFunction(table, "validate_target")
 			}
 
 			data.onUse = parser.getFunction(table, "on_use")
@@ -263,26 +268,18 @@ func (parser *ScriptParser) parseItemData(table *lua.Table) *ItemData {
 			data.MaxDurability = parser.getInt32(table, "max_durability")
 			data.StatBonuses = parser.getStatBlock(table, "stat_bonuses", false)
 			data.StatRequirements = parser.getStatBlock(table, "stat_requirements", false)
+			data.Prefix = parser.getString(table, "prefix")
 			itemData.Data = data
 		}
 
-		case ITEM_KIND_EQUIPMENT_SHIELD: {
+		case ITEM_KIND_EQUIPMENT_SHIELD, ITEM_KIND_EQUIPMENT_OUTFIT: {
 			data := &ItemDataArmor{}
 			data.Armor = parser.getInt32(table, "armor")
 			data.MaxDurability = parser.getInt32(table, "max_durability")
 			data.StealthPenalty = parser.getFloat32(table, "stealth_penalty")
 			data.StatBonuses = parser.getStatBlock(table, "stat_bonuses", false)
 			data.StatRequirements = parser.getStatBlock(table, "stat_requirements", false)
-			itemData.Data = data
-		}
-
-		case ITEM_KIND_EQUIPMENT_OUTFIT: {
-			data := &ItemDataArmor{}
-			data.Armor = parser.getInt32(table, "armor")
-			data.MaxDurability = parser.getInt32(table, "max_durability")
-			data.StealthPenalty = parser.getFloat32(table, "stealth_penalty")
-			data.StatBonuses = parser.getStatBlock(table, "stat_bonuses", false)
-			data.StatRequirements = parser.getStatBlock(table, "stat_requirements", false)
+			data.Prefix = parser.getString(table, "prefix")
 			itemData.Data = data
 		}
 
@@ -362,6 +359,21 @@ func (itemData *ItemData) ItemIsOneHanded() bool {
 func (itemData *ItemData) ItemIsWeapon() bool {
 	return itemData.Kind == ITEM_KIND_EQUIPMENT_ONE_HANDED ||
 		itemData.Kind == ITEM_KIND_EQUIPMENT_TWO_HANDED
+}
+
+func (itemData *ItemData) ItemIsArmor() bool {
+	return itemData.Kind == ITEM_KIND_EQUIPMENT_OUTFIT ||
+		itemData.Kind == ITEM_KIND_EQUIPMENT_SHIELD
+}
+
+func (itemData *ItemData) GetItemNamePrefix() string {
+	if itemData.ItemIsWeapon() {
+		return itemData.Data.(*ItemDataWeapon).Prefix
+	} else if itemData.ItemIsArmor() {
+		return itemData.Data.(*ItemDataArmor).Prefix
+	} else {
+		return ""
+	}
 }
 
 func (itemData *ItemData) ItemCanStack() bool {
@@ -473,13 +485,10 @@ func (item *Item) GetNameWithCondition() string {
 		return itemData.Name
 	}
 
-	itemIsWeapon := itemData.Kind == ITEM_KIND_EQUIPMENT_ONE_HANDED || itemData.Kind == ITEM_KIND_EQUIPMENT_TWO_HANDED
 	if item.Durability < maxDurability / 2 {
 		return "Damaged " + itemData.Name
-	} else if item.Durability > maxDurability && itemIsWeapon {
-		return "Sharpened " + itemData.Name
-	} else if item.Durability > maxDurability && !itemIsWeapon {
-		return "Fortified " + itemData.Name
+	} else if item.Durability > maxDurability {
+		return itemData.GetItemNamePrefix() + " " + itemData.Name
 	} else {
 		return itemData.Name
 	}
@@ -511,6 +520,47 @@ func (itemData *ItemData) GetMaxDurability() int32 {
 	}
 }
 
+func (item *Item) GetDurabilityPercent() int32 {
+	itemData := ITEM_DATA[item.Id]
+	maxDurability := itemData.GetMaxDurability()
+	if maxDurability == 0 {
+		return 0
+	}
+
+	return (item.Durability * 100) / itemData.GetMaxDurability()
+}
+
+func (item *Item) GetDamageValue() int32 {
+	itemData := ITEM_DATA[item.Id]
+	if !itemData.ItemIsWeapon() {
+		return -1
+	}
+	weaponData := itemData.Data.(*ItemDataWeapon)
+	damage := weaponData.Damage
+
+	//give damage bonus for reinforcement
+	if item.Durability > weaponData.MaxDurability {
+		damage = (damage * 120 ) / 100
+	}
+
+	return damage
+}
+
+func (item *Item) GetArmorValue() int32 {
+	itemData := ITEM_DATA[item.Id]
+	if !itemData.ItemIsArmor() {
+		return -1
+	}
+	armorData := itemData.Data.(*ItemDataArmor)
+	armor := armorData.Armor
+
+	if item.Durability > armorData.MaxDurability {
+		armor = (armor * 120) / 100
+	}
+
+	return armor
+}
+
 func (item *Item) GetSellPrice() int32 {
 	itemData := ITEM_DATA[item.Id]
 
@@ -530,4 +580,19 @@ func (item *Item) GetSellPrice() int32 {
 
 func (item *Item) HasInfusion() bool {
 	return item.Infusion.UsesRemaining != 0
+}
+
+func (item *Item) isRepairable() bool {
+	itemData := ITEM_DATA[item.Id]
+	return itemData.ItemIsWeapon() || itemData.ItemIsArmor()
+}
+
+func (item *Item) repair() {
+	itemData := ITEM_DATA[item.Id]
+	item.Durability = itemData.GetMaxDurability()
+}
+
+func (item *Item) reinforce() {
+	itemData := ITEM_DATA[item.Id]
+	item.Durability = (itemData.GetMaxDurability() * ITEM_REINFORCED_DURABILITY_PERCENT) / 100
 }
