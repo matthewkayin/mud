@@ -9,10 +9,10 @@
         "Y": 2
       },
       "Exits": [
-        8,
-        -1,
         15,
-        11
+        -1,
+        30,
+        22
       ],
       "Locks": [],
       "DropTable": {
@@ -49,6 +49,29 @@
       "Chests": []
     },
     {
+      "Name": "Fort Greene (Foyer)",
+      "Description": "You're in a circular room inside the monument's column. It's cramped, but there are stairs leading deeper into the crypt.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 7,
+        "Y": -2
+      },
+      "Exits": [
+        -1,
+        -1,
+        7,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
       "Name": "Bridge",
       "Description": "The bridge is old, but seems sturdy enough. The wind whips about you, and you can hear the rush of the river below.",
       "IsSafeZone": false,
@@ -58,7 +81,7 @@
       },
       "Exits": [
         -1,
-        2,
+        3,
         -1,
         -1
       ],
@@ -82,8 +105,100 @@
       "Exits": [
         -1,
         -1,
-        3,
-        1
+        8,
+        2
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Witch Hut",
+      "Description": "A hut made of knarled wood squats in a clearing in the woods. Out front, a small black cauldron gurgles over the fire.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 3,
+        "Y": -1
+      },
+      "Exits": [
+        -1,
+        -1,
+        12,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Fort Greene Courtyard",
+      "Description": "An old courtyard with a faded compass rose engraved in the center. Many of the courtyard's tiles are cracked and dislodged, with roots and vines reaching out from underneath them, grasping for air.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 5,
+        "Y": -1
+      },
+      "Exits": [
+        -1,
+        6,
+        13,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Fort Greene Steps",
+      "Description": "A grand staircase, lined by trees on each side, leads the way up to the monument.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 6,
+        "Y": -1
+      },
+      "Exits": [
+        -1,
+        7,
+        -1,
+        5
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Fort Greene Plaza",
+      "Description": "At the top of the hill is a wide-open courtyard. In the center, a magnificent column reaches toward the sky. At its peak sits a limestone-green brazier.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 7,
+        "Y": -1
+      },
+      "Exits": [
+        1,
+        -1,
+        -1,
+        6
       ],
       "Locks": [],
       "DropTable": {
@@ -103,9 +218,9 @@
         "Y": 0
       },
       "Exits": [
-        2,
-        4,
-        7,
+        3,
+        9,
+        14,
         -1
       ],
       "Locks": [],
@@ -127,9 +242,9 @@
       },
       "Exits": [
         -1,
-        5,
+        10,
         -1,
-        3
+        8
       ],
       "Locks": [],
       "DropTable": {
@@ -150,9 +265,9 @@
       },
       "Exits": [
         -1,
-        6,
+        11,
         -1,
-        4
+        9
       ],
       "Locks": [],
       "DropTable": {
@@ -173,9 +288,55 @@
       },
       "Exits": [
         -1,
+        12,
+        16,
+        10
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Woodlawn Stream",
+      "Description": "A small stream trickles to the east here.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 3,
+        "Y": 0
+      },
+      "Exits": [
+        4,
         -1,
-        9,
-        5
+        17,
+        11
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Willow Road",
+      "Description": "Knarled willow trees canopy the path ahead. An eerie quiet hangs in the air, interrupted only by the crunch of brittle leaves underfoot.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 5,
+        "Y": 0
+      },
+      "Exits": [
+        5,
+        -1,
+        19,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -195,9 +356,9 @@
         "Y": 1
       },
       "Exits": [
-        3,
+        8,
         -1,
-        10,
+        21,
         -1
       ],
       "Locks": [],
@@ -212,7 +373,7 @@
     {
       "Name": "Church",
       "Description": "This spatious room is furnished with couches that are arranged like pews. On the far window is a stained glass panel depicting an orange octopus.",
-      "IsSafeZone": false,
+      "IsSafeZone": true,
       "EditorPosition": {
         "X": 1,
         "Y": 1
@@ -241,10 +402,102 @@
         "Y": 1
       },
       "Exits": [
-        6,
-        -1,
-        12,
+        11,
+        17,
+        23,
         -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Forest Boulder",
+      "Description": "There's a big boulder in the center of your path here. It seems like it would be fun to climb on.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 3,
+        "Y": 1
+      },
+      "Exits": [
+        12,
+        18,
+        24,
+        16
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Rotting Apple Trees",
+      "Description": "These apple trees are planted in rows like an orchard, but the branches are knarled and all the fruit is rotting on the floor.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 4,
+        "Y": 1
+      },
+      "Exits": [
+        -1,
+        19,
+        25,
+        17
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Tall Apple Tree",
+      "Description": "An exceptionally tall apple tree towers over the rest of the trees in the nearby orchard.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 5,
+        "Y": 1
+      },
+      "Exits": [
+        13,
+        20,
+        26,
+        18
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Farmer Gill's Shed",
+      "Description": "Inside this old wooden shed lies a scattering of rusted tools. They look like they haven't been moved from their place in some time.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 6,
+        "Y": 1
+      },
+      "Exits": [
+        -1,
+        -1,
+        27,
+        19
       ],
       "Locks": [],
       "DropTable": {
@@ -264,9 +517,9 @@
         "Y": 2
       },
       "Exits": [
-        7,
+        14,
         -1,
-        13,
+        28,
         -1
       ],
       "Locks": [],
@@ -310,10 +563,102 @@
         "Y": 2
       },
       "Exits": [
-        9,
-        -1,
         16,
+        24,
+        31,
         -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Old Arrow Tree",
+      "Description": "In this section of the woods, a broad tree stands above all the others. A cluster of arrows are lodged in its trunk.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 3,
+        "Y": 2
+      },
+      "Exits": [
+        17,
+        25,
+        32,
+        23
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Apple Orchard",
+      "Description": "Rows of apple trees line dirt paths. Some of the apples bear bite marks from insects, but the fruits look tasty overall.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 4,
+        "Y": 2
+      },
+      "Exits": [
+        18,
+        26,
+        -1,
+        24
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Farmer Gill's House",
+      "Description": "This is a new room",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 5,
+        "Y": 2
+      },
+      "Exits": [
+        19,
+        27,
+        -1,
+        25
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Grapevines",
+      "Description": "Clusters of dark purple grapes line the path here. They're smaller than the ones you're used to seeing, but they look delicious.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 6,
+        "Y": 2
+      },
+      "Exits": [
+        20,
+        -1,
+        -1,
+        26
       ],
       "Locks": [],
       "DropTable": {
@@ -333,8 +678,8 @@
         "Y": 3
       },
       "Exits": [
-        10,
-        14,
+        21,
+        29,
         -1,
         -1
       ],
@@ -357,9 +702,9 @@
       },
       "Exits": [
         -1,
-        15,
+        30,
         -1,
-        13
+        28
       ],
       "Locks": [],
       "DropTable": {
@@ -373,16 +718,16 @@
     {
       "Name": "Castle Recurse Steps",
       "Description": "The steps to the fourth floor are long and winding. Your footsteps echo in the stairwell.",
-      "IsSafeZone": false,
+      "IsSafeZone": true,
       "EditorPosition": {
         "X": 1,
         "Y": 3
       },
       "Exits": [
         0,
-        16,
-        17,
-        14
+        31,
+        33,
+        29
       ],
       "Locks": [],
       "DropTable": {
@@ -402,10 +747,33 @@
         "Y": 3
       },
       "Exits": [
-        12,
+        23,
+        32,
+        34,
+        30
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Forest Playground",
+      "Description": "Someone has shaped the woods here into a sort of playground. Two swings hang over a sturdy tree branch, and a halved log has been fashioned into a seesaw.",
+      "IsSafeZone": true,
+      "EditorPosition": {
+        "X": 3,
+        "Y": 3
+      },
+      "Exits": [
+        24,
         -1,
-        18,
-        15
+        35,
+        31
       ],
       "Locks": [],
       "DropTable": {
@@ -419,14 +787,14 @@
     {
       "Name": "Fulton Outskirts",
       "Description": "You find yourself at the outskirts of a small town which stretches to the east and is comprised of ramshakle wooden houses. 'Welcome to Fulton' the sign out front reads.",
-      "IsSafeZone": false,
+      "IsSafeZone": true,
       "EditorPosition": {
         "X": 1,
         "Y": 4
       },
       "Exits": [
-        15,
-        18,
+        30,
+        34,
         -1,
         -1
       ],
@@ -442,16 +810,16 @@
     {
       "Name": "Dekalb Market",
       "Description": "In the center of Fulton is a large, circular courtyard with steps on all sides leading down to it like a colosseum. Here the townsfolk all gather, and merchants call out to passerbys, advertising their wares.",
-      "IsSafeZone": false,
+      "IsSafeZone": true,
       "EditorPosition": {
         "X": 2,
         "Y": 4
       },
       "Exits": [
-        16,
-        19,
+        31,
+        35,
         -1,
-        17
+        33
       ],
       "Locks": [],
       "DropTable": {
@@ -465,16 +833,16 @@
     {
       "Name": "Fulton Residential",
       "Description": "Here on the eastern-most edge of Fulton",
-      "IsSafeZone": false,
+      "IsSafeZone": true,
       "EditorPosition": {
         "X": 3,
         "Y": 4
       },
       "Exits": [
+        32,
         -1,
         -1,
-        -1,
-        18
+        34
       ],
       "Locks": [],
       "DropTable": {
@@ -489,7 +857,20 @@
   "Npcs": [
     {
       "Id": "ollie",
-      "SpawnRoom": 11,
+      "SpawnRoom": 0,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "scabbers",
+      "SpawnRoom": 22,
       "LevelRange": {
         "Min": 1,
         "Max": 1
