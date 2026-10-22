@@ -14,12 +14,7 @@
         2,
         1
       ],
-      "Locks": [
-        {
-          "Type": 0,
-          "Direction": 2
-        }
-      ],
+      "Locks": [],
       "DropTable": {
         "Entries": [
           {
@@ -35,7 +30,7 @@
             "DropChancePercent": 100
           },
           {
-            "ItemId": "Scroll of Unlock",
+            "ItemId": "Spellbook of Chain Lightning",
             "AmountRange": {
               "Min": 1,
               "Max": 1
@@ -191,6 +186,19 @@
         "Max": 1
       },
       "MovementTypeOverride": "Sentinel",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "goblin",
+      "SpawnRoom": 2,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
       "DropTableOverride": {
         "Entries": []
       },
