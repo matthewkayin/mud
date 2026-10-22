@@ -845,6 +845,37 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.ReturnNumber(float64(healing))
 	},
 
+	// Heals a mob completely and sends the player messages about the healing received
+	// Intended to be re-used for things like NPC healing, campfire healing, inns, etc.
+	//
+	// @param target_handle MobHandle
+	"mob_full_heal": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+
+		mob.Data.Health = mob.Data.MaxHealth()
+		mob.Data.Mana = mob.Data.MaxMana()
+		if mob.IsPlayer() {
+			__world.messagePlayer(mob.PlayerCharacter.PlayerId, "Your Health and Mana have been restored.")
+		}
+
+		conditionIndex := 0
+		for conditionIndex < len(mob.Data.Conditions) {
+			condition := &mob.Data.Conditions[conditionIndex]
+			conditionData := CONDITION_DATA[condition.Id]
+			if conditionData.IsAilment {
+				lastIndex := len(mob.Data.Conditions)
+				mob.Data.Conditions[conditionIndex] = mob.Data.Conditions[lastIndex]
+				mob.Data.Conditions = mob.Data.Conditions[:lastIndex]
+				__world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You have been cured of <r>%s</r>.", conditionData.Name))
+				continue
+			}
+
+			conditionIndex++
+		}
+
+		return frame.Return()
+	},
+
 	// Returns the room's occupant count
 	//
 	// @param room integer

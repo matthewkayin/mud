@@ -26,6 +26,7 @@ export class EditorActionAddRoom implements EditorAction {
     const room: EditorRoom = Object.assign(world.Room.createFrom({
       Name: 'New Room',
       Description: 'This is a new room',
+      Notes: '',
       // Exits are filled in when the world is saved
       Exits: new Array(world.Direction.COUNT).fill(getEditorConstants().RoomNone),
       Locks: [],

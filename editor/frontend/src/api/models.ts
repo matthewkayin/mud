@@ -465,6 +465,7 @@ export namespace world {
 	export class Room {
 	    Name: string;
 	    Description: string;
+	    Notes: string;
 	    IsSafeZone: boolean;
 	    EditorPosition: RoomEditorPosition;
 	    Exits: number[];
@@ -481,6 +482,7 @@ export namespace world {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Name = source["Name"];
 	        this.Description = source["Description"];
+	        this.Notes = source["Notes"];
 	        this.IsSafeZone = source["IsSafeZone"];
 	        this.EditorPosition = this.convertValues(source["EditorPosition"], RoomEditorPosition);
 	        this.Exits = source["Exits"];

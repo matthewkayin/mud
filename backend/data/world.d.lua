@@ -222,6 +222,12 @@ function world.mob_exists(handle) end
 ---@return integer, boolean
 function world.mob_find_inventory_item(handle, item_name) end
 
+--- Heals a mob completely and sends the player messages about the healing received
+--- Intended to be re-used for things like NPC healing, campfire healing, inns, etc.
+---
+---@param target_handle MobHandle
+function world.mob_full_heal(target_handle) end
+
 --- Returns the number of conditions the mob has
 ---
 ---@param mob MobHandle
