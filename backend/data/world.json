@@ -190,7 +190,7 @@
         "Min": 1,
         "Max": 1
       },
-      "MovementTypeOverride": "Sentinel",
+      "MovementTypeOverride": "Stationary",
       "DropTableOverride": {
         "Entries": []
       },

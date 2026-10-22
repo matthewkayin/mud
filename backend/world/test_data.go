@@ -87,7 +87,7 @@ func primeTestData() {
 		TEST_NPC_TROLL: {
 			Id: "troll",
 			Name: "Troll",
-			MovementType: NPC_MOVEMENT_TYPE_SENTINEL,
+			MovementType: NPC_MOVEMENT_TYPE_STATIONARY,
 			BehaviorParams: map[string]NpcBehaviorParamType {
 				"Greeting": NPC_BEHAVIOR_PARAM_TYPE_STRING,
 				"Patience": NPC_BEHAVIOR_PARAM_TYPE_NUMBER,

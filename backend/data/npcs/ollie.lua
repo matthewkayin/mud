@@ -13,7 +13,7 @@ npc.equipment = {}
 npc.drop_table = {}
 
 npc.starting_disposition = world.NpcDisposition.FRIENDLY
-npc.movement_type = world.NpcMovementType.SENTINEL
+npc.movement_type = world.NpcMovementType.STATIONARY
 
 npc.wares = {
     "Sword",

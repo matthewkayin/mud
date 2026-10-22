@@ -61,7 +61,7 @@ world.NpcMode = {
 
 ---@enum NpcMovementType
 world.NpcMovementType = {
-	SENTINEL = "Sentinel",
+	STATIONARY = "Sentinel",
 	WANDER = "Wander",
 }
 

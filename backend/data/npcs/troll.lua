@@ -16,7 +16,7 @@ npc.equipment = {}
 npc.drop_table = {}
 
 npc.starting_disposition = world.NpcDisposition.NEUTRAL
-npc.movement_type = world.NpcMovementType.SENTINEL
+npc.movement_type = world.NpcMovementType.STATIONARY
 
 -- The troll blocks an exit until a player pays it the toll
 npc.behavior_params = {

@@ -2,7 +2,7 @@ import { world } from '../api/models';
 
 // Records keyed by the generated enums, so adding an enum value in Go is a compile error here until it gets a name
 export const NPC_MOVEMENT_TYPE_NAMES: Record<world.NpcMovementType, string> = {
-  [world.NpcMovementType.SENTINEL]: 'Sentinel',
+  [world.NpcMovementType.STATIONARY]: 'Sentinel',
   [world.NpcMovementType.WANDER]: 'Wander',
 };
 export const LOCK_TYPE_NAMES: Record<Exclude<world.LockType, world.LockType.COUNT>, string> = {
