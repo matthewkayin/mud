@@ -98,6 +98,18 @@ export namespace world {
 	    SOUTH = 2,
 	    WEST = 3,
 	}
+	export enum ItemKind {
+	    CONSUMABLE = 0,
+	    EQUIPMENT_ACCESSORY = 5,
+	    EQUIPMENT_ONE_HANDED = 1,
+	    EQUIPMENT_OUTFIT = 4,
+	    EQUIPMENT_SHIELD = 3,
+	    EQUIPMENT_SPELLBOOK = 6,
+	    EQUIPMENT_TWO_HANDED = 2,
+	    MISC = 9,
+	    RECIPE = 8,
+	    SPELL_SCROLL = 7,
+	}
 	export enum LockType {
 	    COUNT = 2,
 	    MAGICAL = 1,
@@ -328,9 +340,10 @@ export namespace world {
 	export class ItemData {
 	    Name: string;
 	    Description: string;
-	    Kind: number;
+	    Kind: ItemKind;
 	    Price: number;
 	    Size: number;
+	    Notes: string;
 	    Data: any;
 	
 	    static createFrom(source: any = {}) {
@@ -344,6 +357,7 @@ export namespace world {
 	        this.Kind = source["Kind"];
 	        this.Price = source["Price"];
 	        this.Size = source["Size"];
+	        this.Notes = source["Notes"];
 	        this.Data = source["Data"];
 	    }
 	}

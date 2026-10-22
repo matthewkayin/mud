@@ -9,4 +9,6 @@ item.size = 10
 item.spell = "Chain Lightning"
 item.stat_requirements = {}
 
+item.notes = ""
+
 return item

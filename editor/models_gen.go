@@ -40,6 +40,7 @@ func generateModels(path string) error {
 	generator.addEnum(ALL_NPC_BEHAVIOR_PARAM_TYPES)
 	generator.addEnum(ALL_CHEST_TYPES)
 	generator.addEnum(ALL_LOCK_TYPES)
+	generator.addEnum(ALL_ITEM_KINDS)
 
 	models, err := generator.generate()
 	if err != nil {
