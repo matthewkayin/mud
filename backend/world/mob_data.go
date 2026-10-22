@@ -34,6 +34,7 @@ type MobData struct {
 	Spells []SpellId
 	Inventory Inventory
 	Equipment Equipment
+	BonusArmor int
 }
 
 type MobDataJson struct {
@@ -170,7 +171,7 @@ func (mobData *MobData) MaxMana() int32 {
 }
 
 func (mobData *MobData) Armor() int32 {
-	var armorVal int32 = 0
+	var armorVal int32 = int32(mobData.BonusArmor)
 
 	outfit := mobData.Equipment.Get(EQUIPMENT_SLOT_OUTFIT)
 	if outfit != nil {
