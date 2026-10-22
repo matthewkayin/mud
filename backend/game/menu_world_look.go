@@ -150,13 +150,13 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				switch itemData.Kind {
 					case world.ITEM_KIND_EQUIPMENT_OUTFIT, world.ITEM_KIND_EQUIPMENT_SHIELD: {
 						outfitData := itemData.Data.(*world.ItemDataArmor)
-						*player.inbox <- fmt.Sprintf("Durability: %d", item.Durability)
+						*player.inbox <- fmt.Sprintf("Durability: %d", item.GetDurabilityPercent())
 						*player.inbox <- fmt.Sprintf("Armor: %d", outfitData.Armor)
 						*player.inbox <- fmt.Sprintf("Stealth Penalty: %d%%", int(outfitData.StealthPenalty * 100))
 					}
 					case world.ITEM_KIND_EQUIPMENT_ONE_HANDED, world.ITEM_KIND_EQUIPMENT_TWO_HANDED: {
-						*player.inbox <- fmt.Sprintf("Durability: %d", item.Durability)
-						*player.inbox <- fmt.Sprintf("Damage: %d", item.GetDamage())
+						*player.inbox <- fmt.Sprintf("Durability: %d%%", item.GetDurabilityPercent())
+						*player.inbox <- fmt.Sprintf("Damage: %d", item.GetDamageValue())
 					}
 				}
 

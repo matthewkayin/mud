@@ -1,6 +1,6 @@
 local item = {}
 
-item.name = "Weapon Reinforcement Kit"
+item.name = "Reinforcement Kit"
 item.description = "Materials and tools for upgrading weapons. While durability on a weapon is above its normal maximum it does additional damage."
 item.kind = world.ItemKind.CONSUMABLE
 item.price = 100
@@ -10,16 +10,13 @@ item.usable_by_job = "any"
 item.target_type = world.TargetType.INVENTORY_ITEM
 
 item.on_use = function(user, target)
-    local reinforcement = 50
     local user_name = world.mob_get_name(user)
     local target_name = world.mob_get_inventory_item_name(user, target)
 
     local success = false
-    local kind = world.mob_get_inventory_item_kind(user, target)
 
-    if kind == "One-Handed Weapon" or kind == "Two-Handed Weapon" then
-        success = world.mob_reinforce_item(user, target, reinforcement)
-    end
+    success = world.mob_reinforce_item(user, target)
+
 
     if success == false then
         world.message_player(user, "That is not a valid item.")

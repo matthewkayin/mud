@@ -542,7 +542,7 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	// Get weapon damage from the item
 	var damage int32 = 0
 	if heldItemIsWeapon {
-		damage = weapon.GetDamage()
+		damage = weapon.GetDamageValue()
 	}
 
 	// Add strength to the damage

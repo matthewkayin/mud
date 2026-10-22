@@ -519,7 +519,16 @@ func (itemData *ItemData) GetMaxDurability() int32 {
 	}
 }
 
-func (item *Item) GetDamage() int32 {
+func (item *Item) GetDurabilityPercent() int32 {
+	itemData := ITEM_DATA[item.Id]
+	if itemData.ItemIsArmor() || itemData.ItemIsWeapon() {
+		return (item.Durability * 100) / itemData.GetMaxDurability()
+	}
+
+	return 0
+}
+
+func (item *Item) GetDamageValue() int32 {
 	itemData := ITEM_DATA[item.Id]
 	if !itemData.ItemIsWeapon() {
 		return -1
@@ -531,7 +540,23 @@ func (item *Item) GetDamage() int32 {
 	if item.Durability > weaponData.MaxDurability {
 		damage = (damage * 120 ) / 100
 	}
+
 	return damage
+}
+
+func (item *Item) GetArmorValue() int32 {
+	itemData := ITEM_DATA[item.Id]
+	if !itemData.ItemIsArmor() {
+		return -1
+	}
+	armorData := itemData.Data.(*ItemDataArmor)
+	armor := armorData.Armor
+
+	if item.Durability > armorData.MaxDurability {
+		armor = (armor * 120) / 100
+	}
+
+	return armor
 }
 
 func (item *Item) GetSellPrice() int32 {

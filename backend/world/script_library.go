@@ -380,43 +380,6 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	"mob_repair_item": func(frame lua.Frame) lua.Outcome {
 		mob := frameGetMobArg(&frame, 0)
 		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
-		amount := frameGetIntegerArg(&frame, 2, "amount")
-		item := &mob.Data.Inventory.Items[index]
-		itemData := ITEM_DATA[item.Id]
-
-		if itemData.Kind != ITEM_KIND_EQUIPMENT_ONE_HANDED &&
-		   itemData.Kind != ITEM_KIND_EQUIPMENT_TWO_HANDED &&
-		   itemData.Kind != ITEM_KIND_EQUIPMENT_OUTFIT &&
-		   itemData.Kind != ITEM_KIND_EQUIPMENT_SHIELD {
-			return frame.ReturnNil()
-		}
-
-		var amountRepaired int32 = 0
-
-		if item.Durability > itemData.GetMaxDurability() {
-			return frame.ReturnNil()
-		} else if item.Durability + int32(amount) > itemData.GetMaxDurability() {
-			amountRepaired = itemData.GetMaxDurability() - item.Durability
-			item.Durability = itemData.GetMaxDurability()
-		} else {
-			amountRepaired = int32(amount)
-			item.Durability += int32(amount)
-		}
-
-		return frame.ReturnNumber(float64(amountRepaired))
-	},
-
-	// Returns the amount of durability restores
-	// Returns nil if target could not have its durability restores
-	//
-	// @param handle Mobhandle
-	// @param index integer
-	// @param amount integer
-	// @return bool
-	"mob_reinforce_item": func(frame lua.Frame) lua.Outcome {
-		mob := frameGetMobArg(&frame, 0)
-		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
-		amount := frameGetIntegerArg(&frame, 2, "amount")
 		item := &mob.Data.Inventory.Items[index]
 		itemData := ITEM_DATA[item.Id]
 
@@ -427,7 +390,34 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 			return frame.ReturnBool(false)
 		}
 
-		item.Durability += int32(amount)
+		if item.Durability >= itemData.GetMaxDurability() {
+			return frame.ReturnBool(false)
+		}
+
+		item.Durability = itemData.GetMaxDurability()
+		return frame.ReturnBool(true)
+	},
+
+	// Returns the amount of durability restores
+	// Returns nil if target could not have its durability restores
+	//
+	// @param handle Mobhandle
+	// @param index integer
+	// @return bool
+	"mob_reinforce_item": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
+		item := &mob.Data.Inventory.Items[index]
+		itemData := ITEM_DATA[item.Id]
+
+		if itemData.Kind != ITEM_KIND_EQUIPMENT_ONE_HANDED &&
+		   itemData.Kind != ITEM_KIND_EQUIPMENT_TWO_HANDED &&
+		   itemData.Kind != ITEM_KIND_EQUIPMENT_OUTFIT &&
+		   itemData.Kind != ITEM_KIND_EQUIPMENT_SHIELD {
+			return frame.ReturnBool(false)
+		}
+
+		item.Durability = (itemData.GetMaxDurability() * 120) / 100
 		return frame.ReturnBool(true)
 	},
 
