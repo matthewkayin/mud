@@ -28,6 +28,9 @@ world.CONDITION_DURATION_INFINITE = -1
 ---@type number
 world.ITEM_INFUSION_USES_UNLIMITED = -1
 
+---@type number
+world.ITEM_REINFORCED_DURABILITY_PERCENT = 120
+
 ---@enum ItemKind
 world.ItemKind = {
 	CONSUMABLE = "Consumable",
@@ -219,22 +222,6 @@ function world.mob_exists(handle) end
 ---@return integer, boolean
 function world.mob_find_inventory_item(handle, item_name) end
 
---- Repair an item in a mob inventory.
---- Returns amount of durability repaired, or nil if item not found.
----
----@param handle MobHandle
----@param index integer
----@return integer?
-function world.mob_repair_item(handle, index) end
-
---- Reinforce an item in a mob inventory.
---- Returns amount of durability granted, or nil if item not found.
----
----@param handle MobHandle
----@param index integer
----@return integer?
-function world.mob_reinforce_item(handle, index) end
-
 --- Returns the number of conditions the mob has
 ---
 ---@param mob MobHandle
@@ -275,13 +262,21 @@ function world.mob_get_inventory_amount_of(handle, item_name) end
 ---@return integer
 function world.mob_get_inventory_item_amount(handle, index) end
 
---- Returns the durability of the item at an index in the mob's inventory, or nil if the item has no durability.
+--- Returns the durability percent of the item at an index in the mob's inventory
+--- Indices start at 0.
+---
+---@param handle MobHandle
+---@param index integer
+---@return integer
+function world.mob_get_inventory_item_durability_percent(handle, index) end
+
+--- Returns the kind of item at an index in the mob's inventory.
 --- Indices start at 0.
 ---
 ---@param handle MobHandle
 ---@param index integer
 ---@return integer?
-function world.mob_get_inventory_item_durability(handle, index) end
+function world.mob_get_inventory_item_kind(handle, index) end
 
 --- Returns the name of the item at an index in the mob's inventory. Indices start at 0.
 ---
@@ -289,14 +284,6 @@ function world.mob_get_inventory_item_durability(handle, index) end
 ---@param index integer
 ---@return string
 function world.mob_get_inventory_item_name(handle, index) end
-
---- Returns the kind of an item at an index as a string. Indices start at 0.
----
---- @param handle MobHandle
---- @param index integer
---- @return string
-function world.mob_get_inventory_item_kind(handle, index) end
-
 
 --- Returns the number of item stacks in the mob's inventory
 ---
@@ -377,6 +364,19 @@ function world.mob_is_dead(handle) end
 ---@return boolean
 function world.mob_is_npc(handle) end
 
+--- Returns true if the item can be repaired
+---
+---@param handle MobHandle
+---@param index integer
+---@return bool
+function world.mob_item_is_repairable(handle, index) end
+
+--- Reinforces the item
+---
+---@param handle Mobhandle
+---@param index integer
+function world.mob_reinforce_item(handle, index) end
+
 --- Remves a condition from a mob
 ---
 ---@param mob MobHandle
@@ -392,6 +392,12 @@ function world.mob_remove_condition(mob, condition) end
 ---@param amount integer
 ---@return integer
 function world.mob_remove_inventory_item(handle, index, amount) end
+
+--- Repairs the item
+---
+---@param handle Mobhandle
+---@param index integer
+function world.mob_repair_item(handle, index) end
 
 --- Returns the NPC's disposition
 ---

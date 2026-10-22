@@ -26,7 +26,7 @@ func primeTestData() {
 			ManaCost: 5,
 			CastTime: 1,
 			TargetType: TARGET_TYPE_ENEMY,
-			OnCast: nil,
+			onCast: nil,
 		},
 	}
 

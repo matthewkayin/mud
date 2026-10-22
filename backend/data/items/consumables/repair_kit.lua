@@ -9,17 +9,23 @@ item.size = 1
 item.usable_by_job = "any"
 item.target_type = world.TargetType.INVENTORY_ITEM
 
-item.on_use = function(user, target)
+function item.validate_target(user, target)
+    if not world.mob_item_is_repairable(user, target) then
+        return "That item cannot be repaired."
+    end
+    if world.mob_get_inventory_item_durability_percent(user, target) >= 100 then
+        return "That item is not damaged."
+    end
+
+    return nil
+end
+
+function item.on_use(user, target)
     local user_name = world.mob_get_name(user)
     local target_name = world.mob_get_inventory_item_name(user, target)
 
-    local success = world.mob_repair_item(user, target)
-
-    if success == false then
-        world.message_player(user, "That is not a valid item.")
-    else
-        world.message_room(world.mob_get_room(user), string.format("<y>%s</y> used a <g>%s</g> on their <g>%s</g>.", user_name, item.name, target_name))
-    end
+    world.mob_repair_item(user, target)
+    world.message_room(world.mob_get_room(user), string.format("<y>%s</y> repaired their <g>%s</g>.", user_name, target_name))
 end
 
 item.notes = ""
