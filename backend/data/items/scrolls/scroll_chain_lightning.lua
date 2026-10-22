@@ -7,5 +7,6 @@ item.price = 150
 item.size = 1
 
 item.spell = "Chain Lightning"
+item.notes = ""
 
 return item

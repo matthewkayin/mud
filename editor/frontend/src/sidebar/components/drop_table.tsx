@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import {
   Stack,
   Typography,
@@ -11,9 +11,14 @@ import {
   Divider,
   IconButton,
   Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteIcon from '@mui/icons-material/Delete';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import { world } from '../../api/models';
 import { editorStore } from '../../store';
 import { SubmitNumberField } from './submit_number_field';
@@ -25,8 +30,18 @@ type DropTableEditorProps = {
   onEdit: (dropTable: world.DropTable) => void;
 }
 
+// Turns an ItemKind like EQUIPMENT_ONE_HANDED into "Equipment One Handed"
+function itemKindLabel(kind: world.ItemKind): string {
+  return world.ItemKind[kind]
+    .split('_')
+    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
 export function DropTableEditor({ name, dropTable, onEdit }: DropTableEditorProps) {
   const itemData = useSyncExternalStore(editorStore.subscribe, editorStore.getItemData);
+  const [viewedItemName, setViewedItemName] = useState<string | null>(null);
+  const viewedItem = itemData.find((item) => item.Name === viewedItemName);
 
   const editEntry = (index: number, edit: (entry: world.DropTableEntry) => void) => {
     const editedTable = structuredClone(dropTable);
@@ -60,6 +75,13 @@ export function DropTableEditor({ name, dropTable, onEdit }: DropTableEditorProp
                   ))}
                 </Select>
                 <Box sx={{ marginLeft: 'auto' }}>
+                  <IconButton
+                    aria-label="View item"
+                    disabled={!itemData.some((item) => item.Name === entry.ItemId)}
+                    onClick={() => setViewedItemName(entry.ItemId)}
+                  >
+                    <VisibilityIcon/>
+                  </IconButton>
                   <IconButton
                     aria-label="Delete entry"
                     onClick={() => {
@@ -125,6 +147,26 @@ export function DropTableEditor({ name, dropTable, onEdit }: DropTableEditorProp
             onEdit(editedTable);
           }}>+ Add Item</Button>
         </Stack>
+
+        <Dialog open={viewedItem !== undefined} onClose={() => setViewedItemName(null)}>
+          <DialogTitle>{viewedItem?.Name}</DialogTitle>
+          <DialogContent>
+            <Stack spacing={2}>
+              <Typography>Type: {viewedItem !== undefined ? itemKindLabel(viewedItem.Kind) : ''}</Typography>
+              <Stack spacing={0.5}>
+                <Typography>Notes:</Typography>
+                {viewedItem?.Notes ? (
+                  <Typography sx={{ whiteSpace: 'pre-line' }}>{viewedItem.Notes}</Typography>
+                ) : (
+                  <Typography sx={{ color: 'text.secondary', fontStyle: 'italic' }}>(no notes)</Typography>
+                )}
+              </Stack>
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setViewedItemName(null)}>OK</Button>
+          </DialogActions>
+        </Dialog>
       </AccordionDetails>
     </Accordion>
   );
