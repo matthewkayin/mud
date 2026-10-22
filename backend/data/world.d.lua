@@ -222,6 +222,12 @@ function world.mob_exists(handle) end
 ---@return integer, boolean
 function world.mob_find_inventory_item(handle, item_name) end
 
+--- Heals a mob completely and sends the player messages about the healing received
+--- Intended to be re-used for things like NPC healing, campfire healing, inns, etc.
+---
+---@param target_handle MobHandle
+function world.mob_full_heal(target_handle) end
+
 --- Returns the number of conditions the mob has
 ---
 ---@param mob MobHandle
@@ -398,6 +404,19 @@ function world.mob_remove_inventory_item(handle, index, amount) end
 ---@param handle Mobhandle
 ---@param index integer
 function world.mob_repair_item(handle, index) end
+--- Returns true if the two mobs are allies
+---
+---@param handleA MobHandle
+---@param handleB MobHandle
+---@return boolean
+function world.mobs_are_allies(handleA, handleB) end
+
+--- Returns true if the two mobs are enemies
+---
+---@param handleA MobHandle
+---@param handleB MobHandle
+---@return boolean
+function world.mobs_are_enemies(handleA, handleB) end
 
 --- Returns the NPC's disposition
 ---

@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 	"io/fs"
-	"path/filepath"
 
 	"github.com/mmcdole/lunar"
 )
@@ -187,7 +186,7 @@ func (world *World) scriptLoadTable(path string) (*lua.Table, error) {
 func scriptGetFilesFrom(dataFolder string, subfolder string) ([]string, error) {
 	paths := make([]string, 0, 1)
 
-	err := filepath.WalkDir(dataFolder + "/" + subfolder, func (path string, entry fs.DirEntry, err error) error {
+	err := fs.WalkDir(os.DirFS(dataFolder), subfolder, func (path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -203,8 +202,7 @@ func scriptGetFilesFrom(dataFolder string, subfolder string) ([]string, error) {
 			return nil
 		}
 
-		pathWithoutDataFolder := path[len(dataFolder) - 1:]
-		paths = append(paths, pathWithoutDataFolder)
+		paths = append(paths, path)
 		return nil
 	})
 

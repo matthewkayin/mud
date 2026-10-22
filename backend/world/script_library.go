@@ -294,6 +294,30 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.ReturnBool(mob.IsNpc())
 	},
 
+	// Returns true if the two mobs are enemies
+	//
+	// @param handleA MobHandle
+	// @param handleB MobHandle
+	// @return boolean
+	"mobs_are_enemies": func(frame lua.Frame) lua.Outcome {
+		mobA := frameGetMobArg(&frame, 0)
+		mobB := frameGetMobArg(&frame, 1)
+
+		return frame.ReturnBool(mobsAreEnemies(mobA, mobB))
+	},
+
+	// Returns true if the two mobs are allies
+	//
+	// @param handleA MobHandle
+	// @param handleB MobHandle
+	// @return boolean
+	"mobs_are_allies": func(frame lua.Frame) lua.Outcome {
+		mobA := frameGetMobArg(&frame, 0)
+		mobB := frameGetMobArg(&frame, 1)
+
+		return frame.ReturnBool(!mobsAreEnemies(mobA, mobB))
+	},
+
 	// Returns the number of item stacks in the mob's inventory
 	//
 	// @param handle MobHandle
@@ -819,6 +843,37 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		healing := min(int32(regenAmount), target.Data.MaxMana() - target.Data.Mana)
 		target.Data.Mana += healing
 		return frame.ReturnNumber(float64(healing))
+	},
+
+	// Heals a mob completely and sends the player messages about the healing received
+	// Intended to be re-used for things like NPC healing, campfire healing, inns, etc.
+	//
+	// @param target_handle MobHandle
+	"mob_full_heal": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+
+		mob.Data.Health = mob.Data.MaxHealth()
+		mob.Data.Mana = mob.Data.MaxMana()
+		if mob.IsPlayer() {
+			__world.messagePlayer(mob.PlayerCharacter.PlayerId, "Your Health and Mana have been restored.")
+		}
+
+		conditionIndex := 0
+		for conditionIndex < len(mob.Data.Conditions) {
+			condition := &mob.Data.Conditions[conditionIndex]
+			conditionData := CONDITION_DATA[condition.Id]
+			if conditionData.IsAilment {
+				lastIndex := len(mob.Data.Conditions)
+				mob.Data.Conditions[conditionIndex] = mob.Data.Conditions[lastIndex]
+				mob.Data.Conditions = mob.Data.Conditions[:lastIndex]
+				__world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You have been cured of <r>%s</r>.", conditionData.Name))
+				continue
+			}
+
+			conditionIndex++
+		}
+
+		return frame.Return()
 	},
 
 	// Returns the room's occupant count

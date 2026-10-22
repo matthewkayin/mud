@@ -73,6 +73,17 @@ export function RoomEditor({ selectedCell, room, connections }: RoomEditorProps)
         }}
       />
 
+      <SubmitTextField
+        label="Notes"
+        value={room.Notes}
+        multiline
+        onSubmit={(value) => {
+          commitRoomEdit((editedRoom) => {
+            editedRoom.Notes = value;
+          });
+        }}
+      />
+
       <FormControlLabel
         label="Start Room"
         control={

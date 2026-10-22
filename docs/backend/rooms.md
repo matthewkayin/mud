@@ -1,6 +1,6 @@
 # Rooms
 
-Rooms (`backend/world/room.go`) are saved in `data/world.json` and edited in the world editor. A room has a name, description, safe zone flag, exits, locks, a drop table that fills its floor inventory, and chests. Mobs in the room are listed in `Room.Occupants` by `MobHandle`. Occupants are transient, so they aren't saved.
+Rooms (`backend/world/room.go`) are saved in `data/world.json` and edited in the world editor. A room has a name, description, notes, safe zone flag, exits, locks, a drop table that fills its floor inventory, and chests. `Room.Notes` is for content developers to record the intent behind a part of the world. It's saved in `world.json` and edited in the world editor, but the game never reads or shows it. Mobs in the room are listed in `Room.Occupants` by `MobHandle`. Occupants are transient, so they aren't saved.
 
 ## Exits
 
