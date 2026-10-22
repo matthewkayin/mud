@@ -17,7 +17,7 @@ type FindTargetParams struct {
 	verb string
 	name string
 	noun string
-	validateArgument *lua.Function
+	validateTarget *lua.Function
 }
 
 var MENU_WORLD = Menu {
@@ -318,6 +318,25 @@ func findTarget(gamestate *GameState, player *Player, params FindTargetParams) (
 				return world.MobTarget{}, err
 			}
 
+			// Validate the item
+			item := &playerMob.Data.Inventory.Items[index]
+			err = playerMob.ValidateTarget(gamestate.world, world.MobValidateTargetParams {
+				Hook: params.validateTarget,
+				Target: world.MobTarget {
+					Type: world.MOB_TARGET_INVENTORY_ITEM,
+					Value: world.MobItemTarget {
+						Id: item.Id,
+						Index: index,
+					},
+				},
+				Verb: params.verb,
+				Name: params.name,
+				Noun: params.noun,
+			})
+			if err != nil {
+				return world.MobTarget{}, err
+			}
+
 			return world.MobTarget {
 				Type: world.MOB_TARGET_INVENTORY_ITEM,
 				Value: world.MobItemTarget {
@@ -335,9 +354,12 @@ func findTarget(gamestate *GameState, player *Player, params FindTargetParams) (
 			// Validate the argument
 			argument := strings.ToLower(strings.Join(params.targetWords, " "))
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-			err := playerMob.ValidateArgument(gamestate.world, world.MobValidateArgumentParams {
-				Hook: params.validateArgument,
-				Argument: argument,
+			err := playerMob.ValidateTarget(gamestate.world, world.MobValidateTargetParams {
+				Hook: params.validateTarget,
+				Target: world.MobTarget {
+					Type: world.MOB_TARGET_ARGUMENT,
+					Value: argument,
+				},
 				Verb: params.verb,
 				Name: params.name,
 				Noun: params.noun,

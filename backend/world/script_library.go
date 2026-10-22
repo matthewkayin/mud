@@ -325,20 +325,17 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.ReturnNumber(float64(mob.Data.Inventory.Items[index].Amount))
 	},
 
-	// Returns the durability of the item at an index in the mob's inventory, or nil if the item has no durability.
+	// Returns the durability percent of the item at an index in the mob's inventory
 	// Indices start at 0.
 	//
 	// @param handle MobHandle
 	// @param index integer
-	// @return integer?
-	"mob_get_inventory_item_durability": func(frame lua.Frame) lua.Outcome {
+	// @return integer
+	"mob_get_inventory_item_durability_percent": func(frame lua.Frame) lua.Outcome {
 		mob := frameGetMobArg(&frame, 0)
 		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
 		item := &mob.Data.Inventory.Items[index]
-		if ITEM_DATA[item.Id].GetMaxDurability() == 0 {
-			return frame.ReturnValue(lua.Nil())
-		}
-		return frame.ReturnNumber(float64(item.Durability))
+		return frame.ReturnNumber(float64(item.GetDurabilityPercent()))
 	},
 
 	// Returns the kind of item at an index in the mob's inventory.
@@ -371,54 +368,43 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.ReturnNumber(float64(index))
 	},
 
-	// Returns the amount of durability restored
-	// Returns nil if target could not have its durability restored
+	// Returns true if the item can be repaired
+	//
+	// @param handle MobHandle
+	// @param index integer
+	// @return bool
+	"mob_item_is_repairable": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
+		item := &mob.Data.Inventory.Items[index]
+
+		return frame.ReturnBool(item.isRepairable())
+	},
+
+	// Repairs the item
 	//
 	// @param handle Mobhandle
 	// @param index integer
-	// @return integer?
 	"mob_repair_item": func(frame lua.Frame) lua.Outcome {
 		mob := frameGetMobArg(&frame, 0)
 		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
 		item := &mob.Data.Inventory.Items[index]
-		itemData := ITEM_DATA[item.Id]
+		item.repair()
 
-		if itemData.Kind != ITEM_KIND_EQUIPMENT_ONE_HANDED &&
-		   itemData.Kind != ITEM_KIND_EQUIPMENT_TWO_HANDED &&
-		   itemData.Kind != ITEM_KIND_EQUIPMENT_OUTFIT &&
-		   itemData.Kind != ITEM_KIND_EQUIPMENT_SHIELD {
-			return frame.ReturnBool(false)
-		}
-
-		if item.Durability >= itemData.GetMaxDurability() {
-			return frame.ReturnBool(false)
-		}
-
-		item.Durability = itemData.GetMaxDurability()
-		return frame.ReturnBool(true)
+		return frame.Return()
 	},
 
-	// Returns the amount of durability restores
-	// Returns nil if target could not have its durability restores
+	// Reinforces the item
 	//
 	// @param handle Mobhandle
 	// @param index integer
-	// @return bool
 	"mob_reinforce_item": func(frame lua.Frame) lua.Outcome {
 		mob := frameGetMobArg(&frame, 0)
 		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
 		item := &mob.Data.Inventory.Items[index]
-		itemData := ITEM_DATA[item.Id]
+		item.reinforce()
 
-		if itemData.Kind != ITEM_KIND_EQUIPMENT_ONE_HANDED &&
-		   itemData.Kind != ITEM_KIND_EQUIPMENT_TWO_HANDED &&
-		   itemData.Kind != ITEM_KIND_EQUIPMENT_OUTFIT &&
-		   itemData.Kind != ITEM_KIND_EQUIPMENT_SHIELD {
-			return frame.ReturnBool(false)
-		}
-
-		item.Durability = (itemData.GetMaxDurability() * 120) / 100
-		return frame.ReturnBool(true)
+		return frame.Return()
 	},
 
 	// Returns the total amount of an item in the mob's inventory

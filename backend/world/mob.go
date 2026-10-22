@@ -68,8 +68,9 @@ type MobItemTarget struct {
 	Index int
 }
 
-type MobValidateArgumentParams struct {
+type MobValidateTargetParams struct {
 	Hook *lua.Function
+	Target MobTarget
 	Argument string
 	Noun string
 	Verb string
@@ -79,7 +80,7 @@ type MobValidateArgumentParams struct {
 type MobOnUseOrCastParams struct {
 	targetType TargetType
 	hook *lua.Function
-	validateArgument *lua.Function
+	validateTarget *lua.Function
 	noun string
 	verb string
 	name string
@@ -789,14 +790,61 @@ func (mob *Mob) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot
 	}
 }
 
-func (mob *Mob) ValidateArgument(world *World, params MobValidateArgumentParams) error {
-	userLuaHandle, err := world.getMobLuaHandle(mob.Handle)
+func (mob *Mob) buildTargetHookArgs(world *World, target MobTarget) ([]lua.Value, error) {
+	args := make([]lua.Value, 0, 1)
+
+	// Mob lua handle
+	mobLuaHandle, err := world.getMobLuaHandle(mob.Handle)
 	if err != nil {
-		log.Printf("Warn - Failed to get lua handle during ValidateArgument: %s", err.Error())
+		return args, err
+	}
+	args = append(args, mobLuaHandle)
+
+	// Target
+	switch target.Type {
+		case MOB_TARGET_NONE: {}
+
+		case MOB_TARGET_MOB: {
+			handle := target.Value.(MobHandle)
+			targetLuaHandle, err := world.getMobLuaHandle(handle)
+			if err != nil {
+				return args, err
+			}
+
+			args = append(args, targetLuaHandle)
+		}
+
+		case MOB_TARGET_INVENTORY_ITEM: {
+			itemTarget := target.Value.(MobItemTarget)
+			index, found := mob.Data.Inventory.FindExpectedItem(itemTarget.Id, itemTarget.Index)
+			if !found {
+				return args, fmt.Errorf("Target item with ID %d index %d not found during buildTargetHookArgs.", itemTarget.Id, itemTarget.Index)
+			}
+
+			args = append(args, lua.Number(float64(index)))
+		}
+
+		case MOB_TARGET_ARGUMENT: {
+			argument := target.Value.(string)
+			args = append(args, lua.String(argument))
+		}
+
+		default: {
+			return args, fmt.Errorf("Target type %d not handled in buildTargetHookArgs", target.Type)
+		}
+	}
+
+	return args, nil
+}
+
+func (mob *Mob) ValidateTarget(world *World, params MobValidateTargetParams) error {
+	args, err := mob.buildTargetHookArgs(world, params.Target)
+	if err != nil {
+		log.Printf("Warn - buildTargetHookArgs failed: %s", err.Error())
 		return fmt.Errorf("Failed to %s %s because of a technical issue.", params.Verb, params.Noun)
 	}
 
-	result, ok := world.scriptCall(params.Hook.Value(), fmt.Sprintf("%s %s validate_argument()", params.Noun, params.Name), userLuaHandle, lua.String(params.Argument))
+	result, ok := world.scriptCall(params.Hook.Value(), fmt.Sprintf("%s %s validate_target()", params.Noun, params.Name), args...)
 	if !ok {
 		return fmt.Errorf("Failed to %s %s because of a technical issue.", params.Verb, params.Noun)
 	}
@@ -812,11 +860,10 @@ func (mob *Mob) ValidateArgument(world *World, params MobValidateArgumentParams)
 // Calls the on_use() or on_cast() of an item or spell
 func (mob *Mob) onUseOrCast(world *World, params MobOnUseOrCastParams) bool {
 	// Double check argument validation before use/cast
-	if params.targetType == TARGET_TYPE_ARGUMENT {
-		argument := mob.Target.Value.(string)
-		err := mob.ValidateArgument(world, MobValidateArgumentParams {
-			Hook: params.validateArgument,
-			Argument: argument,
+	if params.targetType == TARGET_TYPE_INVENTORY_ITEM || params.targetType == TARGET_TYPE_ARGUMENT {
+		err := mob.ValidateTarget(world, MobValidateTargetParams {
+			Hook: params.validateTarget,
+			Target: mob.Target,
 			Verb: params.verb,
 			Name: params.name,
 			Noun: params.noun,
@@ -828,54 +875,11 @@ func (mob *Mob) onUseOrCast(world *World, params MobOnUseOrCastParams) bool {
 	}
 
 	// Build hook arguments array
-	args := make([]lua.Value, 0, 1)
-
-	// User handle
-	mobLuaHandle, err := world.getMobLuaHandle(mob.Handle)
+	args, err := mob.buildTargetHookArgs(world, mob.Target)
 	if err != nil {
-		log.Printf("Failed to get mob lua handle during onUseOrCast: %s", err.Error())
+		log.Printf("Warn - buildTargetHookArgs failed: %s", err.Error())
 		world.messageRoom(mob.Data.Room, "But it failed!")
 		return false
-	}
-	args = append(args, mobLuaHandle)
-
-	// Target args
-	switch params.targetType {
-		case TARGET_TYPE_NONE: {}
-
-		case TARGET_TYPE_ALLY, TARGET_TYPE_ENEMY: {
-			targetMob := mob.getTargetMob(world)
-			targetLuaHandle, err := world.getMobLuaHandle(targetMob.Handle)
-			if err != nil {
-				log.Printf("Failed to get target lua handle during onUseOrCast: %s", err.Error())
-				world.messageRoom(mob.Data.Room, "But it failed!")
-				return false
-			}
-
-			args = append(args, targetLuaHandle)
-		}
-
-		case TARGET_TYPE_INVENTORY_ITEM: {
-			itemTarget := mob.Target.Value.(MobItemTarget)
-			index, found := mob.Data.Inventory.FindExpectedItem(itemTarget.Id, itemTarget.Index)
-			if !found {
-				world.messageRoom(mob.Data.Room, "But it failed!")
-				return false
-			}
-
-			args = append(args, lua.Number(float64(index)))
-		}
-
-		case TARGET_TYPE_ARGUMENT: {
-			argument := mob.Target.Value.(string)
-			args = append(args, lua.String(argument))
-		}
-
-		default: {
-			log.Printf("Target type %s not handled on onUseOrCast.", params.targetType.String())
-			world.messageRoom(mob.Data.Room, "But it failed!")
-			return false
-		}
 	}
 
 	// Invoke hook
@@ -897,8 +901,8 @@ func (mob *Mob) spellcast(world *World) bool {
 
 	return mob.onUseOrCast(world, MobOnUseOrCastParams {
 		targetType: spellData.TargetType,
-		hook: spellData.OnCast,
-		validateArgument: spellData.ValidateArgument,
+		hook: spellData.onCast,
+		validateTarget: spellData.ValidateTarget,
 		noun: "spell",
 		verb: "cast",
 		name: spellData.Name,
@@ -1006,7 +1010,7 @@ func (mob *Mob) useItem(world *World) {
 			success = mob.onUseOrCast(world, MobOnUseOrCastParams {
 				targetType: consumableData.TargetType,
 				hook: consumableData.onUse,
-				validateArgument: consumableData.ValidateArgument,
+				validateTarget: consumableData.ValidateTarget,
 				noun: "item",
 				verb: "use",
 				name: itemData.Name,

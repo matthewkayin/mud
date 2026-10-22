@@ -19,8 +19,8 @@ type SpellData struct {
 	CastTime int32
 	TargetType TargetType
 
-	ValidateArgument *lua.Function
-	OnCast *lua.Function
+	ValidateTarget *lua.Function
+	onCast *lua.Function
 }
 
 var SPELL_DATA []*SpellData
@@ -84,11 +84,11 @@ func (parser *ScriptParser) parseSpell(table *lua.Table) *SpellData {
 	parser.checkInt32NonNegative(spellData.CastTime, "CastTime")
 
 	spellData.TargetType = parser.getTargetType(table, "target_type")
-	if spellData.TargetType == TARGET_TYPE_ARGUMENT {
-		spellData.ValidateArgument = parser.getFunction(table, "validate_argument")
+	if spellData.TargetType == TARGET_TYPE_INVENTORY_ITEM || spellData.TargetType == TARGET_TYPE_ARGUMENT {
+		spellData.ValidateTarget = parser.getFunction(table, "validate_target")
 	}
 
-	spellData.OnCast = parser.getFunction(table, "on_cast")
+	spellData.onCast = parser.getFunction(table, "on_cast")
 
 	if len(parser.problems) != 0 {
 		return nil

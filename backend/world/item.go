@@ -10,6 +10,7 @@ import (
 
 const ITEM_INFUSION_USES_UNLIMITED int32 = -1
 const ITEM_USABLE_BY_JOB_ANY JobId = -1
+const ITEM_REINFORCED_DURABILITY_PERCENT int32 = 120
 
 type ItemId int32
 
@@ -115,7 +116,7 @@ const (
 type ItemDataConsumable struct {
 	UsableByJob JobId
 	TargetType TargetType
-	ValidateArgument *lua.Function
+	ValidateTarget *lua.Function
 	onUse *lua.Function
 }
 
@@ -253,8 +254,8 @@ func (parser *ScriptParser) parseItemData(table *lua.Table) *ItemData {
 			}
 
 			data.TargetType = parser.getTargetType(table, "target_type")
-			if data.TargetType == TARGET_TYPE_ARGUMENT {
-				data.ValidateArgument = parser.getFunction(table, "validate_argument")
+			if data.TargetType == TARGET_TYPE_INVENTORY_ITEM || data.TargetType == TARGET_TYPE_ARGUMENT {
+				data.ValidateTarget = parser.getFunction(table, "validate_target")
 			}
 
 			data.onUse = parser.getFunction(table, "on_use")
@@ -521,11 +522,12 @@ func (itemData *ItemData) GetMaxDurability() int32 {
 
 func (item *Item) GetDurabilityPercent() int32 {
 	itemData := ITEM_DATA[item.Id]
-	if itemData.ItemIsArmor() || itemData.ItemIsWeapon() {
-		return (item.Durability * 100) / itemData.GetMaxDurability()
+	maxDurability := itemData.GetMaxDurability()
+	if maxDurability == 0 {
+		return 0
 	}
 
-	return 0
+	return (item.Durability * 100) / itemData.GetMaxDurability()
 }
 
 func (item *Item) GetDamageValue() int32 {
@@ -578,4 +580,19 @@ func (item *Item) GetSellPrice() int32 {
 
 func (item *Item) HasInfusion() bool {
 	return item.Infusion.UsesRemaining != 0
+}
+
+func (item *Item) isRepairable() bool {
+	itemData := ITEM_DATA[item.Id]
+	return itemData.ItemIsWeapon() || itemData.ItemIsArmor()
+}
+
+func (item *Item) repair() {
+	itemData := ITEM_DATA[item.Id]
+	item.Durability = itemData.GetMaxDurability()
+}
+
+func (item *Item) reinforce() {
+	itemData := ITEM_DATA[item.Id]
+	item.Durability = (itemData.GetMaxDurability() * ITEM_REINFORCED_DURABILITY_PERCENT) / 100
 }

@@ -8,7 +8,7 @@ spell.mana_cost = 5
 spell.cast_time = world.SPELL_CAST_TIME_INSTANT
 spell.target_type = world.TargetType.ARGUMENT
 
-function spell.validate_argument(caster, argument)
+function spell.validate_target(caster, argument)
     local room = world.mob_get_room(caster)
     local directions = {
         world.Direction.NORTH,
