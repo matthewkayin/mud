@@ -55,6 +55,7 @@ type RoomEditorPosition struct {
 type Room struct {
 	Name string
 	Description string
+	Notes string
 	IsSafeZone bool
 	EditorPosition RoomEditorPosition
 

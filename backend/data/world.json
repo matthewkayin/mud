@@ -3,6 +3,7 @@
     {
       "Name": "Presentation Space",
       "Description": "You are in a wide-open room with chairs stacked against the columns. A makeshift, blue octopus hangs overhead.",
+      "Notes": "",
       "IsSafeZone": true,
       "EditorPosition": {
         "X": 1,
@@ -51,6 +52,7 @@
     {
       "Name": "Fort Greene (Foyer)",
       "Description": "You're in a circular room inside the monument's column. It's cramped, but there are stairs leading deeper into the crypt.",
+      "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 7,
@@ -74,6 +76,7 @@
     {
       "Name": "Bridge",
       "Description": "The bridge is old, but seems sturdy enough. The wind whips about you, and you can hear the rush of the river below.",
+      "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": -2,
@@ -97,6 +100,7 @@
     {
       "Name": "Bridgeside Bluff",
       "Description": "A rocky bluff locks out over the East River. The tides of the river clash against each other. In the distance is a great wooden bridge.",
+      "Notes": "There should be a high level troll blocking the bridge here",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": -1,
@@ -120,6 +124,7 @@
     {
       "Name": "Witch Hut",
       "Description": "A hut made of knarled wood squats in a clearing in the woods. Out front, a small black cauldron gurgles over the fire.",
+      "Notes": "There should be a kooky witch here",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 3,
@@ -143,6 +148,7 @@
     {
       "Name": "Fort Greene Courtyard",
       "Description": "An old courtyard with a faded compass rose engraved in the center. Many of the courtyard's tiles are cracked and dislodged, with roots and vines reaching out from underneath them, grasping for air.",
+      "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 5,
@@ -166,6 +172,7 @@
     {
       "Name": "Fort Greene Steps",
       "Description": "A grand staircase, lined by trees on each side, leads the way up to the monument.",
+      "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 6,
@@ -189,6 +196,7 @@
     {
       "Name": "Fort Greene Plaza",
       "Description": "At the top of the hill is a wide-open courtyard. In the center, a magnificent column reaches toward the sky. At its peak sits a limestone-green brazier.",
+      "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 7,
@@ -212,6 +220,7 @@
     {
       "Name": "Clearing in the Trees",
       "Description": "The woods are thinner here, and there are many stumps where the trees would be.",
+      "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": -1,
@@ -235,6 +244,7 @@
     {
       "Name": "Mushroom Cart",
       "Description": "There is a break in the trees here, and a circular courtyard of dirt where many boots have worn away the surrounding grass. A wooden cart full of various mushrooms waits patiently under the trees.",
+      "Notes": "There should be a weird guy here selling mushrooms",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 0,
@@ -258,6 +268,7 @@
     {
       "Name": "Below the Church Window",
       "Description": "Castle Recurse looms overhead, and you have a nice view of the stained glass octopus that adorns the Church window. If you listen closely, you can hear choral hymns, or is that karaoke?",
+      "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 1,
@@ -281,6 +292,7 @@
     {
       "Name": "Overgrown Shrine",
       "Description": "A little statue of a dog peeks out from among the foliage. He is a good boy, and he points the way west.",
+      "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 2,
@@ -304,6 +316,7 @@
     {
       "Name": "Woodlawn Stream",
       "Description": "A small stream trickles to the east here.",
+      "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 3,
@@ -327,6 +340,7 @@
     {
       "Name": "Willow Road",
       "Description": "Knarled willow trees canopy the path ahead. An eerie quiet hangs in the air, interrupted only by the crunch of brittle leaves underfoot.",
+      "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 5,
@@ -350,6 +364,7 @@
     {
       "Name": "By a Fallen Oak",
       "Description": "An old fallen tree interrupts the trail. Many ants and plants have made it their home.",
+      "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": -1,
@@ -373,6 +388,7 @@
     {
       "Name": "Church",
       "Description": "This spatious room is furnished with couches that are arranged like pews. On the far window is a stained glass panel depicting an orange octopus.",
+      "Notes": "",
       "IsSafeZone": true,
       "EditorPosition": {
         "X": 1,
@@ -396,6 +412,7 @@
     {
       "Name": "Woodland Trail",
       "Description": "A dirt path leads south to north along this part of the woods.",
+      "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 2,
@@ -419,6 +436,7 @@
     {
       "Name": "Forest Boulder",
       "Description": "There's a big boulder in the center of your path here. It seems like it would be fun to climb on.",
+      "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 3,
@@ -442,6 +460,7 @@
     {
       "Name": "Rotting Apple Trees",
       "Description": "These apple trees are planted in rows like an orchard, but the branches are knarled and all the fruit is rotting on the floor.",
+      "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 4,
@@ -465,6 +484,7 @@
     {
       "Name": "Tall Apple Tree",
       "Description": "An exceptionally tall apple tree towers over the rest of the trees in the nearby orchard.",
+      "Notes": "There should be a pathetic goblin trying to get goblins from this tree. Players can give the goblin an apple or kill it.",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 5,
@@ -488,6 +508,7 @@
     {
       "Name": "Farmer Gill's Shed",
       "Description": "Inside this old wooden shed lies a scattering of rusted tools. They look like they haven't been moved from their place in some time.",
+      "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 6,
@@ -511,6 +532,7 @@
     {
       "Name": "Underneath a Shady Tree",
       "Description": "There is a large tree here whose branches reach out and shield you from the sunlight. You feel safe here, as do the squirrels that call this tree home.",
+      "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": -1,
@@ -534,6 +556,7 @@
     {
       "Name": "Kitchen",
       "Description": "In the corner of a room is a long, rectangular dining table. Many coffee makers line the kitchen counter.",
+      "Notes": "",
       "IsSafeZone": true,
       "EditorPosition": {
         "X": 0,
@@ -557,6 +580,7 @@
     {
       "Name": "Gazebo",
       "Description": "A quaint gazebo rests outside the castle's walls. In the ground, you see a colony of ants helping themselves to another Recurser's forgotten lunch.",
+      "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 2,
@@ -580,6 +604,7 @@
     {
       "Name": "Old Arrow Tree",
       "Description": "In this section of the woods, a broad tree stands above all the others. A cluster of arrows are lodged in its trunk.",
+      "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 3,
@@ -603,6 +628,7 @@
     {
       "Name": "Apple Orchard",
       "Description": "Rows of apple trees line dirt paths. Some of the apples bear bite marks from insects, but the fruits look tasty overall.",
+      "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 4,
@@ -626,6 +652,7 @@
     {
       "Name": "Farmer Gill's House",
       "Description": "This is a new room",
+      "Notes": "Players can talk to farmer gill here. pls let me do the dialog for him he is inspired by a real farmer I met once who had strong opinions about the benefits of apple maggots",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 5,
@@ -649,6 +676,7 @@
     {
       "Name": "Grapevines",
       "Description": "Clusters of dark purple grapes line the path here. They're smaller than the ones you're used to seeing, but they look delicious.",
+      "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 6,
@@ -672,6 +700,7 @@
     {
       "Name": "Hill near the Castle",
       "Description": "From atop this hill, treetops stretch as far as you can see. To the west, you glimse the East River rushing. To the northeast, Castle Recurse, light leaking out the Kitchen window. To the southeast, the tops of wooden houses peek out from the forest canopy.",
+      "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": -1,
@@ -695,6 +724,7 @@
     {
       "Name": "Below the Kitchen Winow",
       "Description": "The wall of Castle Recurse looms above you, and you can see the Kitchen window, cracked open to let in the cool air, but you cannot see inside it from here.",
+      "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 0,
@@ -718,6 +748,7 @@
     {
       "Name": "Castle Recurse Steps",
       "Description": "The steps to the fourth floor are long and winding. Your footsteps echo in the stairwell.",
+      "Notes": "",
       "IsSafeZone": true,
       "EditorPosition": {
         "X": 1,
@@ -741,6 +772,7 @@
     {
       "Name": "Willoughby Woods",
       "Description": "These woods surround Castle Recurse. Their vines climb up the castle's walls. Birds sing their morning songs, and you hear the rustle of leaves in the wind.",
+      "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 2,
@@ -764,6 +796,7 @@
     {
       "Name": "Forest Playground",
       "Description": "Someone has shaped the woods here into a sort of playground. Two swings hang over a sturdy tree branch, and a halved log has been fashioned into a seesaw.",
+      "Notes": "",
       "IsSafeZone": true,
       "EditorPosition": {
         "X": 3,
@@ -787,6 +820,7 @@
     {
       "Name": "Fulton Outskirts",
       "Description": "You find yourself at the outskirts of a small town which stretches to the east and is comprised of ramshakle wooden houses. 'Welcome to Fulton' the sign out front reads.",
+      "Notes": "",
       "IsSafeZone": true,
       "EditorPosition": {
         "X": 1,
@@ -810,6 +844,7 @@
     {
       "Name": "Dekalb Market",
       "Description": "In the center of Fulton is a large, circular courtyard with steps on all sides leading down to it like a colosseum. Here the townsfolk all gather, and merchants call out to passerbys, advertising their wares.",
+      "Notes": "",
       "IsSafeZone": true,
       "EditorPosition": {
         "X": 2,
@@ -833,6 +868,7 @@
     {
       "Name": "Fulton Residential",
       "Description": "Here on the eastern-most edge of Fulton",
+      "Notes": "",
       "IsSafeZone": true,
       "EditorPosition": {
         "X": 3,
