@@ -100,29 +100,6 @@ var MENU_WORLD_ENTRIES_GENERAL = map[string]MenuEntry {
 			return true
 		},
 	},
-
-	"rest": {
-		usage: "rest",
-		description: "Take a rest to regain your health and mana",
-		handler: func (gamestate *GameState, player *Player, args []string) bool {
-			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-			playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
-
-			// Make sure the player is in a safe zone
-			if !playerRoom.IsSafeZone {
-				*player.inbox <- "You can only rest from within a safe room."
-				return true
-			}
-
-			gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("<y>%s</y> took a nap.", playerMob.Data.Name))
-			*player.inbox <- "Your HP and MP have been restored!"
-
-			playerMob.Data.Health = playerMob.Data.MaxHealth()
-			playerMob.Data.Mana = playerMob.Data.MaxMana()
-
-			return true
-		},
-	},
 }
 
 func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room) {

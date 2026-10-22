@@ -869,6 +869,19 @@
       "BehaviorParams": {}
     },
     {
+      "Id": "yelena",
+      "SpawnRoom": 15,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
       "Id": "scabbers",
       "SpawnRoom": 22,
       "LevelRange": {
