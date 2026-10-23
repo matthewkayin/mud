@@ -23,7 +23,7 @@ Each `.lua` file in `backend/data/npcs/` returns one NpcData table. `parseNpc` r
 | `equipment` | table | Slot name (e.g. `main_hand`) → item name |
 | `drop_table` | list | The same entries as other drop tables: `{ item, amount, durability_percent, drop_chance_percent }` |
 | `starting_disposition` | `world.NpcDisposition` | Hostile NPCs attack players who enter their room |
-| `movement_type` | `world.NpcMovementType` | Sentinel NPCs stay put and wanderers move between rooms |
+| `movement_type` | `world.NpcMovementType` | Stationary NPCs stay put and wanderers move between rooms |
 | `behavior_params` | list (optional) | See [Behavior params](#behavior-params) |
 | hooks | function (optional) | See [Behavior hooks](#behavior-hooks) |
 

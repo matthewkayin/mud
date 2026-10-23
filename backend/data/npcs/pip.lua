@@ -13,7 +13,7 @@ npc.equipment = {}
 npc.drop_table = {}
 
 npc.starting_disposition = world.NpcDisposition.NEUTRAL
-npc.movement_type = world.NpcMovementType.SENTINEL
+npc.movement_type = world.NpcMovementType.STATIONARY
 
 ---@param self MobHandle
 ---@param instance Instance
