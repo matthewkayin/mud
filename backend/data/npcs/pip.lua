@@ -2,7 +2,7 @@ local npc = {}
 
 npc.id = "pip"
 npc.name = "Pip"
-npc.description = "A pot-bellied goblin it making pathetic attempts clamber up the tall tree, but his attempts are unfruitful."
+npc.description = "A pot-bellied goblin is making pathetic attempts clamber up the tall tree, but his attempts are unfruitful."
 
 npc.experience_worth = 1
 npc.experience_worth_scaling = 1
