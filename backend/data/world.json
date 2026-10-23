@@ -694,18 +694,6 @@
             "DropChancePercent": 100
           },
           {
-            "ItemId": "Azurite Pendant",
-            "AmountRange": {
-              "Min": 1,
-              "Max": 1
-            },
-            "DurabilityPercentRange": {
-              "Min": 100,
-              "Max": 100
-            },
-            "DropChancePercent": 100
-          },
-          {
             "ItemId": "Wormy Apple",
             "AmountRange": {
               "Min": 1,
@@ -728,7 +716,7 @@
       "Name": "Farmer Gill's House",
       "Description": "This is a new room",
       "Notes": "Players can talk to farmer gill here. pls let me do the dialog for him he is inspired by a real farmer I met once who had strong opinions about the benefits of apple maggots",
-      "IsSafeZone": false,
+      "IsSafeZone": true,
       "EditorPosition": {
         "X": 5,
         "Y": 2

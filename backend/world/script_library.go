@@ -518,7 +518,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		}
 
 		itemData := ITEM_DATA[itemId]
-		if mob.Data.Inventory.HasSpaceFor(itemData.Size * amount, mob.InventoryCapacity()) {
+		if !mob.Data.Inventory.HasSpaceFor(itemData.Size * amount, mob.InventoryCapacity()) {
 			return frame.ReturnNumber(-1)
 		}
 
@@ -1069,7 +1069,7 @@ func frameGetItemIdArg(frame *lua.Frame, index int) ItemId {
 }
 
 func frameGetRoomIndexArg(frame *lua.Frame, index int, name string) int {
-	roomIndex := frameGetIntegerArg(frame, 0, name)
+	roomIndex := frameGetIntegerArg(frame, index, name)
 	if roomIndex < 0 || roomIndex >= len(__world.Rooms) {
 		frame.ThrowArgError(0, fmt.Sprintf("%d is not a valid room index", roomIndex))
 	}

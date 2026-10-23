@@ -9,6 +9,8 @@ item.size = 1
 item.usable_by_job = "any"
 item.target_type = world.TargetType.NONE
 
+item.notes = ""
+
 function item.on_use(user)
     local healing = world.heal(user, 5)
     local user_name = world.mob_get_name(user)
