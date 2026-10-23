@@ -1,5 +1,7 @@
 local npc = {}
 
+---NEEDS AN UPDATE
+
 npc.id = "skulk"
 npc.name = "Skulk"
 npc.description = "A shadowy, half-visible little create with clawed hands and a large mouth. It seems interested in watching from the shadows."
@@ -16,12 +18,15 @@ npc.drop_table = { }
 npc.starting_disposition = world.NpcDisposition.NEUTRAL
 npc.movement_type = world.NpcMovementType.STATIONARY
 
+---TO DO: make the skulk a script to attack specific targets who are missing health, allow it to become hostile at any occupant count
+---this might also be a good place to experiment with monsters that (1) hide, (2) flee or (3) chase
+
 ---@param self MobHandle
 function npc.update(self)
     local room = world.mob_get_room(self)
 
     local amount = world.room_get_occupant_count(room)
-    if amount > 0 then
+    if amount == 2 then
         local has_prey = false
 
         for i = 1, amount do
@@ -43,9 +48,5 @@ function npc.update(self)
     end
 end
 
----@param self MobHandle
-function npc.on_attacked(self)
-    world.npc_set_disposition(self, world.NpcDisposition.HOSTILE)
-end
 
 return npc

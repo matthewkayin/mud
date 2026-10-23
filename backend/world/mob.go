@@ -567,7 +567,7 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	}
 
 	// Subtract armor
-	damage -= targetMob.Data.Armor() / 2.0 //why?
+	damage -= targetMob.Data.Armor()
 
 	// Calculate final damage
 	attackerMinDamage := max(1, mob.Data.Level / 2)
