@@ -46,8 +46,7 @@ function npc.on_item_given(self, instance, player, added_to_index, amount)
         -- freed up space by giving him the apples
         local reward_item_name = "Apple Cider"
         world.message_player(player, string.format("<y>%s</y> gave you <g>%s</g>.", self_name, reward_item_name))
-        local added_to_index = world.mob_add_inventory_item(player, reward_item_name, 1, 0)
-        world.message_player(player, string.format("Added the cider to index %d", added_to_index))
+        world.mob_add_inventory_item(player, reward_item_name, 1, 0)
         return world.NPC_EVENT_PREVENT_DEFAULT
     end
 
