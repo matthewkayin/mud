@@ -2,7 +2,7 @@ local npc = {}
 
 ---UNFINISHED
 
-npc.id = "goblin_apple"
+npc.id = "goblin apple"
 npc.name = "Goblin"
 npc.description = "You see a repulsive, green monster that wants to eat you."
 
