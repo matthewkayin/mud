@@ -553,6 +553,8 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 		damage += mob.Data.Strength() / 4
 	}
 
+	damage += int32(mob.Data.BonusDamage)
+
 	// Apply condition damage changes
 	damage = mob.Data.GetConditionStatChange(damage, CONDITION_EFFECT_TYPE_STAT_CHANGE_DAMAGE)
 

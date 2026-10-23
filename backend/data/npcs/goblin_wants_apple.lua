@@ -1,8 +1,8 @@
 local npc = {}
 
-UNFINISHED
+---UNFINISHED
 
-npc.id = "goblin"
+npc.id = "goblin_apple"
 npc.name = "Goblin"
 npc.description = "You see a repulsive, green monster that wants to eat you."
 
@@ -17,6 +17,6 @@ npc.drop_table = {}
 npc.starting_disposition = world.NpcDisposition.NEUTRAL
 npc.movement_type = world.NpcMovementType.STATIONARY
 
-This guy tries to get fruit from a nearby tree, and when he gets it and eats it he is satisfied for a while.
+---This guy tries to get fruit from a nearby tree, and when he gets it and eats it he is satisfied for a while.
 
 return npc

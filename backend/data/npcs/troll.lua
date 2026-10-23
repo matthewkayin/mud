@@ -7,11 +7,13 @@ npc.id = "troll"
 npc.name = "Troll"
 npc.description = "A hairy beast with a large nose and a pallid complexion towers over you."
 
-npc.experience_worth = 100
+npc.experience_worth = 200
 npc.experience_worth_scaling = 25
 
 npc.stats = { VIT = 6, STR = 8, AGI = 4, INT = 2, FTH = 2 }
 npc.scaling = { VIT = 6, STR = 8, AGI = 4, INT = 2, FTH = 2 }
+npc.bonus_damage = 3
+npc.bonus_armor = 4
 npc.equipment = {}
 npc.drop_table = {}
 

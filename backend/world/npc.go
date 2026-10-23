@@ -57,7 +57,7 @@ const (
 func (movementType NpcMovementType) String() string {
 	switch movementType {
 		case NPC_MOVEMENT_TYPE_STATIONARY:
-			return "Sentinel"
+			return "Stationary"
 		case NPC_MOVEMENT_TYPE_WANDER:
 			return "Wander"
 		default:
@@ -648,7 +648,7 @@ func (npc *Npc) movementStep(world *World) {
 
 	switch npc.getMovementType() {
 		case NPC_MOVEMENT_TYPE_STATIONARY: {
-			log.Printf("Warn - movementStep() called on a sentinel NPC with key %s, mob name %s, and mob handle %d:%d.",
+			log.Printf("Warn - movementStep() called on a stationary NPC with key %s, mob name %s, and mob handle %d:%d.",
 				NPC_DATA[npc.Id].Id, npcMob.Data.Name, npc.mobHandle.Id, npc.mobHandle.Generation)
 		}
 

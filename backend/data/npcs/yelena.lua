@@ -13,7 +13,7 @@ npc.equipment = {}
 npc.drop_table = {}
 
 npc.starting_disposition = world.NpcDisposition.FRIENDLY
-npc.movement_type = world.NpcMovementType.SENTINEL
+npc.movement_type = world.NpcMovementType.STATIONARY
 
 ---@param self MobHandle
 ---@param instance nil
@@ -28,6 +28,18 @@ function npc.on_dialog(self, instance, player, subject)
     elseif subject == "healing" or subject == "heal" then
         world.say_to_player(self, player, "Stand still, I will heal your wounds.")
         world.message_player(player, string.format("%s whispers a divine prayer. A ray of light from the window shines on you.", npc.name))
+
+        --- not sure about this. i gave a rous the chance to give you a long-duration disease, so I thought people could go to town to get rid of it.
+        local index = 1
+          while index <= world.mob_get_condition_count(target) do
+              if world.mob_condition_is_ailment(target, index) then
+                  local condition_name = world.mob_get_condition_name(target, index)
+                  world.mob_remove_condition(target, condition_name)
+                  world.say_to_player(room, string.format("I have cured you of <r>%s</r>.", condition_name))
+              else
+                  index = index + 1
+              end
+          end
 
         world.mob_full_heal(player)
     else

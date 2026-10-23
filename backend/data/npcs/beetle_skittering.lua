@@ -8,9 +8,9 @@ npc.experience_worth_scaling = 15
 
 npc.stats = { VIT = 1, STR = 2, AGI = 4, INT = 1, FTH = 1 }
 npc.scaling = { VIT = 1, STR = 2, AGI = 4, INT = 1, FTH = 1 }
-npc.equipment = {
-    outfit = "Monster Carapace"
-}
+npc.bonus_damage = 1
+npc.bonus_armor = 4
+npc.equipment = {}
 npc.drop_table = {}
 
 npc.starting_disposition = world.NpcDisposition.HOSTILE

@@ -9,6 +9,8 @@ npc.experience_worth_scaling = 25
 
 npc.stats = { VIT = 4, STR = 2, AGI = 6, INT = 2, FTH = 4 }
 npc.scaling = { VIT = 4, STR = 2, AGI = 6, INT = 2, FTH = 4 }
+npc.bonus_damage = 2
+npc.bonus_armor = 2
 npc.equipment = {}
 
 npc.infusion = {

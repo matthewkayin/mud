@@ -17,10 +17,10 @@ npc.movement_type = world.NpcMovementType.STATIONARY
 ---@param self MobHandle
 function npc.update(self)
     local room = world.mob_get_room(self)
-    local value = math.random()
-    if value > 0.4 then
+    local diceroll = math.random()
+    if diceroll > 0.4 then
         world.message_room(room, "The happy cow chews some grass.")
-    else if value > 0.1 then
+    elseif diceroll > 0.1 then
         world.message_room(room, "The cow makes a mooing sound.")
     end
 end

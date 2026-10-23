@@ -34,7 +34,8 @@ type MobData struct {
 	Spells []SpellId
 	Inventory Inventory
 	Equipment Equipment
-	BonusArmor int
+	BonusDamage int32
+	BonusArmor int32
 }
 
 type MobDataJson struct {
@@ -55,6 +56,8 @@ type MobDataJson struct {
 	Spells []string
 	Inventory Inventory
 	Equipment Equipment
+	BonusDamage int32
+	BonusArmor int32
 }
 
 // Returns a copy of the mob data that shares no slices with the original
@@ -90,6 +93,8 @@ func (mobData *MobData) MarshalJSON() ([]byte, error) {
 		Spells: spellsToStringArray(mobData.Spells),
 		Inventory: mobData.Inventory,
 		Equipment: mobData.Equipment,
+		BonusDamage: mobData.BonusDamage,
+		BonusArmor: mobData.BonusArmor,
 	}
 	return json.Marshal(&mobDataJson)
 }
@@ -118,6 +123,8 @@ func (mobData *MobData) UnmarshalJSON(data []byte) error {
 	mobData.Spells = spellsFromStringArray(mobDataJson.Spells)
 	mobData.Inventory = mobDataJson.Inventory
 	mobData.Equipment = mobDataJson.Equipment
+	mobData.BonusDamage = mobDataJson.BonusDamage
+	mobData.BonusArmor = mobDataJson.BonusArmor
 
 	return nil
 }
