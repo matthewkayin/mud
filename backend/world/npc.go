@@ -738,7 +738,14 @@ func (npc *Npc) onEvent(world* World, event *NpcEvent) {
 				return
 			}
 
-			npc.callHook(world, NPC_DATA[npc.Id].onAttacked, "on_attacked", attackerLuaHandle)
+			preventDefault := npc.callEventHook(world, NPC_DATA[npc.Id].onAttacked, "on_attacked", attackerLuaHandle)
+			if preventDefault {
+				return
+			}
+
+			if npc.disposition != NPC_DISPOSITION_FRIENDLY {
+				npc.disposition = NPC_DISPOSITION_HOSTILE
+			}
 		}
 
 		case NPC_EVENT_TYPE_PLAYER_ENTERED: {
