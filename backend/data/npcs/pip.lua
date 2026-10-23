@@ -2,7 +2,7 @@ local npc = {}
 
 npc.id = "pip"
 npc.name = "Pip"
-npc.description = "A pot-bellied goblin is making pathetic attempts clamber up the tall tree, but his attempts are unfruitful."
+npc.description = "A pot-bellied goblin is making pathetic attempts to clamber up the tall tree, but his attempts are unfruitful."
 
 npc.experience_worth = 1
 npc.experience_worth_scaling = 1
@@ -29,7 +29,7 @@ function npc.on_item_given(self, instance, player, added_to_index, amount)
         if amount > 1 then
             apples_string = "apples"
         end
-        world.message_player(player, string.format("<y>%s</y> eyes grow wide and he snatches the %s from your hand.", self_name, apples_string))
+        world.message_player(player, string.format("<y>%s's</y> eyes grow wide and he snatches the %s from your hand.", self_name, apples_string))
         world.say_to_player(self, player, "Mmm yum yum!")
 
         return world.NPC_EVENT_PREVENT_DEFAULT
