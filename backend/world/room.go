@@ -342,7 +342,7 @@ func (room *Room) removeDeadOccupants(world *World) {
 		}
 
 		// If player mob, remove their equipment so that it goes into their corpse
-		if occupantMob.PlayerCharacter != nil {
+		if occupantMob.IsPlayer() {
 			for slotIndex := range EQUIPMENT_SLOT_COUNT {
 				slot := EquipmentSlot(slotIndex)
 				item, messages, success := occupantMob.unequip(slot)

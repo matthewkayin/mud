@@ -40,7 +40,7 @@ npc.scaling = { VIT = 6, STR = 8, AGI = 4, INT = 2, FTH = 2 }
 npc.equipment = {}
 npc.drop_table = {}
 npc.starting_disposition = world.NpcDisposition.NEUTRAL
-npc.movement_type = world.NpcMovementType.SENTINEL
+npc.movement_type = world.NpcMovementType.STATIONARY
 
 npc.behavior_params = {
 	{ name = "Toll", type = world.NpcBehaviorParamType.ITEM },

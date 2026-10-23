@@ -30,7 +30,7 @@ var ALL_NPC_MOVEMENT_TYPES = []struct {
 	Value world.NpcMovementType
 	TSName string
 }{
-	{ world.NPC_MOVEMENT_TYPE_SENTINEL, "SENTINEL" },
+	{ world.NPC_MOVEMENT_TYPE_STATIONARY, "STATIONARY" },
 	{ world.NPC_MOVEMENT_TYPE_WANDER, "WANDER" },
 }
 

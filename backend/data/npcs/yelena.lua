@@ -2,7 +2,7 @@ local npc = {}
 
 npc.id = "yelena"
 npc.name = "Yelena"
-npc.description = "A stout, halfling priestess stands at the alter. With furrowed, she pours over an ancient tome."
+npc.description = "A stout, halfling priestess stands at the alter. With a furrowed brow, she pours over an ancient tome."
 
 npc.experience_worth = 1
 npc.experience_worth_scaling = 1
@@ -13,7 +13,7 @@ npc.equipment = {}
 npc.drop_table = {}
 
 npc.starting_disposition = world.NpcDisposition.FRIENDLY
-npc.movement_type = world.NpcMovementType.SENTINEL
+npc.movement_type = world.NpcMovementType.STATIONARY
 
 ---@param self MobHandle
 ---@param instance nil

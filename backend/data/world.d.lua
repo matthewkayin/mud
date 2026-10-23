@@ -61,7 +61,7 @@ world.NpcMode = {
 
 ---@enum NpcMovementType
 world.NpcMovementType = {
-	SENTINEL = "Sentinel",
+	STATIONARY = "Stationary",
 	WANDER = "Wander",
 }
 
@@ -227,6 +227,7 @@ function world.mob_find_inventory_item(handle, item_name) end
 ---
 ---@param target_handle MobHandle
 function world.mob_full_heal(target_handle) end
+
 
 --- Returns the number of conditions the mob has
 ---
