@@ -270,6 +270,7 @@ func (gamestate *GameState) handleCommand(playerId int, command string) {
 	}
 
 	player.getMenu().handleCommand(gamestate, player, command)
+	player.sendHeartbeat(gamestate)
 }
 
 func (gamestate *GameState) isGod(playerId int) bool {

@@ -47,16 +47,17 @@ func (apiState* ApiState) HandleGetWebSocket(writer http.ResponseWriter, request
 	inbox := make(chan game.SocketMessage, 100)
 	go runSocketWriteLoop(connection, inbox, userId)
 
-	// The ping loop stops when the read loop exits
-	pingContext, cancelPing := context.WithCancel(request.Context())
-	defer cancelPing()
-	go runSocketPingLoop(pingContext, connection, userId)
-
 	apiState.gamestate.SocketEvents <- game.SocketEvent {
 		Type: game.SOCKET_EVENT_TYPE_CONNECT,
 		PlayerId: userId,
 		Inbox: &inbox,
 	}
+
+	// A ping only gets its pong while the read loop is running, so the ping loop starts just before it.
+	// The ping loop stops when the read loop exits.
+	pingContext, cancelPing := context.WithCancel(request.Context())
+	defer cancelPing()
+	go runSocketPingLoop(pingContext, connection, userId)
 
 	// Run read loop until connection closes
 	readLoop:

@@ -70,7 +70,12 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 		}
 	}
 
-	*player.inbox <- heartbeat
+	// Send the heartbeat, but if the player's inbox is full, then don't send it
+	// This prevents a stalled connection from blocking the game loop
+	select {
+		case *player.inbox <- heartbeat:
+		default:
+	}
 }
 
 func (player *Player) getMenu() *Menu {

@@ -10,7 +10,7 @@ How a player's websocket connection works, from the HTTP upgrade to the messages
 | --- | --- | --- |
 | Read loop | The handler goroutine | Sends each text frame to the game loop as a `SOCKET_EVENT_TYPE_COMMAND`. When the read fails, it sends `SOCKET_EVENT_TYPE_DISCONNECT`. |
 | Write loop | `runSocketWriteLoop` goroutine | Drains the connection's inbox, encodes each `SocketMessage` as JSON and writes it as a text frame. |
-| Ping loop | `runSocketPingLoop` goroutine | Pings the client so that dead connections are detected. Stops when the read loop exits. |
+| Ping loop | `runSocketPingLoop` goroutine | Pings the client so that dead connections are detected. Starts just before the read loop, since a pong is only read while the read loop runs, and stops when the read loop exits. |
 
 The game loop owns the inbox (`chan game.SocketMessage`). It closes the inbox in `removePlayer`, which ends the write loop. The write loop keeps draining the inbox after a write fails, so sends from the game loop never block on a dead socket.
 
@@ -42,6 +42,8 @@ The client:
 ## Heartbeats
 
 At the end of every game update (every `world.WORLD_SECONDS_PER_UPDATE` seconds), `gamestate.update()` calls `player.sendHeartbeat` for every player. A heartbeat has `message: null`. While the player is in-game, it also carries their mob's HP and MP.
+
+If the player's inbox is full, `sendHeartbeat` drops the heartbeat instead of waiting, so a stalled connection can't block the game loop.
 
 Heartbeats let the client detect a dead connection. `frontend/src/game.tsx` restarts a timer on every message, and if nothing arrives for `HEARTBEAT_TIMEOUT_MS` (10s), it treats the connection as dead. A heartbeat's status is up to one update old, so changes made by instant commands show up in the status bar at the next update.
 
