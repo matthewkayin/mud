@@ -20,7 +20,7 @@ type FindTargetParams struct {
 	validateTarget *lua.Function
 }
 
-var MENU_WORLD = Menu {
+var MENU_WORLD = MenuCreate(MenuCreateParams {
 	onEnter: func(gamestate *GameState, player *Player) {
 		// Clear the player's action in case they had any leftover from a previous login session
 		player.nextAction = Action {
@@ -59,19 +59,49 @@ var MENU_WORLD = Menu {
 		player.character = nil
 	},
 
-	entries: mergeMenuEntries(
-		MENU_WORLD_ENTRIES_GENERAL,
-		MENU_WORLD_ENTRIES_ACTIONS,
-		MENU_WORLD_ENTRIES_CRAFT,
-		MENU_WORLD_ENTRIES_EQUIP,
-		MENU_WORLD_ENTRIES_ITEM,
-		MENU_WORLD_ENTRIES_LOOK,
-		MENU_WORLD_ENTRIES_SHOP,
-		MENU_WORLD_ENTRIES_SPELLS,
-		MENU_WORLD_ENTRIES_TRADE,
-		MENU_WORLD_ENTRIES_TALK,
-	),
-}
+	groups: map[string]MenuGroup {
+		"general": {
+			description: "General commands that don't fit into any other group",
+			entries: MENU_WORLD_ENTRIES_GENERAL,
+		},
+		"actions": {
+			description: "Commands related to actions you can perform like moving, attacking, or casting spells",
+			entries: MENU_WORLD_ENTRIES_ACTIONS,
+		},
+		"crafting": {
+			description: "Commands related to crafting",
+			entries: MENU_WORLD_ENTRIES_CRAFT,
+		},
+		"equipment": {
+			description: "Commands related to equipment",
+			entries: MENU_WORLD_ENTRIES_EQUIP,
+		},
+		"item": {
+			description: "Commands related to item management",
+			entries: MENU_WORLD_ENTRIES_ITEM,
+		},
+		"look": {
+			description: "Commands related to observing the world around you",
+			entries: MENU_WORLD_ENTRIES_LOOK,
+		},
+		"shop": {
+			description: "Commands related to shopping with NPCs",
+			entries: MENU_WORLD_ENTRIES_SHOP,
+		},
+		"spells": {
+			description: "Commands related to managing your known spells",
+			entries: MENU_WORLD_ENTRIES_SPELLS,
+		},
+		"trade": {
+			description: "Commands related to trading with players",
+			entries: MENU_WORLD_ENTRIES_TRADE,
+		},
+		"talk": {
+			description: "Commands related to talking with players and NPCs",
+			entries: MENU_WORLD_ENTRIES_TALK,
+		},
+	},
+})
 
 var MENU_WORLD_ENTRIES_GENERAL = map[string]MenuEntry {
 	"logout": {

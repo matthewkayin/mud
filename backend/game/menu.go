@@ -2,8 +2,19 @@ package game
 
 import (
 	"fmt"
+	"log"
 	"strings"
 )
+
+type MenuGroup struct {
+	description string
+	entries map[string]MenuEntry
+}
+
+type MenuGroupInfo struct {
+	description string
+	verbs []string
+}
 
 type MenuEntry struct {
 	usage string
@@ -11,10 +22,61 @@ type MenuEntry struct {
 	handler func(gamestate* GameState, player *Player, args []string) bool
 }
 
+type MenuCreateParams struct {
+	onEnter func(gamestate* GameState, player *Player)
+	onExit func(gamestate* GameState, player *Player)
+	groups map[string]MenuGroup
+}
+
 type Menu struct {
 	onEnter func(gamestate* GameState, player *Player)
 	onExit func(gamestate* GameState, player *Player)
 	entries map[string]MenuEntry
+	groups map[string]MenuGroupInfo
+}
+
+func MenuCreate(params MenuCreateParams) Menu {
+	menu := Menu{}
+
+	menu.onEnter = params.onEnter
+	menu.onExit = params.onExit
+
+	menu.entries = make(map[string]MenuEntry)
+	menu.groups = make(map[string]MenuGroupInfo)
+
+	for groupName, group := range params.groups {
+		groupInfo := MenuGroupInfo {
+			description: group.description,
+			verbs: make([]string, 0, len(group.entries)),
+		}
+
+		// Add group's verbs to the menu entries
+		for verb, entry := range group.entries {
+			// Check that verb is not duplicate
+			_, alreadyExists := menu.entries[verb]
+			if alreadyExists {
+				panic(fmt.Sprintf("Duplicate menu entry '%s'.", verb))
+			}
+
+			menu.entries[verb] = entry
+			groupInfo.verbs = append(groupInfo.verbs, verb)
+			log.Printf("Add verb %s to group %s.", verb, groupName)
+		}
+
+		// Check that group is not duplicate
+		_, alreadyExists := menu.groups[groupName]
+		if alreadyExists {
+			panic(fmt.Sprintf("Duplicate menu group '%s'.", groupName))
+		}
+
+		menu.groups[groupName] = groupInfo
+	}
+
+	return menu
+}
+
+func (menu *Menu) commandsAreGrouped() bool {
+	return len(menu.groups) > 1
 }
 
 func (menu *Menu) handleCommand(gamestate *GameState, player *Player, command string) {
@@ -52,40 +114,42 @@ func (menu *Menu) handleCommand(gamestate *GameState, player *Player, command st
 }
 
 func (menu *Menu) handleHelpCommand(player *Player, args []string) {
-	// User asked for help about a specific command
-	if len(args) >= 1 {
-		// Lookup the command in the registry
-		entry, entryExists := menu.entries[args[0]]
-		if !entryExists {
-			player.send(fmt.Sprintf("Cannot provide help because %s is not a known command.", args[0]))
-			return
+	// Print info about each group
+	if len(args) == 0 && menu.commandsAreGrouped() {
+		player.send("Command groups:")
+		for name, group := range menu.groups {
+			player.send(fmt.Sprintf("  %s - %s", name, group.description))
 		}
-
-		// Send the help info to the user
-		player.send(fmt.Sprintf("%s - %s", entry.usage, entry.description))
+		player.send("")
+		player.send("Type 'help <group>' to learn more about the commands in a group.")
 		return
 	}
 
-	// Print help about all commands in this menu
-	player.send("Commands:")
-	for _, entry := range menu.entries {
-		player.send(fmt.Sprintf("\t%s - %s", entry.usage, entry.description))
-	}
-}
-
-func mergeMenuEntries(entryMaps ...map[string]MenuEntry) map[string]MenuEntry {
-	result := make(map[string]MenuEntry)
-
-	for _, entries := range entryMaps {
-		for verb, entry := range entries {
-			_, alreadyExists := result[verb]
-			if alreadyExists {
-				panic(fmt.Sprintf("Duplicate menu entry '%s'", verb))
-			}
-
-			result[verb] = entry
+	// Decide which group to print the commands for
+	var groupKey string
+	if len(args) == 0 {
+		// Take the first group key
+		for key, _ := range menu.groups {
+			groupKey = key
+			break
 		}
+	} else {
+		groupKey = args[0]
 	}
 
-	return result
+	// Print the commands for this group
+	group, exists := menu.groups[groupKey]
+	log.Printf("Help, group key %s verbs %v", groupKey, group.verbs)
+	if exists {
+		player.send("Commands:")
+		for _, verb := range group.verbs {
+			// We assume that the entry exists
+			entry, _ := menu.entries[verb]
+			player.send(fmt.Sprintf("  %s - %s", entry.usage, entry.description))
+		}
+
+		return
+	}
+
+	player.send(fmt.Sprintf("'%s' is not a known command group. Type just 'help' to see a list of command groups.", args[0]))
 }
