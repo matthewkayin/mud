@@ -170,8 +170,6 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				return true
 			}
 
-			// TODO: Handle NPC case for friendly NPC interactions
-
 			// Handle monster case
 			targetMob := gamestate.world.Mobs.Get(targetHandle)
 			if targetMob.Npc != nil {
@@ -179,11 +177,29 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				player.send(fmt.Sprintf("<y>%s</y> (Level %d): %s",
 					targetMob.GetName(), targetMob.Data.Level, targetMob.Npc.GetDescription()))
 
+
 				// Status description
 				statusDescription, hasStatusDescription := targetMob.Npc.GetStatusDescription(gamestate.world)
 				if hasStatusDescription {
 					player.send(statusDescription)
 				}
+
+				// Are they friendly?!
+				var dispositionMsg string
+				switch targetMob.Npc.GetDisposition() {
+					case world.NPC_DISPOSITION_FRIENDLY:
+						dispositionMsg = fmt.Sprintf("%s seems to be friendly", targetMob.GetName())
+						if targetMob.Npc.IsMerchant() {
+							dispositionMsg += ", and appears to be in business!"
+						} else {
+							dispositionMsg += "."
+						}
+					case world.NPC_DISPOSITION_HOSTILE:
+						dispositionMsg = fmt.Sprintf("%s appears to be very unfriendly.", targetMob.GetName())
+					default:
+						dispositionMsg = fmt.Sprintf("It is not clear if %s is friendly or unfriendly.", targetMob.GetName())
+				}
+				player.send(dispositionMsg)
 
 				return true
 			}
