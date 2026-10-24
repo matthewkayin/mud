@@ -1,18 +1,17 @@
+/* Each meter's label and track sit in the grid's columns, so the bars line up */
 .status-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    margin-top: 8px;
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    align-items: center;
+    row-gap: 6px;
+    column-gap: 8px;
     padding: 10px;
     border-radius: 4px;
     background-color: #1e1e1e;
 }
 
 .status-meter {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex: 1 1 200px;
+    display: contents;
 }
 
 .status-meter-text {
@@ -22,9 +21,7 @@
 }
 
 .status-meter-track {
-    flex: 1;
     height: 10px;
-    border-radius: 2px;
     background-color: #3a3a3a;
     overflow: hidden;
 }

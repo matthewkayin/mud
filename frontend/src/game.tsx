@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import './game.css';
 import { Terminal } from './terminal/terminal';
 import { StatusBar } from './status_bar';
 import { getPlayerStatus, parseSocketMessage, type PlayerStatus } from './socket_message';
@@ -116,7 +117,9 @@ export const GamePage = () => {
     <div>
       <h1>Castle Recurse</h1>
       <Terminal prompt={terminalPrompt} lines={lines} command={command} setCommand={setCommand} onSubmit={onSubmit} />
-      <StatusBar status={playerStatus} />
+      <div className="game-hud">
+        <StatusBar status={playerStatus} />
+      </div>
     </div>
   );
 };
