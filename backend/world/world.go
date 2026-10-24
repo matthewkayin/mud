@@ -128,9 +128,6 @@ func (world *World) Update() {
 		for index := range len(world.Rooms) {
 			world.Rooms[index].shouldReset = true
 		}
-		for index := range len(world.Npcs) {
-			world.Npcs[index].shouldReset = true
-		}
 		world.resetTimer = WORLD_RESET_INTERVAL
 		log.Printf("World reset issued.")
 	}
@@ -153,6 +150,9 @@ func (world *World) updateRoom(roomIndex int) {
 	if room.shouldReset && room.canReset(world) {
 		room.reset()
 	}
+
+	// Relock unlocked locks
+	room.updateLocks()
 
 	// Chest / Corpse decay
 	room.updateChests()

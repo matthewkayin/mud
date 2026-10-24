@@ -3,6 +3,7 @@ package world
 import (
 	"encoding/json"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -90,5 +91,54 @@ func TestNpcJsonErrors(t *testing.T) {
 				t.Errorf("Expected an error containing %q, got %v", test.expectedError, err)
 			}
 		})
+	}
+}
+
+func TestNpcRespawnsAfterRespawnDuration(t *testing.T) {
+	primeTestData()
+	world := roomTestWorld()
+	npc := &Npc {
+		Id: TEST_NPC_GOBLIN,
+		SpawnRoom: 0,
+		LevelRange: Int32Range{ Min: 1, Max: 1 },
+		MovementTypeOverride: NPC_MOVEMENT_TYPE_STATIONARY,
+	}
+	spawnRoom := &world.Rooms[npc.SpawnRoom]
+
+	// A player in the spawn room doesn't prevent the respawn
+	playerMob := MobInit(&MobData { Name: "Bufo", Room: npc.SpawnRoom, Equipment: EquipmentInitEmpty() })
+	playerMob.PlayerCharacter = &Character{}
+	spawnRoom.AddOccupant(world, world.Mobs.Push(playerMob))
+
+	npc.spawnMob(world)
+	if npc.mode == NPC_MODE_DEAD {
+		t.Fatalf("Expected the NPC to spawn")
+	}
+
+	// Kill the NPC's mob
+	spawnRoom.RemoveOccupant(npc.mobHandle)
+	world.Mobs.Remove(npc.mobHandle)
+	npc.update(world)
+	if npc.mode != NPC_MODE_DEAD {
+		t.Fatalf("Expected the NPC to be dead once its mob is gone")
+	}
+	respawnDuration := NPC_DATA[TEST_NPC_GOBLIN].respawnDuration
+	if npc.timer != respawnDuration {
+		t.Errorf("Expected the respawn timer to be %d, got %d", respawnDuration, npc.timer)
+	}
+
+	for range respawnDuration - 1 {
+		npc.update(world)
+	}
+	if npc.mode != NPC_MODE_DEAD {
+		t.Errorf("Expected the NPC not to respawn before its respawn duration")
+	}
+
+	npc.update(world)
+	if npc.mode == NPC_MODE_DEAD {
+		t.Fatalf("Expected the NPC to respawn after its respawn duration")
+	}
+	if !slices.Contains(spawnRoom.Occupants, npc.mobHandle) {
+		t.Errorf("Expected the respawned mob to be in the spawn room")
 	}
 }

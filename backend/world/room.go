@@ -15,6 +15,7 @@ const ROOM_NONE int = -1
 const CHEST_CORPOSE_DECAY_DURATION = 30 / WORLD_SECONDS_PER_UPDATE
 // const CHEST_REFRESH_DURATION = 60 * 60 / WORLD_SECONDS_PER_UPDATE // 1 hour
 const CHEST_REFRESH_DURATION = 30 / WORLD_SECONDS_PER_UPDATE
+const LOCK_UNLOCK_DURATION int32 = (5 * 60) / WORLD_SECONDS_PER_UPDATE
 
 type ChestType int
 const (
@@ -30,11 +31,12 @@ const (
 )
 
 // Locks are one-directional, they only block leaving the room through the lock's direction.
-// A lock becomes active again when the room resets.
+// A lock is active while its unlock timer is 0. Unlocking it starts the timer,
+// and the lock becomes active again when the timer runs out.
 type Lock struct {
 	Type LockType
 	Direction Direction
-	IsActive bool `json:"-"`
+	unlockTimer int32
 }
 
 type Chest struct {
@@ -86,12 +88,28 @@ func (room *Room) canReset(world *World) bool {
 	return !room.hasPlayerOccupants(world)
 }
 
-func (room *Room) reset() {
-	// Re-activate locks
-	for lockIndex := range room.Locks {
-		room.Locks[lockIndex].IsActive = true
-	}
+func (lock *Lock) IsActive() bool {
+	return lock.unlockTimer == 0
+}
 
+func (lock *Lock) Unlock() {
+	lock.unlockTimer = LOCK_UNLOCK_DURATION
+}
+
+func (lock *Lock) Relock() {
+	lock.unlockTimer = 0
+}
+
+func (room *Room) updateLocks() {
+	for lockIndex := range room.Locks {
+		lock := &room.Locks[lockIndex]
+		if lock.unlockTimer > 0 {
+			lock.unlockTimer--
+		}
+	}
+}
+
+func (room *Room) reset() {
 	// Remove corpses
 	chestIndex := 0
 	for chestIndex < len(room.Chests) {
@@ -241,7 +259,7 @@ func (room *Room) GetLock(direction Direction) *Lock {
 // Returns true if the room has an active lock in the specified direction
 func (room *Room) IsExitLocked(direction Direction) bool {
 	lock := room.GetLock(direction)
-	return lock != nil && lock.IsActive
+	return lock != nil && lock.IsActive()
 }
 
 // Returns the handle of an NPC mob in the room which is blocking the exit in the specified direction

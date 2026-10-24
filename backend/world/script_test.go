@@ -318,8 +318,8 @@ func TestScriptInventory(t *testing.T) {
 		{ "return world.mob_get_inventory_length(a)", "4" },
 		{ "return world.mob_get_inventory_item_name(a, 1)", "Sword" },
 		{ "return world.mob_get_inventory_item_amount(a, 0)", "30" },
-		{ "return world.mob_get_inventory_item_durability(a, 1)", "12" },
-		{ "return world.mob_get_inventory_item_durability(a, 0)", "nil" },
+		{ "return world.mob_get_inventory_item_durability_percent(a, 1)", "60" },
+		{ "return world.mob_get_inventory_item_durability_percent(a, 0)", "0" },
 		{ "return world.mob_get_inventory_amount_of(a, \"Potion of Health\")", "50" },
 		{ "return world.mob_get_inventory_amount_of(a, \"Spellbook of Firebolt\")", "0" },
 		// Drop part of a stack, then more than the rest of it

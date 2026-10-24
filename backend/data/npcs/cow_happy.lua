@@ -5,6 +5,7 @@ npc.name = "Happy Cow"
 npc.description = "Lives a life of total bovine simplicity."
 npc.experience_worth = 5
 npc.experience_worth_scaling = 1
+npc.respawn_duration = world.time_minutes(1)
 
 npc.stats = { VIT = 4, STR = 2, AGI = 2, INT = 1, FTH = 1 }
 npc.scaling = { VIT = 3, STR = 1, AGI = 1, INT = 1, FTH = 1 }

@@ -22,28 +22,38 @@ func roomTestWorld() *World {
 	return world
 }
 
-func TestRoomResetActivatesLocks(t *testing.T) {
+func TestRoomLockRelocksAfterTimer(t *testing.T) {
 	world := roomTestWorld()
 	westRoom := &world.Rooms[0]
 	eastRoom := &world.Rooms[1]
 
-	westRoom.reset()
-	eastRoom.reset()
 	if !westRoom.IsExitLocked(DIRECTION_EAST) {
-		t.Errorf("Expected west room's east exit to be locked after reset")
+		t.Errorf("Expected west room's east exit to start locked")
 	}
 	if eastRoom.IsExitLocked(DIRECTION_WEST) {
 		t.Errorf("Expected east room's west exit to be unlocked, since locks are one-directional")
 	}
 
-	westRoom.GetLock(DIRECTION_EAST).IsActive = false
+	westRoom.GetLock(DIRECTION_EAST).Unlock()
 	if westRoom.IsExitLocked(DIRECTION_EAST) {
-		t.Errorf("Expected west room's east exit to be unlocked after deactivating its lock")
+		t.Errorf("Expected west room's east exit to be unlocked after unlocking its lock")
 	}
 
 	westRoom.reset()
+	if westRoom.IsExitLocked(DIRECTION_EAST) {
+		t.Errorf("Expected west room's east exit to stay unlocked after reset")
+	}
+
+	for range LOCK_UNLOCK_DURATION - 1 {
+		westRoom.updateLocks()
+	}
+	if westRoom.IsExitLocked(DIRECTION_EAST) {
+		t.Errorf("Expected west room's east exit to stay unlocked until its timer runs out")
+	}
+
+	westRoom.updateLocks()
 	if !westRoom.IsExitLocked(DIRECTION_EAST) {
-		t.Errorf("Expected west room's east exit to be locked again after reset")
+		t.Errorf("Expected west room's east exit to be locked again once its timer runs out")
 	}
 }
 
