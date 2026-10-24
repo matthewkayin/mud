@@ -6,13 +6,20 @@ import (
 	"mud/world"
 )
 
-var MENU_LOGIN = Menu {
+var MENU_LOGIN = MenuCreate(MenuCreateParams {
 	onEnter: func(gamestate *GameState, player *Player) {
 		player.send("You are in the login screen.")
 		player.send("Type 'help' to see a list of options.")
 	},
 	onExit: func(gamestate *GameState, player *Player) {
 	},
+	groups: map[string]MenuGroup {
+		"root": MENU_LOGIN_GROUP_ROOT,
+	},
+})
+
+var MENU_LOGIN_GROUP_ROOT = MenuGroup {
+	description: "",
 	entries: map[string]MenuEntry {
 		"list": {
 			usage: "list",

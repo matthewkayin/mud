@@ -12,7 +12,7 @@ type MenuCharacterSheetProperty struct {
 	set func(gamestate *GameState, player *Player, value string)
 }
 
-var MENU_CREATE = Menu {
+var MENU_CREATE = MenuCreate(MenuCreateParams {
 	onEnter: func(gamestate *GameState, player *Player) {
 		player.characterSheet = &world.CharacterSheet {
 			Name: "",
@@ -29,7 +29,13 @@ var MENU_CREATE = Menu {
 	onExit: func(gamestate *GameState, player *Player) {
 		player.characterSheet = nil
 	},
+	groups: map[string]MenuGroup {
+		"root": MENU_CREATE_GROUP_ROOT,
+	},
+})
 
+var MENU_CREATE_GROUP_ROOT = MenuGroup {
+	description: "",
 	entries: map[string]MenuEntry {
 		"back": {
 			usage: "back",
