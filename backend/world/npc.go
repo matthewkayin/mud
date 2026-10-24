@@ -804,8 +804,12 @@ func (npc *Npc) IsMerchant() bool {
 
 func (npc *Npc) IsProtected() bool {
 	return npc.disposition == NPC_DISPOSITION_FRIENDLY
-}
+} //made redundant, or kept seperate?
 
 func (npc *Npc) GetWares() []ItemId {
 	return NPC_DATA[npc.Id].wares
+}
+
+func (npc *Npc) GetDisposition() NpcDisposition {
+	return npc.disposition
 }
