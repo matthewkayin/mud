@@ -7,7 +7,9 @@ There are two halves to an NPC:
 - **NpcData** (`backend/world/npc_data.go`) is the canonical definition, such as "Goblin". It is loaded from a Lua script in `backend/data/npcs/`, and NPC_DATA is indexed by `NpcId`.
 - **Npc** (`backend/world/npc.go`) is a unique NPC placed in the world. Unique NPCs are saved in the world JSON (`World.Npcs`), so the world decides which NPCs spawn where. Each one points back to its NpcData through `Id` and uses it for starting stats and behavior.
 
-The NPC state machine in `Npc.update()` handles core behavior, including respawning, resets, wandering, and getting ready to fight and then attacking players. Scripts can add to it by implementing behavior hooks.
+The NPC state machine in `Npc.update()` handles core behavior, including respawning, wandering, and getting ready to fight and then attacking players. Scripts can add to it by implementing behavior hooks.
+
+When an NPC's mob dies, the NPC waits `respawn_duration` updates and then spawns a new mob in its `SpawnRoom`, even if players are in that room. The room is told "<y>Name</y> has arrived." when the mob spawns. Every NPC spawns on the first world update.
 
 ## NPC scripts
 
@@ -19,6 +21,7 @@ Each `.lua` file in `backend/data/npcs/` returns one NpcData table. `parseNpc` r
 | `name` | string | Display name of the NPC's mobs |
 | `description` | string | Shown when a player looks at the NPC |
 | `experience_worth`, `experience_worth_scaling` | integer | Experience at level 1, plus the amount added per level after that |
+| `respawn_duration` | integer | Number of world updates between the mob dying and the NPC respawning. Set it with `world.time_minutes` or `world.time_seconds` |
 | `stats`, `scaling` | stat block | Stats at level 1 and stats gained per level |
 | `equipment` | table | Slot name (e.g. `main_hand`) → item name |
 | `drop_table` | list | The same entries as other drop tables: `{ item, amount, durability_percent, drop_chance_percent }` |
@@ -56,7 +59,7 @@ return npc
 
 ## Behavior hooks
 
-The script table is loaded only once and shared by every NPC of that type, so it can't hold per-NPC state. Instead, `init` returns an **instance table**, and the NPC passes that table back to each of its other hooks. When the mob dies or is despawned on a world reset, the instance table is dropped, and the next spawn calls `init` again.
+The script table is loaded only once and shared by every NPC of that type, so it can't hold per-NPC state. Instead, `init` returns an **instance table**, and the NPC passes that table back to each of its other hooks. When the mob dies, the instance table is dropped, and the next spawn calls `init` again.
 
 Every hook also receives `self`, the `MobHandle` of the NPC's own mob, so a script can pass it to the `world` library (`world.mob_get_room(self)`, `world.npc_set_mode(self, world.NpcMode.AGGRO)`). `self` and `instance` live exactly as long as the mob, so a hook never sees a stale `self`.
 
@@ -105,7 +108,7 @@ Scripts read and change NPC state through the `world` library, passing the NPC's
 | `mob_is_npc(handle)` | |
 | `npc_get_mode(handle)`, `npc_set_mode(handle, mode)` | `world.NpcMode`: `IDLE`, `SURPRISE` or `AGGRO`. Setting a mode goes through the same Go setters as the state machine, so `SURPRISE` alerts the mob and `IDLE` restarts the wander timer. Dead isn't a mode that scripts can see or set, because an NPC is dead exactly when its mob doesn't exist. |
 | `npc_get_disposition(handle)`, `npc_set_disposition(handle, disposition)` | `world.NpcDisposition`: `NEUTRAL`, `HOSTILE` or `FRIENDLY` |
-| `npc_is_blocking_exit(handle, direction)`, `npc_set_blocking_exit(handle, direction, blocking)` | Takes a `world.Direction`. While blocking, nobody can leave the NPC's room through that exit. The block ends when the mob dies or despawns, and room resets don't affect it. See [Rooms](rooms.md#npc-exit-blocking) |
+| `npc_is_blocking_exit(handle, direction)`, `npc_set_blocking_exit(handle, direction, blocking)` | Takes a `world.Direction`. While blocking, nobody can leave the NPC's room through that exit. The block ends when the mob dies, and room cleanup doesn't affect it. See [Rooms](rooms.md#npc-exit-blocking) |
 
 A mode set in `update` takes effect on the same tick, because `update` runs before the state machine.
 

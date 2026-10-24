@@ -443,7 +443,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 
 			// Check that there is a lock to pick
 			lock := playerRoom.GetLock(direction)
-			if lock == nil || !lock.IsActive {
+			if lock == nil || !lock.IsActive() {
 				player.send(fmt.Sprintf("The %s exit is not locked.", direction.String()))
 				return true
 			}
@@ -454,7 +454,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 				return true
 			}
 
-			lock.IsActive = false
+			lock.Unlock()
 
 			// Picking a lock doesn't reveal a hidden player
 			if playerMob.CheckFlag(world.MOB_FLAG_HIDDEN) {

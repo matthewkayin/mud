@@ -6,6 +6,7 @@ npc.description = "A giant, hairy spider with scutters about, glaring at you wit
 
 npc.experience_worth = 100
 npc.experience_worth_scaling = 25
+npc.respawn_duration = world.time_minutes(1)
 
 npc.stats = { VIT = 4, STR = 2, AGI = 6, INT = 2, FTH = 4 }
 npc.scaling = { VIT = 4, STR = 2, AGI = 6, INT = 2, FTH = 4 }

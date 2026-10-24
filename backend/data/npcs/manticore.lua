@@ -6,6 +6,7 @@ npc.description = "A gargantuan lion with the face of a man and the tail of a sc
 
 npc.experience_worth = 200
 npc.experience_worth_scaling = 25
+npc.respawn_duration = world.time_minutes(1)
 
 npc.stats = { VIT = 4, STR = 2, AGI = 6, INT = 2, FTH = 4 }
 npc.scaling = { VIT = 4, STR = 2, AGI = 6, INT = 2, FTH = 4 }

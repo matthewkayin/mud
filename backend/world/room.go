@@ -13,8 +13,9 @@ import (
 const ROOM_NONE int = -1
 
 const CHEST_CORPOSE_DECAY_DURATION = 30 / WORLD_SECONDS_PER_UPDATE
-// const CHEST_REFRESH_DURATION = 60 * 60 / WORLD_SECONDS_PER_UPDATE // 1 hour
-const CHEST_REFRESH_DURATION = 30 / WORLD_SECONDS_PER_UPDATE
+// How long a room must go without players before it is cleaned up
+const ROOM_CLEANUP_DURATION int32 = 60 / WORLD_SECONDS_PER_UPDATE
+const LOCK_UNLOCK_DURATION int32 = (5 * 60) / WORLD_SECONDS_PER_UPDATE
 
 type ChestType int
 const (
@@ -30,11 +31,12 @@ const (
 )
 
 // Locks are one-directional, they only block leaving the room through the lock's direction.
-// A lock becomes active again when the room resets.
+// A lock is active while its unlock timer is 0. Unlocking it starts the timer,
+// and the lock becomes active again when the timer runs out.
 type Lock struct {
 	Type LockType
 	Direction Direction
-	IsActive bool `json:"-"`
+	unlockTimer int32
 }
 
 type Chest struct {
@@ -67,7 +69,7 @@ type Room struct {
 	Chests []Chest
 
 	Occupants []MobHandle `json:"-"`
-	shouldReset bool
+	cleanupTimer int32
 }
 
 func (lockType LockType) String() string {
@@ -81,17 +83,45 @@ func (lockType LockType) String() string {
 	}
 }
 
-// Returns true when a room is able to be reset
-func (room *Room) canReset(world *World) bool {
-	return !room.hasPlayerOccupants(world)
+func (lock *Lock) IsActive() bool {
+	return lock.unlockTimer == 0
 }
 
-func (room *Room) reset() {
-	// Re-activate locks
+func (lock *Lock) Unlock() {
+	lock.unlockTimer = LOCK_UNLOCK_DURATION
+}
+
+func (lock *Lock) Relock() {
+	lock.unlockTimer = 0
+}
+
+func (room *Room) updateLocks() {
 	for lockIndex := range room.Locks {
-		room.Locks[lockIndex].IsActive = true
+		lock := &room.Locks[lockIndex]
+		if lock.unlockTimer > 0 {
+			lock.unlockTimer--
+		}
+	}
+}
+
+// Counts down while the room has no players, and cleans the room up once ROOM_CLEANUP_DURATION
+// has passed. The timer restarts only once a player visits, so an empty room is cleaned up once.
+func (room *Room) updateCleanup(world *World) {
+	if room.hasPlayerOccupants(world) {
+		room.cleanupTimer = ROOM_CLEANUP_DURATION
+		return
 	}
 
+	if room.cleanupTimer > 0 {
+		room.cleanupTimer--
+		if room.cleanupTimer == 0 {
+			room.cleanUp()
+		}
+	}
+}
+
+// Removes corpses and replaces the floor and chest inventories with fresh rolls of their drop tables
+func (room *Room) cleanUp() {
 	// Remove corpses
 	chestIndex := 0
 	for chestIndex < len(room.Chests) {
@@ -112,8 +142,17 @@ func (room *Room) reset() {
 	for chestIndex := range len(room.Chests) {
 		room.Chests[chestIndex].Inventory = room.Chests[chestIndex].DropTable.getLoot()
 	}
+}
 
-	room.shouldReset = false
+// Adds any items that the floor and chests are missing from their drop tables
+func (room *Room) replenish() {
+	room.DropTable.replenish(&room.Inventory)
+	for chestIndex := range room.Chests {
+		chest := &room.Chests[chestIndex]
+		if chest.Type == CHEST_TYPE_CHEST {
+			chest.DropTable.replenish(&chest.Inventory)
+		}
+	}
 }
 
 func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, newRoomIndex int) {
@@ -241,7 +280,7 @@ func (room *Room) GetLock(direction Direction) *Lock {
 // Returns true if the room has an active lock in the specified direction
 func (room *Room) IsExitLocked(direction Direction) bool {
 	lock := room.GetLock(direction)
-	return lock != nil && lock.IsActive
+	return lock != nil && lock.IsActive()
 }
 
 // Returns the handle of an NPC mob in the room which is blocking the exit in the specified direction
@@ -261,12 +300,13 @@ func (room *Room) updateChests() {
 	for chestIndex < len(room.Chests) {
 		chest := &room.Chests[chestIndex]
 
-		chest.Timer--
-		if chest.Timer <= 0 && chest.Type == CHEST_TYPE_CHEST {
-			chest.Inventory = chest.DropTable.getLoot()
-			chest.Timer = CHEST_REFRESH_DURATION
+		if chest.Type != CHEST_TYPE_CORPSE {
+			chestIndex++
+			continue
 		}
-		if chest.Timer <= 0 && chest.Type == CHEST_TYPE_CORPSE {
+
+		chest.Timer--
+		if chest.Timer <= 0 {
 			room.Chests[chestIndex] = room.Chests[len(room.Chests) - 1]
 			room.Chests = room.Chests[:len(room.Chests) - 1]
 			continue
