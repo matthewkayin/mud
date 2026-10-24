@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"strings"
 
 	"github.com/mmcdole/lunar"
 )
@@ -656,6 +657,42 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		duration := mob.calculateMagicConditionDuration(baseDuration)
 
 		return frame.ReturnNumber(float64(duration))
+	},
+
+	// Forgets a known spell. Returns the name of the forgotten spell, or nil if
+	// the mob does not have a spell of that name equipped.
+	//
+	// @param mob MobHandle
+	// @param spell_name string
+	// @return string|nil
+	"mob_forget_spell": func(frame lua.Frame) lua.Outcome {
+		// Get args
+		mob := frameGetMobArg(&frame, 0)
+		spellName, isString := frame.String(1)
+		if !isString {
+			frame.ThrowArgTypeError(1, lua.StringKind)
+		}
+
+		// Find spell matching spellName
+		var spell SpellId
+		spellFound := false
+		for spellIndex := 0; spellIndex < len(mob.Data.Spells); spellIndex++ {
+			spellData := SPELL_DATA[mob.Data.Spells[spellIndex]]
+			if strings.EqualFold(spellData.Name, spellName) {
+				spell = mob.Data.Spells[spellIndex]
+				spellFound = true
+				break
+			}
+		}
+
+		// If spell not found, return false
+		if !spellFound {
+			return frame.ReturnNil()
+		}
+
+		// If spell found, remove the spell and return true
+		mob.Data.RemoveSpell(spell)
+		return frame.ReturnString(SPELL_DATA[spell].Name)
 	},
 
 	// Returns the NPC's mode

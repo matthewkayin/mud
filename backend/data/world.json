@@ -994,6 +994,19 @@
       "BehaviorParams": {}
     },
     {
+      "Id": "wanda",
+      "SpawnRoom": 0,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
       "Id": "spider",
       "SpawnRoom": 13,
       "LevelRange": {

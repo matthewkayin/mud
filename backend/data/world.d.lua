@@ -222,6 +222,14 @@ function world.mob_exists(handle) end
 ---@return integer, boolean
 function world.mob_find_inventory_item(handle, item_name) end
 
+--- Forgets a known spell. Returns the name of the forgotten spell, or nil if
+--- the mob does not have a spell of that name equipped.
+---
+---@param mob MobHandle
+---@param spell_name string
+---@return string|nil
+function world.mob_forget_spell(mob, spell_name) end
+
 --- Heals a mob completely and sends the player messages about the healing received
 --- Intended to be re-used for things like NPC healing, campfire healing, inns, etc.
 ---

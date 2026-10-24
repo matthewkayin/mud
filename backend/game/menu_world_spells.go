@@ -57,18 +57,10 @@ var MENU_WORLD_ENTRIES_SPELLS = map[string]MenuEntry {
 		description: "Prepare a spell from the list of spells you know",
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-			playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
-
-			// Make sure the player is in a safe zone
-			if !playerRoom.IsSafeZone {
-				player.send("You can only prepare spells from within a safe room.")
-				return true
-			}
 
 			// Check if there is an empty spell slot
 			if len(playerMob.Data.Spells) >= int(playerMob.Data.SpellSlots()) {
 				player.send("You don't have any available spell slots.")
-				player.send("Type 'forget <spell>' to free up a spell slot.")
 				return true
 			}
 
@@ -98,36 +90,6 @@ var MENU_WORLD_ENTRIES_SPELLS = map[string]MenuEntry {
 
 			playerMob.Data.Spells = append(playerMob.Data.Spells, spell)
 			player.send(fmt.Sprintf("You prepared <g>%s</g>.", world.SPELL_DATA[spell].Name))
-			return true
-		},
-	},
-
-	"forget": {
-		usage: "forget <spell>",
-		description: "Removes a spell from your prepared spells list. If you have mastered the spell, it will remain in your library.",
-		handler: func (gamestate *GameState, player *Player, args []string) bool {
-			if len(args) != 1 {
-				return false
-			}
-
-			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-			playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
-
-			// Make sure the player is in a safe zone
-			if !playerRoom.IsSafeZone {
-				player.send("You can only forget spells from within a safe room.")
-				return true
-			}
-
-			// Find a spell that matches their input and remove it
-			spell, err := fuzzyFindPreparedSpell(gamestate, player, args)
-			if err != nil {
-				player.send(err.Error())
-				return true
-			}
-
-			playerMob.Data.RemoveSpell(spell)
-			player.send(fmt.Sprintf("You forgot <g>%s</g>.", world.SPELL_DATA[spell].Name))
 			return true
 		},
 	},
