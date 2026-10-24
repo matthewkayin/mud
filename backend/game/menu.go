@@ -2,19 +2,63 @@ package game
 
 import (
 	"fmt"
+	"log"
 	"strings"
 )
 
 type MenuEntry struct {
 	usage string
 	description string
+	groups []string
 	handler func(gamestate* GameState, player *Player, args []string) bool
+}
+
+type MenuGroup struct {
+	description string
+	verbs []string
+}
+
+type MenuCreateParams struct {
+	onEnter func(gamestate* GameState, player *Player)
+	onExit func(gamestate* GameState, player *Player)
+	groups map[string]string
+	entries map[string]MenuEntry
 }
 
 type Menu struct {
 	onEnter func(gamestate* GameState, player *Player)
 	onExit func(gamestate* GameState, player *Player)
+	groups map[string]*MenuGroup
 	entries map[string]MenuEntry
+}
+
+func MenuCreate(params MenuCreateParams) Menu {
+	menu := Menu {
+		onEnter: params.onEnter,
+		onExit: params.onExit,
+		entries: params.entries,
+		groups: make(map[string]*MenuGroup),
+	}
+
+	for groupName, groupDesc := range params.groups {
+		menu.groups[groupName] = &MenuGroup {
+			description: groupDesc,
+			verbs: make([]string, 0, 1),
+		}
+	}
+
+	for verb, entry := range menu.entries {
+		for _, groupName := range entry.groups {
+			group, exists := menu.groups[groupName]
+			if !exists {
+				panic(fmt.Sprintf("Verb %s belongs to group %s, which does not exist.", verb, groupName))
+			}
+
+			group.verbs = append(group.verbs, verb)
+		}
+	}
+
+	return menu
 }
 
 func (menu *Menu) handleCommand(gamestate *GameState, player *Player, command string) {
@@ -52,24 +96,46 @@ func (menu *Menu) handleCommand(gamestate *GameState, player *Player, command st
 }
 
 func (menu *Menu) handleHelpCommand(player *Player, args []string) {
-	// User asked for help about a specific command
-	if len(args) >= 1 {
-		// Lookup the command in the registry
-		entry, entryExists := menu.entries[args[0]]
-		if !entryExists {
-			player.send(fmt.Sprintf("Cannot provide help because %s is not a known command.", args[0]))
-			return
+	// List all groups, only happens on menus with multiple groups
+	if len(menu.groups) > 1 && len(args) == 0 {
+		player.send("Command groups:")
+		for name, group := range menu.groups {
+			player.send(fmt.Sprintf("  %s - %s", name, group.description))
 		}
+		player.send("Type 'help <group>' to learn more about commands from that group.")
 
-		// Send the help info to the user
-		player.send(fmt.Sprintf("%s - %s", entry.usage, entry.description))
 		return
 	}
 
-	// Print help about all commands in this menu
+	// Determine group
+	var groupName string
+	if len(menu.groups) == 1 {
+		// Take the first group name
+		for name, _ := range menu.groups {
+			groupName = name
+			break
+		}
+	} else {
+		groupName = args[0]
+	}
+
+	// Get group
+	group, exists := menu.groups[groupName]
+	if !exists {
+		player.send(fmt.Sprintf("No command group exists called '%s'.", groupName))
+		return
+	}
+
+	// Print commands
 	player.send("Commands:")
-	for _, entry := range menu.entries {
-		player.send(fmt.Sprintf("\t%s - %s", entry.usage, entry.description))
+	for _, verb := range group.verbs {
+		entry, exists := menu.entries[verb]
+		if !exists {
+			log.Printf("Warn - group %s has verb %s which does not exist.", groupName, verb)
+			continue
+		}
+
+		player.send(fmt.Sprintf("  %s - %s", verb, entry.description))
 	}
 }
 

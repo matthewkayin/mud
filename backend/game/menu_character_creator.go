@@ -12,7 +12,7 @@ type MenuCharacterSheetProperty struct {
 	set func(gamestate *GameState, player *Player, value string)
 }
 
-var MENU_CREATE = Menu {
+var MENU_CREATE = MenuCreate(MenuCreateParams {
 	onEnter: func(gamestate *GameState, player *Player) {
 		player.characterSheet = &world.CharacterSheet {
 			Name: "",
@@ -30,10 +30,15 @@ var MENU_CREATE = Menu {
 		player.characterSheet = nil
 	},
 
+	groups: map[string]string {
+		"root": "",
+	},
+
 	entries: map[string]MenuEntry {
 		"back": {
 			usage: "back",
 			description: "Go back to the login menu",
+			groups: []string { "root" },
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
 				player.setMenu(gamestate, PLAYER_MENU_LOGIN)
 				return true
@@ -43,6 +48,7 @@ var MENU_CREATE = Menu {
 		"view": {
 			usage: "view",
 			description: "View details of the character you are creating.",
+			groups: []string { "root" },
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
 				printCharacterSheet(player)
 				return true
@@ -52,6 +58,7 @@ var MENU_CREATE = Menu {
 		"set": {
 			usage: "set <property> <value>",
 			description: "Set a property of your character equal to a value.",
+			groups: []string { "root" },
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
 				// Note: this automatically prevents spaces in names since each arg is separated by spaces
 				if len(args) < 2 {
@@ -97,6 +104,7 @@ var MENU_CREATE = Menu {
 		"finish": {
 			usage: "finish",
 			description: "Finish character creation.",
+			groups: []string { "root" },
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
 				if player.characterSheet.Name == "" {
 					player.send("Cannot finish character. Your character is missing a name!")
@@ -122,7 +130,7 @@ var MENU_CREATE = Menu {
 			},
 		},
 	},
-}
+})
 
 func printCharacterSheet(player *Player) {
 	raceData := world.RACE_DATA[player.characterSheet.Race]

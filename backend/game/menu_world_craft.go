@@ -11,6 +11,7 @@ var MENU_WORLD_ENTRIES_CRAFT = map[string]MenuEntry {
 	"recipe": {
 		usage: "recipe [list] [info <recipe>]",
 		description: "Get information about your known recipes.",
+		groups: []string { "crafting" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			if len(args) == 0 {
 				return false
@@ -69,6 +70,7 @@ var MENU_WORLD_ENTRIES_CRAFT = map[string]MenuEntry {
 	"craft": {
 		usage: "craft [<amount>] <item>",
 		description: "Craft an item for which you know the recipe",
+		groups: []string { "crafting" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			if len(args) < 1 {
 				return false

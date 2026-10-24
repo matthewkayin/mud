@@ -20,7 +20,7 @@ type FindTargetParams struct {
 	validateTarget *lua.Function
 }
 
-var MENU_WORLD = Menu {
+var MENU_WORLD = MenuCreate(MenuCreateParams {
 	onEnter: func(gamestate *GameState, player *Player) {
 		// Clear the player's action in case they had any leftover from a previous login session
 		player.nextAction = Action {
@@ -59,6 +59,16 @@ var MENU_WORLD = Menu {
 		player.character = nil
 	},
 
+	groups: map[string]string {
+		"combat": "Commands related to combat",
+		"exploration": "Commands related to exploration",
+		"information": "Commands which give you information",
+		"magic": "Commands related to magic",
+		"items": "Commands related to items",
+		"crafting": "Commands related to crafting",
+		"social": "Commands which let you socialize with players and NPCs",
+	},
+
 	entries: mergeMenuEntries(
 		MENU_WORLD_ENTRIES_GENERAL,
 		MENU_WORLD_ENTRIES_ACTIONS,
@@ -71,12 +81,13 @@ var MENU_WORLD = Menu {
 		MENU_WORLD_ENTRIES_TRADE,
 		MENU_WORLD_ENTRIES_TALK,
 	),
-}
+})
 
 var MENU_WORLD_ENTRIES_GENERAL = map[string]MenuEntry {
 	"logout": {
 		usage: "logout",
 		description: "Logout of the world",
+		groups: []string { "information" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			player.setMenu(gamestate, PLAYER_MENU_LOGIN)
 			return true
@@ -86,6 +97,7 @@ var MENU_WORLD_ENTRIES_GENERAL = map[string]MenuEntry {
 	"who": {
 		usage: "who",
 		description: "Get a list of everyone who is online",
+		groups: []string { "information" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			names := make([]string, 0, len(gamestate.players))
 			for index := range len(gamestate.players) {

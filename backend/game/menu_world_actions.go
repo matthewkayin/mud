@@ -10,6 +10,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 	"move": {
 		usage: "move <direction>",
 		description: "Walk to an adjacent room.",
+		groups: []string { "exploration" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			if len(args) != 1 {
 				return false
@@ -78,6 +79,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 	"hide": {
 		usage: "hide",
 		description: "Attempt to hide in the current room. Once you are hidden, you will remain hidden as you 'move' from room to room, provided that no one spots you.",
+		groups: []string { "exploration" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			if !playerMob.Data.HasAbility(world.MOB_ABILITY_SNEAK) {
@@ -110,6 +112,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 	"reveal": {
 		usage: "reveal",
 		description: "Stop hiding and reveal yourself to the room",
+		groups: []string { "exploration" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			if !playerMob.CheckFlag(world.MOB_FLAG_HIDDEN) {
@@ -126,6 +129,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 	"stop": {
 		usage: "stop",
 		description: "Stop attacking or cancel your current spell",
+		groups: []string { "combat" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 
@@ -158,6 +162,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 	"attack": {
 		usage: "attack <target>",
 		description: "Attack the target.",
+		groups: []string { "combat" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			if len(args) < 1 {
 				return false
@@ -196,6 +201,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 	"use": {
 		usage: "use <item> [on <target>]",
 		description: "Use an item",
+		groups: []string { "combat", "items" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			// Get item words and target words
 			itemWords, targetWords, userSpecifiedTarget := splitArgsBy(args, "on")
@@ -331,6 +337,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 	"cast": {
 		usage: "cast <spell> [on <target>]",
 		description: "Cast a spell",
+		groups: []string { "combat", "magic" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			spellWords, targetWords, userSpecifiedTarget := splitArgsBy(args, "on")
 
@@ -377,6 +384,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 	"taunt": {
 		usage: "taunt <target>",
 		description: "Taunt an enemy in the room",
+		groups: []string { "combat" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			if !playerMob.Data.HasAbility(world.MOB_ABILITY_TAUNT) {
@@ -411,6 +419,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 	"unlock": {
 		usage: "unlock <direction>",
 		description: "Pick the lock on an exit in the current room.",
+		groups: []string { "exploration" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			if len(args) != 1 {
 				return false

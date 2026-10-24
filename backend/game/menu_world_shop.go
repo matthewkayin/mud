@@ -11,6 +11,7 @@ var MENU_WORLD_ENTRIES_SHOP = map[string]MenuEntry {
 	"buy": {
 		usage: "buy [<item>] from <npc>",
 		description: "Buy an item from an NPC. Type 'buy from <npc>' to see their wares",
+		groups: []string { "social" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			if len(args) == 0 {
 				return false
@@ -135,6 +136,7 @@ var MENU_WORLD_ENTRIES_SHOP = map[string]MenuEntry {
 	"sell": {
 		usage: "sell [<item>] to <npc>",
 		description: "Sell an item to an NPC. Type 'sell to <npc>' to see how much they will give for each of your items",
+		groups: []string { "social" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			if len(args) == 0 {
 				return false

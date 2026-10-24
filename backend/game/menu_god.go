@@ -7,15 +7,19 @@ import (
 )
 
 // Commands for Gods (admins). They're used by prefixing the command with a '/' (e.g. /shutdown now), from any menu.
-var MENU_GOD = Menu {
+var MENU_GOD = MenuCreate(MenuCreateParams {
 	onEnter: func(gamestate *GameState, player *Player) {
 	},
 	onExit: func(gamestate *GameState, player *Player) {
+	},
+	groups: map[string]string {
+		"root": "",
 	},
 	entries: map[string]MenuEntry {
 		"shutdown": {
 			usage: "/shutdown [now] [in <minutes>] [cancel] [status]",
 			description: "Save and kick all players, then refuse new connections until the server restarts. Use before deploying.",
+			groups: []string { "root" },
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
 				if len(args) == 0 {
 					return false
@@ -80,4 +84,4 @@ var MENU_GOD = Menu {
 			},
 		},
 	},
-}
+})

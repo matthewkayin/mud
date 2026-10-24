@@ -10,6 +10,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 	"inventory": {
 		usage: "inventory",
 		description: "List the items in your inventory",
+		groups: []string { "items" },
 		handler: func(gamestate *GameState, player *Player, args []string) bool {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 
@@ -51,6 +52,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 	"drop": {
 		usage: "drop <item>",
 		description: "Drop an item from your inventory",
+		groups: []string { "items" },
 		handler: func(gamestate *GameState, player *Player, args []string) bool {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
@@ -85,6 +87,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 	"put": {
 		usage: "put <item> into <container>",
 		description: "Puts an item from your inventory into the specified container",
+		groups: []string { "items" },
 		handler: func(gamestate *GameState, player *Player, args []string) bool {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			room := &gamestate.world.Rooms[playerMob.Data.Room]
@@ -133,6 +136,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 	"give": {
 		usage: "give <item> to <target>",
 		description: "Gives an item to the target",
+		groups: []string { "items" },
 		handler: func(gamestate *GameState, player *Player, args []string) bool {
 			// Split args
 			itemWords, targetWords, userSpecifiedTo := splitArgsBy(args, "to")
@@ -199,6 +203,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 	"take": {
 		usage: "take <item> [from <container>]",
 		description: "Pick up an item in your current room",
+		groups: []string { "items" },
 		handler: func(gamestate *GameState, player *Player, args []string) bool {
 			itemWords, chestWords, userSpecifiedChest := splitArgsBy(args, "from")
 			if userSpecifiedChest && len(chestWords) == 0 {
@@ -252,6 +257,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 	"loot": {
 		usage: "loot <container>",
 		description: "Take all items from the container in this room. If you specify 'room' as the container, you will take all items from the floor in this room.",
+		groups: []string { "items" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			// Get pointer to room
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)

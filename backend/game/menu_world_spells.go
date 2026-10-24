@@ -9,6 +9,7 @@ var MENU_WORLD_ENTRIES_SPELLS = map[string]MenuEntry {
 	"spells": {
 		usage: "spells",
 		description: "Show a list of the spells you can cast",
+		groups: []string { "magic" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 
@@ -31,6 +32,7 @@ var MENU_WORLD_ENTRIES_SPELLS = map[string]MenuEntry {
 	"library": {
 		usage: "library",
 		description: "Show a list of all the spells you know",
+		groups: []string { "magic" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			if len(player.character.SpellsKnown) == 0 && len(player.character.ClassSpells) == 0 {
 				player.send("You don't know any spells.")
@@ -55,6 +57,7 @@ var MENU_WORLD_ENTRIES_SPELLS = map[string]MenuEntry {
 	"prepare": {
 		usage: "prepare <spell>",
 		description: "Prepare a spell from the list of spells you know",
+		groups: []string { "magic" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 
