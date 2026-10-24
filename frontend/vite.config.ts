@@ -9,11 +9,11 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api/auth': {
-        target: 'http://localhost:7272',
+        target: process.env.MUD_BACKEND_URL ?? 'http://localhost:7272',
         changeOrigin: true
       },
       '/api/websocket': {
-        target: 'http://localhost:7272',
+        target: process.env.MUD_BACKEND_URL ?? 'http://localhost:7272',
         ws: true,
         changeOrigin: true
       }

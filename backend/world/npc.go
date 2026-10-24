@@ -15,7 +15,6 @@ import (
 const NPC_SLEEPY_ADRENALINE_DURATION int32 = (5 * 60) / WORLD_SECONDS_PER_UPDATE
 const NPC_SURPRISE_DURATION int32 = 1
 
-const NPC_RESPAWN_DURATION = 60 / WORLD_SECONDS_PER_UPDATE
 const NPC_MOVEMENT_STEP_DURATION = 60 / WORLD_SECONDS_PER_UPDATE
 
 const NPC_MOVEMENT_TYPE_OVERRIDE_NONE = NPC_MOVEMENT_TYPE_COUNT
@@ -136,7 +135,6 @@ type Npc struct {
 	mode NpcMode
 	disposition NpcDisposition
 	timer int32
-	shouldReset bool
 	// Exits which the NPC's mob prevents players and other mobs from leaving its room through
 	isBlockingExit [DIRECTION_COUNT]bool
 	// The table returned by the script's init() hook, or nil
@@ -346,45 +344,9 @@ func npcBehaviorParamToLua(paramType NpcBehaviorParamType, value any) any {
 	}
 }
 
-func (npc *Npc) tryReset(world *World) {
-	// No need to reset if the NPC is already dead,
-	// it will just respawn after respawn timer is up
-	if npc.mode == NPC_MODE_DEAD {
-		npc.shouldReset = false
-		return
-	}
-
-	// If NPC is not dead, try to despawn mob
-	npcMob, npcMobExists := world.Mobs.GetIfExists(npc.mobHandle)
-	if !npcMobExists {
-		npc.timer = 0
-		npc.shouldReset = false
-		return
-	}
-
-	// If players are still in the room, then don't despawn
-	npcRoom := &world.Rooms[npcMob.Data.Room]
-	if npcRoom.hasPlayerOccupants(world) {
-		return
-	}
-
-	// Otherwise, despawn
-	npcRoom.RemoveOccupant(npc.mobHandle)
-	npc.mode = NPC_MODE_DEAD
-	npc.instance = lua.Nil()
-	npc.isBlockingExit = [DIRECTION_COUNT]bool{}
-	npc.timer = 0 // Trigger a respawn
-	npc.shouldReset = false
-}
-
 //spawns the mob associated with the npc
 func (npc *Npc) spawnMob(world *World) {
-	// Check if the room is empty of players before spawning
 	npcRoom := &world.Rooms[npc.SpawnRoom]
-	if npcRoom.hasPlayerOccupants(world) {
-		return
-	}
-
 	npcData := NPC_DATA[npc.Id]
 
 	dropTable := &npcData.dropTable
@@ -421,6 +383,7 @@ func (npc *Npc) spawnMob(world *World) {
 	// Add mob to world
 	npc.mobHandle = world.Mobs.Push(npcMob)
 	npcRoom.AddOccupant(world, npc.mobHandle)
+	world.messageRoom(npc.SpawnRoom, fmt.Sprintf("<y>%s</y> has arrived.", world.Mobs.Get(npc.mobHandle).GetName()))
 
 	// Init behavior
 	npc.setModeIdle()
@@ -525,11 +488,6 @@ func (npc *Npc) setModeSurprise(world *World) {
 }
 
 func (npc *Npc) update(world *World) {
-	// Try reset
-	if npc.shouldReset {
-		npc.tryReset(world)
-	}
-
 	// Respawn
 	if npc.mode == NPC_MODE_DEAD {
 		npc.timer--
@@ -544,9 +502,9 @@ func (npc *Npc) update(world *World) {
 	npcMob, npcMobExists := world.Mobs.GetIfExists(npc.mobHandle)
 	if !npcMobExists {
 		npc.mode = NPC_MODE_DEAD
-		npc.timer = NPC_RESPAWN_DURATION
+		npc.timer = NPC_DATA[npc.Id].respawnDuration
 		npc.instance = lua.Nil()
-	npc.isBlockingExit = [DIRECTION_COUNT]bool{}
+		npc.isBlockingExit = [DIRECTION_COUNT]bool{}
 		return
 	}
 

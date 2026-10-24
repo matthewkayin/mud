@@ -7,6 +7,7 @@ npc.name = "Skulk"
 npc.description = "A shadowy, half-visible little create with clawed hands and a large mouth. It seems interested in watching from the shadows."
 npc.experience_worth = 100
 npc.experience_worth_scaling = 25
+npc.respawn_duration = world.time_minutes(1)
 
 npc.stats = { VIT = 4, STR = 2, AGI = 6, INT = 2, FTH = 4 }
 npc.scaling = { VIT = 4, STR = 2, AGI = 6, INT = 2, FTH = 4 }

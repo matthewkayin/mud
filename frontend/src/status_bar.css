@@ -1,0 +1,32 @@
+/* Each meter's label and track sit in the grid's columns, so the bars line up */
+.status-bar {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    align-items: center;
+    row-gap: 6px;
+    column-gap: 8px;
+    padding: 10px;
+    border-radius: 4px;
+    background-color: #1e1e1e;
+}
+
+.status-meter {
+    display: contents;
+}
+
+.status-meter-text {
+    color: #ffffff;
+    font-family: monospace;
+    white-space: nowrap;
+}
+
+.status-meter-track {
+    height: 10px;
+    background-color: #3a3a3a;
+    overflow: hidden;
+}
+
+.status-meter-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+}

@@ -93,7 +93,7 @@ world.say_to_player(self, player, "There is a <b>bridge</b> not far from here.")
 Check new or changed strings in these places against the rules above:
 
 - Go, in `backend/world/`: `world.messageRoom`, `world.messagePlayer` and `world.messageRoomWithOptions` (`event.go`).
-- Go, in `backend/game/`: `gamestate.messageRoom`, `gamestate.broadcast` and `*player.inbox <- ...`.
+- Go, in `backend/game/`: `gamestate.messageRoom`, `gamestate.broadcast` and `player.send(...)`.
 - Lua scripts in `backend/data/`: `world.message_room`, `world.message_player`, `world.say_to_room` and `world.say_to_player`. The `say_to_*` functions color the speaker's name themselves, so the script only colors the message.
 
 If a message needs to color a kind of text that no rule covers, add the rule to this file first.

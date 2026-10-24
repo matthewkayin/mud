@@ -45,13 +45,13 @@ var MENU_WORLD_ENTRIES_TALK = map[string]MenuEntry {
 			// Find target
 			targetHandle, err := fuzzyFindTarget(gamestate, player, strings.Fields(targetString))
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return true
 			}
 
 			// Handle case where they talk to themselves
 			if targetHandle == player.mobHandle {
-				*player.inbox <- fmt.Sprintf("You told yourself: '%s'", message)
+				player.send(fmt.Sprintf("You told yourself: '%s'", message))
 				return true
 			}
 
@@ -71,13 +71,13 @@ var MENU_WORLD_ENTRIES_TALK = map[string]MenuEntry {
 				}
 				targetPlayer := &gamestate.players[targetPlayerIndex]
 
-				*player.inbox <- fmt.Sprintf("You told <y>%s</y>: '%s'", targetMob.GetName(), message)
-				*targetPlayer.inbox <- fmt.Sprintf("<y>%s</y> told you: '%s'", playerMob.GetName(), message)
+				player.send(fmt.Sprintf("You told <y>%s</y>: '%s'", targetMob.GetName(), message))
+				targetPlayer.send(fmt.Sprintf("<y>%s</y> told you: '%s'", playerMob.GetName(), message))
 				return true
 			}
 
 			if targetMob.IsNpc() {
-				*player.inbox <- fmt.Sprintf("%s is not a player. To talk to them, use the 'talk' command.", targetMob.Data.Name)
+				player.send(fmt.Sprintf("%s is not a player. To talk to them, use the 'talk' command.", targetMob.Data.Name))
 				return true
 			}
 
@@ -158,14 +158,14 @@ var MENU_WORLD_ENTRIES_TALK = map[string]MenuEntry {
 				var err error
 				targetHandle, err = fuzzyFindTarget(gamestate, player, toWords)
 				if err != nil {
-					*player.inbox <- err.Error()
+					player.send(err.Error())
 					return true
 				}
 				hasTarget = true
 			}
 
 			if !hasTarget {
-				*player.inbox <- "You are not currently talking to anyone."
+				player.send("You are not currently talking to anyone.")
 				return true
 			}
 
@@ -173,7 +173,7 @@ var MENU_WORLD_ENTRIES_TALK = map[string]MenuEntry {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			if playerMob.IsInCombat(gamestate.world) {
 				player.isTalking = false
-				*player.inbox <- "You cannot talk while you are in combat!"
+				player.send("You cannot talk while you are in combat!")
 				return true
 			}
 
@@ -181,14 +181,14 @@ var MENU_WORLD_ENTRIES_TALK = map[string]MenuEntry {
 			targetMob, exists := gamestate.world.Mobs.GetIfExists(targetHandle)
 			if !exists || targetMob.IsDead() || targetMob.Data.Room != playerMob.Data.Room {
 				player.isTalking = false
-				*player.inbox <- "The person you were talking to is no longer here."
+				player.send("The person you were talking to is no longer here.")
 				return true
 			}
 
 			// Check that the target is an NPC
 			if targetMob.IsPlayer() {
 				player.isTalking = false
-				*player.inbox <- fmt.Sprintf("%s is a player. To speak to them, use the 'say', 'yell', or 'tell' commands.", targetMob.Data.Name)
+				player.send(fmt.Sprintf("%s is a player. To speak to them, use the 'say', 'yell', or 'tell' commands.", targetMob.Data.Name))
 				return true
 			}
 
