@@ -99,9 +99,9 @@ func printSheetTable(player *Player, title string, sections [][]string, headers 
 		keyWidth := sectionKeyWidth[sectionIndex]
 		valueWidth := tableWidth - keyWidth - 7
 		for index := 0; index < len(section); index += 2 {
-			*player.inbox <- fmt.Sprintf("| %-*s : %-*s |",
+			player.send(fmt.Sprintf("| %-*s : %-*s |",
 				keyWidth, section[index + 0],
-				valueWidth, section[index + 1])
+				valueWidth, section[index + 1]))
 		}
 		printTableDivider(player, tableWidth)
 	}
@@ -117,15 +117,15 @@ func printSheetTable(player *Player, title string, sections [][]string, headers 
 }
 
 func printTableTitle(player *Player, title string, tableWidth int) {
-	*player.inbox <- fmt.Sprintf("| %-*s |", tableWidth - 4, title)
+	player.send(fmt.Sprintf("| %-*s |", tableWidth - 4, title))
 }
 
 func printTableEdge(player *Player, tableWidth int) {
-	*player.inbox <- fmt.Sprintf("+%s+", strings.Repeat("-", tableWidth - 2))
+	player.send(fmt.Sprintf("+%s+", strings.Repeat("-", tableWidth - 2)))
 }
 
 func printTableDivider(player *Player, tableWidth int) {
-	*player.inbox <- fmt.Sprintf("|%s|", strings.Repeat("-", tableWidth - 2))
+	player.send(fmt.Sprintf("|%s|", strings.Repeat("-", tableWidth - 2)))
 }
 
 func getTableColumnWidths(headers []string, rows []string) []int {
@@ -173,7 +173,7 @@ func printTableRow(player *Player, columnWidth []int, rows []string, offset int)
 		}
 	}
 
-	*player.inbox <- builder.String()
+	player.send(builder.String())
 }
 
 func printSpellTable(gamestate *GameState, player *Player, title string, spells []world.SpellId, includeMastery bool) {

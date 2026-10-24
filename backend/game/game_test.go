@@ -1,6 +1,7 @@
 package game
 
 import (
+	"encoding/json"
 	"testing"
 )
 
@@ -14,13 +15,13 @@ func testGameStateInit() *GameState {
 	}
 }
 
-func testInboxInit() *chan string {
-	inbox := make(chan string, 100)
+func testInboxInit() *chan SocketMessage {
+	inbox := make(chan SocketMessage, 100)
 	return &inbox
 }
 
-// Drains the inbox and returns its messages
-func inboxMessages(inbox *chan string) []string {
+// Drains the inbox and returns the text of its messages, skipping heartbeats
+func inboxMessages(inbox *chan SocketMessage) []string {
 	messages := []string {}
 	for {
 		select {
@@ -28,14 +29,17 @@ func inboxMessages(inbox *chan string) []string {
 				if !ok {
 					return messages
 				}
-				messages = append(messages, message)
+				if message.Message == nil {
+					continue
+				}
+				messages = append(messages, *message.Message)
 			default:
 				return messages
 		}
 	}
 }
 
-func inboxIsClosed(inbox *chan string) bool {
+func inboxIsClosed(inbox *chan SocketMessage) bool {
 	for {
 		select {
 			case _, ok := <- *inbox:
@@ -61,7 +65,7 @@ func checkPlayerMap(t *testing.T, gamestate *GameState) {
 
 func TestRemovePlayerUpdatesMovedPlayerIndex(t *testing.T) {
 	gamestate := testGameStateInit()
-	inboxes := []*chan string { testInboxInit(), testInboxInit(), testInboxInit() }
+	inboxes := []*chan SocketMessage { testInboxInit(), testInboxInit(), testInboxInit() }
 	for index, inbox := range inboxes {
 		gamestate.registerPlayer(index, inbox)
 	}
@@ -137,7 +141,7 @@ func TestSanitizeString(t *testing.T) {
 
 func TestEnterMaintenanceRemovesAllPlayers(t *testing.T) {
 	gamestate := testGameStateInit()
-	inboxes := []*chan string { testInboxInit(), testInboxInit(), testInboxInit() }
+	inboxes := []*chan SocketMessage { testInboxInit(), testInboxInit(), testInboxInit() }
 	for index, inbox := range inboxes {
 		gamestate.registerPlayer(index, inbox)
 	}
@@ -240,5 +244,59 @@ func TestGodCommands(t *testing.T) {
 	statusMessages := inboxMessages(godInbox)
 	if len(statusMessages) != 1 || statusMessages[0] != "The server will shut down in 5m 0s." {
 		t.Fatalf("Unexpected shutdown status: %v", statusMessages)
+	}
+}
+
+func TestHeartbeatForLoggedOutPlayer(t *testing.T) {
+	gamestate := testGameStateInit()
+	inbox := testInboxInit()
+	gamestate.registerPlayer(1, inbox)
+	inboxMessages(inbox)
+
+	gamestate.getPlayerById(1).sendHeartbeat(gamestate)
+
+	if len(*inbox) != 1 {
+		t.Fatalf("Expected 1 heartbeat, got %d messages", len(*inbox))
+	}
+	heartbeat := <- *inbox
+	if heartbeat.Message != nil {
+		t.Fatalf("Heartbeat has message %q", *heartbeat.Message)
+	}
+	if heartbeat.PlayerStatus != nil {
+		t.Fatal("Heartbeat for a logged out player has a status")
+	}
+}
+
+func TestSocketMessageMarshalJSON(t *testing.T) {
+	message := "<y>Bufo</y> cast <g>Firebolt</g>!"
+	testCases := []struct {
+		socketMessage SocketMessage
+		expected string
+	} {
+		{
+			socketMessage: SocketMessage { Message: &message },
+			expected: `{"message":"\u003cy\u003eBufo\u003c/y\u003e cast \u003cg\u003eFirebolt\u003c/g\u003e!"}`,
+		},
+		{
+			socketMessage: SocketMessage {
+				Message: nil,
+				PlayerStatus: &PlayerStatus { Health: 12, MaxHealth: 20, Mana: 5, MaxMana: 10 },
+			},
+			expected: `{"message":null,"health":12,"maxHealth":20,"mana":5,"maxMana":10}`,
+		},
+		{
+			socketMessage: SocketMessage { Message: nil },
+			expected: `{"message":null}`,
+		},
+	}
+
+	for _, testCase := range testCases {
+		messageJson, err := json.Marshal(testCase.socketMessage)
+		if err != nil {
+			t.Fatalf("Failed to marshal %+v: %s", testCase.socketMessage, err.Error())
+		}
+		if string(messageJson) != testCase.expected {
+			t.Fatalf("Marshalled %s, expected %s", messageJson, testCase.expected)
+		}
 	}
 }

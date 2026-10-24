@@ -20,7 +20,7 @@ var MENU_WORLD_ENTRIES_CRAFT = map[string]MenuEntry {
 
 			if args[0] == "list" {
 				if len(player.character.RecipesKnown) == 0 {
-					*player.inbox <- "You do not know any crafting recipes."
+					player.send("You do not know any crafting recipes.")
 					return true
 				}
 				rows := make([]string, 0, 3 * len(player.character.RecipesKnown))
@@ -45,7 +45,7 @@ var MENU_WORLD_ENTRIES_CRAFT = map[string]MenuEntry {
 				query, err := fuzzyFindKnownRecipe(player.character, args[1:])
 
 				if err != nil {
-					*player.inbox <- err.Error()
+					player.send(err.Error())
 					return true
 				}
 
@@ -77,7 +77,7 @@ var MENU_WORLD_ENTRIES_CRAFT = map[string]MenuEntry {
 			// Check if they are in comabt
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			if playerMob.IsInCombat(gamestate.world) {
-				*player.inbox <- "You cannot craft items while you are in combat."
+				player.send("You cannot craft items while you are in combat.")
 				return true
 			}
 
@@ -91,13 +91,13 @@ var MENU_WORLD_ENTRIES_CRAFT = map[string]MenuEntry {
 
 			recipe, fuzErr := fuzzyFindKnownRecipe(player.character, args)
 			if fuzErr != nil {
-				*player.inbox <- fuzErr.Error()
+				player.send(fuzErr.Error())
 				return true
 			}
 
 			err := playerMob.CanCraft(recipe, batchAmount)
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return true
 			}
 

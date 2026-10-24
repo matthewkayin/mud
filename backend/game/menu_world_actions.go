@@ -22,20 +22,20 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 			// Determine the index of the target room
 			direction, directionFound := world.EnumFromString[world.Direction](args[0], world.DIRECTION_COUNT)
 			if !directionFound {
-				*player.inbox <- fmt.Sprintf("'%s' is not a direction. The directions are 'north', 'south', 'east', and 'west'.", args[0])
+				player.send(fmt.Sprintf("'%s' is not a direction. The directions are 'north', 'south', 'east', and 'west'.", args[0]))
 				return true
 			}
 
 			// Check if there is an exit in that direction
 			newRoomIndex := playerRoom.Exits[direction]
 			if newRoomIndex == world.ROOM_NONE {
-				*player.inbox <- "There is no exit in that direction."
+				player.send("There is no exit in that direction.")
 				return true
 			}
 
 			// Check if the exit is locked
 			if playerRoom.IsExitLocked(direction) {
-				*player.inbox <- fmt.Sprintf("The %s exit is locked.", direction.String())
+				player.send(fmt.Sprintf("The %s exit is locked.", direction.String()))
 				return true
 			}
 
@@ -43,13 +43,13 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 			blockingNpcHandle, isExitBlocked := playerRoom.GetNpcBlockingExit(gamestate.world, direction)
 			if isExitBlocked {
 				blockingNpcMob := gamestate.world.Mobs.Get(blockingNpcHandle)
-				*player.inbox <- fmt.Sprintf("%s is blocking the way %s.", blockingNpcMob.GetName(), direction.String())
+				player.send(fmt.Sprintf("%s is blocking the way %s.", blockingNpcMob.GetName(), direction.String()))
 				return true
 			}
 
 			// If in combat, roll escape check
 			if playerMob.IsInCombat(gamestate.world) && !playerMob.RollForEscape(gamestate.world) {
-				*player.inbox <- "You failed to escape combat!"
+				player.send("You failed to escape combat!")
 				return true
 			}
 
@@ -60,11 +60,11 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 			// Narrate movement
 			playerRoom = &gamestate.world.Rooms[playerMob.Data.Room]
 			if playerMob.CheckFlag(world.MOB_FLAG_HIDDEN) {
-				*player.inbox <- fmt.Sprintf("You snuck into %s.", playerRoom.Name)
+				player.send(fmt.Sprintf("You snuck into %s.", playerRoom.Name))
 			} else if wasHidden {
-				*player.inbox <- fmt.Sprintf("You snuck into %s, but you were detected!", playerRoom.Name)
+				player.send(fmt.Sprintf("You snuck into %s, but you were detected!", playerRoom.Name))
 			} else {
-				*player.inbox <- fmt.Sprintf("You moved into %s.", playerRoom.Name)
+				player.send(fmt.Sprintf("You moved into %s.", playerRoom.Name))
 			}
 
 			// Stop talking to current NPC
@@ -81,27 +81,27 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			if !playerMob.Data.HasAbility(world.MOB_ABILITY_SNEAK) {
-				*player.inbox <- "You don't know how to do that."
+				player.send("You don't know how to do that.")
 				return true
 			}
 
 			// Don't hide if already hidden
 			if playerMob.CheckFlag(world.MOB_FLAG_HIDDEN) {
-				*player.inbox <- "You are already hidden."
+				player.send("You are already hidden.")
 				return true
 			}
 
 			// Roll for stealth
 			hidden := playerMob.RollForStealth(gamestate.world)
 			if !hidden {
-				*player.inbox <- "You failed to stay hidden."
+				player.send("You failed to stay hidden.")
 				return true
 			}
 
 			// Set hidden
 			playerMob.SetFlag(world.MOB_FLAG_HIDDEN, true)
 			player.isTalking = false
-			*player.inbox <- "You hid into the shadows."
+			player.send("You hid into the shadows.")
 
 			return true
 		},
@@ -113,7 +113,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			if !playerMob.CheckFlag(world.MOB_FLAG_HIDDEN) {
-				*player.inbox <- "You cannot reveal yourself because you are not hidden."
+				player.send("You cannot reveal yourself because you are not hidden.")
 				return true
 			}
 
@@ -165,20 +165,20 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 
 			targetHandle, err := fuzzyFindTarget(gamestate, player, args)
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return true
 			}
 
 			// Check for PvP
 			targetMob := gamestate.world.Mobs.Get(targetHandle)
 			if targetMob.PlayerCharacter != nil {
-				*player.inbox <- "You cannot attack other adventurers!"
+				player.send("You cannot attack other adventurers!")
 				return true
 			}
 
 			// Check for protected NPC
 			if targetMob.Npc.IsProtected() {
-				*player.inbox <- fmt.Sprintf("You cannot attack %s, they are a friend!", targetMob.Data.Name)
+				player.send(fmt.Sprintf("You cannot attack %s, they are a friend!", targetMob.Data.Name))
 				return true
 			}
 
@@ -203,7 +203,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 				return false
 			}
 			if userSpecifiedTarget && len(targetWords) == 0 {
-				*player.inbox <- "When specifying 'on' you must specify a target."
+				player.send("When specifying 'on' you must specify a target.")
 				return false
 			}
 
@@ -211,7 +211,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			itemIndex, err := fuzzyFindInventoryItem(&playerMob.Data.Inventory, "your inventory", itemWords)
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return true
 			}
 
@@ -228,7 +228,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 						consumableData.UsableByJob == world.ITEM_USABLE_BY_JOB_ANY ||
 						consumableData.UsableByJob == playerMob.PlayerCharacter.Job
 					if !playerCanUseItem {
-						*player.inbox <- fmt.Sprintf("That item can only be used by %ss.", world.JOB_DATA[consumableData.UsableByJob].Name)
+						player.send(fmt.Sprintf("That item can only be used by %ss.", world.JOB_DATA[consumableData.UsableByJob].Name))
 						return true
 					}
 
@@ -243,7 +243,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 						validateTarget: consumableData.ValidateTarget,
 					})
 					if err != nil {
-						*player.inbox <- err.Error()
+						player.send(err.Error())
 						return true
 					}
 
@@ -276,7 +276,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 						validateTarget: spellData.ValidateTarget,
 					})
 					if err != nil {
-						*player.inbox <- err.Error()
+						player.send(err.Error())
 						return true
 					}
 
@@ -300,29 +300,29 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 					recipeData := world.RECIPE_DATA[recipe]
 
 					if recipeData.Job != player.character.Job {
-						*player.inbox <- fmt.Sprintf("You must be a %s to learn that recipe.", world.JOB_DATA[recipeData.Job].Name)
+						player.send(fmt.Sprintf("You must be a %s to learn that recipe.", world.JOB_DATA[recipeData.Job].Name))
 						return true
 					}
 
 					if playerMob.Data.Level < recipeData.Level {
-						*player.inbox <- "Your level is not high enough to learn this recipe."
+						player.send("Your level is not high enough to learn this recipe.")
 						return true
 					}
 
 					if slices.Contains(player.character.RecipesKnown, recipe) {
-						*player.inbox <- "You already know this recipe."
+						player.send("You already know this recipe.")
 						return true
 					}
 
 					player.character.RecipesKnown = append(player.character.RecipesKnown, recipe)
-					*player.inbox <- fmt.Sprintf("You have learned the recipe for %s.", recipeData.Name)
+					player.send(fmt.Sprintf("You have learned the recipe for %s.", recipeData.Name))
 
 					playerMob.Data.Inventory.RemoveItem(itemIndex)
 					return true
 				}
 
 				default:
-					*player.inbox <- "That item is not a consumable."
+					player.send("That item is not a consumable.")
 					return true
 			}
 		},
@@ -341,7 +341,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 			// Find the spell in their spell list
 			spell, err := fuzzyFindCastableSpell(gamestate, player, spellWords)
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return true
 			}
 
@@ -357,7 +357,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 				validateTarget: spellData.ValidateTarget,
 			})
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return true
 			}
 
@@ -380,20 +380,20 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			if !playerMob.Data.HasAbility(world.MOB_ABILITY_TAUNT) {
-				*player.inbox <- "You don't know how to do that."
+				player.send("You don't know how to do that.")
 				return true
 			}
 
 			targetHandle, err := fuzzyFindTarget(gamestate, player, args)
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return true
 			}
 
 			// Check for PvP
 			targetMob := gamestate.world.Mobs.Get(targetHandle)
 			if targetMob.PlayerCharacter != nil {
-				*player.inbox <- "You cannot taunt other adventurers!"
+				player.send("You cannot taunt other adventurers!")
 				return true
 			}
 
@@ -418,39 +418,39 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			if !playerMob.Data.HasAbility(world.MOB_ABILITY_UNLOCK) {
-				*player.inbox <- "You don't know how to do that."
+				player.send("You don't know how to do that.")
 				return true
 			}
 
 			if playerMob.IsInCombat(gamestate.world) {
-				*player.inbox <- "You cannot pick locks while you are in combat."
+				player.send("You cannot pick locks while you are in combat.")
 				return true
 			}
 
 			// Validate direction
 			direction, directionFound := world.EnumFromString[world.Direction](args[0], world.DIRECTION_COUNT)
 			if !directionFound {
-				*player.inbox <- fmt.Sprintf("'%s' is not a direction. The directions are 'north', 'south', 'east', and 'west'.", args[0])
+				player.send(fmt.Sprintf("'%s' is not a direction. The directions are 'north', 'south', 'east', and 'west'.", args[0]))
 				return true
 			}
 
 			// Check that there is an exit
 			playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
 			if playerRoom.Exits[direction] == world.ROOM_NONE {
-				*player.inbox <- "There is no exit in that direction."
+				player.send("There is no exit in that direction.")
 				return true
 			}
 
 			// Check that there is a lock to pick
 			lock := playerRoom.GetLock(direction)
 			if lock == nil || !lock.IsActive {
-				*player.inbox <- fmt.Sprintf("The %s exit is not locked.", direction.String())
+				player.send(fmt.Sprintf("The %s exit is not locked.", direction.String()))
 				return true
 			}
 
 			// Only pick physical locks
 			if lock.Type != world.LOCK_TYPE_PHYSICAL {
-				*player.inbox <- fmt.Sprintf("The %s exit is sealed by magic. You can't pick it.", direction.String())
+				player.send(fmt.Sprintf("The %s exit is sealed by magic. You can't pick it.", direction.String()))
 				return true
 			}
 
@@ -458,7 +458,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 
 			// Picking a lock doesn't reveal a hidden player
 			if playerMob.CheckFlag(world.MOB_FLAG_HIDDEN) {
-				*player.inbox <- fmt.Sprintf("You picked the lock on the %s exit.", direction.String())
+				player.send(fmt.Sprintf("You picked the lock on the %s exit.", direction.String()))
 			} else {
 				gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("<y>%s</y> picked the lock on the %s exit.", playerMob.Data.Name, direction.String()))
 			}

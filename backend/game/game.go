@@ -25,7 +25,7 @@ type SocketEvent struct {
 	Type SocketEventType
 	PlayerId int
 	// Identifies the connection for CONNECT and DISCONNECT events
-	Inbox *chan string
+	Inbox *chan SocketMessage
 	// Only used by COMMAND events
 	Command string
 }
@@ -134,10 +134,11 @@ func (gamestate *GameState) Run(ctx context.Context) {
 }
 
 // Must only be called from the game loop
-func (gamestate *GameState) registerPlayer(playerId int, playerInbox *chan string) {
+func (gamestate *GameState) registerPlayer(playerId int, playerInbox *chan SocketMessage) {
 	// Refuse connections during maintenance
 	if gamestate.serverMode == SERVER_MODE_MAINTENANCE {
-		*playerInbox <- "The server is down for maintenance. Please try again later."
+		message := "The server is down for maintenance. Please try again later."
+		*playerInbox <- SocketMessage { Message: &message }
 		close(*playerInbox)
 		return
 	}
@@ -146,7 +147,7 @@ func (gamestate *GameState) registerPlayer(playerId int, playerInbox *chan strin
 	existingPlayer := gamestate.getPlayerById(playerId)
 	if existingPlayer != nil && existingPlayer.inbox != playerInbox {
 		log.Printf("Player %d connected from another location. Kicking previous connection.", playerId)
-		*existingPlayer.inbox <- "You have been disconnected because you logged in from another location."
+		existingPlayer.send("You have been disconnected because you logged in from another location.")
 		gamestate.removePlayer(playerId, existingPlayer.inbox)
 	}
 
@@ -157,7 +158,7 @@ func (gamestate *GameState) registerPlayer(playerId int, playerInbox *chan strin
 
 	newPlayer := &gamestate.players[newPlayerIndex]
 	for index := range len(gamestate.bannerLines) {
-		*newPlayer.inbox <- gamestate.bannerLines[index]
+		newPlayer.send(gamestate.bannerLines[index])
 	}
 	newPlayer.setMenu(gamestate, PLAYER_MENU_LOGIN)
 }
@@ -165,7 +166,7 @@ func (gamestate *GameState) registerPlayer(playerId int, playerInbox *chan strin
 // Must only be called from the game loop
 // The inbox identifies which connection is being removed. If it doesn't match the
 // registered player's inbox (e.g. a kicked connection disconnecting), this does nothing.
-func (gamestate *GameState) removePlayer(playerId int, playerInbox *chan string) {
+func (gamestate *GameState) removePlayer(playerId int, playerInbox *chan SocketMessage) {
 	// Get the player index (and double-check that they even exist)
 	playerIndex, exists := gamestate.playerIdToIndexMap[playerId]
 	if !exists {
@@ -279,7 +280,7 @@ func (gamestate *GameState) isGod(playerId int) bool {
 func (gamestate *GameState) broadcast(message string) {
 	message = fmt.Sprintf("<y>Announcement:</y> %s", message)
 	for index := range len(gamestate.players) {
-		*gamestate.players[index].inbox <- message
+		gamestate.players[index].send(message)
 	}
 }
 
@@ -301,7 +302,7 @@ func (gamestate *GameState) messageRoom(roomIndex int, message string) {
 		}
 
 		player := &gamestate.players[playerIndex]
-		*player.inbox <- message
+		player.send(message)
 	}
 }
 
@@ -336,6 +337,11 @@ func (gamestate *GameState) update() {
 
 	// Done after the world events are handled, since entering maintenance removes players that the events may refer to
 	gamestate.updateShutdown()
+
+	// Heartbeats let clients detect a dead connection, so they are sent every update even when nothing else happened
+	for index := range len(gamestate.players) {
+		gamestate.players[index].sendHeartbeat(gamestate)
+	}
 }
 
 // Dispatches world events to their listeners and clears them.
@@ -365,6 +371,6 @@ func handleEventMessage(gamestate *GameState, event* world.Event) {
 		}
 
 		player := &gamestate.players[playerIndex]
-		*player.inbox <- eventData.Message
+		player.send(eventData.Message)
 	}
 }

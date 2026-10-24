@@ -15,7 +15,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			room := &gamestate.world.Rooms[playerMob.Data.Room]
-			*player.inbox <- fmt.Sprintf("You are in %s.", room.Name)
+			player.send(fmt.Sprintf("You are in %s.", room.Name))
 			describeRoomToPlayer(gamestate, player, room)
 			return true
 		},
@@ -34,7 +34,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 			if len(args) != 0 {
 				chestInventory, _, err := fuzzyFindChestInventory(room, args)
 				if err != nil {
-					*player.inbox <- err.Error()
+					player.send(err.Error())
 					return true
 				}
 
@@ -53,7 +53,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				itemsString = util.CombineNames(itemNames)
 			}
 
-			*player.inbox <- fmt.Sprintf("You see %s.", itemsString)
+			player.send(fmt.Sprintf("You see %s.", itemsString))
 			return true
 		},
 	},
@@ -80,7 +80,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				var err error
 				targetInventory, chestName, err = fuzzyFindChestInventory(playerRoom, containerWords)
 				if err != nil {
-					*player.inbox <- err.Error()
+					player.send(err.Error())
 					return true
 				}
 			}
@@ -92,15 +92,15 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 			if itemIndex < 0 && userSpecifiedIn {
 				switch itemIndex {
 					case FUZZY_FIND_RESULT_ITEM_NOT_SPECIFIED:
-						*player.inbox <- "You must specify an item to inspect."
+						player.send("You must specify an item to inspect.")
 					case FUZZY_FIND_RESULT_AMBIGUOUS:
-						*player.inbox <- fmt.Sprintf("There are multiple items matching '%s' in %s.",
-							strings.Join(targetWords, " "), chestName)
+						player.send(fmt.Sprintf("There are multiple items matching '%s' in %s.",
+							strings.Join(targetWords, " "), chestName))
 					case FUZZY_FIND_RESULT_NOT_FOUND:
-						*player.inbox <- fmt.Sprintf("There is no item named '%s' in %s.",
-							strings.Join(targetWords, " "), chestName)
+						player.send(fmt.Sprintf("There is no item named '%s' in %s.",
+							strings.Join(targetWords, " "), chestName))
 					case FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE:
-						*player.inbox <- fmt.Sprintf("There is no item matching that number in %s.", chestName)
+						player.send(fmt.Sprintf("There is no item matching that number in %s.", chestName))
 				}
 
 				return true
@@ -111,10 +111,10 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				item := &targetInventory.Items[itemIndex]
 				itemData := world.ITEM_DATA[item.Id]
 
-				*player.inbox <- fmt.Sprintf("Item: <g>%s</g>", item.GetNameWithCondition())
-				*player.inbox <- fmt.Sprintf("Description: %s", itemData.Description)
-				*player.inbox <- fmt.Sprintf("Type: %s", itemData.Kind.String())
-				*player.inbox <- fmt.Sprintf("Size: %d", itemData.Size)
+				player.send(fmt.Sprintf("Item: <g>%s</g>", item.GetNameWithCondition()))
+				player.send(fmt.Sprintf("Description: %s", itemData.Description))
+				player.send(fmt.Sprintf("Type: %s", itemData.Kind.String()))
+				player.send(fmt.Sprintf("Size: %d", itemData.Size))
 
 				// Stat requirements
 				stats := item.GetStatRequirements()
@@ -127,7 +127,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 					}
 
 					if len(parts) != 0 {
-						*player.inbox <- fmt.Sprintf("Requires: %s", util.CombineNames(parts))
+						player.send(fmt.Sprintf("Requires: %s", util.CombineNames(parts)))
 					}
 				}
 
@@ -142,7 +142,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 					}
 
 					if len(parts) != 0 {
-						*player.inbox <- fmt.Sprintf("Requires: %s", util.CombineNames(parts))
+						player.send(fmt.Sprintf("Requires: %s", util.CombineNames(parts)))
 					}
 				}
 
@@ -150,13 +150,13 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				switch itemData.Kind {
 					case world.ITEM_KIND_EQUIPMENT_OUTFIT, world.ITEM_KIND_EQUIPMENT_SHIELD: {
 						outfitData := itemData.Data.(*world.ItemDataArmor)
-						*player.inbox <- fmt.Sprintf("Durability: %d", item.GetDurabilityPercent())
-						*player.inbox <- fmt.Sprintf("Armor: %d", outfitData.Armor)
-						*player.inbox <- fmt.Sprintf("Stealth Penalty: %d%%", int(outfitData.StealthPenalty * 100))
+						player.send(fmt.Sprintf("Durability: %d", item.GetDurabilityPercent()))
+						player.send(fmt.Sprintf("Armor: %d", outfitData.Armor))
+						player.send(fmt.Sprintf("Stealth Penalty: %d%%", int(outfitData.StealthPenalty * 100)))
 					}
 					case world.ITEM_KIND_EQUIPMENT_ONE_HANDED, world.ITEM_KIND_EQUIPMENT_TWO_HANDED: {
-						*player.inbox <- fmt.Sprintf("Durability: %d%%", item.GetDurabilityPercent())
-						*player.inbox <- fmt.Sprintf("Damage: %d", item.GetDamageValue())
+						player.send(fmt.Sprintf("Durability: %d%%", item.GetDurabilityPercent()))
+						player.send(fmt.Sprintf("Damage: %d", item.GetDamageValue()))
 					}
 				}
 
@@ -166,7 +166,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 			// Get target handle
 			targetHandle, err := fuzzyFindTarget(gamestate, player, args)
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return true
 			}
 
@@ -176,24 +176,24 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 			targetMob := gamestate.world.Mobs.Get(targetHandle)
 			if targetMob.Npc != nil {
 				// General description
-				*player.inbox <- fmt.Sprintf("<y>%s</y> (Level %d): %s",
-					targetMob.GetName(), targetMob.Data.Level, targetMob.Npc.GetDescription())
+				player.send(fmt.Sprintf("<y>%s</y> (Level %d): %s",
+					targetMob.GetName(), targetMob.Data.Level, targetMob.Npc.GetDescription()))
 
 				// Status description
 				statusDescription, hasStatusDescription := targetMob.Npc.GetStatusDescription(gamestate.world)
 				if hasStatusDescription {
-					*player.inbox <- statusDescription
+					player.send(statusDescription)
 				}
 
 				return true
 			}
 
 			// Handle player case
-			*player.inbox <- fmt.Sprintf("<y>%s</y> (Level %d): %s %s %s.",
+			player.send(fmt.Sprintf("<y>%s</y> (Level %d): %s %s %s.",
 				targetMob.Data.Name, targetMob.Data.Level,
 				world.RACE_DATA[targetMob.PlayerCharacter.Race].Name,
 				world.CLASS_DATA[targetMob.PlayerCharacter.Class].Name,
-				world.JOB_DATA[targetMob.PlayerCharacter.Job].Name)
+				world.JOB_DATA[targetMob.PlayerCharacter.Job].Name))
 			printMobEquipmentList(player, targetMob)
 
 			return true
@@ -226,13 +226,13 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 			} else {
 				targetHandle, err := fuzzyFindTarget(gamestate, player, args)
 				if err != nil {
-					*player.inbox <- err.Error()
+					player.send(err.Error())
 					return true
 				}
 
 				targetMob := gamestate.world.Mobs.Get(targetHandle)
 				if targetMob.IsNpc() {
-					*player.inbox <- fmt.Sprintf("Cannot get status of %s because they are not a player.", targetMob.Data.Name)
+					player.send(fmt.Sprintf("Cannot get status of %s because they are not a player.", targetMob.Data.Name))
 					return true
 				}
 
@@ -319,10 +319,10 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 					abilityRows = append(abilityRows, abilityData.Description)
 				}
 
-				*player.inbox <- ""
+				player.send("")
 				printTable(player, "Talents", []string{"Name", "Description"}, abilityRows)
 			} else {
-				*player.inbox <- "\nYou have no talents."
+				player.send("\nYou have no talents.")
 			}
 
 			return true

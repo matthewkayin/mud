@@ -22,9 +22,9 @@ var MENU_CREATE = Menu {
 			Job: world.JobId(0),
 		}
 
-		*player.inbox <- "You are in the character creator."
+		player.send("You are in the character creator.")
 		printCharacterSheet(player)
-		*player.inbox <- "Type 'help' to see a list of options."
+		player.send("Type 'help' to see a list of options.")
 	},
 	onExit: func(gamestate *GameState, player *Player) {
 		player.characterSheet = nil
@@ -64,7 +64,7 @@ var MENU_CREATE = Menu {
 				entry, entryExists := CHARACTER_SHEET_PROPERTIES[property]
 
 				if !entryExists {
-					*player.inbox <- fmt.Sprintf("'%s' is not a valid property.", property)
+					player.send(fmt.Sprintf("'%s' is not a valid property.", property))
 					return true
 				}
 
@@ -85,7 +85,7 @@ var MENU_CREATE = Menu {
 				entry, entryExists := CHARACTER_SHEET_PROPERTIES[property]
 
 				if !entryExists {
-					*player.inbox <- fmt.Sprintf("'%s' is not a valid property.", property)
+					player.send(fmt.Sprintf("'%s' is not a valid property.", property))
 					return true
 				}
 
@@ -99,7 +99,7 @@ var MENU_CREATE = Menu {
 			description: "Finish character creation.",
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
 				if player.characterSheet.Name == "" {
-					*player.inbox <- "Cannot finish character. Your character is missing a name!"
+					player.send("Cannot finish character. Your character is missing a name!")
 					return true
 				}
 
@@ -107,7 +107,7 @@ var MENU_CREATE = Menu {
 				// (it might have been taken by the time they finished character creation)
 				_, nameIsTaken := gamestate.world.GetCharacterIfExists(player.characterSheet.Name)
 				if nameIsTaken {
-					*player.inbox <- fmt.Sprintf("A character named '%s' already exists.", player.characterSheet.Name)
+					player.send(fmt.Sprintf("A character named '%s' already exists.", player.characterSheet.Name))
 					return true
 				}
 
@@ -115,7 +115,7 @@ var MENU_CREATE = Menu {
 				gamestate.createCharacter(player.id, player.characterSheet)
 
 				// Send the character back to the login screen
-				*player.inbox <- fmt.Sprintf("Your character has been created! Type 'login %s' to login to them.", player.characterSheet.Name)
+				player.send(fmt.Sprintf("Your character has been created! Type 'login %s' to login to them.", player.characterSheet.Name))
 				player.setMenu(gamestate, PLAYER_MENU_LOGIN)
 
 				return true
@@ -169,24 +169,24 @@ func printCharacterSheet(player *Player) {
 var CHARACTER_SHEET_PROPERTIES = map[string]*MenuCharacterSheetProperty {
 	"name": {
 		describe: func (player *Player) {
-			*player.inbox <- fmt.Sprintf("'name' is your character's name. It can contain spaces and letters. It must have at least %d letters and must be no more than %d characters.",
-				world.CHARACTER_NAME_MIN_LETTERS, world.CHARACTER_NAME_MAX)
+			player.send(fmt.Sprintf("'name' is your character's name. It can contain spaces and letters. It must have at least %d letters and must be no more than %d characters.",
+				world.CHARACTER_NAME_MIN_LETTERS, world.CHARACTER_NAME_MAX))
 		},
 		set: func (gamestate *GameState, player *Player, value string) {
 			// Validate name
 			name, err := world.CharacterNameValidate(gamestate.world, value)
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return
 			}
 
 			player.characterSheet.Name = name
-			*player.inbox <- fmt.Sprintf("You set your character's name to '%s'", name)
+			player.send(fmt.Sprintf("You set your character's name to '%s'", name))
 		},
 	},
 	"race": {
 		describe: func (player *Player) {
-			*player.inbox <- "'race' is your character's race. Each race modifies your starting stats."
+			player.send("'race' is your character's race. Each race modifies your starting stats.")
 
 			headers := appendStatHeaders([]string{"Name"})
 			headers = append(headers, "Description")
@@ -202,17 +202,17 @@ var CHARACTER_SHEET_PROPERTIES = map[string]*MenuCharacterSheetProperty {
 			// Search for a race matching the string
 			race, err := world.RaceIdFromString(value)
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return
 			}
 
 			player.characterSheet.Race = race
-			*player.inbox <- fmt.Sprintf("You set your character's race to '%s'", world.RACE_DATA[race].Name)
+			player.send(fmt.Sprintf("You set your character's race to '%s'", world.RACE_DATA[race].Name))
 		},
 	},
 	"class": {
 		describe: func (player *Player) {
-			*player.inbox <- "'class' is your character's class. Each class sets your base stats."
+			player.send("'class' is your character's class. Each class sets your base stats.")
 
 			headers := appendStatHeaders([]string{"Name"})
 			headers = append(headers, "Description")
@@ -228,17 +228,17 @@ var CHARACTER_SHEET_PROPERTIES = map[string]*MenuCharacterSheetProperty {
 			// Search for a class matching the string
 			class, err := world.ClassIdFromString(value)
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return
 			}
 
 			player.characterSheet.Class = class
-			*player.inbox <- fmt.Sprintf("You set your character's class to '%s'", world.CLASS_DATA[class].Name)
+			player.send(fmt.Sprintf("You set your character's class to '%s'", world.CLASS_DATA[class].Name))
 		},
 	},
 	"job": {
 		describe: func (player *Player) {
-			*player.inbox <- "'job' is your character's job. Each job modifies your stats and determines which recipes you can craft."
+			player.send("'job' is your character's job. Each job modifies your stats and determines which recipes you can craft.")
 
 			headers := appendStatHeaders([]string{"Name"})
 			headers = append(headers, "Description")
@@ -254,12 +254,12 @@ var CHARACTER_SHEET_PROPERTIES = map[string]*MenuCharacterSheetProperty {
 			// Search for a job matching the string
 			job, err := world.JobIdFromString(value)
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return
 			}
 
 			player.characterSheet.Job = job
-			*player.inbox <- fmt.Sprintf("You set your character's job to '%s'", world.JOB_DATA[job].Name)
+			player.send(fmt.Sprintf("You set your character's job to '%s'", world.JOB_DATA[job].Name))
 		},
 	},
 }

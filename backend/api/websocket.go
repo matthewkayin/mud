@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"strings"
 	"time"
@@ -11,6 +12,8 @@ import (
 )
 
 const SOCKET_WRITE_TIMEOUT = 5 * time.Second
+const SOCKET_PING_INTERVAL = 20 * time.Second
+const SOCKET_PING_TIMEOUT = 10 * time.Second
 
 func (apiState* ApiState) HandleGetWebSocket(writer http.ResponseWriter, request *http.Request) {
 	log.Printf("Invoked /api/websocket")
@@ -41,8 +44,13 @@ func (apiState* ApiState) HandleGetWebSocket(writer http.ResponseWriter, request
 
 	// The game loop owns the inbox and closes it when the player's session ends.
 	// The write loop listens to the inbox it until the inbox is closed by the game loop.
-	inbox := make(chan string, 100)
+	inbox := make(chan game.SocketMessage, 100)
 	go runSocketWriteLoop(connection, inbox, userId)
+
+	// The ping loop stops when the read loop exits
+	pingContext, cancelPing := context.WithCancel(request.Context())
+	defer cancelPing()
+	go runSocketPingLoop(pingContext, connection, userId)
 
 	apiState.gamestate.SocketEvents <- game.SocketEvent {
 		Type: game.SOCKET_EVENT_TYPE_CONNECT,
@@ -75,7 +83,7 @@ func (apiState* ApiState) HandleGetWebSocket(writer http.ResponseWriter, request
 	}
 }
 
-func runSocketWriteLoop(connection *websocket.Conn, inbox chan string, userId int) {
+func runSocketWriteLoop(connection *websocket.Conn, inbox chan game.SocketMessage, userId int) {
 	connectionOpen := true
 
 	// Keep draining the inbox even after the connection fails,
@@ -85,8 +93,14 @@ func runSocketWriteLoop(connection *websocket.Conn, inbox chan string, userId in
 			continue
 		}
 
+		messageJson, err := json.Marshal(message)
+		if err != nil {
+			log.Printf("Warn - Failed to encode message for player %d: %s", userId, err.Error())
+			continue
+		}
+
 		writeContext, cancel := context.WithTimeout(context.Background(), SOCKET_WRITE_TIMEOUT)
-		err := connection.Write(writeContext, websocket.MessageText, []byte(message))
+		err = connection.Write(writeContext, websocket.MessageText, messageJson)
 		cancel()
 		if err != nil {
 			log.Printf("Failed to write to player %d: %s", userId, err.Error())
@@ -99,5 +113,33 @@ func runSocketWriteLoop(connection *websocket.Conn, inbox chan string, userId in
 	// Inbox was closed by the game loop, so the session is over
 	if connectionOpen {
 		connection.Close(websocket.StatusNormalClosure, "session ended")
+	}
+}
+
+// Pings the client so that a dead connection is detected, even if the TCP connection was never closed
+func runSocketPingLoop(ctx context.Context, connection *websocket.Conn, userId int) {
+	ticker := time.NewTicker(SOCKET_PING_INTERVAL)
+	defer ticker.Stop()
+
+	for {
+		select {
+			case <- ctx.Done():
+				return
+			case <- ticker.C:
+				pingContext, cancel := context.WithTimeout(ctx, SOCKET_PING_TIMEOUT)
+				err := connection.Ping(pingContext)
+				cancel()
+				if err != nil {
+					// The ping loop was stopped because the connection already closed
+					if ctx.Err() != nil {
+						return
+					}
+
+					log.Printf("Ping to player %d failed: %s", userId, err.Error())
+					// Closing the connection ends the read loop, which disconnects the player
+					connection.CloseNow()
+					return
+				}
+		}
 	}
 }

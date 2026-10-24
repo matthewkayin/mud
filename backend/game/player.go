@@ -16,7 +16,7 @@ var PLAYER_MENUS []*Menu
 
 type Player struct {
 	id int
-	inbox *chan string
+	inbox *chan SocketMessage
 	menu PlayerMenu
 
 	characterSheet *world.CharacterSheet
@@ -37,7 +37,7 @@ func playerMenusInit() {
 	}
 }
 
-func playerInit(id int, inbox *chan string) Player {
+func playerInit(id int, inbox *chan SocketMessage) Player {
 	return Player {
 		id: id,
 		inbox: inbox,
@@ -49,6 +49,28 @@ func playerInit(id int, inbox *chan string) Player {
 
 func (player *Player) isLoggedIn() bool {
 	return player.character != nil
+}
+
+func (player *Player) send(message string) {
+	*player.inbox <- SocketMessage { Message: &message }
+}
+
+// Sends a message with no text. While the player is in-game, it carries their current status.
+func (player *Player) sendHeartbeat(gamestate *GameState) {
+	heartbeat := SocketMessage { Message: nil }
+	if player.isLoggedIn() {
+		playerMob, mobExists := gamestate.world.Mobs.GetIfExists(player.mobHandle)
+		if mobExists {
+			heartbeat.PlayerStatus = &PlayerStatus {
+				Health: playerMob.Data.Health,
+				MaxHealth: playerMob.Data.MaxHealth(),
+				Mana: playerMob.Data.Mana,
+				MaxMana: playerMob.Data.MaxMana(),
+			}
+		}
+	}
+
+	*player.inbox <- heartbeat
 }
 
 func (player *Player) getMenu() *Menu {
@@ -69,7 +91,7 @@ func playerOnMobDeath(gamestate *GameState, event *world.Event) {
 	}
 
 	player := gamestate.getPlayerById(eventData.PlayerId)
-	*player.inbox <- fmt.Sprintf("Your character %s has died, and death is forever. RIP", player.character.Data.Name)
+	player.send(fmt.Sprintf("Your character %s has died, and death is forever. RIP", player.character.Data.Name))
 
 	gamestate.world.RemoveCharacter(player.character)
 	player.setMenu(gamestate, PLAYER_MENU_LOGIN)

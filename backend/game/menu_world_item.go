@@ -14,7 +14,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 
 			if playerMob.Data.Inventory.Length() == 0 {
-				*player.inbox <- "There is nothing in your inventory."
+				player.send("There is nothing in your inventory.")
 				return true
 			}
 
@@ -43,7 +43,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 
 			printTable(player, "Inventory", inventoryHeaders, inventoryRows)
 
-			*player.inbox <- "\nType 'inspect <item>' to see more details about an item."
+			player.send("\nType 'inspect <item>' to see more details about an item.")
 			return true
 		},
 	},
@@ -70,13 +70,13 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 				itemWords: args,
 			})
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return true
 			}
 			if result.notice != "" {
-				*player.inbox <- result.notice
+				player.send(result.notice)
 			}
-			*player.inbox <- fmt.Sprintf("You dropped <g>%s</g>.", result.item.GetNameWithAmount())
+			player.send(fmt.Sprintf("You dropped <g>%s</g>.", result.item.GetNameWithAmount()))
 
 			return true
 		},
@@ -98,7 +98,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 			// Find target inventory
 			targetInventory, chestName, err := fuzzyFindChestInventory(room, chestWords)
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return true
 			}
 
@@ -118,13 +118,13 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 				itemWords: itemWords,
 			})
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return true
 			}
 			if result.notice != "" {
-				*player.inbox <- result.notice
+				player.send(result.notice)
 			}
-			*player.inbox <- fmt.Sprintf("You put <g>%s</g> into %s.", result.item.GetNameWithAmount(), chestName)
+			player.send(fmt.Sprintf("You put <g>%s</g> into %s.", result.item.GetNameWithAmount(), chestName))
 
 			return true
 		},
@@ -143,7 +143,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 			// Find target
 			targetHandle, err := fuzzyFindTarget(gamestate, player, targetWords)
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return true
 			}
 
@@ -151,7 +151,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 			// This makes me think we should drop the "give" command entirely, but it's used for troll behavior
 			targetMob := gamestate.world.Mobs.Get(targetHandle)
 			if targetMob.PlayerCharacter != nil {
-				*player.inbox <- fmt.Sprintf("You cannot give items to %s because they are a player. Request to 'trade' with them instead.", targetMob.Data.Name)
+				player.send(fmt.Sprintf("You cannot give items to %s because they are a player. Request to 'trade' with them instead.", targetMob.Data.Name))
 				return true
 			}
 
@@ -172,11 +172,11 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 				itemWords: itemWords,
 			})
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return true
 			}
 			if result.notice != "" {
-				*player.inbox <- result.notice
+				player.send(result.notice)
 			}
 			gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("<y>%s</y> gave <g>%s</g> to <y>%s</y>.",
 				playerMob.Data.Name, result.item.GetNameWithAmount(), targetMob.Data.Name))
@@ -216,7 +216,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 				var err error
 				targetInventory, chestName, err = fuzzyFindChestInventory(playerRoom, chestWords)
 				if err != nil {
-					*player.inbox <- err.Error()
+					player.send(err.Error())
 					return true
 				}
 			}
@@ -237,13 +237,13 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 				itemWords: itemWords,
 			})
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return true
 			}
 			if result.notice != "" {
-				*player.inbox <- result.notice
+				player.send(result.notice)
 			}
-			*player.inbox <- fmt.Sprintf("You took <g>%s</g> from %s.", result.item.GetNameWithAmount(), chestName)
+			player.send(fmt.Sprintf("You took <g>%s</g> from %s.", result.item.GetNameWithAmount(), chestName))
 
 			return true
 		},
@@ -259,17 +259,17 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 
 			targetInventory, chestName, err := fuzzyFindChestInventory(playerRoom, args)
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return true
 			}
 
 			if len(targetInventory.Items) == 0 {
-				*player.inbox <- fmt.Sprintf("%s is empty.", chestName)
+				player.send(fmt.Sprintf("%s is empty.", chestName))
 				return true
 			}
 
 			if !playerMob.Data.Inventory.HasSpaceFor(targetInventory.Size(), playerMob.InventoryCapacity()) {
-				*player.inbox <- "You don't have enough space in your inventory for all that."
+				player.send("You don't have enough space in your inventory for all that.")
 				return true
 			}
 
@@ -280,7 +280,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 				playerMob.Data.Inventory.AddItem(item)
 				itemNames = append(itemNames, fmt.Sprintf("<g>%s</g>", item.GetNameWithAmount()))
 			}
-			*player.inbox <- fmt.Sprintf("You got %s.", util.CombineNames(itemNames))
+			player.send(fmt.Sprintf("You got %s.", util.CombineNames(itemNames)))
 
 			return true
 		},
