@@ -24,15 +24,16 @@ Players with the `Unlock` ability (granted by the Thief class) can deactivate an
 
 NPCs can also block exits, for example a troll guarding a bridge or a boss guarding a door. Blocking is separate from locks: it belongs to the NPC (`Npc.isBlockingExit`), not to the room, so unlocking a room never removes a block. NPC scripts set it with `world.npc_set_blocking_exit(self, direction, blocking)` (see [NPC state](npcs.md#npc-state)).
 
-`room.GetExitBlockingNpc(world, direction)` finds an NPC occupant that is blocking the exit. A block is checked only while its mob is in the room. It ends when the mob dies, and the NPC's blocked exits are cleared before the next spawn calls `init`. Room resets don't affect it.
+`room.GetExitBlockingNpc(world, direction)` finds an NPC occupant that is blocking the exit. A block is checked only while its mob is in the room. It ends when the mob dies, and the NPC's blocked exits are cleared before the next spawn calls `init`. Cleanup doesn't affect it.
 
 Players moving through an exit are stopped by a lock ("The north exit is locked.") before an NPC block ("Troll is blocking the way north."). Wandering NPCs avoid both locked and blocked exits.
 
-## Resets
+## Replenishing and cleanup
 
-Every `WORLD_RESET_INTERVAL` the world marks every room to reset. A room resets on the first update when it has no players in it. A reset:
+Room items come back in two ways. Both refill the floor inventory from the room's drop table and each chest from its own drop table. Corpses (`CHEST_TYPE_CORPSE`) have no drop table to refill from. They decay on their own timer (`CHEST_CORPOSE_DECAY_DURATION`).
 
-- removes corpses
-- refills the floor inventory from the room's drop table and each chest from its own drop table
+**Replenishing** gives quests and gatherers a steady supply. Every `WORLD_REPLENISH_INTERVAL` (5 minutes), `World.Update` calls `room.replenish()` on every room, even rooms with players in them. `DropTable.replenish(inventory)` rolls the drop table and adds each rolled item only up to the amount the inventory is missing. For example, if the roll is 5 apples and the floor has 3, it adds 2. It never removes anything, so items that players drop or leave in a chest are safe.
 
-Resets don't affect locks or NPCs. Locks come back on their own timers (see [Locks](#locks)), and NPCs respawn on a timer that starts when their mob dies (see [NPC](npcs.md)).
+**Cleanup** clears out items players have left behind. `room.updateCleanup(world)` holds the room's `cleanupTimer` at `ROOM_CLEANUP_DURATION` (1 minute) while players are in the room, and counts it down once they leave. When it reaches 0, `room.cleanUp()` removes corpses and replaces the floor and chest inventories with fresh rolls. The timer stays at 0 until a player visits again, so an empty room is cleaned up only once each time players leave. `WorldInit` cleans up every room, so the world starts freshly rolled.
+
+Locks and NPCs aren't affected by either one. Locks come back on their own timers (see [Locks](#locks)), and NPCs respawn on a timer that starts when their mob dies (see [NPC](npcs.md)).

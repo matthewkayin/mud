@@ -13,7 +13,7 @@ const WORLD_JSON_PATH = WORLD_DATA_FOLDER + "/world.json"
 
 const WORLD_SECONDS_PER_UPDATE = 3
 const WORLD_MAX_ROOMS int = 1024
-const WORLD_RESET_INTERVAL = (60 * 60) / WORLD_SECONDS_PER_UPDATE
+const WORLD_REPLENISH_INTERVAL int32 = (1 * 60) / WORLD_SECONDS_PER_UPDATE
 
 // `json:"-"` tells the JSON parser to ignore those fields
 
@@ -30,7 +30,7 @@ type World struct {
 	Rooms []Room
 	Npcs []Npc
 
-	resetTimer int
+	replenishTimer int32
 
 	// True while a script function called by scriptCall is running
 	scriptIsRunning bool
@@ -122,14 +122,13 @@ func (world *World) getMobLuaHandle(handle MobHandle) (lua.Value, error) {
 }
 
 func (world *World) Update() {
-	// Reset timer
-	world.resetTimer--
-	if world.resetTimer <= 0 {
+	// Replenish room items
+	world.replenishTimer--
+	if world.replenishTimer <= 0 {
 		for index := range len(world.Rooms) {
-			world.Rooms[index].shouldReset = true
+			world.Rooms[index].replenish()
 		}
-		world.resetTimer = WORLD_RESET_INTERVAL
-		log.Printf("World reset issued.")
+		world.replenishTimer = WORLD_REPLENISH_INTERVAL
 	}
 
 	// Npc updates
@@ -146,15 +145,13 @@ func (world *World) Update() {
 func (world *World) updateRoom(roomIndex int) {
 	room := &world.Rooms[roomIndex]
 
-	// Reset
-	if room.shouldReset && room.canReset(world) {
-		room.reset()
-	}
+	// Cleanup
+	room.updateCleanup(world)
 
 	// Relock unlocked locks
 	room.updateLocks()
 
-	// Chest / Corpse decay
+	// Corpse decay
 	room.updateChests()
 
 	// Occupant update / combat

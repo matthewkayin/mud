@@ -103,3 +103,18 @@ func (table *DropTable) getLoot() Inventory {
 
 	return inventory
 }
+
+// Rolls the drop table and adds each rolled item to the inventory, but only as much of it as the
+// inventory is missing. Never removes anything, so items that players left behind are safe.
+func (table *DropTable) replenish(inventory *Inventory) {
+	loot := table.getLoot()
+	for _, lootItem := range loot.Items {
+		missingAmount := loot.AmountOf(lootItem.Id) - inventory.AmountOf(lootItem.Id)
+		if missingAmount <= 0 {
+			continue
+		}
+
+		lootItem.Amount = min(lootItem.Amount, missingAmount)
+		inventory.AddItem(lootItem)
+	}
+}
