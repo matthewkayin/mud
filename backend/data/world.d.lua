@@ -228,7 +228,6 @@ function world.mob_find_inventory_item(handle, item_name) end
 ---@param target_handle MobHandle
 function world.mob_full_heal(target_handle) end
 
-
 --- Returns the number of conditions the mob has
 ---
 ---@param mob MobHandle
@@ -405,6 +404,7 @@ function world.mob_remove_inventory_item(handle, index, amount) end
 ---@param handle Mobhandle
 ---@param index integer
 function world.mob_repair_item(handle, index) end
+
 --- Returns true if the two mobs are allies
 ---
 ---@param handleA MobHandle
@@ -440,7 +440,7 @@ function world.npc_is_blocking_exit(handle, direction) end
 
 --- Sets whether the NPC is blocking its room's exit in the specified direction.
 --- While blocking, players and other mobs can't leave the NPC's room through that exit.
---- The block ends when the NPC's mob dies or despawns.
+--- The block ends when the NPC's mob dies.
 ---
 ---@param handle MobHandle
 ---@param direction Direction
@@ -512,7 +512,7 @@ function world.room_get_occupant_count(room) end
 function world.room_is_exit_locked(room, direction) end
 
 --- Activates or deactivates the room's lock on its exit in the specified direction.
---- Only affects this room, since locks are one-directional. The lock becomes active again when the room resets.
+--- Only affects this room, since locks are one-directional. A deactivated lock becomes active again after 5 minutes.
 ---
 ---@param room integer
 ---@param direction Direction

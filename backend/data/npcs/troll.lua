@@ -9,6 +9,7 @@ npc.description = "A hairy beast with a large nose and a pallid complexion tower
 
 npc.experience_worth = 200
 npc.experience_worth_scaling = 25
+npc.respawn_duration = world.time_minutes(1)
 
 npc.stats = { VIT = 6, STR = 8, AGI = 4, INT = 2, FTH = 2 }
 npc.scaling = { VIT = 6, STR = 8, AGI = 4, INT = 2, FTH = 2 }

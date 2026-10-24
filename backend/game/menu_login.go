@@ -8,8 +8,8 @@ import (
 
 var MENU_LOGIN = Menu {
 	onEnter: func(gamestate *GameState, player *Player) {
-		*player.inbox <- "You are in the login screen."
-		*player.inbox <- "Type 'help' to see a list of options."
+		player.send("You are in the login screen.")
+		player.send("Type 'help' to see a list of options.")
 	},
 	onExit: func(gamestate *GameState, player *Player) {
 	},
@@ -20,18 +20,18 @@ var MENU_LOGIN = Menu {
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
 				characterList, characterListExists := gamestate.world.PlayerCharacters[player.id]
 				if !characterListExists || len(characterList) == 0 {
-					*player.inbox <- "You don't have any characters. Type 'create' to make a new one."
+					player.send("You don't have any characters. Type 'create' to make a new one.")
 					return true
 				}
 
 				for _, characterName := range characterList {
 					character, _ := gamestate.world.GetCharacterIfExists(characterName)
-					*player.inbox <- fmt.Sprintf("%s - Level %d %s %s %s",
+					player.send(fmt.Sprintf("%s - Level %d %s %s %s",
 						characterName,
 						character.Data.Level,
 						world.RACE_DATA[character.Race].Name,
 						world.CLASS_DATA[character.Class].Name,
-						world.JOB_DATA[character.Job].Name)
+						world.JOB_DATA[character.Job].Name))
 				}
 
 				return true
@@ -51,14 +51,14 @@ var MENU_LOGIN = Menu {
 				argsJoined := strings.Join(args, " ")
 				nameInput, raceClassInput, commaFound := strings.Cut(argsJoined, ",")
 				if !commaFound {
-					*player.inbox <- "Invalid usage. You must include a comma. Example: 'create Bufo the Wise, Gremlin Wizard Alchemist'"
+					player.send("Invalid usage. You must include a comma. Example: 'create Bufo the Wise, Gremlin Wizard Alchemist'")
 					return true
 				}
 
 				// Get name from input and validate name
 				name, err := world.CharacterNameValidate(gamestate.world, nameInput)
 				if err != nil {
-					*player.inbox <- err.Error()
+					player.send(err.Error())
 					return true
 				}
 
@@ -71,21 +71,21 @@ var MENU_LOGIN = Menu {
 				// Get race from input
 				race, err := world.RaceIdFromString(raceClassJobArgs[0])
 				if err != nil {
-					*player.inbox <- err.Error()
+					player.send(err.Error())
 					return true
 				}
 
 				// Get class from input
 				class, err := world.ClassIdFromString(raceClassJobArgs[1])
 				if err != nil {
-					*player.inbox <- err.Error()
+					player.send(err.Error())
 					return true
 				}
 
 				//get job from input
 				job, err := world.JobIdFromString(raceClassJobArgs[2])
 				if err != nil {
-					*player.inbox <- err.Error()
+					player.send(err.Error())
 					return true
 				}
 
@@ -97,7 +97,7 @@ var MENU_LOGIN = Menu {
 					Job: job,
 				})
 
-				*player.inbox <- fmt.Sprintf("Your character has been created! Type 'login %s' to login to them.", name)
+				player.send(fmt.Sprintf("Your character has been created! Type 'login %s' to login to them.", name))
 
 				return true
 			},
@@ -115,12 +115,12 @@ var MENU_LOGIN = Menu {
 
 				character, characterExists := gamestate.world.GetCharacterIfExists(nameInput)
 				if !characterExists {
-					*player.inbox <- fmt.Sprintf("A character named '%s' does not exist.", nameInput)
+					player.send(fmt.Sprintf("A character named '%s' does not exist.", nameInput))
 					return true
 				}
 
 				if character.PlayerId != player.id {
-					*player.inbox <- fmt.Sprintf("'%s' is not a character that you own.", nameInput)
+					player.send(fmt.Sprintf("'%s' is not a character that you own.", nameInput))
 					return true
 				}
 

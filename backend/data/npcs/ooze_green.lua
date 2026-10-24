@@ -6,6 +6,7 @@ npc.description = "You see a bizarre, green mass of goop that wants absorb you. 
 
 npc.experience_worth = 100
 npc.experience_worth_scaling = 25
+npc.respawn_duration = world.time_minutes(1)
 
 npc.stats = { VIT = 2, STR = 6, AGI = 1, INT = 1, FTH = 8 }
 npc.scaling = { VIT = 2, STR = 6, AGI = 1, INT = 1, FTH = 8 }

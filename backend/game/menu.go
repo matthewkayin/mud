@@ -37,7 +37,7 @@ func (menu *Menu) handleCommand(gamestate *GameState, player *Player, command st
 
 	// If the entry does not exist, send them an error mesage
 	if !entryExists {
-		*player.inbox <- fmt.Sprintf("%s is not a legal action.", verb)
+		player.send(fmt.Sprintf("%s is not a legal action.", verb))
 		return
 	}
 
@@ -46,8 +46,8 @@ func (menu *Menu) handleCommand(gamestate *GameState, player *Player, command st
 
 	// If not executed successfully, print usage back to user
 	if !executedSuccessfully {
-		*player.inbox <- "Your command was invalid."
-		*player.inbox <- fmt.Sprintf("Usage: %s", entry.usage)
+		player.send("Your command was invalid.")
+		player.send(fmt.Sprintf("Usage: %s", entry.usage))
 	}
 }
 
@@ -57,19 +57,19 @@ func (menu *Menu) handleHelpCommand(player *Player, args []string) {
 		// Lookup the command in the registry
 		entry, entryExists := menu.entries[args[0]]
 		if !entryExists {
-			*player.inbox <- fmt.Sprintf("Cannot provide help because %s is not a known command.", args[0])
+			player.send(fmt.Sprintf("Cannot provide help because %s is not a known command.", args[0]))
 			return
 		}
 
 		// Send the help info to the user
-		*player.inbox <- fmt.Sprintf("%s - %s", entry.usage, entry.description)
+		player.send(fmt.Sprintf("%s - %s", entry.usage, entry.description))
 		return
 	}
 
 	// Print help about all commands in this menu
-	*player.inbox <- "Commands:"
+	player.send("Commands:")
 	for _, entry := range menu.entries {
-		*player.inbox <- fmt.Sprintf("\t%s - %s", entry.usage, entry.description)
+		player.send(fmt.Sprintf("\t%s - %s", entry.usage, entry.description))
 	}
 }
 

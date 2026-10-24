@@ -29,7 +29,7 @@ var MENU_WORLD_ENTRIES_EQUIP = map[string]MenuEntry {
 			// Check if they are in combat
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			if playerMob.IsInCombat(gamestate.world) {
-				*player.inbox <- "You cannot equip items while you are in combat."
+				player.send("You cannot equip items while you are in combat.")
 				return true
 			}
 
@@ -38,7 +38,7 @@ var MENU_WORLD_ENTRIES_EQUIP = map[string]MenuEntry {
 			// Determine the item
 			itemIndex, err := fuzzyFindInventoryItem(&playerMob.Data.Inventory, "your inventory", itemWords)
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return true
 			}
 			item := &playerMob.Data.Inventory.Items[itemIndex]
@@ -48,25 +48,25 @@ var MENU_WORLD_ENTRIES_EQUIP = map[string]MenuEntry {
 			var slot world.EquipmentSlot
 			if userSpecifiedSlot {
 				if len(slotWords) == 0 {
-					*player.inbox <- "When specifying 'in' you must also specify a slot."
+					player.send("When specifying 'in' you must also specify a slot.")
 					return false
 				}
 
 				slot, err = fuzzyFindEquipmentSlot(slotWords)
 				if err != nil {
-					*player.inbox <- err.Error()
+					player.send(err.Error())
 					return true
 				}
 			} else {
 				if itemData.ItemIsOneHanded() {
-					*player.inbox <- fmt.Sprintf("%s is a one-handed item. You must specify whether to equip it to 'main hand' hand or 'off hand'.", item.GetNameWithCondition())
+					player.send(fmt.Sprintf("%s is a one-handed item. You must specify whether to equip it to 'main hand' hand or 'off hand'.", item.GetNameWithCondition()))
 					return false
 				}
 
 				var slotFound bool
 				slot, slotFound = world.EquipmentSlotForItemKind(itemData.Kind)
 				if !slotFound {
-					*player.inbox <- fmt.Sprintf("%s cannot be equipped.", item.GetNameWithCondition())
+					player.send(fmt.Sprintf("%s cannot be equipped.", item.GetNameWithCondition()))
 					return true
 				}
 			}
@@ -74,12 +74,12 @@ var MENU_WORLD_ENTRIES_EQUIP = map[string]MenuEntry {
 			// Try to equip item
 			equippedItem, messages, err := playerMob.EquipFromInventory(itemIndex, slot)
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return true
 			}
-			*player.inbox <- fmt.Sprintf("You equipped <g>%s</g>.", equippedItem.GetNameWithCondition())
+			player.send(fmt.Sprintf("You equipped <g>%s</g>.", equippedItem.GetNameWithCondition()))
 			for _, message := range messages {
-				*player.inbox <- message
+				player.send(message)
 			}
 
 			return true
@@ -97,7 +97,7 @@ var MENU_WORLD_ENTRIES_EQUIP = map[string]MenuEntry {
 			// Check if they are in combat
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			if playerMob.IsInCombat(gamestate.world) {
-				*player.inbox <- "You cannot remove items while you are in combat."
+				player.send("You cannot remove items while you are in combat.")
 				return true
 			}
 
@@ -106,11 +106,11 @@ var MENU_WORLD_ENTRIES_EQUIP = map[string]MenuEntry {
 			var slot world.EquipmentSlot
 			if userSpecifiedSlot {
 				if len(itemWords) != 0 {
-					*player.inbox <- "When specifying 'from', you should not specify an item."
+					player.send("When specifying 'from', you should not specify an item.")
 					return false
 				}
 				if len(slotWords) == 0 {
-					*player.inbox <- "When specifying 'from', you must also specify a slot."
+					player.send("When specifying 'from', you must also specify a slot.")
 					return false
 				}
 
@@ -118,7 +118,7 @@ var MENU_WORLD_ENTRIES_EQUIP = map[string]MenuEntry {
 				var err error
 				slot, err = fuzzyFindEquipmentSlot(slotWords)
 				if err != nil {
-					*player.inbox <- err.Error()
+					player.send(err.Error())
 					return true
 				}
 			} else {
@@ -126,7 +126,7 @@ var MENU_WORLD_ENTRIES_EQUIP = map[string]MenuEntry {
 				var err error
 				slot, err = fuzzyFindEquipmentSlotByItem(&playerMob.Data.Equipment, itemWords)
 				if err != nil {
-					*player.inbox <- err.Error()
+					player.send(err.Error())
 					return true
 				}
 			}
@@ -134,12 +134,12 @@ var MENU_WORLD_ENTRIES_EQUIP = map[string]MenuEntry {
 			// Unequip the item
 			item, messages, err := playerMob.UnequipToInventory(slot)
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return true
 			}
-			*player.inbox <- fmt.Sprintf("You unequipped <g>%s</g>.", item.GetNameWithCondition())
+			player.send(fmt.Sprintf("You unequipped <g>%s</g>.", item.GetNameWithCondition()))
 			for _, message := range messages {
-				*player.inbox <- message
+				player.send(message)
 			}
 
 			return true

@@ -30,6 +30,7 @@ type NpcData struct {
 	description string
 	experienceWorth int32
 	experienceWorthScaling int32
+	respawnDuration int32
 	stats StatBlock
 	scaling StatBlock
 	equipment Equipment
@@ -128,6 +129,9 @@ func (parser *ScriptParser) parseNpc(table *lua.Table) *NpcData {
 
 	npcData.experienceWorthScaling = parser.getInt32(table, "experience_worth_scaling")
 	parser.checkInt32NonNegative(npcData.experienceWorthScaling, "experience_worth_scaling")
+
+	npcData.respawnDuration = parser.getInt32(table, "respawn_duration")
+	parser.checkInt32Positive(npcData.respawnDuration, "respawn_duration")
 
 	npcData.stats = parser.getStatBlock(table, "stats", false)
 	npcData.scaling = parser.getStatBlock(table, "scaling", false)

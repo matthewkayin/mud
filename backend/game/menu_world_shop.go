@@ -25,20 +25,20 @@ var MENU_WORLD_ENTRIES_SHOP = map[string]MenuEntry {
 			// Fuzzy find target
 			targetHandle, err := fuzzyFindTarget(gamestate, player, targetWords)
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return true
 			}
 
 			// Check that the target is an NPC
 			targetMob := gamestate.world.Mobs.Get(targetHandle)
 			if targetMob.IsPlayer() {
-				*player.inbox <- fmt.Sprintf("You cannot buy from %s because they are a player. Use the 'trade' command instead.", targetMob.Data.Name)
+				player.send(fmt.Sprintf("You cannot buy from %s because they are a player. Use the 'trade' command instead.", targetMob.Data.Name))
 				return true
 			}
 
 			// Check that the target is a merchant
 			if !targetMob.Npc.IsMerchant() {
-				*player.inbox <- fmt.Sprintf("%s is not a merchant.", targetMob.Data.Name)
+				player.send(fmt.Sprintf("%s is not a merchant.", targetMob.Data.Name))
 				return true
 			}
 
@@ -83,7 +83,7 @@ var MENU_WORLD_ENTRIES_SHOP = map[string]MenuEntry {
 			// Fuzzy find item to buy
 			itemId, err := fuzzyFindWare(targetMob.Npc.GetWares(), targetMob.Data.Name, itemWords)
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return true
 			}
 
@@ -95,14 +95,14 @@ var MENU_WORLD_ENTRIES_SHOP = map[string]MenuEntry {
 			itemCost := itemData.Price * int32(buyAmount)
 
 			if playerGoldAmount < itemCost {
-				*player.inbox <- "You don't have enough gold for that."
+				player.send("You don't have enough gold for that.")
 				return true
 			}
 
 			// Check that the player has enough space in their inventory
 			itemSize := itemData.Size * int32(buyAmount)
 			if !playerMob.Data.Inventory.HasSpaceFor(itemSize, world.INVENTORY_CAPACITY_PLAYER) {
-				*player.inbox <- "You don't have enough space in your inventory for that."
+				player.send("You don't have enough space in your inventory for that.")
 				return true
 			}
 
@@ -126,7 +126,7 @@ var MENU_WORLD_ENTRIES_SHOP = map[string]MenuEntry {
 			goldIndex, _ := playerMob.Data.Inventory.FindItem(world.ITEM_GOLD)
 			playerMob.Data.Inventory.RemoveItems(goldIndex, itemCost)
 
-			*player.inbox <- fmt.Sprintf("You bought <g>%d %s</g>.", buyAmount, itemData.Name)
+			player.send(fmt.Sprintf("You bought <g>%d %s</g>.", buyAmount, itemData.Name))
 
 			return true
 		},
@@ -149,20 +149,20 @@ var MENU_WORLD_ENTRIES_SHOP = map[string]MenuEntry {
 			// Fuzzy find target
 			targetHandle, err := fuzzyFindTarget(gamestate, player, targetWords)
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return true
 			}
 
 			// Check that the target is an NPC
 			targetMob := gamestate.world.Mobs.Get(targetHandle)
 			if targetMob.IsPlayer() {
-				*player.inbox <- fmt.Sprintf("You cannot sell from %s because they are a player. Use the 'trade' command instead.", targetMob.Data.Name)
+				player.send(fmt.Sprintf("You cannot sell from %s because they are a player. Use the 'trade' command instead.", targetMob.Data.Name))
 				return true
 			}
 
 			// Check that the target is a merchant
 			if !targetMob.Npc.IsMerchant() {
-				*player.inbox <- fmt.Sprintf("%s is not a merchant.", targetMob.Data.Name)
+				player.send(fmt.Sprintf("%s is not a merchant.", targetMob.Data.Name))
 				return true
 			}
 
@@ -171,7 +171,7 @@ var MENU_WORLD_ENTRIES_SHOP = map[string]MenuEntry {
 				// Check that the player has something to sell
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 				if playerMob.Data.Inventory.Length() == 0 {
-					*player.inbox <- "You have nothing to sell."
+					player.send("You have nothing to sell.")
 					return true
 				}
 
@@ -219,14 +219,14 @@ var MENU_WORLD_ENTRIES_SHOP = map[string]MenuEntry {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			itemIndex, err := fuzzyFindInventoryItem(&playerMob.Data.Inventory, "your inventory", itemWords)
 			if err != nil {
-				*player.inbox <- err.Error()
+				player.send(err.Error())
 				return true
 			}
 
 			// Check that they are not selling gold
 			item := &playerMob.Data.Inventory.Items[itemIndex]
 			if item.Id == world.ITEM_GOLD {
-				*player.inbox <- "You can't sell Gold."
+				player.send("You can't sell Gold.")
 				return true
 			}
 
@@ -234,7 +234,7 @@ var MENU_WORLD_ENTRIES_SHOP = map[string]MenuEntry {
 			itemData := world.ITEM_DATA[item.Id]
 			heldAmount := playerMob.Data.Inventory.AmountOf(item.Id)
 			if heldAmount < int32(sellAmount) {
-				*player.inbox <- fmt.Sprintf("You only have %d %s.", heldAmount, itemData.Name)
+				player.send(fmt.Sprintf("You only have %d %s.", heldAmount, itemData.Name))
 				return true
 			}
 
@@ -263,7 +263,7 @@ var MENU_WORLD_ENTRIES_SHOP = map[string]MenuEntry {
 				Amount: sellProfit,
 			})
 
-			*player.inbox <- fmt.Sprintf("You got %d gold.", sellProfit)
+			player.send(fmt.Sprintf("You got %d gold.", sellProfit))
 
 			return true
 		},

@@ -51,7 +51,7 @@ var MENU_GOD = Menu {
 						}
 
 						if gamestate.serverMode != SERVER_MODE_SHUTDOWN_SCHEDULED {
-							*player.inbox <- "No shutdown is scheduled."
+							player.send("No shutdown is scheduled.")
 							return true
 						}
 
@@ -65,12 +65,12 @@ var MENU_GOD = Menu {
 						}
 
 						if gamestate.serverMode != SERVER_MODE_SHUTDOWN_SCHEDULED {
-							*player.inbox <- "No shutdown is scheduled."
+							player.send("No shutdown is scheduled.")
 							return true
 						}
 
 						secondsLeft := gamestate.shutdownTimer * world.WORLD_SECONDS_PER_UPDATE
-						*player.inbox <- fmt.Sprintf("The server will shut down in %dm %ds.", secondsLeft / 60, secondsLeft % 60)
+						player.send(fmt.Sprintf("The server will shut down in %dm %ds.", secondsLeft / 60, secondsLeft % 60))
 						return true
 					}
 

@@ -81,6 +81,8 @@ func primeTestData() {
 		TEST_NPC_GOBLIN: {
 			Id: "goblin",
 			Name: "Goblin",
+			respawnDuration: 5,
+			equipment: EquipmentInitEmpty(),
 			MovementType: NPC_MOVEMENT_TYPE_WANDER,
 			BehaviorParams: map[string]NpcBehaviorParamType{},
 		},

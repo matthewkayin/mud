@@ -8,6 +8,7 @@ npc.description = "This Hill Giant is known to the local townspeople, who regard
 
 npc.experience_worth = 100
 npc.experience_worth_scaling = 25
+npc.respawn_duration = world.time_minutes(1)
 
 npc.stats = { VIT = 6, STR = 8, AGI = 4, INT = 2, FTH = 2 }
 npc.scaling = { VIT = 6, STR = 8, AGI = 4, INT = 2, FTH = 2 }

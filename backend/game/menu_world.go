@@ -36,7 +36,7 @@ var MENU_WORLD = Menu {
 		playerRoom.AddOccupant(gamestate.world, player.mobHandle)
 
 		// Enter world menu
-		*player.inbox <- fmt.Sprintf("You have logged in. Welcome, %s.", player.character.Data.Name)
+		player.send(fmt.Sprintf("You have logged in. Welcome, %s.", player.character.Data.Name))
 		room := &gamestate.world.Rooms[player.character.Data.Room]
 		describeRoomToPlayer(gamestate, player, room)
 	},
@@ -96,14 +96,14 @@ var MENU_WORLD_ENTRIES_GENERAL = map[string]MenuEntry {
 				names = append(names, fmt.Sprintf("<y>%s</y>", gamestate.players[index].character.Data.Name))
 			}
 
-			*player.inbox <- fmt.Sprintf("The players in the world are: %s.", util.CombineNames(names))
+			player.send(fmt.Sprintf("The players in the world are: %s.", util.CombineNames(names)))
 			return true
 		},
 	},
 }
 
 func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room) {
-	*player.inbox <- room.Description
+	player.send(room.Description)
 
 	// Chests
 	if len(room.Chests) > 0 {
@@ -113,7 +113,7 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 			chestNames = append(chestNames, chest.Name)
 		}
 
-		*player.inbox <- fmt.Sprintf("In this room is %s", util.CombineNames(chestNames))
+		player.send(fmt.Sprintf("In this room is %s", util.CombineNames(chestNames)))
 	}
 
 	// Exits
@@ -130,11 +130,11 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 			roomName = gamestate.world.Rooms[room.Exits[direction]].Name
 		}
 
-		*player.inbox <- fmt.Sprintf("To the %s is %s.", direction.String(), roomName)
+		player.send(fmt.Sprintf("To the %s is %s.", direction.String(), roomName))
 		exitFound = true
 	}
 	if !exitFound {
-		*player.inbox <- "This room has no exits!"
+		player.send("This room has no exits!")
 	}
 
 	// Send the list of players in the room
@@ -173,7 +173,7 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 				hiddenString = ", but they don't see you."
 			}
 
-			*player.inbox <- fmt.Sprintf("%s %s here%s", otherPlayersStr, isString, hiddenString)
+			player.send(fmt.Sprintf("%s %s here%s", otherPlayersStr, isString, hiddenString))
 		}
 	}
 
@@ -189,7 +189,7 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 		if mob.Npc != nil {
 			msg, urgent := mob.Npc.GetStatusDescription(gamestate.world)
 			if urgent {
-				*player.inbox <- msg
+				player.send(msg)
 			}
 		}
 	}
@@ -244,9 +244,9 @@ func printMobEquipmentList(player *Player, mob *world.Mob) {
 }
 
 func printMobHp(player *Player, mob *world.Mob) {
-	*player.inbox <- fmt.Sprintf("<y>%s</y>:", mob.Data.Name)
-	*player.inbox <- fmt.Sprintf("HP: %d / %d", mob.Data.Health, mob.Data.MaxHealth())
-	*player.inbox <- fmt.Sprintf("MP: %d / %d", mob.Data.Mana, mob.Data.MaxMana())
+	player.send(fmt.Sprintf("<y>%s</y>:", mob.Data.Name))
+	player.send(fmt.Sprintf("HP: %d / %d", mob.Data.Health, mob.Data.MaxHealth()))
+	player.send(fmt.Sprintf("MP: %d / %d", mob.Data.Mana, mob.Data.MaxMana()))
 }
 
 func findTarget(gamestate *GameState, player *Player, params FindTargetParams) (world.MobTarget, error) {

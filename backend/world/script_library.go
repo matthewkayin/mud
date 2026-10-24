@@ -740,7 +740,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 
 	// Sets whether the NPC is blocking its room's exit in the specified direction.
 	// While blocking, players and other mobs can't leave the NPC's room through that exit.
-	// The block ends when the NPC's mob dies or despawns.
+	// The block ends when the NPC's mob dies.
 	//
 	// @param handle MobHandle
 	// @param direction Direction
@@ -940,7 +940,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	},
 
 	// Activates or deactivates the room's lock on its exit in the specified direction.
-	// Only affects this room, since locks are one-directional. The lock becomes active again when the room resets.
+	// Only affects this room, since locks are one-directional. A deactivated lock becomes active again after 5 minutes.
 	//
 	// @param room integer
 	// @param direction Direction
@@ -959,7 +959,11 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 			frame.ThrowArgError(0, fmt.Sprintf("Room %d (%s) has no lock on its %s exit.", roomIndex, room.Name, direction.String()))
 		}
 
-		lock.IsActive = locked
+		if locked {
+			lock.Relock()
+		} else {
+			lock.Unlock()
+		}
 		return frame.Return()
 	},
 }

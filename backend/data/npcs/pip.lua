@@ -6,6 +6,7 @@ npc.description = "A pot-bellied goblin is making pathetic attempts to clamber u
 
 npc.experience_worth = 1
 npc.experience_worth_scaling = 1
+npc.respawn_duration = world.time_minutes(1)
 
 npc.stats = { VIT = 6, STR = 8, AGI = 4, INT = 2, FTH = 2 }
 npc.scaling = { VIT = 6, STR = 8, AGI = 4, INT = 2, FTH = 2 }
