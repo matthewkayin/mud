@@ -416,7 +416,7 @@ func (kind ItemKind) String() string {
 		case ITEM_KIND_EQUIPMENT_ONE_HANDED:
 			return "One-Handed Weapon"
 		case ITEM_KIND_EQUIPMENT_TWO_HANDED:
-			return "Two-handed Weapon"
+			return "Two-Handed Weapon"
 		case ITEM_KIND_EQUIPMENT_SHIELD:
 			return "Shield"
 		case ITEM_KIND_EQUIPMENT_OUTFIT:
