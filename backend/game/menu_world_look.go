@@ -350,6 +350,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				},
 				{
 					"Deflection", fmt.Sprintf("%d", playerMob.Data.Deflection()),
+					"Damage Resistance", fmt.Sprintf("%d", playerMob.Data.Deflection()),
 					"Stealth Penalty", fmt.Sprintf("%.2f", playerMob.GetStealthPenalty()),
 				},
 			}

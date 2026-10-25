@@ -370,6 +370,7 @@ func (npc *Npc) spawnMob(world *World) {
 		BaseDamage: npcData.baseDamage,
 		BaseArmorPenetration: npcData.baseArmorPenetration,
 		BaseDeflection: npcData.baseDeflection,
+		BaseDamageResistance: npcData.baseDamageResistance,
 
 		Spells: []SpellId {},
 		Inventory: dropTable.getLoot(),

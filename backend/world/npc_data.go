@@ -37,6 +37,7 @@ type NpcData struct {
 	baseDamage int32
 	baseArmorPenetration int32
 	baseDeflection int32
+	baseDamageResistance int32
 
 	equipment Equipment
 	infusion ItemInfusion
@@ -143,6 +144,7 @@ func (parser *ScriptParser) parseNpc(table *lua.Table) *NpcData {
 	npcData.baseDamage = parser.getInt32(table, "damage")
 	npcData.baseArmorPenetration = parser.getInt32(table, "armor_penetration")
 	npcData.baseDeflection = parser.getInt32(table, "deflection")
+	npcData.baseDamageResistance = parser.getInt32(table, "damage_resistance")
 
 	npcData.equipment = parser.getEquipment(table, "equipment")
 

@@ -28,6 +28,7 @@ type MobData struct {
 	BaseDamage int32
 	BaseArmorPenetration int32
 	BaseDeflection int32
+	BaseDamageResistance int32
 
 	Abilities uint32
 
@@ -52,6 +53,7 @@ type MobDataJson struct {
 	BaseDamage int32
 	BasePenetration int32
 	BaseDeflection int32
+	BaseDamageResistance int32
 
 	Abilities []string
 
@@ -89,6 +91,9 @@ func (mobData *MobData) MarshalJSON() ([]byte, error) {
 
 		Stats: mobData.Stats,
 		BaseDamage: mobData.BaseDamage,
+		BasePenetration: mobData.BaseArmorPenetration,
+		BaseDeflection: mobData.BaseDeflection,
+		BaseDamageResistance: mobData.BaseDamageResistance,
 
 		Abilities: mobData.abilitiesToStringArray(),
 
@@ -121,6 +126,7 @@ func (mobData *MobData) UnmarshalJSON(data []byte) error {
 	mobData.BaseDamage = mobDataJson.BaseDamage
 	mobData.BaseArmorPenetration = mobDataJson.BasePenetration
 	mobData.BaseDeflection = mobDataJson.BaseDeflection
+	mobData.BaseDamageResistance = mobData.BaseDamageResistance
 
 	mobData.setAbilitiesFromStringArray(mobDataJson.Abilities)
 
@@ -373,4 +379,21 @@ func (mobData *MobData) GetConditionChanceModifier(base float32, conditionEffect
 	}
 
 	return float32(chanceModifier) / 100
+}
+
+func (mobData *MobData) GetDamageResistance() int32 {
+	dr := mobData.BaseDamageResistance
+
+	shield := mobData.Equipment.GetShield()
+	outfit := mobData.Equipment.Get(EQUIPMENT_SLOT_OUTFIT)
+
+	if shield != nil {
+		dr += ITEM_DATA[shield.Id].Data.(*ItemDataArmor).DamageResistance
+	}
+
+	if outfit != nil {
+		dr += ITEM_DATA[outfit.Id].Data.(*ItemDataArmor).DamageResistance
+	}
+
+	return dr
 }

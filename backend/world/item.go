@@ -138,6 +138,7 @@ type ItemDataWeapon struct {
 
 type ItemDataArmor struct {
 	Deflection int32
+	DamageResistance int32
 	MaxDurability int32
 	StealthPenalty float32
 	StatBonuses StatBlock
@@ -284,6 +285,8 @@ func (parser *ScriptParser) parseItemData(table *lua.Table) *ItemData {
 			data := &ItemDataArmor{}
 			data.Deflection = parser.getInt32(table, "deflection")
 			parser.checkInt32NonNegative(data.Deflection, "deflection")
+			data.DamageResistance = parser.getInt32(table, "damage_resistance")
+			parser.checkInt32NonNegative(data.DamageResistance, "damage_resistance")
 			data.MaxDurability = parser.getInt32(table, "max_durability")
 			parser.checkInt32NonNegative(data.MaxDurability, "max_durability")
 			data.StealthPenalty = parser.getFloat32(table, "stealth_penalty")
