@@ -114,7 +114,7 @@ func (mob *Mob) onItemEquipped(item Item) []string {
 }
 
 func (mob *Mob) onItemUnequipped(item Item) []string {
-	if !mob.IsPlayer() {
+	if !mob.IsPlayer() || mob.IsDead() {
 		return nil
 	}
 

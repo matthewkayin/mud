@@ -422,7 +422,7 @@ func (room *Room) removeDeadOccupants(world *World) {
 func (room *Room) hasPlayerOccupants(world *World) bool {
 	for _, handle := range room.Occupants {
 		mob := world.Mobs.Get(handle)
-		if mob.PlayerCharacter != nil {
+		if mob.IsPlayer() {
 			return true
 		}
 	}
