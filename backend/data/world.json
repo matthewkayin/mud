@@ -931,7 +931,7 @@
       "Exits": [
         30,
         34,
-        36,
+        37,
         -1
       ],
       "Locks": [],
@@ -992,41 +992,17 @@
       "Chests": []
     },
     {
-      "Name": "Hall of Spiders",
+      "Name": "Rocky Hillside",
       "Description": "This is a new room",
       "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
-        "X": 1,
+        "X": 0,
         "Y": 5
       },
       "Exits": [
-        33,
         -1,
         37,
-        -1
-      ],
-      "Locks": [],
-      "DropTable": {
-        "Entries": []
-      },
-      "Inventory": {
-        "Items": []
-      },
-      "Chests": []
-    },
-    {
-      "Name": "Hall of Spiders 2",
-      "Description": "This is a new room",
-      "Notes": "",
-      "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 1,
-        "Y": 6
-      },
-      "Exits": [
-        36,
-        -1,
         38,
         -1
       ],
@@ -1040,16 +1016,198 @@
       "Chests": []
     },
     {
-      "Name": "Hall of Spiders 3",
+      "Name": "Abandoned Shack",
       "Description": "This is a new room",
       "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
         "X": 1,
+        "Y": 5
+      },
+      "Exits": [
+        33,
+        -1,
+        -1,
+        36
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Cave Entrance",
+      "Description": "",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 0,
+        "Y": 6
+      },
+      "Exits": [
+        36,
+        -1,
+        39,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Goblin Cave",
+      "Description": "This is a new room",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 0,
         "Y": 7
       },
       "Exits": [
-        37,
+        38,
+        -1,
+        40,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Dining Room",
+      "Description": "This is a new room",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 0,
+        "Y": 8
+      },
+      "Exits": [
+        39,
+        41,
+        42,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": [
+          {
+            "ItemId": "Apple",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 1
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 100
+          },
+          {
+            "ItemId": "Gold",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 5
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 100
+          }
+        ]
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Quarters",
+      "Description": "This is a new room",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 1,
+        "Y": 8
+      },
+      "Exits": [
+        -1,
+        -1,
+        -1,
+        40
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": [
+        {
+          "Name": "Rucksack",
+          "Type": 0,
+          "Timer": 0,
+          "DropTable": {
+            "Entries": [
+              {
+                "ItemId": "Apple",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 100
+              },
+              {
+                "ItemId": "Kitchen Knife",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 100
+              }
+            ]
+          },
+          "Inventory": {
+            "Items": []
+          }
+        }
+      ]
+    },
+    {
+      "Name": "Cellar",
+      "Description": "This is a new room",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 0,
+        "Y": 9
+      },
+      "Exits": [
+        40,
         -1,
         -1,
         -1
@@ -1061,7 +1219,56 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [
+        {
+          "Name": "Chest",
+          "Type": 0,
+          "Timer": 0,
+          "DropTable": {
+            "Entries": [
+              {
+                "ItemId": "Glass Bottle",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 100
+              },
+              {
+                "ItemId": "Wormy Apple",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 2
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 100
+              },
+              {
+                "ItemId": "Gold",
+                "AmountRange": {
+                  "Min": 25,
+                  "Max": 25
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 100
+              }
+            ]
+          },
+          "Inventory": {
+            "Items": []
+          }
+        }
+      ]
     }
   ],
   "Npcs": [
@@ -1113,6 +1320,19 @@
     },
     {
       "Id": "spider",
+      "SpawnRoom": 5,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "skulk",
       "SpawnRoom": 13,
       "LevelRange": {
         "Min": 1,
@@ -1138,7 +1358,7 @@
       "BehaviorParams": {}
     },
     {
-      "Id": "spider",
+      "Id": "rous",
       "SpawnRoom": 18,
       "LevelRange": {
         "Min": 1,
@@ -1153,6 +1373,32 @@
     {
       "Id": "pip",
       "SpawnRoom": 19,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "happy cow",
+      "SpawnRoom": 20,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "happy cow",
+      "SpawnRoom": 20,
       "LevelRange": {
         "Min": 1,
         "Max": 1
@@ -1190,39 +1436,26 @@
       "BehaviorParams": {}
     },
     {
-      "Id": "spider",
-      "SpawnRoom": 36,
+      "Id": "rous",
+      "SpawnRoom": 29,
       "LevelRange": {
         "Min": 1,
         "Max": 1
       },
-      "MovementTypeOverride": "Stationary",
+      "MovementTypeOverride": "",
       "DropTableOverride": {
         "Entries": []
       },
       "BehaviorParams": {}
     },
     {
-      "Id": "spider",
+      "Id": "allan",
       "SpawnRoom": 36,
       "LevelRange": {
         "Min": 1,
         "Max": 1
       },
-      "MovementTypeOverride": "Stationary",
-      "DropTableOverride": {
-        "Entries": []
-      },
-      "BehaviorParams": {}
-    },
-    {
-      "Id": "spider",
-      "SpawnRoom": 36,
-      "LevelRange": {
-        "Min": 1,
-        "Max": 1
-      },
-      "MovementTypeOverride": "Stationary",
+      "MovementTypeOverride": "",
       "DropTableOverride": {
         "Entries": []
       },
@@ -1230,7 +1463,20 @@
     },
     {
       "Id": "goblin",
-      "SpawnRoom": 37,
+      "SpawnRoom": 39,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "goblin",
+      "SpawnRoom": 40,
       "LevelRange": {
         "Min": 2,
         "Max": 2
@@ -1243,7 +1489,7 @@
     },
     {
       "Id": "goblin",
-      "SpawnRoom": 37,
+      "SpawnRoom": 40,
       "LevelRange": {
         "Min": 1,
         "Max": 1
@@ -1256,75 +1502,10 @@
     },
     {
       "Id": "goblin",
-      "SpawnRoom": 37,
+      "SpawnRoom": 41,
       "LevelRange": {
         "Min": 1,
         "Max": 1
-      },
-      "MovementTypeOverride": "Stationary",
-      "DropTableOverride": {
-        "Entries": []
-      },
-      "BehaviorParams": {}
-    },
-    {
-      "Id": "goblin",
-      "SpawnRoom": 37,
-      "LevelRange": {
-        "Min": 1,
-        "Max": 1
-      },
-      "MovementTypeOverride": "Stationary",
-      "DropTableOverride": {
-        "Entries": []
-      },
-      "BehaviorParams": {}
-    },
-    {
-      "Id": "goblin",
-      "SpawnRoom": 37,
-      "LevelRange": {
-        "Min": 1,
-        "Max": 1
-      },
-      "MovementTypeOverride": "Stationary",
-      "DropTableOverride": {
-        "Entries": []
-      },
-      "BehaviorParams": {}
-    },
-    {
-      "Id": "spider",
-      "SpawnRoom": 38,
-      "LevelRange": {
-        "Min": 2,
-        "Max": 2
-      },
-      "MovementTypeOverride": "Stationary",
-      "DropTableOverride": {
-        "Entries": []
-      },
-      "BehaviorParams": {}
-    },
-    {
-      "Id": "spider",
-      "SpawnRoom": 38,
-      "LevelRange": {
-        "Min": 2,
-        "Max": 2
-      },
-      "MovementTypeOverride": "Stationary",
-      "DropTableOverride": {
-        "Entries": []
-      },
-      "BehaviorParams": {}
-    },
-    {
-      "Id": "spider",
-      "SpawnRoom": 38,
-      "LevelRange": {
-        "Min": 3,
-        "Max": 3
       },
       "MovementTypeOverride": "Stationary",
       "DropTableOverride": {
