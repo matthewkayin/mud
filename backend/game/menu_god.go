@@ -16,6 +16,19 @@ var MENU_GOD = MenuCreate(MenuCreateParams {
 		"root": "",
 	},
 	entries: map[string]MenuEntry {
+		"version": {
+			usage: "/version",
+			description: "Show the version of the running server.",
+			groups: []string { "root" },
+			handler: func (gamestate *GameState, player *Player, args []string) bool {
+				if len(args) != 0 {
+					return false
+				}
+
+				player.send(fmt.Sprintf("Castle Recurse version %s.", gamestate.version))
+				return true
+			},
+		},
 		"shutdown": {
 			usage: "/shutdown [now] [in <minutes>] [cancel] [status]",
 			description: "Save and kick all players, then refuse new connections until the server restarts. Use before deploying.",

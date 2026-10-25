@@ -15,7 +15,8 @@ ENV GOWORK=off
 COPY backend/go.mod backend/go.sum ./
 RUN go mod download
 COPY backend/ ./
-RUN go build -o /build/mud .
+# The deploy workflow writes the release version to backend/VERSION. Builds without it report "dev".
+RUN go build -ldflags "-X main.version=$(cat VERSION 2>/dev/null || echo dev)" -o /build/mud .
 
 # The server reads ./data and ./banner.txt and writes ./saves and ./logs, relative to /app
 FROM debian:bookworm-slim

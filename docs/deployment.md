@@ -40,12 +40,22 @@ The Recurse Center OAuth app must list `<PUBLIC_URL>/api/auth/callback` as a red
 
 ## Setting up the Disco project
 
-1. Give Disco's GitHub app access to the repo, then create a project from it in the Disco dashboard.
+1. Give Disco's GitHub app access to the repo, then create a project from it in the Disco dashboard. Set the project's branch to `prod` (`disco projects:update <project> --branch prod`).
 2. Add the project's domain.
 3. Set the env vars above. `PORT` and `STATIC_FOLDER` come from the `Dockerfile`, so leave them out.
-4. Deploy. Pushes to the project's branch deploy again.
+4. Publish a release (see [Releasing](#releasing)).
 
 To move existing characters over, copy their `saves/*.json` files into the `mud-saves` volume.
+
+## Releasing
+
+Disco deploys every push to the `prod` branch, and only the deploy workflow (`.github/workflows/deploy.yml`) pushes to it. Merging to `main` doesn't deploy.
+
+To deploy, publish a GitHub release whose tag is the version, in `MAJOR.MINOR.PATCH` form with no `v` (e.g. `1.4.0`). The workflow checks out the tag, commits the version to `backend/VERSION`, and force-pushes that commit to `prod`. The version commit only exists on `prod`. A tag in any other form fails the workflow without deploying.
+
+To roll back, re-run the workflow run of an older release from the Actions tab.
+
+The `Dockerfile` builds the server with `-ldflags "-X main.version=..."` set from `backend/VERSION`, so the version is part of the binary. Builds without the file, such as `go run .` or a local `docker build` from `main`, report `dev`. The server logs `Starting Castle Recurse version <version>...` at startup, and Gods can run `/version` to check which version is live.
 
 ## Building the image locally
 
@@ -64,7 +74,8 @@ To avoid this, put the server in maintenance mode before deploying:
 
 1. Log in as a God (a user listed in `GOD_USER_IDS`) and run `/shutdown in <minutes>`. Players are warned when the shutdown is scheduled, and again at 30, 15, 10, 5 and 1 minutes left.
 2. When the time runs out, the server saves and kicks every player, then refuses new connections. The server doesn't exit, since Disco would restart it and players could reconnect.
-3. Deploy. The old server has no logged-in characters, so the new server loads up-to-date saves.
+3. Publish the release. The old server has no logged-in characters, so the new server loads up-to-date saves.
+4. Once the new server is up, run `/version` to confirm it's running the release.
 
 The `/shutdown` subcommands (`backend/game/menu_god.go`):
 

@@ -42,6 +42,7 @@ type EventListener func (gamestate *GameState, event* world.Event)
 type GameState struct {
 	SocketEvents chan SocketEvent
 	bannerLines []string
+	version string
 
 	players []Player
 	playerIdToIndexMap map[int]int
@@ -55,7 +56,7 @@ type GameState struct {
 	shutdownTimer int
 }
 
-func GameStateInit(godUserIds []int) *GameState {
+func GameStateInit(godUserIds []int, version string) *GameState {
 	playerMenusInit()
 
 	bannerLines, err := util.ReadFileLines("./banner.txt")
@@ -66,6 +67,7 @@ func GameStateInit(godUserIds []int) *GameState {
 	gamestate := &GameState {
 		SocketEvents: make(chan SocketEvent, 1024),
 		bannerLines: bannerLines,
+		version: version,
 
 		players: make([]Player, 0, 64),
 		playerIdToIndexMap: make(map[int]int),
