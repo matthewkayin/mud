@@ -7,10 +7,10 @@ item.kind = world.ItemKind.EQUIPMENT_ONE_HANDED
 item.price = 50
 item.size = 5
 
-item.damage = 5
-item.armor_penetration = 0
+item.damage = 4
+item.armor_penetration = 8
 item.max_durability = 150
-item.stat_bonuses = { AGI = 6 }
+item.stat_bonuses = {}
 item.stat_requirements = {}
 
 item.notes = ""

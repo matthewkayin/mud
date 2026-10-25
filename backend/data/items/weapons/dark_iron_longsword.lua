@@ -8,9 +8,9 @@ item.price = 300
 item.size = 10
 
 item.damage = 8
-item.armor_penetration = 0
+item.armor_penetration = 4
 item.max_durability = 150
-item.stat_bonuses = { AGI = 4, STR = 4 }
+item.stat_bonuses = { AGI = 1, STR = 1 }
 item.stat_requirements = { STR = 11 }
 
 item.notes = "crafted only"

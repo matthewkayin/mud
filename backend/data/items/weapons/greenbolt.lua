@@ -8,9 +8,9 @@ item.price = 1000
 item.size = 5
 
 item.damage = 9
-item.armor_penetration = 0
+item.armor_penetration = 4
 item.max_durability = 150
-item.stat_bonuses = { AGI = 12 }
+item.stat_bonuses = { AGI = 4 }
 item.stat_requirements = { STR = 11 }
 
 item.notes = "tier 1 rare"
