@@ -931,7 +931,7 @@
       "Exits": [
         30,
         34,
-        -1,
+        36,
         -1
       ],
       "Locks": [],
@@ -990,6 +990,78 @@
         "Items": []
       },
       "Chests": []
+    },
+    {
+      "Name": "Hall of Spiders",
+      "Description": "This is a new room",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 1,
+        "Y": 5
+      },
+      "Exits": [
+        33,
+        -1,
+        37,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Hall of Spiders 2",
+      "Description": "This is a new room",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 1,
+        "Y": 6
+      },
+      "Exits": [
+        36,
+        -1,
+        38,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Hall of Spiders 3",
+      "Description": "This is a new room",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 1,
+        "Y": 7
+      },
+      "Exits": [
+        37,
+        -1,
+        -1,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
     }
   ],
   "Npcs": [
@@ -1018,6 +1090,26 @@
         "Entries": []
       },
       "BehaviorParams": {}
+    },
+    {
+      "Id": "troll",
+      "SpawnRoom": 3,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {
+        "ExitToBlock": "north",
+        "Toll": {
+          "Id": "Azurite Pendant",
+          "Amount": 1,
+          "Durability": 0
+        }
+      }
     },
     {
       "Id": "spider",
@@ -1092,6 +1184,149 @@
         "Max": 1
       },
       "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "spider",
+      "SpawnRoom": 36,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "Stationary",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "spider",
+      "SpawnRoom": 36,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "Stationary",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "spider",
+      "SpawnRoom": 36,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "Stationary",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "goblin",
+      "SpawnRoom": 37,
+      "LevelRange": {
+        "Min": 2,
+        "Max": 2
+      },
+      "MovementTypeOverride": "Stationary",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "goblin",
+      "SpawnRoom": 37,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "Stationary",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "goblin",
+      "SpawnRoom": 37,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "Stationary",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "goblin",
+      "SpawnRoom": 37,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "Stationary",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "goblin",
+      "SpawnRoom": 37,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "Stationary",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "spider",
+      "SpawnRoom": 38,
+      "LevelRange": {
+        "Min": 2,
+        "Max": 2
+      },
+      "MovementTypeOverride": "Stationary",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "spider",
+      "SpawnRoom": 38,
+      "LevelRange": {
+        "Min": 2,
+        "Max": 2
+      },
+      "MovementTypeOverride": "Stationary",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "spider",
+      "SpawnRoom": 38,
+      "LevelRange": {
+        "Min": 3,
+        "Max": 3
+      },
+      "MovementTypeOverride": "Stationary",
       "DropTableOverride": {
         "Entries": []
       },
