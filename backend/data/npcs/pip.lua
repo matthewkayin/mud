@@ -4,15 +4,15 @@ npc.id = "pip"
 npc.name = "Pip"
 npc.description = "A pot-bellied goblin is making pathetic attempts to clamber up the tall tree, but his attempts are unfruitful."
 
-npc.experience_worth = 1
-npc.experience_worth_scaling = 1
+npc.experience_worth = 10
+npc.experience_worth_scaling = 2
 npc.respawn_duration = world.time_minutes(1)
 
-npc.stats = { VIT = 6, STR = 8, AGI = 4, INT = 2, FTH = 2 }
-npc.scaling = { VIT = 6, STR = 8, AGI = 4, INT = 2, FTH = 2 }
-npc.damage = 0
+npc.stats = { VIT = 9, STR = 4, AGI = 4, INT = 2, FTH = 4 }
+npc.scaling = { VIT = 9, STR = 4, AGI = 4, INT = 2, FTH = 4 }
+npc.damage = 4
 npc.armor_penetration = 0
-npc.deflection = 0
+npc.deflection = 4
 npc.damage_resistance = 0
 
 npc.equipment = {}

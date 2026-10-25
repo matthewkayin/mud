@@ -4,15 +4,15 @@ npc.id = "goblin"
 npc.name = "Goblin"
 npc.description = "You see a repulsive, green monster that wants to eat you."
 
-npc.experience_worth = 20
-npc.experience_worth_scaling = 5
+npc.experience_worth = 10
+npc.experience_worth_scaling = 2
 npc.respawn_duration = world.time_minutes(1)
 
-npc.stats = { VIT = 8, STR = 4, AGI = 4, INT = 2, FTH = 4 }
-npc.scaling = { VIT = 8, STR = 4, AGI = 4, INT = 2, FTH = 4 }
-npc.damage = 6
-npc.armor_penetration = 1
-npc.deflection = 6
+npc.stats = { VIT = 9, STR = 4, AGI = 4, INT = 2, FTH = 4 }
+npc.scaling = { VIT = 9, STR = 4, AGI = 4, INT = 2, FTH = 4 }
+npc.damage = 4
+npc.armor_penetration = 0
+npc.deflection = 4
 npc.damage_resistance = 0
 
 npc.equipment = {}
