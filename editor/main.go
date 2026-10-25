@@ -7,11 +7,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"io/fs"
 	"log"
 	"mud/world"
 	"net/http"
+	"os"
+	"path/filepath"
 )
 
 //go:embed all:frontend/dist
@@ -40,6 +41,9 @@ func main() {
 	editorWorld := &world.World{}
 	editorWorld.LoadData(*dataFolder)
 
+	// The editor only ever edits the world file in the data folder
+	worldFilePath := filepath.Join(*dataFolder, "world.json")
+
 	distFS, err := fs.Sub(assets, "frontend/dist")
 	if err != nil {
 		log.Fatalf("Error loading frontend assets: %s", err.Error())
@@ -50,12 +54,12 @@ func main() {
 	mux.HandleFunc("GET /api/constants", handleGetConstants)
 	mux.HandleFunc("GET /api/items", handleGetItems)
 	mux.HandleFunc("GET /api/npcs", handleGetNpcs)
-	mux.HandleFunc("POST /api/world/decode", handleDecodeWorld)
-	mux.HandleFunc("POST /api/world/encode", handleEncodeWorld)
+	mux.HandleFunc("GET /api/world", handleGetWorld(worldFilePath))
+	mux.HandleFunc("PUT /api/world", handlePutWorld(worldFilePath))
 
 	// Only listen on localhost, since the editor has no authentication
 	address := fmt.Sprintf("127.0.0.1:%d", *port)
-	log.Printf("Editor running at http://localhost:%d", *port)
+	log.Printf("Editor running at http://localhost:%d, editing %s", *port, worldFilePath)
 	log.Fatal(http.ListenAndServe(address, mux))
 }
 
@@ -74,40 +78,88 @@ func handleGetNpcs(w http.ResponseWriter, r *http.Request) {
 	writeJson(w, world.NPC_DATA)
 }
 
-// Converts the contents of a world file into the editor's format
-func handleDecodeWorld(w http.ResponseWriter, r *http.Request) {
-	data, err := io.ReadAll(r.Body)
-	if err != nil {
-		writeError(w, err)
-		return
-	}
+// Reads the world file and sends it in the editor's format
+func handleGetWorld(worldFilePath string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		data, err := os.ReadFile(worldFilePath)
+		if err != nil {
+			writeError(w, err)
+			return
+		}
 
-	editorWorld, err := decodeWorld(data)
-	if err != nil {
-		writeError(w, err)
-		return
-	}
+		editorWorld, err := decodeWorld(data)
+		if err != nil {
+			writeError(w, err)
+			return
+		}
 
-	writeJson(w, editorWorld)
+		writeJson(w, editorWorld)
+	}
 }
 
-// Converts the editor's world into the contents of a world file
-func handleEncodeWorld(w http.ResponseWriter, r *http.Request) {
-	var editorWorld EditorWorld
-	err := json.NewDecoder(r.Body).Decode(&editorWorld)
+// Converts the editor's world into the world file format and saves it
+func handlePutWorld(worldFilePath string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var editorWorld EditorWorld
+		err := json.NewDecoder(r.Body).Decode(&editorWorld)
+		if err != nil {
+			writeError(w, fmt.Errorf("Error reading editor world JSON: %w", err))
+			return
+		}
+
+		// Encode first so that an invalid world never touches the file
+		data, err := encodeWorld(editorWorld)
+		if err != nil {
+			writeError(w, err)
+			return
+		}
+
+		err = writeFileAtomic(worldFilePath, data)
+		if err != nil {
+			writeError(w, fmt.Errorf("Error saving world file: %w", err))
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+// Writes to a temporary file and renames it over the original, so a failed
+// write never leaves a partially written file behind
+func writeFileAtomic(path string, data []byte) error {
+	tempFile, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path) + ".*.tmp")
 	if err != nil {
-		writeError(w, fmt.Errorf("Error reading editor world JSON: %w", err))
-		return
+		return err
+	}
+	tempPath := tempFile.Name()
+
+	_, err = tempFile.Write(data)
+	if err != nil {
+		tempFile.Close()
+		os.Remove(tempPath)
+		return err
 	}
 
-	data, err := encodeWorld(editorWorld)
+	err = tempFile.Close()
 	if err != nil {
-		writeError(w, err)
-		return
+		os.Remove(tempPath)
+		return err
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(data)
+	// CreateTemp makes the file private to the user, but world files are normally world-readable
+	err = os.Chmod(tempPath, 0644)
+	if err != nil {
+		os.Remove(tempPath)
+		return err
+	}
+
+	err = os.Rename(tempPath, path)
+	if err != nil {
+		os.Remove(tempPath)
+		return err
+	}
+
+	return nil
 }
 
 func writeJson(w http.ResponseWriter, value any) {
