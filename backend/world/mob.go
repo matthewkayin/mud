@@ -240,7 +240,7 @@ func (mob *Mob) GrantExperience(world *World, experience int32) {
 
 			// Grant class unlocks
 			classData := CLASS_DATA[mob.PlayerCharacter.Class]
-			for _, unlock := range classData.UnlocksAtLevel[mob.Data.Level] {
+			for _, unlock := range classData.UnlocksAtLevel[mob.Data.Level - 1] {
 				message := mob.PlayerCharacter.grantClassUnlock(unlock)
 				world.messagePlayer(mob.PlayerCharacter.PlayerId, message)
 			}

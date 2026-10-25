@@ -108,7 +108,7 @@ func CharacterInitEmpty(playerId int, characterSheet *CharacterSheet) *Character
 	bitset.Set(character.RoomsDiscovered, character.Data.Room, true)
 
 	// Grant first level unlocks
-	for _, unlock := range classData.UnlocksAtLevel[character.Data.Level] {
+	for _, unlock := range classData.UnlocksAtLevel[character.Data.Level - 1] {
 		character.grantClassUnlock(unlock)
 	}
 
