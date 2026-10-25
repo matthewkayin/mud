@@ -2,7 +2,6 @@ package game
 
 import (
 	"fmt"
-	"mud/bitset"
 	"mud/world"
 	"mud/util"
 	"strings"
@@ -36,7 +35,7 @@ var MENU_WORLD = MenuCreate(MenuCreateParams {
 		playerRoom.AddOccupant(gamestate.world, player.mobHandle)
 
 		// Enter world menu
-		player.send(fmt.Sprintf("You have logged in. Welcome, %s.", player.character.Data.Name))
+		player.send(fmt.Sprintf("You have logged in. Welcome, <y>%s</y>.", player.character.Data.Name))
 		room := &gamestate.world.Rooms[player.character.Data.Room]
 		describeRoomToPlayer(gamestate, player, room)
 	},
@@ -129,7 +128,7 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 	}
 
 	// Exits
-	exitFound := false
+	exitNames := make([]string, 0, world.DIRECTION_COUNT)
 	for directionIndex := range world.DIRECTION_COUNT {
 		direction := world.Direction(directionIndex)
 
@@ -137,16 +136,16 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 			continue
 		}
 
-		roomName := "an undiscovered room"
-		if bitset.Check(player.character.RoomsDiscovered, room.Exits[direction]) {
-			roomName = gamestate.world.Rooms[room.Exits[direction]].Name
-		}
-
-		player.send(fmt.Sprintf("To the %s is %s.", direction.String(), roomName))
-		exitFound = true
+		exitNames = append(exitNames, fmt.Sprintf("<p>%s</p>", direction.String()))
 	}
-	if !exitFound {
+	if len(exitNames) == 0 {
 		player.send("This room has no exits!")
+	} else {
+		isString := "is an exit"
+		if len(exitNames) > 1 {
+			isString = "are exits"
+		}
+		player.send(fmt.Sprintf("There %s to the %s.", isString, util.CombineNames(exitNames)))
 	}
 
 	// Send the list of players in the room

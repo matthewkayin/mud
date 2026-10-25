@@ -8,13 +8,18 @@ type TerminalProps = {
   lines: string[];
   command: string;
   setCommand: (value: string) => void;
+  pendingAction: boolean;
   onSubmit: (command: string) => void;
 }
 
+// Shown in place of the prompt while the player has a pending action
+const PENDING_ACTION_PROMPT_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+const PENDING_ACTION_PROMPT_FRAME_MS = 100;
 
-export const Terminal = ({ prompt, lines, command, setCommand, onSubmit }: TerminalProps) => {
+export const Terminal = ({ prompt, lines, command, setCommand, pendingAction, onSubmit }: TerminalProps) => {
   const [isFocused, setIsFocused] = useState(false);
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
+  const [promptFrame, setPromptFrame] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalBottomElementRef = useRef<HTMLDivElement>(null);
 
@@ -29,6 +34,21 @@ export const Terminal = ({ prompt, lines, command, setCommand, onSubmit }: Termi
       terminalBottomElementRef.current.scrollIntoView();
     }
   }, [lines, shouldScrollToBottom]);
+
+  // Animate the pending action prompt
+  useEffect(() => {
+    if (!pendingAction) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setPromptFrame((previous) => (previous + 1) % PENDING_ACTION_PROMPT_FRAMES.length);
+    }, PENDING_ACTION_PROMPT_FRAME_MS);
+    return () => {
+      clearInterval(interval);
+      setPromptFrame(0);
+    };
+  }, [pendingAction]);
 
   const onFocus = () => {
     setIsFocused(true);
@@ -84,7 +104,7 @@ export const Terminal = ({ prompt, lines, command, setCommand, onSubmit }: Termi
     >
       <div className="terminal-prompt-container">
         <p className="terminal-text">
-          {prompt} {command}
+          {pendingAction ? PENDING_ACTION_PROMPT_FRAMES[promptFrame] : prompt} {command}
           <span className={isFocused ? "terminal-prompt-cursor-focused" : "terminal-prompt-cursor-hidden"}>&#x2588;</span></p>
       </div>
       <div

@@ -66,6 +66,7 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 				MaxHealth: playerMob.Data.MaxHealth(),
 				Mana: playerMob.Data.Mana,
 				MaxMana: playerMob.Data.MaxMana(),
+				PendingAction: player.nextAction.actionType != ACTION_TYPE_NONE,
 			}
 		}
 	}
