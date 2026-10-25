@@ -43,8 +43,12 @@ func ItemTypeMatchesEquipmentSlot(kind ItemKind, slot EquipmentSlot) bool {
 	}
 }
 
+//function does not handle one-handed weapons, which currently require a special check before this function is called
+//this was done for the purposes of avoiding problems with dual-wielding npcMobs
 func EquipmentSlotForItemKind(kind ItemKind) (EquipmentSlot, bool) {
 	switch kind {
+		case ITEM_KIND_EQUIPMENT_TWO_HANDED:
+			return EQUIPMENT_SLOT_MAIN_HAND, true
 		case ITEM_KIND_EQUIPMENT_SHIELD:
 			return EQUIPMENT_SLOT_OFF_HAND, true
 		case ITEM_KIND_EQUIPMENT_OUTFIT:
