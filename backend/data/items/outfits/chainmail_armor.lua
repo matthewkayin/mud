@@ -7,12 +7,12 @@ item.kind = world.ItemKind.EQUIPMENT_OUTFIT
 item.price = 100
 item.size = 20
 
-item.deflection = 2
+item.deflection = 9
 item.max_durability = 200
 item.stealth_penalty = 0.25
 item.stat_bonuses = {}
 item.stat_requirements = { STR = 11 }
 
-item.notes = ""
+item.notes = "tier 1 common"
 
 return item

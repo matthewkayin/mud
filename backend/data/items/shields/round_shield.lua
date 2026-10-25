@@ -8,12 +8,12 @@ item.kind = world.ItemKind.EQUIPMENT_SHIELD
 item.price = 50
 item.size = 10
 
-item.deflection = 4
+item.deflection = 6
 item.max_durability = 200
 item.stealth_penalty = 0.25
 item.stat_bonuses = {}
 item.stat_requirements = { STR = 10 }
 
-item.notes = ""
+item.notes = "tier 1 common"
 
 return item

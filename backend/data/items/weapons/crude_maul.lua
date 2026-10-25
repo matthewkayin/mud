@@ -8,11 +8,11 @@ item.price = 15
 item.size = 10
 
 item.damage = 6
-item.armor_penetration = 0
+item.armor_penetration = 5
 item.max_durability = 200
-item.stat_bonuses = { STR = 1 }
+item.stat_bonuses = {}
 item.stat_requirements = { STR = 9 }
 
-item.notes = "stareter gear"
+item.notes = "starter gear"
 
 return item
