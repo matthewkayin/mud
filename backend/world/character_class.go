@@ -140,7 +140,7 @@ func (parser *ScriptParser) parseClass(table *lua.Table) *ClassData {
 			if !ok {
 				continue
 			}
-			classData.UnlocksAtLevel[level] = append(classData.UnlocksAtLevel[level], unlock)
+			classData.UnlocksAtLevel[level - 1] = append(classData.UnlocksAtLevel[level - 1], unlock)
 		}
 	}
 
