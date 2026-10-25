@@ -594,7 +594,6 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	}
 
 	// Subtract damage resistance
-	log.Printf("damage resistance during attack math: %d", mob.Data.GetDamageResistance())
 	damage -= targetMob.Data.GetDamageResistance()
 
 	// Calculate final damage
