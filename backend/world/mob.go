@@ -584,7 +584,8 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 		deflectionChance :=
 			float32(mob.Data.Deflection() * MOB_DEFLECTION_AMOUNT_PER_POINT) -
 			float32(penetration * MOB_DEFLECTION_AMOUNT_PER_POINT)
-		deflect = rand.Float32() < deflectionChance
+		deflectionChance =  max(min(deflectionChance, 100), 0)
+		deflect = rand.Float32() < (deflectionChance / 100)
 
 		// On deflect, subtract armor
 		if deflect {
@@ -593,7 +594,8 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	}
 
 	// Subtract damage resistance
-	damage -= mob.Data.GetDamageResistance()
+	log.Printf("damage resistance during attack math: %d", mob.Data.GetDamageResistance())
+	damage -= targetMob.Data.GetDamageResistance()
 
 	// Calculate final damage
 	attackerMinDamage := max(1, mob.Data.Level / 2)
