@@ -3,6 +3,7 @@ export type PlayerStatus = {
   maxHealth: number;
   mana: number;
   maxMana: number;
+  action: boolean;
 };
 
 // A message from the server. message is null for a heartbeat.
@@ -29,10 +30,10 @@ export const parseSocketMessage = (data: string): SocketMessage | null => {
 
 // Returns the player's status if the message carries all of it
 export const getPlayerStatus = (socketMessage: SocketMessage): PlayerStatus | null => {
-  const { health, maxHealth, mana, maxMana } = socketMessage;
-  if (typeof health !== 'number' || typeof maxHealth !== 'number' || typeof mana !== 'number' || typeof maxMana !== 'number') {
+  const { health, maxHealth, mana, maxMana, action } = socketMessage;
+  if (typeof health !== 'number' || typeof maxHealth !== 'number' || typeof mana !== 'number' || typeof maxMana !== 'number' || typeof action !== 'boolean' ) {
     return null;
   }
 
-  return { health, maxHealth, mana, maxMana };
+  return { health, maxHealth, mana, maxMana, action };
 };

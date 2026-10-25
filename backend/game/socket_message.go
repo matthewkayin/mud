@@ -6,6 +6,7 @@ type PlayerStatus struct {
 	MaxHealth int32 `json:"maxHealth"`
 	Mana int32 `json:"mana"`
 	MaxMana int32 `json:"maxMana"`
+	PendingAction bool `json:"action"`
 }
 
 // A message sent to the client. Message is nil for a heartbeat.

@@ -26,22 +26,23 @@ The client sends commands as plain-text frames. The server sends text frames tha
 
 ```
 {"message":"<y>Bufo</y> cast <g>Firebolt</g>!"}
-{"message":null,"health":12,"maxHealth":20,"mana":5,"maxMana":10}
+{"message":null,"health":12,"maxHealth":20,"mana":5,"maxMana":10,"action":false}
 {"message":null}
 ```
 
 - `message` is always present. It's the text to print, or `null` for a message with nothing to print.
-- `health`, `maxHealth`, `mana` and `maxMana` are optional. They're sent together or not at all.
+- `health`, `maxHealth`, `mana`, `maxMana` and `action` are optional. They're sent together or not at all. `action` is true while the player has a combat action queued for the next update.
 
 The client:
 - prints `message` when it isn't null.
 - updates the status bar when a message has the status fields.
+- replaces the `>` input prompt with an animated braille wave while `action` is true.
 - hides the status bar when a message has neither text nor status fields, because that is a heartbeat for a player who isn't in-game.
 - leaves the status bar unchanged for text messages without status fields.
 
 ## Heartbeats
 
-At the end of every game update (every `world.WORLD_SECONDS_PER_UPDATE` seconds), `gamestate.update()` calls `player.sendHeartbeat` for every player. A heartbeat has `message: null`. While the player is in-game, it also carries their mob's HP and MP.
+At the end of every game update (every `world.WORLD_SECONDS_PER_UPDATE` seconds), `gamestate.update()` calls `player.sendHeartbeat` for every player. A heartbeat has `message: null`. While the player is in-game, it also carries their mob's HP and MP and whether they have a pending action.
 
 If the player's inbox is full, `sendHeartbeat` drops the heartbeat instead of waiting, so a stalled connection can't block the game loop.
 

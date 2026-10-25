@@ -116,7 +116,7 @@ export const GamePage = () => {
   return (
     <div>
       <h1>Castle Recurse</h1>
-      <Terminal prompt={terminalPrompt} lines={lines} command={command} setCommand={setCommand} onSubmit={onSubmit} />
+      <Terminal prompt={terminalPrompt} lines={lines} command={command} setCommand={setCommand} pendingAction={playerStatus?.action ?? false} onSubmit={onSubmit} />
       <div className="game-hud">
         <StatusBar status={playerStatus} />
       </div>
