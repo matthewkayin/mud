@@ -11,6 +11,7 @@ var MENU_WORLD_ENTRIES_TALK = map[string]MenuEntry {
 	"say": {
 		usage: "say <message>",
 		description: "Send a messsage to the current room",
+		groups: []string { "social" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			if len(args) < 1 {
 				return false
@@ -33,6 +34,7 @@ var MENU_WORLD_ENTRIES_TALK = map[string]MenuEntry {
 	"tell": {
 		usage: "tell <target>: <message>",
 		description: "Send a message to a specific person in the current room",
+		groups: []string { "social" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			// Parse input
 			argString := strings.Join(args, " ")
@@ -88,6 +90,7 @@ var MENU_WORLD_ENTRIES_TALK = map[string]MenuEntry {
 	"yell": {
 		usage: "yell <message>",
 		description: "Send a message to everyone in this and the adjacent rooms",
+		groups: []string { "social" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			if len(args) == 0 {
 				return false
@@ -131,6 +134,7 @@ var MENU_WORLD_ENTRIES_TALK = map[string]MenuEntry {
 	"talk": {
 		usage: "talk [to <npc>] [about <subject>]",
 		description: "Talk to an NPC. Type 'talk to <npc>' to initiate a conversation. Type 'talk about <subject>' to discuss a subject with the NPC you are currently talking to",
+		groups: []string { "social" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			if len(args) == 0 {
 				return false

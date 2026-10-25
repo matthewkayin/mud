@@ -12,6 +12,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 	"look": {
 		usage: "look",
 		description: "Describe the current room",
+		groups: []string { "exploration" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			room := &gamestate.world.Rooms[playerMob.Data.Room]
@@ -24,6 +25,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 	"search": {
 		usage: "search [container]",
 		description: "Search the room or a container for items.",
+		groups: []string { "exploration", "items" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			room := &gamestate.world.Rooms[playerMob.Data.Room]
@@ -61,6 +63,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 	"inspect": {
 		usage: "inspect <target> [in <container>]",
 		description: "Get information about a player, monster, or item",
+		groups: []string { "exploration" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			if len(args) == 0 {
 				return false
@@ -170,8 +173,6 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				return true
 			}
 
-			// TODO: Handle NPC case for friendly NPC interactions
-
 			// Handle monster case
 			targetMob := gamestate.world.Mobs.Get(targetHandle)
 			if targetMob.Npc != nil {
@@ -179,11 +180,29 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				player.send(fmt.Sprintf("<y>%s</y> (Level %d): %s",
 					targetMob.GetName(), targetMob.Data.Level, targetMob.Npc.GetDescription()))
 
+
 				// Status description
 				statusDescription, hasStatusDescription := targetMob.Npc.GetStatusDescription(gamestate.world)
 				if hasStatusDescription {
 					player.send(statusDescription)
 				}
+
+				// Are they friendly?!
+				var dispositionMsg string
+				switch targetMob.Npc.GetDisposition() {
+					case world.NPC_DISPOSITION_FRIENDLY:
+						dispositionMsg = fmt.Sprintf("%s seems to be friendly", targetMob.GetName())
+						if targetMob.Npc.IsMerchant() {
+							dispositionMsg += ", and appears to be in business!"
+						} else {
+							dispositionMsg += "."
+						}
+					case world.NPC_DISPOSITION_HOSTILE:
+						dispositionMsg = fmt.Sprintf("%s appears to be very unfriendly.", targetMob.GetName())
+					default:
+						dispositionMsg = fmt.Sprintf("It is not clear if %s is friendly or unfriendly.", targetMob.GetName())
+				}
+				player.send(dispositionMsg)
 
 				return true
 			}
@@ -203,6 +222,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 	"hp": {
 		usage: "hp [<player>] friends",
 		description: "Show your combat status including HP, MP, and conditions. Type 'hp <player>' to see this status for another player in the room. Type 'hp friends' to see this status for all players in the room.",
+		groups: []string { "combat" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			// Determine list of targets for the HP table
 
@@ -275,6 +295,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 	"stats": {
 		usage: "stats",
 		description: "Show your current stats.",
+		groups: []string { "information" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 

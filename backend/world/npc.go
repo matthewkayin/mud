@@ -809,3 +809,7 @@ func (npc *Npc) IsProtected() bool {
 func (npc *Npc) GetWares() []ItemId {
 	return NPC_DATA[npc.Id].wares
 }
+
+func (npc *Npc) GetDisposition() NpcDisposition {
+	return npc.disposition
+}

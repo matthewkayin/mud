@@ -30,7 +30,8 @@ type TradeSession struct {
 var MENU_WORLD_ENTRIES_TRADE = map[string]MenuEntry {
 	"trade": {
 		usage: "trade <action>",
-		description: "Trade atomically with another player. Type 'trade help' to see a list of trade actions.",
+		description: "Trade simultaneously with another player. Type 'trade help' to see a list of trade actions.",
+		groups: []string { "social" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			if len(args) == 0 {
 				return false

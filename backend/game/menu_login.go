@@ -6,17 +6,21 @@ import (
 	"mud/world"
 )
 
-var MENU_LOGIN = Menu {
+var MENU_LOGIN = MenuCreate(MenuCreateParams {
 	onEnter: func(gamestate *GameState, player *Player) {
 		player.send("You are in the login screen.")
 		player.send("Type 'help' to see a list of options.")
 	},
 	onExit: func(gamestate *GameState, player *Player) {
 	},
+	groups: map[string]string {
+		"root": "",
+	},
 	entries: map[string]MenuEntry {
 		"list": {
 			usage: "list",
 			description: "Show a list of your characters",
+			groups: []string { "root" },
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
 				characterList, characterListExists := gamestate.world.PlayerCharacters[player.id]
 				if !characterListExists || len(characterList) == 0 {
@@ -41,6 +45,7 @@ var MENU_LOGIN = Menu {
 		"create": {
 			usage: "create [<name>, <race> <class> <job>]",
 			description: "Create a new character. You may specify name, race, class as arguments to this command in order to skip the character creation menu.",
+			groups: []string { "root" },
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
 				// If no arguments provided, send them to the character create menu
 				if len(args) == 0 {
@@ -106,6 +111,7 @@ var MENU_LOGIN = Menu {
 		"login": {
 			usage: "login <character>",
 			description: "Login to an existing character",
+			groups: []string { "root" },
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
 				if len(args) < 1 {
 					return false
@@ -131,4 +137,4 @@ var MENU_LOGIN = Menu {
 			},
 		},
 	},
-}
+})

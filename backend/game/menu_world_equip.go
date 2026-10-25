@@ -9,6 +9,7 @@ var MENU_WORLD_ENTRIES_EQUIP = map[string]MenuEntry {
 	"equipment": {
 		usage: "equipment",
 		description: "Show your current equipment",
+		groups: []string { "items" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 
@@ -21,6 +22,7 @@ var MENU_WORLD_ENTRIES_EQUIP = map[string]MenuEntry {
 	"equip": {
 		usage: "equip <item> [in <slot>]",
 		description: "Equip the specified item [in the specified slot].",
+		groups: []string { "items" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			if len(args) < 1 {
 				return false
@@ -89,6 +91,7 @@ var MENU_WORLD_ENTRIES_EQUIP = map[string]MenuEntry {
 	"remove": {
 		usage: "remove [<item>] [from <slot>]",
 		description: "Remove an equipped item by name or by slot.",
+		groups: []string { "items" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			// The way this works is that the user can specify a slot OR an item,
 			// but there's no reason for them to specify both so I'm not going to
