@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"mud/world"
 	"mud/util"
+	"mud/bitset"
 )
 
 var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
@@ -18,6 +19,39 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 			room := &gamestate.world.Rooms[playerMob.Data.Room]
 			player.send(fmt.Sprintf("You are in %s.", room.Name))
 			describeRoomToPlayer(gamestate, player, room)
+			return true
+		},
+	},
+
+	"exits": {
+		usage: "exits",
+		description: "Describe the exits of the current room",
+		groups: []string { "exploration" },
+		handler: func (gamestate *GameState, player *Player, args []string) bool {
+			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+			room := &gamestate.world.Rooms[playerMob.Data.Room]
+
+			// Exits
+			exitFound := false
+			for directionIndex := range world.DIRECTION_COUNT {
+				direction := world.Direction(directionIndex)
+
+				if room.Exits[direction] == world.ROOM_NONE {
+					continue
+				}
+
+				roomName := "an undiscovered room"
+				if bitset.Check(player.character.RoomsDiscovered, room.Exits[direction]) {
+					roomName = gamestate.world.Rooms[room.Exits[direction]].Name
+				}
+
+				player.send(fmt.Sprintf("To the <p>%s</p> is %s.", direction.String(), roomName))
+				exitFound = true
+			}
+			if !exitFound {
+				player.send("This room has no exits!")
+			}
+
 			return true
 		},
 	},
