@@ -343,7 +343,7 @@ func (mobData *MobData) RemoveCondition(conditionId ConditionId) {
 }
 
 func (mobData *MobData) GetConditionStatChange(base int32, conditionEffectType ConditionEffectType) int32 {
-	percent := float32(1.0)
+	percent := int32(100)
 
 	for _, condition := range mobData.Conditions {
 		conditionData := CONDITION_DATA[condition.Id]
@@ -356,13 +356,13 @@ func (mobData *MobData) GetConditionStatChange(base int32, conditionEffectType C
 					case CONDITION_STAT_CHANGE_FLAT:
 						base += statChange.Value
 					case CONDITION_STAT_CHANGE_PERCENT:
-						percent += float32(statChange.Value / 100.0)
+						percent = max(percent + statChange.Value, 0)
 				}
 			}
 		}
 	}
 
-	return int32(float32(base) * percent)
+	return (base * percent) / 100
 }
 
 func (mobData *MobData) GetConditionChanceModifier(base float32, conditionEffectType ConditionEffectType) float32 {

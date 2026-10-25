@@ -22,6 +22,8 @@ const NPC_MOVEMENT_TYPE_OVERRIDE_NONE = NPC_MOVEMENT_TYPE_COUNT
 const NPC_EVENT_ALLOW_DEFAULT = false
 const NPC_EVENT_PREVENT_DEFAULT = true
 
+const NPC_HEAL_DURATION = 60 / WORLD_SECONDS_PER_UPDATE
+
 type NpcMode int
 const (
 	NPC_MODE_DEAD = iota
@@ -135,6 +137,7 @@ type Npc struct {
 	mode NpcMode
 	disposition NpcDisposition
 	timer int32
+	healTimer int32
 	// Exits which the NPC's mob prevents players and other mobs from leaving its room through
 	isBlockingExit [DIRECTION_COUNT]bool
 	// The table returned by the script's init() hook, or nil
@@ -395,6 +398,8 @@ func (npc *Npc) spawnMob(world *World) {
 	npc.disposition = npcData.startingDisposition
 
 	npc.instance = lua.Nil()
+	npc.timer = 0
+	npc.healTimer = 0
 	npc.isBlockingExit = [DIRECTION_COUNT]bool{}
 	npc.infusion = npcData.infusion
 	if npcData.init != nil {
@@ -511,6 +516,25 @@ func (npc *Npc) update(world *World) {
 		npc.instance = lua.Nil()
 		npc.isBlockingExit = [DIRECTION_COUNT]bool{}
 		return
+	}
+
+	// Heal mob to full health if out of combat for NPC_HEAL_DURATION amount of time
+	npcRoom := &world.Rooms[npcMob.Data.Room]
+	npcIsInCombat := npcRoom.hasPlayerOccupants(world)
+	if npc.healTimer == 0 && npcMob.Data.Health < npcMob.Data.MaxHealth() && !npcIsInCombat {
+		npc.healTimer = NPC_HEAL_DURATION
+	}
+	if npc.healTimer != 0 {
+		if npcIsInCombat {
+			npc.healTimer = 0
+		} else {
+			npc.healTimer--
+			if npc.healTimer == 0 {
+				npcMob.Data.Health = npcMob.Data.MaxHealth()
+				npcMob.Data.Mana = npcMob.Data.MaxMana()
+				npcMob.Data.Conditions = []Condition{}
+			}
+		}
 	}
 
 	npc.callHook(world, NPC_DATA[npc.Id].update, "update")
