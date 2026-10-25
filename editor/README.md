@@ -1,6 +1,6 @@
 # World Editor
 
-A world editor for the MUD. A small Go server (this directory) serves a React app (`frontend/`) and converts world files using the `mud/world` package. The browser opens and saves world files itself with the File System Access API, so use Chrome or Chromium.
+A world editor for the MUD. A small Go server (this directory) serves a React app (`frontend/`) and converts world files using the `mud/world` package. The editor always edits `backend/data/world.json`: it loads the file when it opens and Save (Ctrl+S) writes back to it.
 
 ## Running
 
@@ -11,7 +11,7 @@ go run .
 
 Then open http://localhost:7373. For a standalone window, run `chromium --app=http://localhost:7373`.
 
-World files reference items by name, so at startup the server loads the backend's Lua data scripts from `../backend/data` (pass `-data` to use another folder). Restart the server after changing data scripts.
+World files reference items by name, so at startup the server loads the backend's Lua data scripts from `../backend/data`, and it edits the `world.json` in that same folder (pass `-data` to use another folder). Restart the server after changing data scripts.
 
 ## Development
 
