@@ -21,6 +21,9 @@ import (
 
 const MUD_LOG_FOLDER = "./logs"
 
+// Set at build time with -ldflags "-X main.version=..." (see the Dockerfile)
+var version = "dev"
+
 func main() {
 	// Handle lua def run path
 	generateLuaDefsPath := flag.String("generate-lua-defs", "", "write the Lua language server definitions for the world script API to this path and exit")
@@ -37,6 +40,7 @@ func main() {
 	// Init logger
 	logfile := initLogger()
 	defer logfile.Close()
+	log.Printf("Starting Castle Recurse version %s...", version)
 
 	// Load env
 	api.LoadEnv()
@@ -47,7 +51,7 @@ func main() {
 	defer gameCancel()
 
 	// Set server endpoint handlers
-	gamestate := game.GameStateInit(env.GOD_USER_IDS)
+	gamestate := game.GameStateInit(env.GOD_USER_IDS, version)
 	apiState := api.InitState(gamestate)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/auth/config", apiState.HandleAuthConfig)
