@@ -188,12 +188,13 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 					case world.ITEM_KIND_EQUIPMENT_OUTFIT, world.ITEM_KIND_EQUIPMENT_SHIELD: {
 						outfitData := itemData.Data.(*world.ItemDataArmor)
 						player.send(fmt.Sprintf("Durability: %d", item.GetDurabilityPercent()))
-						player.send(fmt.Sprintf("Armor: %d", outfitData.Armor))
+						player.send(fmt.Sprintf("Deflection: %d", outfitData.Deflection))
 						player.send(fmt.Sprintf("Stealth Penalty: %d%%", int(outfitData.StealthPenalty * 100)))
 					}
 					case world.ITEM_KIND_EQUIPMENT_ONE_HANDED, world.ITEM_KIND_EQUIPMENT_TWO_HANDED: {
 						player.send(fmt.Sprintf("Durability: %d%%", item.GetDurabilityPercent()))
-						player.send(fmt.Sprintf("Damage: %d", item.GetDamageValue()))
+						player.send(fmt.Sprintf("Damage: %d", item.GetDamage()))
+						player.send(fmt.Sprintf("Penetration: %d", item.GetArmorPenetration()))
 					}
 				}
 
@@ -348,7 +349,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 					"MP", fmt.Sprintf("%d / %d", playerMob.Data.Mana, playerMob.Data.MaxMana()),
 				},
 				{
-					"Armor", fmt.Sprintf("%d", playerMob.Data.Armor()),
+					"Deflection", fmt.Sprintf("%d", playerMob.Data.Deflection()),
 					"Stealth Penalty", fmt.Sprintf("%.2f", playerMob.GetStealthPenalty()),
 				},
 			}

@@ -13,8 +13,10 @@ npc.respawn_duration = world.time_minutes(1)
 
 npc.stats = { VIT = 6, STR = 8, AGI = 4, INT = 2, FTH = 2 }
 npc.scaling = { VIT = 6, STR = 8, AGI = 4, INT = 2, FTH = 2 }
-npc.bonus_damage = 3
-npc.bonus_armor = 4
+npc.damage = 3
+npc.armor_penetration = 0
+npc.deflection = 4
+
 npc.equipment = {}
 npc.drop_table = {}
 

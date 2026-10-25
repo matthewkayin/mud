@@ -11,6 +11,9 @@ import (
 const ITEM_INFUSION_USES_UNLIMITED int32 = -1
 const ITEM_USABLE_BY_JOB_ANY JobId = -1
 const ITEM_REINFORCED_DURABILITY_PERCENT int32 = 120
+const ITEM_REINFORCED_DAMAGE_PERCENT int32 = 120
+const ITEM_REINFORCED_PENETRATION_PERCENT int32 = 120
+const ITEM_REINFORCED_DEFLECTION_PERCENT int32 = 120
 
 type ItemId int32
 
@@ -126,6 +129,7 @@ type ItemDataSpellScroll struct {
 
 type ItemDataWeapon struct {
 	Damage int32
+	ArmorPenetration int32
 	MaxDurability int32
 	StatBonuses StatBlock
 	StatRequirements StatBlock
@@ -133,7 +137,7 @@ type ItemDataWeapon struct {
 }
 
 type ItemDataArmor struct {
-	Armor int32
+	Deflection int32
 	MaxDurability int32
 	StealthPenalty float32
 	StatBonuses StatBlock
@@ -265,7 +269,11 @@ func (parser *ScriptParser) parseItemData(table *lua.Table) *ItemData {
 		case ITEM_KIND_EQUIPMENT_ONE_HANDED, ITEM_KIND_EQUIPMENT_TWO_HANDED: {
 			data := &ItemDataWeapon{}
 			data.Damage = parser.getInt32(table, "damage")
+			parser.checkInt32NonNegative(data.Damage, "damage")
+			data.ArmorPenetration = parser.getInt32(table, "armor_penetration")
+			parser.checkInt32NonNegative(data.ArmorPenetration, "armor_penetration")
 			data.MaxDurability = parser.getInt32(table, "max_durability")
+			parser.checkInt32NonNegative(data.MaxDurability, "max_durability")
 			data.StatBonuses = parser.getStatBlock(table, "stat_bonuses", false)
 			data.StatRequirements = parser.getStatBlock(table, "stat_requirements", false)
 			data.Prefix = parser.getString(table, "prefix")
@@ -274,8 +282,10 @@ func (parser *ScriptParser) parseItemData(table *lua.Table) *ItemData {
 
 		case ITEM_KIND_EQUIPMENT_SHIELD, ITEM_KIND_EQUIPMENT_OUTFIT: {
 			data := &ItemDataArmor{}
-			data.Armor = parser.getInt32(table, "armor")
+			data.Deflection = parser.getInt32(table, "deflection")
+			parser.checkInt32NonNegative(data.Deflection, "deflection")
 			data.MaxDurability = parser.getInt32(table, "max_durability")
+			parser.checkInt32NonNegative(data.MaxDurability, "max_durability")
 			data.StealthPenalty = parser.getFloat32(table, "stealth_penalty")
 			data.StatBonuses = parser.getStatBlock(table, "stat_bonuses", false)
 			data.StatRequirements = parser.getStatBlock(table, "stat_requirements", false)
@@ -530,35 +540,53 @@ func (item *Item) GetDurabilityPercent() int32 {
 	return (item.Durability * 100) / itemData.GetMaxDurability()
 }
 
-func (item *Item) GetDamageValue() int32 {
+func (item *Item) GetDamage() int32 {
 	itemData := ITEM_DATA[item.Id]
 	if !itemData.ItemIsWeapon() {
 		return -1
 	}
+
 	weaponData := itemData.Data.(*ItemDataWeapon)
 	damage := weaponData.Damage
 
 	//give damage bonus for reinforcement
 	if item.Durability > weaponData.MaxDurability {
-		damage = (damage * 120 ) / 100
+		damage = (damage * ITEM_REINFORCED_DAMAGE_PERCENT) / 100
 	}
 
 	return damage
 }
 
-func (item *Item) GetArmorValue() int32 {
+func (item *Item) GetArmorPenetration() int32 {
+	itemData := ITEM_DATA[item.Id]
+	if !itemData.ItemIsWeapon() {
+		return 0
+	}
+
+	weaponData := itemData.Data.(*ItemDataWeapon)
+	penetration := weaponData.ArmorPenetration
+
+	//give damage bonus for reinforcement
+	if item.Durability > weaponData.MaxDurability {
+		penetration = (penetration * ITEM_REINFORCED_PENETRATION_PERCENT) / 100
+	}
+
+	return penetration
+}
+
+func (item *Item) GetDeflection() int32 {
 	itemData := ITEM_DATA[item.Id]
 	if !itemData.ItemIsArmor() {
 		return -1
 	}
 	armorData := itemData.Data.(*ItemDataArmor)
-	armor := armorData.Armor
+	deflection := armorData.Deflection
 
 	if item.Durability > armorData.MaxDurability {
-		armor = (armor * 120) / 100
+		deflection = (deflection * ITEM_REINFORCED_DEFLECTION_PERCENT) / 100
 	}
 
-	return armor
+	return deflection
 }
 
 func (item *Item) GetSellPrice() int32 {
