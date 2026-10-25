@@ -4,14 +4,14 @@ npc.id = "spider"
 npc.name = "Spider"
 npc.description = "A giant, hairy spider with scutters about, glaring at you with its lamp-like eyes."
 
-npc.experience_worth = 20
+npc.experience_worth = 40
 npc.experience_worth_scaling = 5
 npc.respawn_duration = world.time_minutes(1)
 
-npc.stats = { VIT = 7, STR = 2, AGI = 8, INT = 2, FTH = 4 }
-npc.scaling = { VIT = 4, STR = 2, AGI = 6, INT = 2, FTH = 4 }
-npc.damage = 4
-npc.armor_penetration = 4
+npc.stats = { VIT = 9, STR = 2, AGI = 10, INT = 2, FTH = 4 }
+npc.scaling = { VIT = 9, STR = 2, AGI = 10, INT = 2, FTH = 4 }
+npc.damage = 3
+npc.armor_penetration = 1
 npc.deflection = 6
 npc.damage_resistance = 1
 
