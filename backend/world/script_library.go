@@ -900,7 +900,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 			condition := &mob.Data.Conditions[conditionIndex]
 			conditionData := CONDITION_DATA[condition.Id]
 			if conditionData.IsAilment {
-				lastIndex := len(mob.Data.Conditions)
+				lastIndex := len(mob.Data.Conditions) - 1
 				mob.Data.Conditions[conditionIndex] = mob.Data.Conditions[lastIndex]
 				mob.Data.Conditions = mob.Data.Conditions[:lastIndex]
 				__world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You have been cured of <r>%s</r>.", conditionData.Name))
