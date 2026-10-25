@@ -8,6 +8,7 @@ item.price = 300
 item.size = 10
 
 item.damage = 10
+item.armor_penetration = 0
 item.max_durability = 200
 item.stat_bonuses = { STR = 9 }
 item.stat_requirements = { STR = 12 }

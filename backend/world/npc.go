@@ -367,6 +367,10 @@ func (npc *Npc) spawnMob(world *World) {
 		Conditions: make([]Condition, 0, 1),
 
 		Stats: stats,
+		BaseDamage: npcData.baseDamage,
+		BaseArmorPenetration: npcData.baseArmorPenetration,
+		BaseDeflection: npcData.baseDeflection,
+
 		Spells: []SpellId {},
 		Inventory: dropTable.getLoot(),
 		// MobInit clones this so that mobs don't share the NPC data's slices

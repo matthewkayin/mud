@@ -31,8 +31,13 @@ type NpcData struct {
 	experienceWorth int32
 	experienceWorthScaling int32
 	respawnDuration int32
+
 	stats StatBlock
 	scaling StatBlock
+	baseDamage int32
+	baseArmorPenetration int32
+	baseDeflection int32
+
 	equipment Equipment
 	infusion ItemInfusion
 	dropTable DropTable
@@ -135,6 +140,10 @@ func (parser *ScriptParser) parseNpc(table *lua.Table) *NpcData {
 
 	npcData.stats = parser.getStatBlock(table, "stats", false)
 	npcData.scaling = parser.getStatBlock(table, "scaling", false)
+	npcData.baseDamage = parser.getInt32(table, "damage")
+	npcData.baseArmorPenetration = parser.getInt32(table, "armor_penetration")
+	npcData.baseDeflection = parser.getInt32(table, "deflection")
+
 	npcData.equipment = parser.getEquipment(table, "equipment")
 
 	infusion := parser.getOptionalItemInfusion(table, "infusion")

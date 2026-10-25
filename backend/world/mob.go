@@ -50,6 +50,9 @@ const MOB_ALERTNESS_COOLDOWN_RATE float32 = 0.05
 const MOB_TAUNT_COOLDOWN_MAX float32 = 1.0
 const MOB_TAUNT_COOLDOWN_RATE float32 = 0.05
 
+const MOB_DEFLECTION_PERCENT float32 = 0.60
+const MOB_DEFLECTION_AMOUNT_PER_POINT int32 = 5
+
 type MobTargetType int
 const (
 	MOB_TARGET_NONE MobTargetType = iota
@@ -543,7 +546,9 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	// Get weapon damage from the item
 	var damage int32 = 0
 	if heldItemIsWeapon {
-		damage = weapon.GetDamageValue()
+		damage = weapon.GetDamage()
+	} else {
+		damage = mob.Data.BaseDamage
 	}
 
 	// Add strength to the damage
@@ -552,8 +557,6 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	} else {
 		damage += mob.Data.Strength() / 4
 	}
-
-	damage += int32(mob.Data.BonusDamage)
 
 	// Apply condition damage changes
 	damage = mob.Data.GetConditionStatChange(damage, CONDITION_EFFECT_TYPE_STAT_CHANGE_DAMAGE)
@@ -566,8 +569,27 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 		damage = int32(float32(damage) * MOB_CRIT_DAMAGE_MULTIPLIER)
 	}
 
-	// Subtract armor
-	damage -= targetMob.Data.Armor()
+	// Check for deflection
+	if !crit {
+		// Determine penetration
+		var penetration int32
+		if heldItemIsWeapon {
+			penetration = weapon.GetArmorPenetration()
+		} else {
+			penetration = mob.Data.BaseArmorPenetration
+		}
+
+		// Roll to deflect
+		deflectionChance :=
+			float32(mob.Data.Deflection() * MOB_DEFLECTION_AMOUNT_PER_POINT) -
+			float32(penetration * MOB_DEFLECTION_AMOUNT_PER_POINT)
+		deflect := rand.Float32() < deflectionChance
+
+		// On deflect, subtract armor
+		if deflect {
+			damage = int32(float32(damage) * MOB_DEFLECTION_PERCENT)
+		}
+	}
 
 	// Calculate final damage
 	attackerMinDamage := max(1, mob.Data.Level / 2)

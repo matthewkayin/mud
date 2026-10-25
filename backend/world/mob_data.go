@@ -25,6 +25,10 @@ type MobData struct {
 	ExperienceToNextLevel int32
 
 	Stats StatBlock
+	BaseDamage int32
+	BaseArmorPenetration int32
+	BaseDeflection int32
+
 	Abilities uint32
 
 	Health int32
@@ -34,8 +38,6 @@ type MobData struct {
 	Spells []SpellId
 	Inventory Inventory
 	Equipment Equipment
-	BonusDamage int32
-	BonusArmor int32
 }
 
 type MobDataJson struct {
@@ -47,6 +49,10 @@ type MobDataJson struct {
 	ExperienceToNextLevel int32
 
 	Stats StatBlock
+	BaseDamage int32
+	BasePenetration int32
+	BaseDeflection int32
+
 	Abilities []string
 
 	Health int32
@@ -56,8 +62,6 @@ type MobDataJson struct {
 	Spells []string
 	Inventory Inventory
 	Equipment Equipment
-	BonusDamage int32
-	BonusArmor int32
 }
 
 // Returns a copy of the mob data that shares no slices with the original
@@ -84,6 +88,8 @@ func (mobData *MobData) MarshalJSON() ([]byte, error) {
 		ExperienceToNextLevel: mobData.ExperienceToNextLevel,
 
 		Stats: mobData.Stats,
+		BaseDamage: mobData.BaseDamage,
+
 		Abilities: mobData.abilitiesToStringArray(),
 
 		Health: mobData.Health,
@@ -93,8 +99,6 @@ func (mobData *MobData) MarshalJSON() ([]byte, error) {
 		Spells: spellsToStringArray(mobData.Spells),
 		Inventory: mobData.Inventory,
 		Equipment: mobData.Equipment,
-		BonusDamage: mobData.BonusDamage,
-		BonusArmor: mobData.BonusArmor,
 	}
 	return json.Marshal(&mobDataJson)
 }
@@ -114,6 +118,10 @@ func (mobData *MobData) UnmarshalJSON(data []byte) error {
 	mobData.ExperienceToNextLevel = mobDataJson.ExperienceToNextLevel
 
 	mobData.Stats = mobDataJson.Stats
+	mobData.BaseDamage = mobDataJson.BaseDamage
+	mobData.BaseArmorPenetration = mobDataJson.BasePenetration
+	mobData.BaseDeflection = mobDataJson.BaseDeflection
+
 	mobData.setAbilitiesFromStringArray(mobDataJson.Abilities)
 
 	mobData.Health = mobDataJson.Health
@@ -123,8 +131,6 @@ func (mobData *MobData) UnmarshalJSON(data []byte) error {
 	mobData.Spells = spellsFromStringArray(mobDataJson.Spells)
 	mobData.Inventory = mobDataJson.Inventory
 	mobData.Equipment = mobDataJson.Equipment
-	mobData.BonusDamage = mobDataJson.BonusDamage
-	mobData.BonusArmor = mobDataJson.BonusArmor
 
 	return nil
 }
@@ -177,22 +183,22 @@ func (mobData *MobData) MaxMana() int32 {
 	return mobData.Intelligence() * 5
 }
 
-func (mobData *MobData) Armor() int32 {
-	var armorVal int32 = int32(mobData.BonusArmor)
+func (mobData *MobData) Deflection() int32 {
+	var deflection int32 = int32(mobData.BaseDeflection)
 
 	outfit := mobData.Equipment.Get(EQUIPMENT_SLOT_OUTFIT)
 	if outfit != nil {
-		armorVal += outfit.GetArmorValue()
+		deflection += outfit.GetDeflection()
 	}
 
 	shield := mobData.Equipment.GetShield()
 	if shield != nil {
-		armorVal += shield.GetArmorValue()
+		deflection += shield.GetDeflection()
 	}
 
-	armorVal = mobData.GetConditionStatChange(armorVal, CONDITION_EFFECT_TYPE_STAT_CHANGE_ARMOR)
+	deflection = mobData.GetConditionStatChange(deflection, CONDITION_EFFECT_TYPE_STAT_CHANGE_ARMOR)
 
-	return armorVal
+	return deflection
 }
 
 func (mobData *MobData) GetStat(index int) int32 {
