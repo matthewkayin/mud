@@ -13,6 +13,7 @@ npc.scaling = { VIT = 2, STR = 6, AGI = 1, INT = 1, FTH = 8 }
 npc.damage = 0
 npc.armor_penetration = 0
 npc.deflection = 9
+npc.damage_resistance = 0
 
 npc.equipment = {}
 npc.drop_table = {}

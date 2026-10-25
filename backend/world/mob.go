@@ -592,6 +592,9 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 		}
 	}
 
+	// Subtract damage resistance
+	damage -= mob.Data.GetDamageResistance()
+
 	// Calculate final damage
 	attackerMinDamage := max(1, mob.Data.Level / 2)
 	damage = max(damage, attackerMinDamage)

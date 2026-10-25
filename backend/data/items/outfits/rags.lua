@@ -8,6 +8,7 @@ item.price = 100
 item.size = 20
 
 item.deflection = 0
+item.damage_resistance = 0
 item.max_durability = 100
 item.stealth_penalty = 0
 item.stat_bonuses = {}
