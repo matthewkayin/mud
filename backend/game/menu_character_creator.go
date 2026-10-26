@@ -29,6 +29,7 @@ var MENU_CREATE = MenuCreate(MenuCreateParams {
 	onExit: func(gamestate *GameState, player *Player) {
 		player.characterSheet = nil
 	},
+	fallbackHandler: nil,
 
 	groups: map[string]string {
 		"root": "",

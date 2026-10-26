@@ -107,7 +107,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.Return()
 	},
 
-	// Returns the number of updates that will occur in X minutes
+	// Returns the number of ticks that will occur in X minutes
 	//
 	// @param minutes integer
 	// @return integer
@@ -116,7 +116,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.ReturnNumber(float64((minutes * 60) / WORLD_SECONDS_PER_UPDATE))
 	},
 
-	// Return the number of updates that will occur in X seconds
+	// Return the number of ticks that will occur in X seconds
 	//
 	// @param seconds integer
 	// @return integer
@@ -129,6 +129,13 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 			frame.ThrowArgError(0, "time_seconds must be divisible by WORLD_SECONDS_PER_UPDATE")
 		}
 		return frame.ReturnNumber(float64(seconds / WORLD_SECONDS_PER_UPDATE))
+	},
+
+	// Returns the current world tick
+	//
+	// @return integer
+	"get_ticks": func(frame lua.Frame) lua.Outcome {
+		return frame.ReturnNumber(float64(__world.tick))
 	},
 
 	// Returns the player's race
@@ -397,7 +404,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	//
 	// @param handle MobHandle
 	// @param index integer
-	// @return bool
+	// @return boolean
 	"mob_item_is_repairable": func(frame lua.Frame) lua.Outcome {
 		mob := frameGetMobArg(&frame, 0)
 		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
@@ -408,7 +415,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 
 	// Repairs the item
 	//
-	// @param handle Mobhandle
+	// @param handle MobHandle
 	// @param index integer
 	"mob_repair_item": func(frame lua.Frame) lua.Outcome {
 		mob := frameGetMobArg(&frame, 0)
@@ -1003,6 +1010,70 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		} else {
 			lock.Unlock()
 		}
+		return frame.Return()
+	},
+
+	// Adds an item to the room
+	//
+	// @param room integer
+	// @param item string
+	// @param amount integer
+	"room_add_item": func(frame lua.Frame) lua.Outcome {
+		roomIndex := frameGetRoomIndexArg(&frame, 0, "room")
+		itemId := frameGetItemIdArg(&frame, 1)
+		amount := frameGetInt32Arg(&frame, 2, "amount")
+
+		// TODO: add durability to this func
+		__world.Rooms[roomIndex].Inventory.AddItem(Item {
+			Id: itemId,
+			Amount: amount,
+		})
+
+		return frame.Return()
+	},
+
+	// Subscribe to a signal. The provided listener will get called whenever a fixture emits the signal.
+	//
+	// @param signal string
+	// @param listener function
+	"subscribe_to_signal": func(frame lua.Frame) lua.Outcome {
+		signal, ok := frame.String(0)
+		if !ok {
+			frame.ThrowArgTypeError(0, lua.StringKind)
+		}
+		listener, ok := frame.Function(1)
+		if !ok {
+			frame.ThrowArgTypeError(0, lua.FunctionKind)
+		}
+
+		__world.subscribeToSignal(signal, listener)
+
+		return frame.Return()
+	},
+
+	// Emit a signal, which will invoke any listeners who are listening to the signal.
+	// Any arguments provided after the signal name will be passed into the listener function.
+	//
+	// @param signal string
+	// @param ... any
+	"emit_signal": func(frame lua.Frame) lua.Outcome {
+		signal, ok := frame.String(0)
+		if !ok {
+			frame.ThrowArgTypeError(0, lua.StringKind)
+		}
+
+		args := make([]lua.Value, 0, frame.ArgumentCount() - 1)
+		for index := range frame.ArgumentCount() - 1 {
+			arg, ok := frame.Argument(index + 1)
+			if !ok {
+				frame.ThrowArgError(index + 1, "Error getting argument")
+			}
+
+			args = append(args, arg)
+		}
+
+		__world.emitSignal(signal, args...)
+
 		return frame.Return()
 	},
 }

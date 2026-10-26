@@ -13,6 +13,7 @@ var MENU_LOGIN = MenuCreate(MenuCreateParams {
 	},
 	onExit: func(gamestate *GameState, player *Player) {
 	},
+	fallbackHandler: nil,
 	groups: map[string]string {
 		"root": "",
 	},

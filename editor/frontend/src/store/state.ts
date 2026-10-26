@@ -99,6 +99,7 @@ export type EditorState = {
   startCell: EditorCell | null;
   itemData: world.ItemData[];
   npcData: world.NpcData[];
+  fixtureData: world.FixtureData[];
 }
 
 export function editorStateDeleteRoom(state: EditorState, cell: EditorCell) {

@@ -15,6 +15,8 @@ func mobForEquipmentTest(items ...Item) *Mob {
 			Inventory: Inventory { Items: items },
 			Equipment: EquipmentInitEmpty(),
 			Spells: []SpellId{},
+			// Unequipping from a dead mob keeps its spells, so the mob must be alive
+			Health: 10,
 		},
 	}
 
@@ -96,7 +98,8 @@ func TestEquipSpellbookTracksEquippedSpell(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unequip spellbook: %s", err)
 	}
-	if _, exists := mob.PlayerCharacter.SpellsEquipped[spell]; exists {
+	_, exists := mob.PlayerCharacter.SpellsEquipped[spell]
+	if exists {
 		t.Errorf("Spell should no longer be equipped after unequipping")
 	}
 }

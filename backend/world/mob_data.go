@@ -126,7 +126,7 @@ func (mobData *MobData) UnmarshalJSON(data []byte) error {
 	mobData.BaseDamage = mobDataJson.BaseDamage
 	mobData.BaseArmorPenetration = mobDataJson.BasePenetration
 	mobData.BaseDeflection = mobDataJson.BaseDeflection
-	mobData.BaseDamageResistance = mobData.BaseDamageResistance
+	mobData.BaseDamageResistance = mobDataJson.BaseDamageResistance
 
 	mobData.setAbilitiesFromStringArray(mobDataJson.Abilities)
 

@@ -1,6 +1,6 @@
 # Rooms
 
-Rooms (`backend/world/room.go`) are saved in `data/world.json` and edited in the world editor. A room has a name, description, notes, safe zone flag, exits, locks, a drop table that fills its floor inventory, and chests. `Room.Notes` is for content developers to record the intent behind a part of the world. It's saved in `world.json` and edited in the world editor, but the game never reads or shows it. Mobs in the room are listed in `Room.Occupants` by `MobHandle`. Occupants are transient, so they aren't saved.
+Rooms (`backend/world/room.go`) are saved in `data/world.json` and edited in the world editor. A room has a name, description, notes, safe zone flag, exits, locks, a drop table that fills its floor inventory, chests, and fixtures. Fixtures (`Room.Fixtures`) are scripted objects that players can look at and interact with. Their scripts are in `backend/data/fixtures/`, and each fixture in a room is saved by its script's name along with the values of its behavior params. `Room.Notes` is for content developers to record the intent behind a part of the world. It's saved in `world.json` and edited in the world editor, but the game never reads or shows it. Mobs in the room are listed in `Room.Occupants` by `MobHandle`. Occupants are transient, so they aren't saved.
 
 ## Exits
 

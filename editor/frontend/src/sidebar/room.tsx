@@ -5,6 +5,7 @@ import { SubmitTextField } from './components/submit_textfield';
 import { DropTableEditor } from './components/drop_table';
 import { ChestsEditor } from './components/chests';
 import { NpcsEditor } from './components/npcs';
+import { FixturesEditor } from './components/fixtures';
 import { LocksEditor } from './components/locks';
 import { editorStore, EditorCell, EditorConnection, type EditorRoom } from '../store';
 import { EditorActionDeleteRoom, EditorActionEditRoom, EditorActionSetStartRoom } from '../store/action';
@@ -138,6 +139,15 @@ export function RoomEditor({ selectedCell, room, connections }: RoomEditorProps)
         onEdit={(chests) => {
           commitRoomEdit((editedRoom) => {
             editedRoom.Chests = chests;
+          });
+        }}
+      />
+
+      <FixturesEditor
+        fixtures={room.Fixtures}
+        onEdit={(fixtures) => {
+          commitRoomEdit((editedRoom) => {
+            editedRoom.Fixtures = fixtures;
           });
         }}
       />

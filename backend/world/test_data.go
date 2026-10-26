@@ -84,18 +84,18 @@ func primeTestData() {
 			respawnDuration: 5,
 			equipment: EquipmentInitEmpty(),
 			MovementType: NPC_MOVEMENT_TYPE_WANDER,
-			BehaviorParams: map[string]NpcBehaviorParamType{},
+			BehaviorParams: map[string]BehaviorParamType{},
 		},
 		TEST_NPC_TROLL: {
 			Id: "troll",
 			Name: "Troll",
 			MovementType: NPC_MOVEMENT_TYPE_STATIONARY,
-			BehaviorParams: map[string]NpcBehaviorParamType {
-				"Greeting": NPC_BEHAVIOR_PARAM_TYPE_STRING,
-				"Patience": NPC_BEHAVIOR_PARAM_TYPE_NUMBER,
-				"IsGrumpy": NPC_BEHAVIOR_PARAM_TYPE_BOOLEAN,
-				"Toll": NPC_BEHAVIOR_PARAM_TYPE_ITEM,
-				"ExitToBlock": NPC_BEHAVIOR_PARAM_TYPE_DIRECTION,
+			BehaviorParams: map[string]BehaviorParamType {
+				"Greeting": BEHAVIOR_PARAM_TYPE_STRING,
+				"Patience": BEHAVIOR_PARAM_TYPE_NUMBER,
+				"IsGrumpy": BEHAVIOR_PARAM_TYPE_BOOLEAN,
+				"Toll": BEHAVIOR_PARAM_TYPE_ITEM,
+				"ExitToBlock": BEHAVIOR_PARAM_TYPE_DIRECTION,
 			},
 		},
 	}

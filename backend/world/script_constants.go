@@ -84,11 +84,11 @@ func ScriptConstantTables() []ScriptConstantTable {
 
 	// NPC behavior param type
 	npcBehaviorParamTypeTable := ScriptConstantTable {
-		Name: "NpcBehaviorParamType",
-		Constants: make([]ScriptConstant, 0, NPC_BEHAVIOR_PARAM_TYPE_COUNT),
+		Name: "BehaviorParamType",
+		Constants: make([]ScriptConstant, 0, BEHAVIOR_PARAM_TYPE_COUNT),
 	}
-	for index := range NPC_BEHAVIOR_PARAM_TYPE_COUNT {
-		paramType := NpcBehaviorParamType(index)
+	for index := range BEHAVIOR_PARAM_TYPE_COUNT {
+		paramType := BehaviorParamType(index)
 		npcBehaviorParamTypeTable.Constants = append(npcBehaviorParamTypeTable.Constants, ScriptConstant {
 			Name: strings.ToUpper(paramType.String()),
 			Value: lua.String(paramType.String()),

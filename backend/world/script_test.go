@@ -265,7 +265,7 @@ func TestNpcHookArguments(t *testing.T) {
 	hooksTable, _ := hooks[0].AsTable()
 	parser := ScriptParser{}
 	npcData := NPC_DATA[TEST_NPC_GOBLIN]
-	npcData.BehaviorParams = map[string]NpcBehaviorParamType{ "Greeting": NPC_BEHAVIOR_PARAM_TYPE_STRING }
+	npcData.BehaviorParams = map[string]BehaviorParamType{ "Greeting": BEHAVIOR_PARAM_TYPE_STRING }
 	npcData.init = parser.getOptionalFunction(hooksTable, "init")
 	npcData.getStatusDescription = parser.getOptionalFunction(hooksTable, "get_status_description")
 	if parser.getError() != nil {

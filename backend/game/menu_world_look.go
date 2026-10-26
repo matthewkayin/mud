@@ -203,53 +203,65 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 
 			// Get target handle
 			targetHandle, err := fuzzyFindTarget(gamestate, player, args)
+			if err == nil {
+				// Handle monster case
+				targetMob := gamestate.world.Mobs.Get(targetHandle)
+				if targetMob.Npc != nil {
+					// General description
+					player.send(fmt.Sprintf("<y>%s</y> (Level %d): %s",
+						targetMob.GetName(), targetMob.Data.Level, targetMob.Npc.GetDescription()))
+
+
+					// Status description
+					statusDescription, hasStatusDescription := targetMob.Npc.GetStatusDescription(gamestate.world)
+					if hasStatusDescription {
+						player.send(statusDescription)
+					}
+
+					// Are they friendly?!
+					var dispositionMsg string
+					switch targetMob.Npc.GetDisposition() {
+						case world.NPC_DISPOSITION_FRIENDLY:
+							dispositionMsg = fmt.Sprintf("%s seems to be friendly", targetMob.GetName())
+							if targetMob.Npc.IsMerchant() {
+								dispositionMsg += ", and appears to be in business!"
+							} else {
+								dispositionMsg += "."
+							}
+						case world.NPC_DISPOSITION_HOSTILE:
+							dispositionMsg = fmt.Sprintf("%s appears to be very unfriendly.", targetMob.GetName())
+						default:
+							dispositionMsg = fmt.Sprintf("It is not clear if %s is friendly or unfriendly.", targetMob.GetName())
+					}
+					player.send(dispositionMsg)
+
+					return true
+				}
+
+				// Handle player case
+				player.send(fmt.Sprintf("<y>%s</y> (Level %d): %s %s %s.",
+					targetMob.Data.Name, targetMob.Data.Level,
+					world.RACE_DATA[targetMob.PlayerCharacter.Race].Name,
+					world.CLASS_DATA[targetMob.PlayerCharacter.Class].Name,
+					world.JOB_DATA[targetMob.PlayerCharacter.Job].Name))
+				printMobEquipmentList(player, targetMob)
+			}
+
+			// Handle fixture case
+			fixture, err := fuzzyFindFixture(gamestate, player, args)
 			if err != nil {
-				player.send(err.Error())
-				return true
-			}
-
-			// Handle monster case
-			targetMob := gamestate.world.Mobs.Get(targetHandle)
-			if targetMob.Npc != nil {
-				// General description
-				player.send(fmt.Sprintf("<y>%s</y> (Level %d): %s",
-					targetMob.GetName(), targetMob.Data.Level, targetMob.Npc.GetDescription()))
-
-
-				// Status description
-				statusDescription, hasStatusDescription := targetMob.Npc.GetStatusDescription(gamestate.world)
-				if hasStatusDescription {
-					player.send(statusDescription)
+				description, ok := fixture.GetDescription(gamestate.world)
+				if !ok {
+					player.send(fmt.Sprintf("%s is undescribable.", fixture.GetName()))
+					return true
 				}
 
-				// Are they friendly?!
-				var dispositionMsg string
-				switch targetMob.Npc.GetDisposition() {
-					case world.NPC_DISPOSITION_FRIENDLY:
-						dispositionMsg = fmt.Sprintf("%s seems to be friendly", targetMob.GetName())
-						if targetMob.Npc.IsMerchant() {
-							dispositionMsg += ", and appears to be in business!"
-						} else {
-							dispositionMsg += "."
-						}
-					case world.NPC_DISPOSITION_HOSTILE:
-						dispositionMsg = fmt.Sprintf("%s appears to be very unfriendly.", targetMob.GetName())
-					default:
-						dispositionMsg = fmt.Sprintf("It is not clear if %s is friendly or unfriendly.", targetMob.GetName())
-				}
-				player.send(dispositionMsg)
-
-				return true
+				// Send description
+				player.send(description)
+				player.send(fmt.Sprintf("You can interact with %s by typing %s", fixture.GetName(), util.CombineNames(fixture.GetVerbs())))
 			}
 
-			// Handle player case
-			player.send(fmt.Sprintf("<y>%s</y> (Level %d): %s %s %s.",
-				targetMob.Data.Name, targetMob.Data.Level,
-				world.RACE_DATA[targetMob.PlayerCharacter.Race].Name,
-				world.CLASS_DATA[targetMob.PlayerCharacter.Class].Name,
-				world.JOB_DATA[targetMob.PlayerCharacter.Job].Name))
-			printMobEquipmentList(player, targetMob)
-
+			player.send(err.Error())
 			return true
 		},
 	},

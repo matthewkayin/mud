@@ -12,28 +12,31 @@ import { editorStore, DIRECTION_NAMES } from '../../store';
 import { SubmitTextField } from './submit_textfield';
 import { SubmitNumberField } from './submit_number_field';
 
-// Returns a value for each behavior param that the NPC data declares
-export function defaultBehaviorParams(npcData: world.NpcData, itemData: world.ItemData[]): Record<string, any> {
+// Maps each behavior param name that an NPC or fixture script declares to its type
+type BehaviorParamTypes = Record<string, world.BehaviorParamType>;
+
+// Returns a value for each declared behavior param
+export function defaultBehaviorParams(paramTypes: BehaviorParamTypes, itemData: world.ItemData[]): Record<string, any> {
   const params: Record<string, any> = {};
-  for (const [name, paramType] of Object.entries(npcData.BehaviorParams)) {
+  for (const [name, paramType] of Object.entries(paramTypes)) {
     switch (paramType) {
-      case world.NpcBehaviorParamType.STRING:
+      case world.BehaviorParamType.STRING:
         params[name] = '';
         break;
-      case world.NpcBehaviorParamType.NUMBER:
+      case world.BehaviorParamType.NUMBER:
         params[name] = 0;
         break;
-      case world.NpcBehaviorParamType.BOOLEAN:
+      case world.BehaviorParamType.BOOLEAN:
         params[name] = false;
         break;
-      case world.NpcBehaviorParamType.ITEM:
+      case world.BehaviorParamType.ITEM:
         params[name] = world.Item.createFrom({
           Id: itemData.length > 0 ? itemData[0].Name : '',
           Amount: 1,
           Durability: 0,
         });
         break;
-      case world.NpcBehaviorParamType.DIRECTION:
+      case world.BehaviorParamType.DIRECTION:
         params[name] = DIRECTION_NAMES[world.Direction.NORTH];
         break;
     }
@@ -43,12 +46,12 @@ export function defaultBehaviorParams(npcData: world.NpcData, itemData: world.It
 }
 
 type BehaviorParamsEditorProps = {
-  npcData: world.NpcData;
+  paramTypes: BehaviorParamTypes;
   params: Record<string, any>;
   onEdit: (params: Record<string, any>) => void;
 }
 
-export function BehaviorParamsEditor({ npcData, params, onEdit }: BehaviorParamsEditorProps) {
+export function BehaviorParamsEditor({ paramTypes, params, onEdit }: BehaviorParamsEditorProps) {
   const itemData = useSyncExternalStore(editorStore.subscribe, editorStore.getItemData);
 
   const editParam = (name: string, value: any) => {
@@ -58,7 +61,7 @@ export function BehaviorParamsEditor({ npcData, params, onEdit }: BehaviorParams
   };
 
   // Sorted so that the params keep the same order between renders
-  const paramEntries = Object.entries(npcData.BehaviorParams).sort(([a], [b]) => a.localeCompare(b));
+  const paramEntries = Object.entries(paramTypes).sort(([a], [b]) => a.localeCompare(b));
   if (paramEntries.length === 0) {
     return null;
   }
@@ -69,7 +72,7 @@ export function BehaviorParamsEditor({ npcData, params, onEdit }: BehaviorParams
       {paramEntries.map(([name, paramType]) => {
         const value = params[name];
         switch (paramType) {
-          case world.NpcBehaviorParamType.STRING:
+          case world.BehaviorParamType.STRING:
             return (
               <SubmitTextField
                 key={name}
@@ -79,7 +82,7 @@ export function BehaviorParamsEditor({ npcData, params, onEdit }: BehaviorParams
               />
             );
 
-          case world.NpcBehaviorParamType.NUMBER:
+          case world.BehaviorParamType.NUMBER:
             return (
               <SubmitNumberField
                 key={name}
@@ -89,7 +92,7 @@ export function BehaviorParamsEditor({ npcData, params, onEdit }: BehaviorParams
               />
             );
 
-          case world.NpcBehaviorParamType.BOOLEAN:
+          case world.BehaviorParamType.BOOLEAN:
             return (
               <FormControlLabel
                 key={name}
@@ -103,7 +106,7 @@ export function BehaviorParamsEditor({ npcData, params, onEdit }: BehaviorParams
               />
             );
 
-          case world.NpcBehaviorParamType.ITEM:
+          case world.BehaviorParamType.ITEM:
             return (
               <Stack key={name} direction="row" spacing={2} sx={{ alignItems: 'center' }}>
                 <Typography>{name}:</Typography>
@@ -126,7 +129,7 @@ export function BehaviorParamsEditor({ npcData, params, onEdit }: BehaviorParams
               </Stack>
             );
 
-          case world.NpcBehaviorParamType.DIRECTION:
+          case world.BehaviorParamType.DIRECTION:
             return (
               <Stack key={name} direction="row" spacing={2} sx={{ alignItems: 'center' }}>
                 <Typography>{name}:</Typography>

@@ -67,6 +67,7 @@ type Room struct {
 	DropTable DropTable
 	Inventory Inventory
 	Chests []Chest
+	Fixtures []Fixture
 
 	Occupants []MobHandle `json:"-"`
 	cleanupTimer int32
@@ -93,6 +94,15 @@ func (lock *Lock) Unlock() {
 
 func (lock *Lock) Relock() {
 	lock.unlockTimer = 0
+}
+
+func (room *Room) init(world *World) {
+	// Init fixtures
+	for index := range len(room.Fixtures) {
+		room.Fixtures[index].init(world)
+	}
+
+	room.replenish()
 }
 
 func (room *Room) updateLocks() {

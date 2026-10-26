@@ -63,7 +63,7 @@ export function NpcsEditor({ npcs, onEdit }: NpcsEditorProps) {
                       }
                       editNpc(index, (editedNpc) => {
                         editedNpc.Id = newData.Id;
-                        editedNpc.BehaviorParams = defaultBehaviorParams(newData, itemData);
+                        editedNpc.BehaviorParams = defaultBehaviorParams(newData.BehaviorParams, itemData);
                       });
                     }}
                     sx={{ minWidth: '45%' }}
@@ -119,7 +119,7 @@ export function NpcsEditor({ npcs, onEdit }: NpcsEditorProps) {
                 </Stack>
 
                 {data && <BehaviorParamsEditor
-                  npcData={data}
+                  paramTypes={data.BehaviorParams}
                   params={npc.BehaviorParams}
                   onEdit={(params) => {
                     editNpc(index, (editedNpc) => {
@@ -154,7 +154,7 @@ export function NpcsEditor({ npcs, onEdit }: NpcsEditorProps) {
               DropTableOverride: {
                 Entries: [],
               },
-              BehaviorParams: defaultBehaviorParams(npcData[0], itemData),
+              BehaviorParams: defaultBehaviorParams(npcData[0].BehaviorParams, itemData),
               // Filled in when the world is saved
               SpawnRoom: getEditorConstants().RoomNone,
             }));
