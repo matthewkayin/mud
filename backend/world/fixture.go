@@ -15,7 +15,7 @@ const FIXTURE_RESET_DURATION int = (5 * 60) / WORLD_SECONDS_PER_UPDATE
 type FixtureId int
 
 type Fixture struct {
-	Id FixtureId
+	Id FixtureId `ts_type:"string"`
 	BehaviorParams map[string]any
 
 	instance lua.Value
@@ -67,8 +67,9 @@ func (fixture *Fixture) UnmarshalJSON(data []byte) error {
 
 type FixtureData struct {
 	Name string
-	Description lua.Value
-	BehaviorParams map[string]BehaviorParamType `ts_type:"Record<string, BehaviorParamType"`
+	BehaviorParams map[string]BehaviorParamType `ts_type:"Record<string, BehaviorParamType>"`
+
+	description lua.Value
 
 	init *lua.Function
 	reset *lua.Function
@@ -126,11 +127,10 @@ func (parser *ScriptParser) parseFixture(table *lua.Table) *FixtureData {
 	fixtureData := &FixtureData{}
 
 	fixtureData.Name = parser.getString(table, "name")
-	fixtureData.Description = table.RawGetString("description")
-	if fixtureData.Description.IsNil() {
+	fixtureData.description = table.RawGetString("description")
+	if fixtureData.description.IsNil() {
 		parser.addProblem(fmt.Errorf("missing required field 'description'"))
-	}
-	if !(fixtureData.Description.Kind() == lua.StringKind && fixtureData.Description.Kind() == lua.FunctionKind) {
+	} else if !(fixtureData.description.Kind() == lua.StringKind || fixtureData.description.Kind() == lua.FunctionKind) {
 		parser.addProblem(fmt.Errorf("Fixture description must be either a string or a function returning a string"))
 	}
 	fixtureData.BehaviorParams = parser.getBehaviorParams(table, "behavior_params")
@@ -143,11 +143,6 @@ func (parser *ScriptParser) parseFixture(table *lua.Table) *FixtureData {
 	interactionsTable := parser.getTable(table, "interactions")
 	if interactionsTable == nil {
 		parser.addProblem(fmt.Errorf("Fixture must have an interactions table."))
-		return nil
-	}
-
-	if len(fixtureData.interactions) == 0 {
-		parser.addProblem(fmt.Errorf("A fixture must have at least one interaction."))
 		return nil
 	}
 
@@ -185,6 +180,10 @@ func (parser *ScriptParser) parseFixture(table *lua.Table) *FixtureData {
 		}
 
 		fixtureData.interactions[name] = function
+	}
+
+	if len(fixtureData.interactions) == 0 {
+		parser.addProblem(fmt.Errorf("A fixture must have at least one interaction."))
 	}
 
 	if parser.getError() != nil {
@@ -272,13 +271,13 @@ func (fixture *Fixture) GetName() string {
 func (fixture *Fixture) GetDescription(world *World) (string, bool) {
 	fixtureData := FIXTURE_DATA[fixture.Id]
 
-	if fixtureData.Description.Kind() == lua.StringKind {
-		description, _ := fixtureData.Description.AsString()
+	if fixtureData.description.Kind() == lua.StringKind {
+		description, _ := fixtureData.description.AsString()
 		return description, true
 	}
 
-	if fixtureData.Description.Kind() == lua.FunctionKind {
-		getDescription, _ := fixtureData.Description.AsFunction()
+	if fixtureData.description.Kind() == lua.FunctionKind {
+		getDescription, _ := fixtureData.description.AsFunction()
 		result, ok := world.scriptCall(getDescription.Value(), fmt.Sprintf("fixture %s description()", fixtureData.Name), fixture.instance)
 		if !ok {
 			return "", false

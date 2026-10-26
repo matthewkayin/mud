@@ -26,6 +26,7 @@ export class EditorStore {
       startCell: null,
       itemData: [],
       npcData: [],
+      fixtureData: [],
     };
   }
 
@@ -157,6 +158,15 @@ export class EditorStore {
 
   setNpcData = (npcData: world.NpcData[]) => {
     this.state.npcData = npcData;
+    this.emitChange();
+  }
+
+  getFixtureData = () => {
+    return this.state.fixtureData;
+  }
+
+  setFixtureData = (fixtureData: world.FixtureData[]) => {
+    this.state.fixtureData = fixtureData;
     this.emitChange();
   }
 

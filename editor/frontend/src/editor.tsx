@@ -4,13 +4,14 @@ import { Canvas } from './canvas';
 import { Toolbar } from './toolbar';
 import { Sidebar } from './sidebar';
 import { editorStore } from './store';
-import { GetItemData, GetNpcData } from './api/editor_api';
+import { GetItemData, GetNpcData, GetFixtureData } from './api/editor_api';
 
 export function Editor() {
-  // Load item and NPC data
+  // Load item, NPC and fixture data
   useEffect(() => {
     GetItemData().then(editorStore.setItemData);
     GetNpcData().then(editorStore.setNpcData);
+    GetFixtureData().then(editorStore.setFixtureData);
   }, []);
 
   return (

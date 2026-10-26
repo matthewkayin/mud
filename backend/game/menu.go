@@ -38,6 +38,7 @@ func MenuCreate(params MenuCreateParams) Menu {
 	menu := Menu {
 		onEnter: params.onEnter,
 		onExit: params.onExit,
+		fallbackHandler: params.fallbackHandler,
 		entries: params.entries,
 		groups: make(map[string]*MenuGroup),
 	}

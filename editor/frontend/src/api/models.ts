@@ -1,13 +1,13 @@
 export namespace main {
-
+	
 	export class EditorConstants {
 	    RoomNone: number;
 	    WorldSecondsPerUpdate: number;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new EditorConstants(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.RoomNone = source["RoomNone"];
@@ -19,11 +19,11 @@ export namespace main {
 	    Room: world.Room;
 	    Npcs: world.Npc[];
 	    Connections: world.RoomEditorPosition[];
-
+	
 	    static createFrom(source: any = {}) {
 	        return new EditorWorldRoom(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Position = this.convertValues(source["Position"], world.RoomEditorPosition);
@@ -31,7 +31,7 @@ export namespace main {
 	        this.Npcs = this.convertValues(source["Npcs"], world.Npc);
 	        this.Connections = this.convertValues(source["Connections"], world.RoomEditorPosition);
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -53,17 +53,17 @@ export namespace main {
 	export class EditorWorld {
 	    Rooms: EditorWorldRoom[];
 	    StartRoom?: world.RoomEditorPosition;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new EditorWorld(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Rooms = this.convertValues(source["Rooms"], EditorWorldRoom);
 	        this.StartRoom = this.convertValues(source["StartRoom"], world.RoomEditorPosition);
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -86,7 +86,14 @@ export namespace main {
 }
 
 export namespace world {
-
+	
+	export enum BehaviorParamType {
+	    BOOLEAN = 2,
+	    DIRECTION = 4,
+	    ITEM = 3,
+	    NUMBER = 1,
+	    STRING = 0,
+	}
 	export enum ChestType {
 	    CHEST = 0,
 	    CORPSE = 1,
@@ -115,13 +122,6 @@ export namespace world {
 	    MAGICAL = 1,
 	    PHYSICAL = 0,
 	}
-	export enum NpcBehaviorParamType {
-	    BOOLEAN = 2,
-	    DIRECTION = 4,
-	    ITEM = 3,
-	    NUMBER = 1,
-	    STRING = 0,
-	}
 	export enum NpcDisposition {
 	    HOSTILE = 1,
 	    NEUTRAL = 0,
@@ -135,11 +135,11 @@ export namespace world {
 	    ApplyChance: number;
 	    ApplyDuration: number;
 	    UsesRemaining: number;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new ItemInfusion(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.ConditionId = source["ConditionId"];
@@ -153,11 +153,11 @@ export namespace world {
 	    Amount: number;
 	    Durability: number;
 	    Infusion: ItemInfusion;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new Item(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Id = source["Id"];
@@ -165,7 +165,7 @@ export namespace world {
 	        this.Durability = source["Durability"];
 	        this.Infusion = this.convertValues(source["Infusion"], ItemInfusion);
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -186,16 +186,16 @@ export namespace world {
 	}
 	export class Inventory {
 	    Items: Item[];
-
+	
 	    static createFrom(source: any = {}) {
 	        return new Inventory(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Items = this.convertValues(source["Items"], Item);
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -217,11 +217,11 @@ export namespace world {
 	export class Int32Range {
 	    Min: number;
 	    Max: number;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new Int32Range(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Min = source["Min"];
@@ -233,11 +233,11 @@ export namespace world {
 	    AmountRange: Int32Range;
 	    DurabilityPercentRange: Int32Range;
 	    DropChancePercent: number;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new DropTableEntry(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.ItemId = source["ItemId"];
@@ -245,7 +245,7 @@ export namespace world {
 	        this.DurabilityPercentRange = this.convertValues(source["DurabilityPercentRange"], Int32Range);
 	        this.DropChancePercent = source["DropChancePercent"];
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -266,16 +266,16 @@ export namespace world {
 	}
 	export class DropTable {
 	    Entries: DropTableEntry[];
-
+	
 	    static createFrom(source: any = {}) {
 	        return new DropTable(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Entries = this.convertValues(source["Entries"], DropTableEntry);
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -300,11 +300,11 @@ export namespace world {
 	    Timer: number;
 	    DropTable: DropTable;
 	    Inventory: Inventory;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new Chest(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Name = source["Name"];
@@ -313,7 +313,7 @@ export namespace world {
 	        this.DropTable = this.convertValues(source["DropTable"], DropTable);
 	        this.Inventory = this.convertValues(source["Inventory"], Inventory);
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -332,11 +332,39 @@ export namespace world {
 		    return a;
 		}
 	}
-
-
-
-
-
+	
+	
+	export class Fixture {
+	    Id: string;
+	    BehaviorParams: Record<string, any>;
+	
+	    static createFrom(source: any = {}) {
+	        return new Fixture(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Id = source["Id"];
+	        this.BehaviorParams = source["BehaviorParams"];
+	    }
+	}
+	export class FixtureData {
+	    Name: string;
+	    BehaviorParams: Record<string, BehaviorParamType>;
+	
+	    static createFrom(source: any = {}) {
+	        return new FixtureData(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Name = source["Name"];
+	        this.BehaviorParams = source["BehaviorParams"];
+	    }
+	}
+	
+	
+	
 	export class ItemData {
 	    Name: string;
 	    Description: string;
@@ -345,11 +373,11 @@ export namespace world {
 	    Size: number;
 	    Notes: string;
 	    Data: any;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new ItemData(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Name = source["Name"];
@@ -361,15 +389,15 @@ export namespace world {
 	        this.Data = source["Data"];
 	    }
 	}
-
+	
 	export class Lock {
 	    Type: LockType;
 	    Direction: Direction;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new Lock(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Type = source["Type"];
@@ -379,11 +407,11 @@ export namespace world {
 	export class MobHandle {
 	    Id: number;
 	    Generation: number;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new MobHandle(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Id = source["Id"];
@@ -397,11 +425,11 @@ export namespace world {
 	    MovementTypeOverride: string;
 	    DropTableOverride: DropTable;
 	    BehaviorParams: Record<string, any>;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new Npc(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Id = source["Id"];
@@ -411,7 +439,7 @@ export namespace world {
 	        this.DropTableOverride = this.convertValues(source["DropTableOverride"], DropTable);
 	        this.BehaviorParams = source["BehaviorParams"];
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -434,12 +462,12 @@ export namespace world {
 	    Id: string;
 	    Name: string;
 	    MovementType: NpcMovementType;
-	    BehaviorParams: Record<string, NpcBehaviorParamType>;
-
+	    BehaviorParams: Record<string, BehaviorParamType>;
+	
 	    static createFrom(source: any = {}) {
 	        return new NpcData(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Id = source["Id"];
@@ -451,11 +479,11 @@ export namespace world {
 	export class RoomEditorPosition {
 	    X: number;
 	    Y: number;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new RoomEditorPosition(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.X = source["X"];
@@ -473,11 +501,12 @@ export namespace world {
 	    DropTable: DropTable;
 	    Inventory: Inventory;
 	    Chests: Chest[];
-
+	    Fixtures: Fixture[];
+	
 	    static createFrom(source: any = {}) {
 	        return new Room(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Name = source["Name"];
@@ -490,8 +519,9 @@ export namespace world {
 	        this.DropTable = this.convertValues(source["DropTable"], DropTable);
 	        this.Inventory = this.convertValues(source["Inventory"], Inventory);
 	        this.Chests = this.convertValues(source["Chests"], Chest);
+	        this.Fixtures = this.convertValues(source["Fixtures"], Fixture);
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -512,3 +542,4 @@ export namespace world {
 	}
 
 }
+

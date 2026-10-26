@@ -33,11 +33,12 @@ func generateModels(path string) error {
 	generator.addStruct(EditorWorld{})
 	generator.addStruct(world.ItemData{})
 	generator.addStruct(world.NpcData{})
+	generator.addStruct(world.FixtureData{})
 
 	generator.addEnum(ALL_DIRECTIONS)
 	generator.addEnum(ALL_NPC_DISPOSITIONS)
 	generator.addEnum(ALL_NPC_MOVEMENT_TYPES)
-	generator.addEnum(ALL_NPC_BEHAVIOR_PARAM_TYPES)
+	generator.addEnum(ALL_BEHAVIOR_PARAM_TYPES)
 	generator.addEnum(ALL_CHEST_TYPES)
 	generator.addEnum(ALL_LOCK_TYPES)
 	generator.addEnum(ALL_ITEM_KINDS)

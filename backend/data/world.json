@@ -47,7 +47,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Ancient Vines",
@@ -71,7 +72,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Witch Hut",
@@ -95,7 +97,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Gargantuan Mushrooms",
@@ -119,7 +122,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Cramped Stairwell",
@@ -143,7 +147,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Esoteric Mechanism",
@@ -167,7 +172,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Collapsed Chamber",
@@ -191,7 +197,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Undergrowth Cavern",
@@ -215,7 +222,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Undergrowth Crossroad",
@@ -239,7 +247,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Gargantuan Web",
@@ -276,7 +285,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Webbed Passage",
@@ -313,7 +323,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Mire",
@@ -337,7 +348,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Control Chamber",
@@ -361,7 +373,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Tomb of Mologok",
@@ -385,7 +398,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Burial Chamber",
@@ -409,7 +423,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Thorny Pathway",
@@ -433,7 +448,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Undergrowth Passage",
@@ -457,7 +473,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Buzzing Pathway",
@@ -481,7 +498,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Black Wood Junction",
@@ -505,7 +523,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Abandoned Caravan",
@@ -651,7 +670,8 @@
             "Items": []
           }
         }
-      ]
+      ],
+      "Fixtures": []
     },
     {
       "Name": "Shadowy Walkway",
@@ -675,7 +695,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Fort Green (Depths)",
@@ -699,7 +720,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Silent Walkway",
@@ -723,7 +745,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Fey Waters",
@@ -760,7 +783,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Blue Flowers",
@@ -809,7 +833,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Hanging Tree",
@@ -833,7 +858,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Black Wood Pathway",
@@ -857,7 +883,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Crimson Flowers",
@@ -906,7 +933,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Fort Greene (Foyer)",
@@ -930,7 +958,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Fetid Walkway",
@@ -954,7 +983,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Ritual Chamber",
@@ -978,7 +1008,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "You won!",
@@ -1002,7 +1033,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Bridge",
@@ -1026,7 +1058,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Bridgeside Bluff",
@@ -1050,7 +1083,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Dark Pool Garden",
@@ -1074,7 +1108,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Warning Sign",
@@ -1098,7 +1133,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Fort Greene Courtyard",
@@ -1122,7 +1158,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Fort Greene Steps",
@@ -1146,7 +1183,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Fort Greene Plaza",
@@ -1170,7 +1208,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Clearing in the Trees",
@@ -1194,7 +1233,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Mushroom Cart",
@@ -1218,7 +1258,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Below the Church Window",
@@ -1242,7 +1283,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Overgrown Shrine",
@@ -1266,7 +1308,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Woodlawn Stream",
@@ -1290,7 +1333,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Willow Road",
@@ -1314,7 +1358,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "By a Fallen Oak",
@@ -1338,7 +1383,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Church",
@@ -1362,7 +1408,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Woodland Trail",
@@ -1386,7 +1433,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Forest Boulder",
@@ -1410,7 +1458,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Rotting Apple Trees",
@@ -1459,7 +1508,13 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": [
+        {
+          "Id": "Apple Tree",
+          "BehaviorParams": {}
+        }
+      ]
     },
     {
       "Name": "Tall Apple Tree",
@@ -1483,7 +1538,13 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": [
+        {
+          "Id": "Apple Tree",
+          "BehaviorParams": {}
+        }
+      ]
     },
     {
       "Name": "Farmer Gill's Shed",
@@ -1520,7 +1581,13 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": [
+        {
+          "Id": "Apple Tree",
+          "BehaviorParams": {}
+        }
+      ]
     },
     {
       "Name": "Underneath a Shady Tree",
@@ -1557,7 +1624,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Kitchen",
@@ -1581,7 +1649,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Gazebo",
@@ -1605,7 +1674,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Old Arrow Tree",
@@ -1629,7 +1699,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Apple Orchard",
@@ -1678,7 +1749,13 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": [
+        {
+          "Id": "Apple Tree",
+          "BehaviorParams": {}
+        }
+      ]
     },
     {
       "Name": "Farmer Gill's House",
@@ -1715,7 +1792,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Grapevines",
@@ -1752,7 +1830,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Hill near the Castle",
@@ -1776,7 +1855,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Below the Kitchen Winow",
@@ -1800,7 +1880,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Castle Recurse Steps",
@@ -1824,7 +1905,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Willoughby Woods",
@@ -1848,7 +1930,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Forest Playground",
@@ -1872,7 +1955,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Pastures",
@@ -1896,7 +1980,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Junk Pile",
@@ -1920,7 +2005,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Fulton Outskirts",
@@ -1944,7 +2030,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Dekalb Market",
@@ -1968,7 +2055,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Fulton Residential",
@@ -1992,7 +2080,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Idyllic Glade",
@@ -2016,7 +2105,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Hillside Cave",
@@ -2040,7 +2130,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Rocky Hillside",
@@ -2064,7 +2155,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Abandoned Shack",
@@ -2088,7 +2180,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Massive Cairn",
@@ -2112,7 +2205,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Claffiside Path",
@@ -2136,7 +2230,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Cave Entrance",
@@ -2160,7 +2255,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Goblin Cave",
@@ -2184,7 +2280,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Dining Room",
@@ -2233,7 +2330,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Goblin Bunks",
@@ -2294,7 +2392,8 @@
             "Items": []
           }
         }
-      ]
+      ],
+      "Fixtures": []
     },
     {
       "Name": "Cellar",
@@ -2367,7 +2466,8 @@
             "Items": []
           }
         }
-      ]
+      ],
+      "Fixtures": []
     },
     {
       "Name": "Game Room",
@@ -2391,7 +2491,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     },
     {
       "Name": "Trophy Room",
@@ -2464,7 +2565,8 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": []
+      "Chests": [],
+      "Fixtures": []
     }
   ],
   "Npcs": [

@@ -88,6 +88,7 @@ func WorldInit() *World {
 
 	// Replenish room items
 	for index := range len(world.Rooms) {
+		world.Rooms[index].init(world)
 		world.Rooms[index].replenish()
 	}
 

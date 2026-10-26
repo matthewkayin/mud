@@ -21,6 +21,7 @@ func testEditorRoom(name string, x int, y int, connections ...world.RoomEditorPo
 			Name: name,
 			Exits: [world.DIRECTION_COUNT]int{ world.ROOM_NONE, world.ROOM_NONE, world.ROOM_NONE, world.ROOM_NONE },
 			Chests: []world.Chest{},
+			Fixtures: []world.Fixture{},
 		},
 		Npcs: []world.Npc{},
 		Connections: connections,
@@ -28,7 +29,7 @@ func testEditorRoom(name string, x int, y int, connections ...world.RoomEditorPo
 }
 
 // An L of three rooms: A at (1, 0) is the start room, B at (0, 0) is west of A,
-// and C at (0, 1) is south of B. B's south exit to C is locked and C has an NPC.
+// and C at (0, 1) is south of B. B's south exit to C is locked and C has an NPC and a fixture.
 func testEditorWorld() EditorWorld {
 	a := world.RoomEditorPosition{ X: 1, Y: 0 }
 	b := world.RoomEditorPosition{ X: 0, Y: 0 }
@@ -47,6 +48,12 @@ func testEditorWorld() EditorWorld {
 		},
 	}
 	roomC := testEditorRoom("C", 0, 1, b)
+	roomC.Room.Fixtures = []world.Fixture {
+		{
+			Id: world.FIXTURE_NAME_TO_STRING["Apple Tree"],
+			BehaviorParams: map[string]any{},
+		},
+	}
 	roomC.Npcs = []world.Npc {
 		{
 			Id: world.NPC_ID_STR_TO_ID["troll"],
@@ -123,6 +130,9 @@ func TestEditorWorldRoundTrip(t *testing.T) {
 	}
 	if !strings.Contains(string(data), `"Id": "troll"`) || !strings.Contains(string(data), `"ExitToBlock": "north"`) {
 		t.Errorf("Expected NPCs and their behavior params to be saved by name")
+	}
+	if !strings.Contains(string(data), `"Id": "Apple Tree"`) {
+		t.Errorf("Expected fixtures to be saved by name")
 	}
 
 	loadedWorld, err := decodeWorld(data)

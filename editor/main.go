@@ -54,6 +54,7 @@ func main() {
 	mux.HandleFunc("GET /api/constants", handleGetConstants)
 	mux.HandleFunc("GET /api/items", handleGetItems)
 	mux.HandleFunc("GET /api/npcs", handleGetNpcs)
+	mux.HandleFunc("GET /api/fixtures", handleGetFixtures)
 	mux.HandleFunc("GET /api/world", handleGetWorld(worldFilePath))
 	mux.HandleFunc("PUT /api/world", handlePutWorld(worldFilePath))
 
@@ -76,6 +77,10 @@ func handleGetItems(w http.ResponseWriter, r *http.Request) {
 
 func handleGetNpcs(w http.ResponseWriter, r *http.Request) {
 	writeJson(w, world.NPC_DATA)
+}
+
+func handleGetFixtures(w http.ResponseWriter, r *http.Request) {
+	writeJson(w, world.FIXTURE_DATA)
 }
 
 // Reads the world file and sends it in the editor's format
