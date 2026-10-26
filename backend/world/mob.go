@@ -582,7 +582,7 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 
 		// Roll to deflect
 		deflectionChance :=
-			float32(mob.Data.Deflection() * MOB_DEFLECTION_AMOUNT_PER_POINT) -
+			float32(targetMob.Data.Deflection() * MOB_DEFLECTION_AMOUNT_PER_POINT) -
 			float32(penetration * MOB_DEFLECTION_AMOUNT_PER_POINT)
 		deflectionChance =  max(min(deflectionChance, 100), 0)
 		deflect = rand.Float32() < (deflectionChance / 100)
@@ -603,13 +603,15 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	// Deal damage
 	targetMob.damage(world, mob.Handle, damage)
 	// Broadcast result to room
-	modifierStr := ""
+	var message string
 	if crit {
-		modifierStr = "<r>Critical hit!</r> "
+		message = fmt.Sprintf("<r>Critical hit!</r> <y>%s</y> struck <y>%s</y> for <r>%d damage</r>.", mob.GetName(), targetMob.GetName(), damage)
 	} else if deflect {
-		modifierStr = "<y>Deflected!</y> "
+		message = fmt.Sprintf("<y>%s's</y> attack glanced off <y>%s</y> for <r>%d damage</r>.", mob.GetName(), targetMob.GetName(), damage)
+	} else {
+		message = fmt.Sprintf("<y>%s</y> struck <y>%s</y> for <r>%d damage</r>.", mob.GetName(), targetMob.GetName(), damage)
 	}
-	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s<y>%s</y> struck <y>%s</y> for <r>%d damage</r>.", modifierStr, mob.GetName(), targetMob.GetName(), damage))
+	world.messageRoom(mob.Data.Room, message)
 	if targetMob.IsDead() {
 		world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> has <r>slain</r> <y>%s</y>.", mob.GetName(), targetMob.GetName()))
 	} else {
@@ -694,32 +696,13 @@ func (mob *Mob) rollForConcentration(world *World, damage int32) {
 }
 
 func (mob *Mob) RollForEscape(world *World) bool {
-	// All the escape chances are multiplied together
-	// This is mathematically the same as doing individual escape rolls
-	// for each monster
-	var escapeChance float32 = mob.escapeChance
-
-	mobAgility := float32(mob.Data.Agility())
-
-	room := &world.Rooms[mob.Data.Room]
-	for _, handle := range room.Occupants {
-		occupant := world.Mobs.Get(handle)
-
-		if !occupant.IsNpc() || occupant.Npc.disposition != NPC_DISPOSITION_HOSTILE {
-			continue
-		}
-
-		occupantAgility := float32(occupant.Data.Agility())
-		escapeChance *= mobAgility / (mobAgility + occupantAgility)
-	}
-
 	// Roll to escape
-	escaped := rand.Float32() < escapeChance
+	escaped := rand.Float32() < mob.escapeChance
 
-	// On failed roll, drop escape chance to 0.0
-	if !escaped {
-		mob.escapeChance = 0.0
-	}
+	// Drop escape chance to 0, this means players can escape easily on the first
+	// encounter but cannot flit from room-to-room without waiting for their escape
+	// chance to build back up
+	mob.escapeChance = 0.0
 
 	return escaped
 }
@@ -941,7 +924,7 @@ func (mob *Mob) spellcast(world *World) bool {
 }
 
 func (mob *Mob) calculateMagicDamage(baseDamage int32, target *Mob) int32 {
-	return baseDamage + (mob.Data.Faith() / 2) + (target.Data.Faith() / 4)
+	return baseDamage + (mob.Data.Faith() / 2) - (target.Data.Faith() / 4)
 }
 
 func (mob *Mob) calculateMagicConditionDuration(baseDuration int) int {
