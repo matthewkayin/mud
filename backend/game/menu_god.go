@@ -160,5 +160,40 @@ var MENU_GOD = MenuCreate(MenuCreateParams {
 				return true
 			},
 		},
+		"kill": {
+			usage: "/kill <target>",
+			description: "Instantly kill a mob in your room.",
+			groups: []string { "root" },
+			handler: func (gamestate *GameState, player *Player, args []string) bool {
+				if len(args) == 0 {
+					return false
+				}
+
+				if player.menu != PLAYER_MENU_WORLD {
+					player.send("You must be in the world to kill a mob.")
+					return true
+				}
+
+				targetHandle, err := fuzzyFindTarget(gamestate, player, args)
+				if err != nil {
+					player.send(err.Error())
+					return true
+				}
+
+				targetMob := gamestate.world.Mobs.Get(targetHandle)
+				if targetMob.IsDead() {
+					player.send(fmt.Sprintf("<y>%s</y> is already dead.", targetMob.GetName()))
+					return true
+				}
+
+				// The world removes the dead mob, creates its corpse and fires the death event on the next update
+				targetMob.Data.Health = 0
+
+				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+				gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("<y>%s</y> was struck down by the gods!", targetMob.GetName()))
+
+				return true
+			},
+		},
 	},
 })
