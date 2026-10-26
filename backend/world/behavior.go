@@ -175,12 +175,12 @@ func behaviorParamsToJson(paramValues map[string]any, paramTypes map[string]Beha
 	for name, value := range paramValues {
 		paramType, isDeclared := paramTypes[name]
 		if !isDeclared {
-			return nil, fmt.Errorf("Cannot save behavior params with undeclared param '%s'.", name)
+			return nil, fmt.Errorf("undeclared behavior param '%s'", name)
 		}
 
 		jsonValue, err := behaviorParamToJson(paramType, value)
 		if err != nil {
-			return nil, fmt.Errorf("Cannot save behavior param '%s': %w", name, err)
+			return nil, fmt.Errorf("behavior param '%s': %w", name, err)
 		}
 		paramJson[name] = jsonValue
 	}
@@ -194,12 +194,12 @@ func behaviorParamsFromJson(paramJson map[string]json.RawMessage, paramTypes map
 	for name, jsonValue := range paramJson {
 		paramType, isDeclared := paramTypes[name]
 		if !isDeclared {
-			return nil, fmt.Errorf("Unexpected behavior param '%s'.", name)
+			return nil, fmt.Errorf("no behavior param named '%s'", name)
 		}
 
 		value, err := behaviorParamFromJson(paramType, jsonValue)
 		if err != nil {
-			return nil, fmt.Errorf("Error on behavior param %s: %w", name, err)
+			return nil, fmt.Errorf("behavior param '%s': %w", name, err)
 		}
 
 		paramValues[name] = value

@@ -280,9 +280,9 @@ func TestSocketMessageMarshalJSON(t *testing.T) {
 		{
 			socketMessage: SocketMessage {
 				Message: nil,
-				PlayerStatus: &PlayerStatus { Health: 12, MaxHealth: 20, Mana: 5, MaxMana: 10 },
+				PlayerStatus: &PlayerStatus { Health: 12, MaxHealth: 20, Mana: 5, MaxMana: 10, PendingAction: true },
 			},
-			expected: `{"message":null,"health":12,"maxHealth":20,"mana":5,"maxMana":10}`,
+			expected: `{"message":null,"health":12,"maxHealth":20,"mana":5,"maxMana":10,"action":true}`,
 		},
 		{
 			socketMessage: SocketMessage { Message: nil },

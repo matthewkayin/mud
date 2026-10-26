@@ -179,7 +179,7 @@ func (npc *Npc) MarshalJSON() ([]byte, error) {
 	var err error
 	npcJson.BehaviorParams, err = behaviorParamsToJson(npc.BehaviorParams, npcData.BehaviorParams)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("NPC '%s': %w", npcData.Id, err)
 	}
 
 	return json.Marshal(&npcJson)
@@ -216,7 +216,7 @@ func (npc *Npc) UnmarshalJSON(data []byte) error {
 	// Missing params are reported by Validate()
 	npc.BehaviorParams, err = behaviorParamsFromJson(npcJson.BehaviorParams, npcData.BehaviorParams)
 	if err != nil {
-		return err
+		return fmt.Errorf("NPC '%s': %w", npcData.Id, err)
 	}
 
 	return nil

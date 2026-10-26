@@ -37,7 +37,7 @@ func (fixture *Fixture) MarshalJSON() ([]byte, error) {
 	var err error
 	fixtureJson.BehaviorParams, err = behaviorParamsToJson(fixture.BehaviorParams, fixtureData.BehaviorParams)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Fixture '%s': %w", fixtureData.Name, err)
 	}
 
 	return json.Marshal(&fixtureJson)
@@ -59,7 +59,7 @@ func (fixture *Fixture) UnmarshalJSON(data []byte) error {
 	fixtureData := FIXTURE_DATA[fixture.Id]
 	fixture.BehaviorParams, err = behaviorParamsFromJson(fixtureJson.BehaviorParams, fixtureData.BehaviorParams)
 	if err != nil {
-		return err
+		return fmt.Errorf("Fixture '%s': %w", fixtureData.Name, err)
 	}
 
 	return nil
