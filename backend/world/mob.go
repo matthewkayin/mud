@@ -696,32 +696,13 @@ func (mob *Mob) rollForConcentration(world *World, damage int32) {
 }
 
 func (mob *Mob) RollForEscape(world *World) bool {
-	// All the escape chances are multiplied together
-	// This is mathematically the same as doing individual escape rolls
-	// for each monster
-	var escapeChance float32 = mob.escapeChance
-
-	mobAgility := float32(mob.Data.Agility())
-
-	room := &world.Rooms[mob.Data.Room]
-	for _, handle := range room.Occupants {
-		occupant := world.Mobs.Get(handle)
-
-		if !occupant.IsNpc() || occupant.Npc.disposition != NPC_DISPOSITION_HOSTILE {
-			continue
-		}
-
-		occupantAgility := float32(occupant.Data.Agility())
-		escapeChance *= mobAgility / (mobAgility + occupantAgility)
-	}
-
 	// Roll to escape
-	escaped := rand.Float32() < escapeChance
+	escaped := rand.Float32() < mob.escapeChance
 
-	// On failed roll, drop escape chance to 0.0
-	if !escaped {
-		mob.escapeChance = 0.0
-	}
+	// Drop escape chance to 0, this means players can escape easily on the first
+	// encounter but cannot flit from room-to-room without waiting for their escape
+	// chance to build back up
+	mob.escapeChance = 0.0
 
 	return escaped
 }
