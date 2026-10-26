@@ -99,18 +99,6 @@ func (player *Player) setMenu(gamestate *GameState, menu PlayerMenu) {
 	player.getMenu().onEnter(gamestate, player)
 }
 
-func playerOnMobMove(gamestate *GameState, event *world.Event) {
-	eventData := event.Data.(world.EventMobMove)
-
-	// If the mob is not a player, ignore the event
-	player := gamestate.getPlayerByMobHandle(eventData.MobHandle)
-	if player == nil {
-		return
-	}
-
-	player.isMinimapDirty = true
-}
-
 func playerOnMobDeath(gamestate *GameState, event *world.Event) {
 	eventData := event.Data.(world.EventMobDeath)
 

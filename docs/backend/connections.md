@@ -33,7 +33,7 @@ The client sends commands as plain-text frames. The server sends text frames tha
 
 - `message` is always present. It's the text to print, or `null` for a message with nothing to print.
 - `health`, `maxHealth`, `mana`, `maxMana` and `action` are optional. They're sent together or not at all. `action` is true while the player has a combat action queued for the next update.
-- `map` is optional. It's the player's minimap, sent on a heartbeat only after it changes. A message without `map` means the minimap hasn't changed. The format is described in [`MINIMAP.md`](../../MINIMAP.md).
+- `map` is optional. It's the player's minimap, sent on a heartbeat only after it changes. A message without `map` means the minimap hasn't changed. The format is described in [`docs/minimap.md`](../minimap.md).
 
 The client:
 - prints `message` when it isn't null.

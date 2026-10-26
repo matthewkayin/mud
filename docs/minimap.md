@@ -55,18 +55,18 @@ The player's own room is always discovered, so the center cell is never `-1`.
 The backend sends the minimap only when it has changed, on the next heartbeat.
 
 - `Player` has an `isMinimapDirty` flag (`backend/game/player.go`).
-- It is set when the player enters the world (`MENU_WORLD.onEnter`) and when the player's mob changes rooms (`playerOnMobMove`, an `EVENT_TYPE_MOB_MOVE` listener).
+- It is set when the player enters the world (`MENU_WORLD.onEnter`) and by the `move` command handler (`backend/game/menu_world_actions.go`) right after it moves the player.
 - `sendHeartbeat` builds the minimap and adds it to the heartbeat while the flag is set and the player is in-game.
 - The flag is cleared only if the heartbeat was actually queued. `sendHeartbeat` drops the heartbeat when the inbox is full, and a dropped minimap has to be sent again on the next heartbeat.
 
-Movement is a queued action, applied during the game update, and heartbeats are sent at the end of the same update. So the new minimap arrives along with the movement result, not one update later. A heartbeat is also sent after every command, so the first minimap arrives right after the login command.
+`move` is an instant command, and `handleCommand` sends a heartbeat after every command, so the new minimap arrives right after the move or login command. The flag isn't set from an `EVENT_TYPE_MOB_MOVE` listener because world events are handled after that heartbeat, which would delay the minimap until the next update.
 
-Rooms and exits don't change while the game runs, and a room is only discovered when the player moves into it, so nothing else makes the minimap dirty.
+Rooms and exits don't change while the game runs, and a room is only discovered when the player moves into it, so nothing else makes the minimap dirty. Any new code that moves a player to another room must set `isMinimapDirty` too.
 
 ## Where the code lives
 
 - `backend/world/minimap.go`: `MINIMAP_SIZE`, the position lookup and `GetMinimap`. It takes the discovery bitset as a parameter and knows nothing about players or the socket.
-- `backend/game/`: the dirty flag, the move listener, and adding `map` to the heartbeat. `SocketMessage` has a `Map []int` field tagged `json:"map,omitempty"`, separate from `PlayerStatus`.
+- `backend/game/`: the dirty flag, setting it on login and in `move`, and adding `map` to the heartbeat. `SocketMessage` has a `Map []int` field tagged `json:"map,omitempty"`, separate from `PlayerStatus`.
 - `frontend/src/game/socket_message.ts`: the optional `map` field, and `getMinimap`, which validates it.
 - `frontend/src/game/minimap/`: the `Minimap` component.
 
