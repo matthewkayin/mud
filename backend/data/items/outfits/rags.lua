@@ -4,10 +4,10 @@ item.name = "Rags"
 item.prefix = "Reinforced"
 item.description = "A frayed, linen tunic. It hasn't been washed in months."
 item.kind = world.ItemKind.EQUIPMENT_OUTFIT
-item.price = 100
+item.price = 10
 item.size = 20
 
-item.deflection = 0
+item.deflection = 1
 item.damage_resistance = 0
 item.max_durability = 100
 item.stealth_penalty = 0
