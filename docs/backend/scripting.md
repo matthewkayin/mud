@@ -96,7 +96,7 @@ Each folder under `backend/data/` holds one kind of data, and every `.lua` file 
 | 6 | `classes/` | `ClassData` | `loadClassData` (`character_class.go`) | spells, items |
 | 7 | `npcs/` | `NpcData` | `loadNpcData` (`npc_data.go`) | items |
 
-Spell scripts and their targets are described in [spells.md](spells.md). Recipes are loaded in two passes. `loadRecipeTables` registers recipe names first so that items can refer to them. `loadRecipeData` parses the rest of each recipe once items exist. Classes and NPCs load after items so they can refer to items. NPC scripts, their behavior hooks and their behavior params are described in [npcs.md](npcs.md).
+Spell scripts and their targets are described in [spells.md](spells.md). Recipes are loaded in two passes. `loadRecipeTables` registers recipe names first so that items can refer to them. `loadRecipeData` parses the rest of each recipe once items exist. Classes and NPCs load after items so they can refer to items. NPC scripts, their behavior hooks and their behavior params are described in [npcs.md](npcs.md). Fixture scripts and signals are described in [fixtures.md](fixtures.md).
 
 Each ID is the entry's position in load order, and files load in alphabetical order. Names must be unique within a kind, and the player-facing lookups (`RaceIdFromString` etc.) ignore case.
 
@@ -162,11 +162,13 @@ stack traceback:
 
 A `[Go]` frame on top means a `world` library function rejected the call; the frame below it is the script line that called it. Call script functions from Go through `World.scriptCall` (`backend/world/script.go`) so that their errors are logged the same way.
 
-Lua can't be re-entered while a `world` library function is running: lunar's `State.Call*` fails with `ErrRunning`. `scriptCall` marks a script as running for the duration of the call, so NPC events fired from inside it (see `docs/backend/npcs.md`) are deferred and handled once it returns. Calling `luaState` directly at runtime skips both the error logging and the deferral.
+Lua can't be re-entered while a `world` library function is running: lunar's `State.Call*` fails with `ErrRunning`. `scriptCall` marks a script as running for the duration of the call, so NPC events fired from inside it (see `docs/backend/npcs.md`) and signals emitted from inside it (see `docs/backend/fixtures.md`) are deferred and handled once it returns. Calling `luaState` directly at runtime skips both the error logging and the deferral.
 
 ### Mob handles
 
 Scripts refer to mobs through `MobHandle` values, such as the `caster` and `target` arguments of a spell's `on_cast`. A handle is opaque userdata with no readable fields, so scripts read mob state through the `world.mob_get_*` functions, one per value (`mob_get_name`, `mob_get_room`, `mob_get_health`, `mob_get_max_health` etc.). `mob_get_stat(handle, stat)` takes a `world.Stat` value (`world.Stat.STR`), and `mob_get_equipment(handle, slot)` takes a `world.EquipmentSlot` value and returns the equipped item's name, or `nil` if the slot is empty. Handles compare with `==`, and `tostring` gives `MobHandle(<id>:<generation>)` for logging. NPC state is read and set through handles too, with the `npc_*` functions described in [NPC state](npcs.md#npc-state).
+
+Fixtures are referred to the same way, through `FixtureHandle` values. See [Fixture handles](fixtures.md#fixture-handles).
 
 A handle can outlive its mob. Library functions that take a mob throw an error when given a handle to a mob that no longer exists, so a script holding onto a handle (for example in an NPC instance table) should check `world.mob_exists` before using it.
 

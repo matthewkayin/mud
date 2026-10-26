@@ -1,6 +1,6 @@
 # Rooms
 
-Rooms (`backend/world/room.go`) are saved in `data/world.json` and edited in the world editor. A room has a name, description, notes, safe zone flag, exits, locks, a drop table that fills its floor inventory, chests, and fixtures. Fixtures (`Room.Fixtures`) are scripted objects that players can look at and interact with. Their scripts are in `backend/data/fixtures/`, and each fixture in a room is saved by its script's name along with the values of its behavior params. `Room.Notes` is for content developers to record the intent behind a part of the world. It's saved in `world.json` and edited in the world editor, but the game never reads or shows it. Mobs in the room are listed in `Room.Occupants` by `MobHandle`. Occupants are transient, so they aren't saved.
+Rooms (`backend/world/room.go`) are saved in `data/world.json` and edited in the world editor. A room has a name, description, notes, safe zone flag, exits, locks, a drop table that fills its floor inventory, chests, and fixtures. Fixtures (`Room.Fixtures`) are scripted objects that players can look at and interact with. Their scripts are in `backend/data/fixtures/`, and each fixture in a room is saved by its script's name along with the values of its behavior params. Fixture scripts, their instances and signals are described in [fixtures.md](fixtures.md). `Room.Notes` is for content developers to record the intent behind a part of the world. It's saved in `world.json` and edited in the world editor, but the game never reads or shows it. Mobs in the room are listed in `Room.Occupants` by `MobHandle`. Occupants are transient, so they aren't saved.
 
 ## Exits
 
@@ -20,13 +20,14 @@ Go code checks a lock with `room.IsExitLocked(direction)`, and `room.GetLock(dir
 
 Players with the `Unlock` ability (granted by the Thief class) can deactivate an active **physical** lock on an exit of their current room with `unlock <direction>` (`game/menu_world.go`). It always succeeds and resolves immediately rather than as a queued action. It can't be used in combat and can't open magical locks. A hidden player stays hidden, and only they are told about it. A picked lock comes back after `LOCK_UNLOCK_DURATION`, like any other unlocked lock.
 
-## NPC exit blocking
+## Exit blocking
 
-NPCs can also block exits, for example a troll guarding a bridge or a boss guarding a door. Blocking is separate from locks: it belongs to the NPC (`Npc.isBlockingExit`), not to the room, so unlocking a room never removes a block. NPC scripts set it with `world.npc_set_blocking_exit(self, direction, blocking)` (see [NPC state](npcs.md#npc-state)).
+NPCs and fixtures can also block exits, for example a troll guarding a bridge or a closed door. Blocking is separate from locks: it belongs to the NPC (`Npc.isBlockingExit`) or fixture (`Fixture.isBlockingExit`), not to the room, so unlocking a room never removes a block. Like locks, blocks are one-directional and only stop leaving the blocker's own room.
 
-`room.GetExitBlockingNpc(world, direction)` finds an NPC occupant that is blocking the exit. A block is checked only while its mob is in the room. It ends when the mob dies, and the NPC's blocked exits are cleared before the next spawn calls `init`. Cleanup doesn't affect it.
+- NPC scripts set a block with `world.npc_set_blocking_exit(self, direction, blocking)` (see [NPC state](npcs.md#npc-state)). `room.GetNpcBlockingExit(world, direction)` finds an NPC occupant that is blocking the exit. A block is checked only while its mob is in the room. It ends when the mob dies, and the NPC's blocked exits are cleared before the next spawn calls `init`.
+- Fixture scripts set a block with `world.fixture_set_blocking_exit(self, direction, blocking)` (see [Exit blocking](fixtures.md#exit-blocking)). `room.GetFixtureBlockingExit(direction)` finds a fixture that is blocking the exit. A fixture's block lasts until its script removes it.
 
-Players moving through an exit are stopped by a lock ("The north exit is locked.") before an NPC block ("Troll is blocking the way north."). Wandering NPCs avoid both locked and blocked exits.
+Cleanup doesn't affect either kind of block. Players moving through an exit are stopped by a lock ("The north exit is locked.") first, then a fixture block ("Big Door is blocking the way north."), then an NPC block ("Troll is blocking the way north."). Wandering NPCs avoid locked and blocked exits.
 
 ## Replenishing and cleanup
 

@@ -374,7 +374,14 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [
+        {
+          "Id": "Lever",
+          "BehaviorParams": {
+            "Signal": "fort_greene_lever_a"
+          }
+        }
+      ]
     },
     {
       "Name": "Tomb of Mologok",
@@ -721,7 +728,16 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [
+        {
+          "Id": "Big Door",
+          "BehaviorParams": {
+            "ExitToBlock": "north",
+            "LeverSignalA": "fort_greene_lever_a",
+            "LeverSignalB": "fort_greene_lever_b"
+          }
+        }
+      ]
     },
     {
       "Name": "Silent Walkway",
@@ -1009,7 +1025,14 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [
+        {
+          "Id": "Lever",
+          "BehaviorParams": {
+            "Signal": "fort_greene_lever_b"
+          }
+        }
+      ]
     },
     {
       "Name": "You won!",

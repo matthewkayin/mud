@@ -1028,7 +1028,55 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.Return()
 	},
 
+	// Returns the index of the room the fixture is in
+	//
+	// @param handle FixtureHandle
+	// @return integer
+	"fixture_get_room": func(frame lua.Frame) lua.Outcome {
+		handle := frameGetFixtureHandleArg(&frame, 0)
+		frameGetFixtureArg(&frame, 0)
+
+		return frame.ReturnNumber(float64(handle.RoomIndex))
+	},
+
+	// Returns true if the fixture is blocking its room's exit in the specified direction
+	//
+	// @param handle FixtureHandle
+	// @param direction Direction
+	// @return boolean
+	"fixture_is_blocking_exit": func(frame lua.Frame) lua.Outcome {
+		fixture := frameGetFixtureArg(&frame, 0)
+		direction := frameGetDirectionArg(&frame, 1)
+
+		return frame.ReturnBool(fixture.isBlockingExit[direction])
+	},
+
+	// Sets whether the fixture is blocking its room's exit in the specified direction.
+	// While blocking, players and other mobs can't leave the fixture's room through that exit.
+	//
+	// @param handle FixtureHandle
+	// @param direction Direction
+	// @param blocking boolean
+	"fixture_set_blocking_exit": func(frame lua.Frame) lua.Outcome {
+		handle := frameGetFixtureHandleArg(&frame, 0)
+		fixture := frameGetFixtureArg(&frame, 0)
+		direction := frameGetDirectionArg(&frame, 1)
+		blocking, ok := frame.Bool(2)
+		if !ok {
+			frame.ThrowArgTypeError(2, lua.BoolKind)
+		}
+
+		room := &__world.Rooms[handle.RoomIndex]
+		if room.Exits[direction] == ROOM_NONE {
+			frame.ThrowArgError(1, fmt.Sprintf("Room %d (%s) has no %s exit.", handle.RoomIndex, room.Name, direction.String()))
+		}
+
+		fixture.isBlockingExit[direction] = blocking
+		return frame.Return()
+	},
+
 	// Subscribe to a signal. The provided listener will get called whenever a fixture emits the signal.
+	// The listener receives the emitting fixture's handle, followed by any arguments the emitter provided.
 	//
 	// @param signal string
 	// @param listener function
@@ -1039,7 +1087,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		}
 		listener, ok := frame.Function(1)
 		if !ok {
-			frame.ThrowArgTypeError(0, lua.FunctionKind)
+			frame.ThrowArgTypeError(1, lua.FunctionKind)
 		}
 
 		__world.subscribeToSignal(signal, listener)
@@ -1048,30 +1096,59 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	},
 
 	// Emit a signal, which will invoke any listeners who are listening to the signal.
-	// Any arguments provided after the signal name will be passed into the listener function.
+	// The emitter is the handle of the fixture emitting the signal, and is passed to the listener first.
+	// Any arguments provided after the signal name will be passed into the listener function after the emitter.
 	//
+	// @param emitter FixtureHandle
 	// @param signal string
 	// @param ... any
 	"emit_signal": func(frame lua.Frame) lua.Outcome {
-		signal, ok := frame.String(0)
+		frameGetFixtureArg(&frame, 0)
+		emitter, ok := frame.Argument(0)
 		if !ok {
-			frame.ThrowArgTypeError(0, lua.StringKind)
+			frame.ThrowArgError(0, "Error getting argument")
+		}
+		signal, ok := frame.String(1)
+		if !ok {
+			frame.ThrowArgTypeError(1, lua.StringKind)
 		}
 
-		args := make([]lua.Value, 0, frame.ArgumentCount() - 1)
-		for index := range frame.ArgumentCount() - 1 {
-			arg, ok := frame.Argument(index + 1)
+		args := make([]lua.Value, 0, max(frame.ArgumentCount() - 2, 0))
+		for index := 2; index < frame.ArgumentCount(); index++ {
+			arg, ok := frame.Argument(index)
 			if !ok {
-				frame.ThrowArgError(index + 1, "Error getting argument")
+				frame.ThrowArgError(index, "Error getting argument")
 			}
 
 			args = append(args, arg)
 		}
 
-		__world.emitSignal(signal, args...)
+		__world.emitSignal(emitter, signal, args...)
 
 		return frame.Return()
 	},
+}
+
+func frameGetFixtureHandleArg(frame *lua.Frame, index int) FixtureHandle {
+	handle, ok := __world.fixtureHandleType.FromArgument(*frame, index)
+	if !ok {
+		frame.ThrowArgError(index, "FixtureHandle expected")
+	}
+
+	return handle
+}
+
+func frameGetFixtureArg(frame *lua.Frame, index int) *Fixture {
+	handle := frameGetFixtureHandleArg(frame, index)
+	if handle.RoomIndex < 0 || handle.RoomIndex >= len(__world.Rooms) {
+		frame.ThrowArgError(index, fmt.Sprintf("FixtureHandle %d:%d refers to a room that does not exist.", handle.RoomIndex, handle.FixtureIndex))
+	}
+	room := &__world.Rooms[handle.RoomIndex]
+	if handle.FixtureIndex < 0 || handle.FixtureIndex >= len(room.Fixtures) {
+		frame.ThrowArgError(index, fmt.Sprintf("FixtureHandle %d:%d refers to a fixture that does not exist.", handle.RoomIndex, handle.FixtureIndex))
+	}
+
+	return &room.Fixtures[handle.FixtureIndex]
 }
 
 func frameGetMobHandleArg(frame *lua.Frame, index int) MobHandle {
