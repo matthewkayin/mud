@@ -10,10 +10,10 @@
         "Y": 2
       },
       "Exits": [
-        15,
+        46,
         -1,
-        30,
-        22
+        61,
+        53
       ],
       "Locks": [],
       "DropTable": {
@@ -50,8 +50,867 @@
       "Chests": []
     },
     {
+      "Name": "Ancient Vines",
+      "Description": "This porton of the forest is overrun with heaps of shaggy vines that hang from the trees and filly the forest floor. You can see smoke rising from the East.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 2,
+        "Y": -5
+      },
+      "Exits": [
+        -1,
+        2,
+        8,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Witch Hut",
+      "Description": "A hut made of knarled wood squats in a clearing in the woods. Out front, a small black cauldron gurgles over the fire.",
+      "Notes": "There should be a kooky witch here",
+      "IsSafeZone": true,
+      "EditorPosition": {
+        "X": 3,
+        "Y": -5
+      },
+      "Exits": [
+        -1,
+        3,
+        -1,
+        1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Gargantuan Mushrooms",
+      "Description": "The trees open up here to make room for vast mushrooms that loom overhead. To the west you can see smoke rising.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 4,
+        "Y": -5
+      },
+      "Exits": [
+        -1,
+        -1,
+        10,
+        2
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Cramped Stairwell",
+      "Description": "Moving up and down this stairwell makes you feel as though you might get stuck, even though the landings at its beginning, middle and end are spacious.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 7,
+        "Y": -5
+      },
+      "Exits": [
+        -1,
+        5,
+        12,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Esoteric Mechanism",
+      "Description": "Stepping into this room is like stepping into a vast clock, and at its center lies a complex dial covered in runes.",
+      "Notes": "Part of the puzzle to get into the Depths/Tomb of Mologok",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 8,
+        "Y": -5
+      },
+      "Exits": [
+        -1,
+        6,
+        -1,
+        4
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Collapsed Chamber",
+      "Description": "This porton of Fort Green has collapsed, admitting a ray of sunlight into the crypt.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 9,
+        "Y": -5
+      },
+      "Exits": [
+        -1,
+        -1,
+        14,
+        5
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Undergrowth Cavern",
+      "Description": "You have entered into a cavern, the ceiling of which is comprised entirely by the roots of the black oaks.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 1,
+        "Y": -4
+      },
+      "Exits": [
+        -1,
+        8,
+        15,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Undergrowth Crossroad",
+      "Description": "This confluence of paths is under a dome formed by the roots of the tree overhead.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 2,
+        "Y": -4
+      },
+      "Exits": [
+        1,
+        9,
+        16,
+        7
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Gargantuan Web",
+      "Description": "Above you there is the vast web of some enormous spider as though you were under a circus tent.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 3,
+        "Y": -4
+      },
+      "Exits": [
+        -1,
+        10,
+        17,
+        8
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": [
+          {
+            "ItemId": "Monster Slime",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 2
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 10
+          }
+        ]
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Webbed Passage",
+      "Description": "This passage through the forest is enclosed on all sides by dense spider webs.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 4,
+        "Y": -4
+      },
+      "Exits": [
+        3,
+        11,
+        -1,
+        9
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": [
+          {
+            "ItemId": "Monster Slime",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 2
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 10
+          }
+        ]
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Mire",
+      "Description": "Passing between the trees requires walking through ankle-deep standing water.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 5,
+        "Y": -4
+      },
+      "Exits": [
+        -1,
+        -1,
+        19,
+        10
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Control Chamber",
+      "Description": "Grand magical lanterns illuminate a dizzying array of bronze levers and switches, the purpose of which are not documented anywhere in this room.",
+      "Notes": "Part of the puzzle to get into the Depths/Tomb of Mologok",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 7,
+        "Y": -4
+      },
+      "Exits": [
+        4,
+        -1,
+        20,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Tomb of Mologok",
+      "Description": "This grand tomb is to some strange sort of primeval warlord who predates all record. It is lined with burial urns, as well as a dust-covered arsenal of weapons belonging to Mologok's defeated foes. Perhaps tomb raiders have not yet succesfully entered this place?",
+      "Notes": "A boss goes here, as well as a badass chest.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 8,
+        "Y": -4
+      },
+      "Exits": [
+        -1,
+        -1,
+        21,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Burial Chamber",
+      "Description": "This room is lined interred remains of great warriors from another age of the world.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 9,
+        "Y": -4
+      },
+      "Exits": [
+        6,
+        -1,
+        22,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Thorny Pathway",
+      "Description": "This path through the forest is lined on either side by a menacing wall of thorns.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 1,
+        "Y": -3
+      },
+      "Exits": [
+        7,
+        -1,
+        23,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Undergrowth Passage",
+      "Description": "This path through the forest goes under the roots of the trees, which form a lattice above you.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 2,
+        "Y": -3
+      },
+      "Exits": [
+        8,
+        -1,
+        24,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Buzzing Pathway",
+      "Description": "This pathway through the forest is cut down into the damp earth, and as you traverse it you are assaulted by mosquitoes. ",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 3,
+        "Y": -3
+      },
+      "Exits": [
+        9,
+        18,
+        -1,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Black Wood Junction",
+      "Description": "In the middle of the forest there is a confluence of paths into a small clearing. On all sides are vast oak tree with black bark and black leaves.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 4,
+        "Y": -3
+      },
+      "Exits": [
+        -1,
+        19,
+        26,
+        17
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Abandoned Caravan",
+      "Description": "Here is the final resting place of a caravan, with its goods strewn across the forest floor from when it was overturned by some great blow to its side. There is no trace of what happened to any of the people who led this caravan into the forest.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 5,
+        "Y": -3
+      },
+      "Exits": [
+        11,
+        -1,
+        27,
+        18
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": [
+          {
+            "ItemId": "Common Lumber",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 4
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 8
+          },
+          {
+            "ItemId": "Iron",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 3
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 8
+          },
+          {
+            "ItemId": "Glass Bottle",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 5
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 8
+          }
+        ]
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": [
+        {
+          "Name": "Caravan Strongbox",
+          "Type": 0,
+          "Timer": 0,
+          "DropTable": {
+            "Entries": [
+              {
+                "ItemId": "Gold",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 25
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 100
+              },
+              {
+                "ItemId": "Paper",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 5
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 75
+              },
+              {
+                "ItemId": "Chainmail Armor Recipe",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 5
+              },
+              {
+                "ItemId": "Iron Longsword Recipe",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 5
+              },
+              {
+                "ItemId": "Iron Axe Recipe",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 5
+              },
+              {
+                "ItemId": "Iron Dagger Recipe",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 5
+              }
+            ]
+          },
+          "Inventory": {
+            "Items": []
+          }
+        }
+      ]
+    },
+    {
+      "Name": "Shadowy Walkway",
+      "Description": "This stone corridor is uneven and seems to branch off into darkness at various points, making it hard to keep a good view of the light ahead or behind.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 7,
+        "Y": -3
+      },
+      "Exits": [
+        12,
+        -1,
+        28,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Fort Green (Depths)",
+      "Description": "In this dark room at the core of Fort Green there is the omnipresent stench of decay, as well as the filthy aura of difting particulate and inumerable insects.",
+      "Notes": "We need there to be a door that blocks this off and requires that players interact with esoteric mechanism, ritual chamber and control chamber, perhaps at the same time. ",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 8,
+        "Y": -3
+      },
+      "Exits": [
+        13,
+        -1,
+        29,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Silent Walkway",
+      "Description": "As you move along this walkway you are perturbed by the utter lack of sound.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 9,
+        "Y": -3
+      },
+      "Exits": [
+        14,
+        -1,
+        30,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Fey Waters",
+      "Description": "You have found a swirling pond of glimmering blue waters. The blue fireflies indicate that this must be near to some entrance to the Fey World.",
+      "Notes": "If we ever get to a the fey or some kind of fey world we could do more with this place.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 1,
+        "Y": -2
+      },
+      "Exits": [
+        15,
+        24,
+        -1,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": [
+          {
+            "ItemId": "Pixie Dust",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 3
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 20
+          }
+        ]
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Blue Flowers",
+      "Description": "You find yourself in a small field of bright crimson flowers amongst the trees.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 2,
+        "Y": -2
+      },
+      "Exits": [
+        16,
+        -1,
+        34,
+        23
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": [
+          {
+            "ItemId": "Azurite Pendant",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 3
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 40
+          },
+          {
+            "ItemId": "Pixie Dust",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 2
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 8
+          }
+        ]
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Hanging Tree",
+      "Description": "A vast tree stands at the entrance to these woods. Decayed rope hangs from its limbs where bandits have been put to death.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 3,
+        "Y": -2
+      },
+      "Exits": [
+        -1,
+        26,
+        35,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Black Wood Pathway",
+      "Description": "This pathway cuts down through the roots of the forest. All around the roots of the vast black trees interconnect to form impenetrable walls.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 4,
+        "Y": -2
+      },
+      "Exits": [
+        18,
+        27,
+        -1,
+        25
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Crimson Flowers",
+      "Description": "You find yourself in a small field of bright crimson flowers amongst the trees.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 5,
+        "Y": -2
+      },
+      "Exits": [
+        19,
+        -1,
+        -1,
+        26
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": [
+          {
+            "ItemId": "Fancy Plants",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 3
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 40
+          },
+          {
+            "ItemId": "Pixie Dust",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 2
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 8
+          }
+        ]
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
       "Name": "Fort Greene (Foyer)",
-      "Description": "You're in a circular room inside the monument's column. It's cramped, but there are stairs leading deeper into the crypt.",
+      "Description": "You're in a circular room inside the monument's column. It's cramped, but there are stairs leading deeper into the crypt connecting outward onto deeper floors to the North and East.",
       "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
@@ -59,9 +918,81 @@
         "Y": -2
       },
       "Exits": [
+        20,
+        29,
+        38,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Fetid Walkway",
+      "Description": "This deep walkways is lined with bones, and the air is filled with the smell of death.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 8,
+        "Y": -2
+      },
+      "Exits": [
+        21,
+        30,
+        -1,
+        28
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Ritual Chamber",
+      "Description": "In the South-Eastern corner of Fort Green there is an ancient ritual chamber with a pedestal at its center.",
+      "Notes": "Part of the puzzle to get into the Depths/Tomb of Mologok",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 9,
+        "Y": -2
+      },
+      "Exits": [
+        22,
         -1,
         -1,
-        7,
+        29
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "You won!",
+      "Description": "THERE IS NOTHING MORE TO DO IN THIS DIRECTION.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": -3,
+        "Y": -1
+      },
+      "Exits": [
+        -1,
+        32,
+        -1,
         -1
       ],
       "Locks": [],
@@ -84,9 +1015,9 @@
       },
       "Exits": [
         -1,
-        3,
+        33,
         -1,
-        -1
+        31
       ],
       "Locks": [],
       "DropTable": {
@@ -109,8 +1040,8 @@
       "Exits": [
         -1,
         -1,
-        8,
-        2
+        39,
+        32
       ],
       "Locks": [],
       "DropTable": {
@@ -122,19 +1053,43 @@
       "Chests": []
     },
     {
-      "Name": "Witch Hut",
-      "Description": "A hut made of knarled wood squats in a clearing in the woods. Out front, a small black cauldron gurgles over the fire.",
-      "Notes": "There should be a kooky witch here",
+      "Name": "Dark Pool Garden",
+      "Description": "An bed of blue and red flowers lies here, their petals dark in the dim light. The pool itself is pitch black, reflecting only the tiniest glint of light at the edge, like staring into a bowl of mercury.",
+      "Notes": "",
       "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 2,
+        "Y": -1
+      },
+      "Exits": [
+        24,
+        35,
+        -1,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Warning Sign",
+      "Description": "A \"Keep Out\" sign warns travelers that the dense, black forest ahead may not be welcoming to casual visitors.",
+      "Notes": "The zone beyond needs some form of Big Bad like a spectre or wight who prowls slowly and makes players afraid of passing through to loot items from the ground or move through to get back and forth to and from the Witch Hut to buy items from the witch.",
+      "IsSafeZone": true,
       "EditorPosition": {
         "X": 3,
         "Y": -1
       },
       "Exits": [
+        25,
         -1,
-        -1,
-        12,
-        -1
+        43,
+        34
       ],
       "Locks": [],
       "DropTable": {
@@ -149,15 +1104,15 @@
       "Name": "Fort Greene Courtyard",
       "Description": "An old courtyard with a faded compass rose engraved in the center. Many of the courtyard's tiles are cracked and dislodged, with roots and vines reaching out from underneath them, grasping for air.",
       "Notes": "",
-      "IsSafeZone": false,
+      "IsSafeZone": true,
       "EditorPosition": {
         "X": 5,
         "Y": -1
       },
       "Exits": [
         -1,
-        6,
-        13,
+        37,
+        44,
         -1
       ],
       "Locks": [],
@@ -180,9 +1135,9 @@
       },
       "Exits": [
         -1,
-        7,
+        38,
         -1,
-        5
+        36
       ],
       "Locks": [],
       "DropTable": {
@@ -203,10 +1158,10 @@
         "Y": -1
       },
       "Exits": [
-        1,
+        28,
         -1,
         -1,
-        6
+        37
       ],
       "Locks": [],
       "DropTable": {
@@ -227,9 +1182,9 @@
         "Y": 0
       },
       "Exits": [
-        3,
-        9,
-        14,
+        33,
+        40,
+        45,
         -1
       ],
       "Locks": [],
@@ -245,16 +1200,16 @@
       "Name": "Mushroom Cart",
       "Description": "There is a break in the trees here, and a circular courtyard of dirt where many boots have worn away the surrounding grass. A wooden cart full of various mushrooms waits patiently under the trees.",
       "Notes": "There should be a weird guy here selling mushrooms",
-      "IsSafeZone": false,
+      "IsSafeZone": true,
       "EditorPosition": {
         "X": 0,
         "Y": 0
       },
       "Exits": [
         -1,
-        10,
+        41,
         -1,
-        8
+        39
       ],
       "Locks": [],
       "DropTable": {
@@ -276,9 +1231,9 @@
       },
       "Exits": [
         -1,
-        11,
+        42,
         -1,
-        9
+        40
       ],
       "Locks": [],
       "DropTable": {
@@ -300,9 +1255,9 @@
       },
       "Exits": [
         -1,
-        12,
-        16,
-        10
+        43,
+        47,
+        41
       ],
       "Locks": [],
       "DropTable": {
@@ -323,10 +1278,10 @@
         "Y": 0
       },
       "Exits": [
-        4,
+        35,
         -1,
-        17,
-        11
+        48,
+        42
       ],
       "Locks": [],
       "DropTable": {
@@ -347,9 +1302,9 @@
         "Y": 0
       },
       "Exits": [
-        5,
+        36,
         -1,
-        19,
+        50,
         -1
       ],
       "Locks": [],
@@ -371,9 +1326,9 @@
         "Y": 1
       },
       "Exits": [
-        8,
+        39,
         -1,
-        21,
+        52,
         -1
       ],
       "Locks": [],
@@ -419,9 +1374,9 @@
         "Y": 1
       },
       "Exits": [
-        11,
-        17,
-        23,
+        42,
+        48,
+        54,
         -1
       ],
       "Locks": [],
@@ -443,10 +1398,10 @@
         "Y": 1
       },
       "Exits": [
-        12,
-        18,
-        24,
-        16
+        43,
+        49,
+        55,
+        47
       ],
       "Locks": [],
       "DropTable": {
@@ -468,9 +1423,9 @@
       },
       "Exits": [
         -1,
-        19,
-        25,
-        17
+        50,
+        56,
+        48
       ],
       "Locks": [],
       "DropTable": {
@@ -516,10 +1471,10 @@
         "Y": 1
       },
       "Exits": [
-        13,
-        20,
-        26,
-        18
+        44,
+        51,
+        57,
+        49
       ],
       "Locks": [],
       "DropTable": {
@@ -542,8 +1497,8 @@
       "Exits": [
         -1,
         -1,
-        27,
-        19
+        58,
+        50
       ],
       "Locks": [],
       "DropTable": {
@@ -577,9 +1532,9 @@
         "Y": 2
       },
       "Exits": [
-        14,
+        45,
         -1,
-        28,
+        59,
         -1
       ],
       "Locks": [],
@@ -638,9 +1593,9 @@
         "Y": 2
       },
       "Exits": [
-        16,
-        24,
-        31,
+        47,
+        55,
+        62,
         -1
       ],
       "Locks": [],
@@ -662,10 +1617,10 @@
         "Y": 2
       },
       "Exits": [
-        17,
-        25,
-        32,
-        23
+        48,
+        56,
+        63,
+        54
       ],
       "Locks": [],
       "DropTable": {
@@ -686,10 +1641,10 @@
         "Y": 2
       },
       "Exits": [
-        18,
-        26,
+        49,
+        57,
         -1,
-        24
+        55
       ],
       "Locks": [],
       "DropTable": {
@@ -727,7 +1682,7 @@
     },
     {
       "Name": "Farmer Gill's House",
-      "Description": "This is a new room",
+      "Description": "Farmer Gill is an industrious man, and his house is well-maintained because of it. The walls are all recently white-washed, the trimming is bright red, the roof is in good repair. Inside his larder is well-stocked, and while the barn is weathered, it has a certain rustic charm, and his herd seem more than happy with it.",
       "Notes": "Players can talk to farmer gill here. pls let me do the dialog for him he is inspired by a real farmer I met once who had strong opinions about the benefits of apple maggots",
       "IsSafeZone": true,
       "EditorPosition": {
@@ -735,10 +1690,10 @@
         "Y": 2
       },
       "Exits": [
-        19,
-        27,
-        -1,
-        25
+        50,
+        58,
+        64,
+        56
       ],
       "Locks": [],
       "DropTable": {
@@ -772,10 +1727,10 @@
         "Y": 2
       },
       "Exits": [
-        20,
+        51,
         -1,
-        -1,
-        26
+        65,
+        57
       ],
       "Locks": [],
       "DropTable": {
@@ -809,8 +1764,8 @@
         "Y": 3
       },
       "Exits": [
-        21,
-        29,
+        52,
+        60,
         -1,
         -1
       ],
@@ -834,9 +1789,9 @@
       },
       "Exits": [
         -1,
-        30,
+        61,
         -1,
-        28
+        59
       ],
       "Locks": [],
       "DropTable": {
@@ -858,9 +1813,9 @@
       },
       "Exits": [
         0,
-        31,
-        33,
-        29
+        62,
+        66,
+        60
       ],
       "Locks": [],
       "DropTable": {
@@ -881,10 +1836,10 @@
         "Y": 3
       },
       "Exits": [
-        23,
-        32,
-        34,
-        30
+        54,
+        63,
+        67,
+        61
       ],
       "Locks": [],
       "DropTable": {
@@ -905,10 +1860,58 @@
         "Y": 3
       },
       "Exits": [
-        24,
+        55,
         -1,
-        35,
-        31
+        68,
+        62
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Pastures",
+      "Description": "A green field with grass kept short by hungry farm animals.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 5,
+        "Y": 3
+      },
+      "Exits": [
+        57,
+        65,
+        69,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Junk Pile",
+      "Description": "There is no telling how long Farmer Gill, and by the looks of it his extended family and perhaps his ancestors, have been discrding their junk here.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 6,
+        "Y": 3
+      },
+      "Exits": [
+        58,
+        -1,
+        -1,
+        64
       ],
       "Locks": [],
       "DropTable": {
@@ -929,9 +1932,9 @@
         "Y": 4
       },
       "Exits": [
-        30,
-        34,
-        37,
+        61,
+        67,
+        72,
         -1
       ],
       "Locks": [],
@@ -953,10 +1956,10 @@
         "Y": 4
       },
       "Exits": [
-        31,
-        35,
+        62,
+        68,
         -1,
-        33
+        66
       ],
       "Locks": [],
       "DropTable": {
@@ -977,10 +1980,58 @@
         "Y": 4
       },
       "Exits": [
-        32,
+        63,
         -1,
         -1,
-        34
+        67
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Idyllic Glade",
+      "Description": "This segment of forest is particularly beautiful; the trees are lush, but sparse, and admit rays of golden light during the day. After the sun sets, the moon reveals a path through the tall grass. ",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 5,
+        "Y": 4
+      },
+      "Exits": [
+        64,
+        70,
+        73,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Hillside Cave",
+      "Description": "This is a new room",
+      "Notes": "Half way up a steep hillside there is a a rocky overhang through which you can enter a small cave. It is cooler here, and there is evidence here left by past occuprants escaping the elements.",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 6,
+        "Y": 4
+      },
+      "Exits": [
+        -1,
+        -1,
+        74,
+        69
       ],
       "Locks": [],
       "DropTable": {
@@ -993,7 +2044,7 @@
     },
     {
       "Name": "Rocky Hillside",
-      "Description": "This is a new room",
+      "Description": "A path leads up amongst the rocks into the hill itself.",
       "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
@@ -1002,8 +2053,8 @@
       },
       "Exits": [
         -1,
-        37,
-        38,
+        72,
+        75,
         -1
       ],
       "Locks": [],
@@ -1017,7 +2068,7 @@
     },
     {
       "Name": "Abandoned Shack",
-      "Description": "This is a new room",
+      "Description": "You have found a shack in a state of deep desuetude. ",
       "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
@@ -1025,10 +2076,58 @@
         "Y": 5
       },
       "Exits": [
-        33,
+        66,
         -1,
         -1,
-        36
+        71
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Massive Cairn",
+      "Description": "There is a massive cairn here, assembled from rocks that tumbled down from the cliffs that lie to the South.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 5,
+        "Y": 5
+      },
+      "Exits": [
+        69,
+        74,
+        -1,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Claffiside Path",
+      "Description": "Winding along more and more treacherous rocks, this pathway leads up a cliffside into the jagged mountain above. NOTE: THERE IS NO MORE CONTENT IN THiS DIRECTION.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 6,
+        "Y": 5
+      },
+      "Exits": [
+        70,
+        -1,
+        -1,
+        73
       ],
       "Locks": [],
       "DropTable": {
@@ -1041,7 +2140,7 @@
     },
     {
       "Name": "Cave Entrance",
-      "Description": "",
+      "Description": "This is the first segment of series of segment that comprise a larger cave system. The stench of Goblins emanates from deeper into the cave.",
       "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
@@ -1049,9 +2148,9 @@
         "Y": 6
       },
       "Exits": [
-        36,
+        71,
         -1,
-        39,
+        76,
         -1
       ],
       "Locks": [],
@@ -1065,7 +2164,7 @@
     },
     {
       "Name": "Goblin Cave",
-      "Description": "This is a new room",
+      "Description": "This room has been covered on all sides by Goblin graffiti. Do Goblins have creative impulses? They are not very good artists...",
       "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
@@ -1073,9 +2172,9 @@
         "Y": 7
       },
       "Exits": [
-        38,
+        75,
         -1,
-        40,
+        77,
         -1
       ],
       "Locks": [],
@@ -1089,7 +2188,7 @@
     },
     {
       "Name": "Dining Room",
-      "Description": "This is a new room",
+      "Description": "This room has a firepit at its center, and all along its perimeter is discarded bones from previous meals.",
       "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
@@ -1097,9 +2196,9 @@
         "Y": 8
       },
       "Exits": [
-        39,
-        41,
-        42,
+        76,
+        78,
+        79,
         -1
       ],
       "Locks": [],
@@ -1137,8 +2236,8 @@
       "Chests": []
     },
     {
-      "Name": "Quarters",
-      "Description": "This is a new room",
+      "Name": "Goblin Bunks",
+      "Description": "This room has the assorted cots used by the Goblins for sleeping whle they aren't out pillaging or entertaining themselves elsewhere in the cave.",
       "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
@@ -1149,7 +2248,7 @@
         -1,
         -1,
         -1,
-        40
+        77
       ],
       "Locks": [],
       "DropTable": {
@@ -1199,7 +2298,7 @@
     },
     {
       "Name": "Cellar",
-      "Description": "This is a new room",
+      "Description": "This room is where the Goblins keep the food and drink that they have stolen but not yet eaten. They do not keep it well-organized, or hyegnic.",
       "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
@@ -1207,9 +2306,9 @@
         "Y": 9
       },
       "Exits": [
-        40,
+        77,
         -1,
-        -1,
+        80,
         -1
       ],
       "Locks": [],
@@ -1269,6 +2368,103 @@
           }
         }
       ]
+    },
+    {
+      "Name": "Game Room",
+      "Description": "This may appear to most adventurers to just be yet another segment of the cave. Careful observation reveals that it has round river rocks lying on the floor. The reason for this, for those without background knowledge, is that goblins' favorite game is to throw rocks at each other to blow off stress after a long day of pillaging. ",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 0,
+        "Y": 10
+      },
+      "Exits": [
+        79,
+        -1,
+        81,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
+    },
+    {
+      "Name": "Trophy Room",
+      "Description": "This room has numerous crates, scabbards and sacks--some full of the trophies from their raids, and some empty.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 0,
+        "Y": 11
+      },
+      "Exits": [
+        80,
+        -1,
+        -1,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": [
+          {
+            "ItemId": "Gold",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 20
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 75
+          },
+          {
+            "ItemId": "Leather Armor",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 1
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 10
+          },
+          {
+            "ItemId": "Round Shield",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 1
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 10
+          },
+          {
+            "ItemId": "Iron Longsword",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 1
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 10
+          }
+        ]
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": []
     }
   ],
   "Npcs": [
@@ -1299,8 +2495,138 @@
       "BehaviorParams": {}
     },
     {
+      "Id": "spider",
+      "SpawnRoom": 6,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "spider",
+      "SpawnRoom": 9,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "Wander",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "spider",
+      "SpawnRoom": 9,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "Wander",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "spider",
+      "SpawnRoom": 11,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "Wander",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "spider",
+      "SpawnRoom": 13,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "Wander",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "spider",
+      "SpawnRoom": 16,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "Wander",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "skulk",
+      "SpawnRoom": 20,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "spider",
+      "SpawnRoom": 21,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "Stationary",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "spider",
+      "SpawnRoom": 21,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "Stationary",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "skulk",
+      "SpawnRoom": 28,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "Stationary",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
       "Id": "troll",
-      "SpawnRoom": 3,
+      "SpawnRoom": 33,
       "LevelRange": {
         "Min": 1,
         "Max": 1
@@ -1320,25 +2646,25 @@
     },
     {
       "Id": "spider",
-      "SpawnRoom": 5,
+      "SpawnRoom": 37,
       "LevelRange": {
         "Min": 1,
         "Max": 1
       },
-      "MovementTypeOverride": "",
+      "MovementTypeOverride": "Wander",
       "DropTableOverride": {
         "Entries": []
       },
       "BehaviorParams": {}
     },
     {
-      "Id": "skulk",
-      "SpawnRoom": 13,
+      "Id": "rous",
+      "SpawnRoom": 45,
       "LevelRange": {
         "Min": 1,
         "Max": 1
       },
-      "MovementTypeOverride": "",
+      "MovementTypeOverride": "Wander",
       "DropTableOverride": {
         "Entries": []
       },
@@ -1346,7 +2672,7 @@
     },
     {
       "Id": "yelena",
-      "SpawnRoom": 15,
+      "SpawnRoom": 46,
       "LevelRange": {
         "Min": 1,
         "Max": 1
@@ -1359,7 +2685,7 @@
     },
     {
       "Id": "rous",
-      "SpawnRoom": 18,
+      "SpawnRoom": 49,
       "LevelRange": {
         "Min": 1,
         "Max": 1
@@ -1372,7 +2698,7 @@
     },
     {
       "Id": "pip",
-      "SpawnRoom": 19,
+      "SpawnRoom": 50,
       "LevelRange": {
         "Min": 1,
         "Max": 1
@@ -1385,7 +2711,7 @@
     },
     {
       "Id": "happy cow",
-      "SpawnRoom": 20,
+      "SpawnRoom": 51,
       "LevelRange": {
         "Min": 1,
         "Max": 1
@@ -1398,7 +2724,7 @@
     },
     {
       "Id": "happy cow",
-      "SpawnRoom": 20,
+      "SpawnRoom": 51,
       "LevelRange": {
         "Min": 1,
         "Max": 1
@@ -1411,7 +2737,7 @@
     },
     {
       "Id": "scabbers",
-      "SpawnRoom": 22,
+      "SpawnRoom": 53,
       "LevelRange": {
         "Min": 1,
         "Max": 1
@@ -1424,7 +2750,20 @@
     },
     {
       "Id": "farmer_gill",
-      "SpawnRoom": 26,
+      "SpawnRoom": 57,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "happy cow",
+      "SpawnRoom": 57,
       "LevelRange": {
         "Min": 1,
         "Max": 1
@@ -1437,7 +2776,7 @@
     },
     {
       "Id": "rous",
-      "SpawnRoom": 29,
+      "SpawnRoom": 60,
       "LevelRange": {
         "Min": 1,
         "Max": 1
@@ -1449,8 +2788,60 @@
       "BehaviorParams": {}
     },
     {
-      "Id": "allan",
-      "SpawnRoom": 36,
+      "Id": "happy cow",
+      "SpawnRoom": 64,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "happy cow",
+      "SpawnRoom": 64,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "rous",
+      "SpawnRoom": 65,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "hill giant",
+      "SpawnRoom": 70,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "Wander",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "goblin",
+      "SpawnRoom": 76,
       "LevelRange": {
         "Min": 1,
         "Max": 1
@@ -1463,20 +2854,7 @@
     },
     {
       "Id": "goblin",
-      "SpawnRoom": 39,
-      "LevelRange": {
-        "Min": 1,
-        "Max": 1
-      },
-      "MovementTypeOverride": "",
-      "DropTableOverride": {
-        "Entries": []
-      },
-      "BehaviorParams": {}
-    },
-    {
-      "Id": "goblin",
-      "SpawnRoom": 40,
+      "SpawnRoom": 77,
       "LevelRange": {
         "Min": 2,
         "Max": 2
@@ -1489,7 +2867,7 @@
     },
     {
       "Id": "goblin",
-      "SpawnRoom": 40,
+      "SpawnRoom": 77,
       "LevelRange": {
         "Min": 1,
         "Max": 1
@@ -1502,7 +2880,7 @@
     },
     {
       "Id": "goblin",
-      "SpawnRoom": 41,
+      "SpawnRoom": 78,
       "LevelRange": {
         "Min": 1,
         "Max": 1
