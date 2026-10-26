@@ -25,6 +25,7 @@ npc.wares = {
     "Kitchen Knife",
     "Walking Stick",
     "Rags",
+    "Leather Armor",
     "Glass Bottle",
     "Paper",
 }

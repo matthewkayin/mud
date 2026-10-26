@@ -670,6 +670,30 @@
                   "Max": 100
                 },
                 "DropChancePercent": 5
+              },
+              {
+                "ItemId": "Potion of Health Recipe",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 20
+              },
+              {
+                "ItemId": "Potion of Mana Recipe",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 20
               }
             ]
           },
@@ -821,7 +845,7 @@
       "DropTable": {
         "Entries": [
           {
-            "ItemId": "Azurite Pendant",
+            "ItemId": "Fancy Plants",
             "AmountRange": {
               "Min": 1,
               "Max": 3
@@ -1126,7 +1150,32 @@
       ],
       "Locks": [],
       "DropTable": {
-        "Entries": []
+        "Entries": [
+          {
+            "ItemId": "Pixie Dust",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 2
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 10
+          },
+          {
+            "ItemId": "Fancy Plants",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 3
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 50
+          }
+        ]
       },
       "Inventory": {
         "Items": []
@@ -2093,7 +2142,7 @@
       "Exits": [
         63,
         -1,
-        -1,
+        73,
         67
       ],
       "Locks": [],
@@ -2118,7 +2167,7 @@
       "Exits": [
         64,
         70,
-        73,
+        75,
         -1
       ],
       "Locks": [],
@@ -2143,7 +2192,7 @@
       "Exits": [
         -1,
         -1,
-        74,
+        76,
         69
       ],
       "Locks": [],
@@ -2168,7 +2217,7 @@
       "Exits": [
         -1,
         72,
-        75,
+        77,
         -1
       ],
       "Locks": [],
@@ -2207,6 +2256,56 @@
       "Fixtures": []
     },
     {
+      "Name": "Cistern",
+      "Description": "This stone basin below street level stores water after it rains. The water level is low enough right now that you can pass through it.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 3,
+        "Y": 5
+      },
+      "Exits": [
+        68,
+        -1,
+        79,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": [],
+      "Fixtures": []
+    },
+    {
+      "Name": "The Lee of the Cliffs",
+      "Description": "Here under the protection of some looming cliffs there is an old fire pit and some simple wooden construction to keep the elements away.",
+      "Notes": "NOTE! NPC GOES HERE",
+      "IsSafeZone": true,
+      "EditorPosition": {
+        "X": 4,
+        "Y": 5
+      },
+      "Exits": [
+        -1,
+        75,
+        80,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": [],
+      "Fixtures": []
+    },
+    {
       "Name": "Massive Cairn",
       "Description": "There is a massive cairn here, assembled from rocks that tumbled down from the cliffs that lie to the South.",
       "Notes": "",
@@ -2217,9 +2316,9 @@
       },
       "Exits": [
         69,
-        74,
+        76,
         -1,
-        -1
+        74
       ],
       "Locks": [],
       "DropTable": {
@@ -2244,7 +2343,7 @@
         70,
         -1,
         -1,
-        73
+        75
       ],
       "Locks": [],
       "DropTable": {
@@ -2268,7 +2367,203 @@
       "Exits": [
         71,
         -1,
-        76,
+        81,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": [],
+      "Fixtures": []
+    },
+    {
+      "Name": "Explorer's Hideout",
+      "Description": "Some prior adventurer has turned this area into a small base of operations, with a cot, a kettle, and some storage space for goods.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 2,
+        "Y": 6
+      },
+      "Exits": [
+        -1,
+        79,
+        -1,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": [
+        {
+          "Name": "Explorer's Stash",
+          "Type": 0,
+          "Timer": 0,
+          "DropTable": {
+            "Entries": [
+              {
+                "ItemId": "Gold",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 30
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 50
+              },
+              {
+                "ItemId": "Potion of Health Recipe",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 30
+              },
+              {
+                "ItemId": "Chainmail Armor",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 10
+              },
+              {
+                "ItemId": "Iron Longsword",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 10
+              },
+              {
+                "ItemId": "Potion of Mana Recipe",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 20
+              },
+              {
+                "ItemId": "Potion of Health",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 2
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 15
+              },
+              {
+                "ItemId": "Potion of Mana",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 10
+              },
+              {
+                "ItemId": "Wormy Apple",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 4
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 90
+              },
+              {
+                "ItemId": "Common Lumber",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 2
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 90
+              }
+            ]
+          },
+          "Inventory": {
+            "Items": []
+          }
+        }
+      ],
+      "Fixtures": []
+    },
+    {
+      "Name": "Hidden Gulch",
+      "Description": "This deep gash in the ground is hidden behind Fulton. It is muddy with water flowing from the cistern to its North.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 3,
+        "Y": 6
+      },
+      "Exits": [
+        73,
+        -1,
+        82,
+        78
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": [],
+      "Fixtures": []
+    },
+    {
+      "Name": "Forgotten Pathway",
+      "Description": "This overgrown pathway leads up into the hills behind Fulton.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 4,
+        "Y": 6
+      },
+      "Exits": [
+        74,
+        -1,
+        83,
         -1
       ],
       "Locks": [],
@@ -2291,10 +2586,109 @@
         "Y": 7
       },
       "Exits": [
-        75,
-        -1,
         77,
+        -1,
+        84,
         -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": [],
+      "Fixtures": []
+    },
+    {
+      "Name": "Abandoned Construction",
+      "Description": "You have found an abandoned work site in carved into the hills beyond Fulton.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 3,
+        "Y": 7
+      },
+      "Exits": [
+        79,
+        83,
+        -1,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": [
+          {
+            "ItemId": "Repair Kit",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 1
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 50
+          },
+          {
+            "ItemId": "Crude Maul",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 1
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 40
+          },
+          {
+            "ItemId": "Iron",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 3
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 80
+          },
+          {
+            "ItemId": "Common Lumber",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 3
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 80
+          }
+        ]
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": [],
+      "Fixtures": []
+    },
+    {
+      "Name": "Collapsed Tower",
+      "Description": "There was a tower of some sort here a long time ago, but it is now just a pile of boulders covered in vines.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "EditorPosition": {
+        "X": 4,
+        "Y": 7
+      },
+      "Exits": [
+        80,
+        -1,
+        -1,
+        82
       ],
       "Locks": [],
       "DropTable": {
@@ -2316,9 +2710,9 @@
         "Y": 8
       },
       "Exits": [
-        76,
-        78,
-        79,
+        81,
+        85,
+        86,
         -1
       ],
       "Locks": [],
@@ -2369,7 +2763,7 @@
         -1,
         -1,
         -1,
-        77
+        84
       ],
       "Locks": [],
       "DropTable": {
@@ -2428,9 +2822,9 @@
         "Y": 9
       },
       "Exits": [
-        77,
+        84,
         -1,
-        80,
+        87,
         -1
       ],
       "Locks": [],
@@ -2502,9 +2896,9 @@
         "Y": 10
       },
       "Exits": [
-        79,
+        86,
         -1,
-        81,
+        88,
         -1
       ],
       "Locks": [],
@@ -2527,7 +2921,7 @@
         "Y": 11
       },
       "Exits": [
-        80,
+        87,
         -1,
         -1,
         -1
@@ -2620,6 +3014,19 @@
       "BehaviorParams": {}
     },
     {
+      "Id": "magda",
+      "SpawnRoom": 2,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
       "Id": "spider",
       "SpawnRoom": 6,
       "LevelRange": {
@@ -2666,6 +3073,19 @@
         "Max": 1
       },
       "MovementTypeOverride": "Wander",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "green ooze",
+      "SpawnRoom": 12,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
       "DropTableOverride": {
         "Entries": []
       },
@@ -2744,6 +3164,19 @@
         "Max": 1
       },
       "MovementTypeOverride": "Stationary",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "green ooze",
+      "SpawnRoom": 29,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
       "DropTableOverride": {
         "Entries": []
       },
@@ -2966,7 +3399,20 @@
     },
     {
       "Id": "goblin",
-      "SpawnRoom": 76,
+      "SpawnRoom": 78,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "Wander",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "goblin",
+      "SpawnRoom": 81,
       "LevelRange": {
         "Min": 1,
         "Max": 1
@@ -2979,7 +3425,20 @@
     },
     {
       "Id": "goblin",
-      "SpawnRoom": 77,
+      "SpawnRoom": 83,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "Wander",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "goblin",
+      "SpawnRoom": 84,
       "LevelRange": {
         "Min": 2,
         "Max": 2
@@ -2992,7 +3451,7 @@
     },
     {
       "Id": "goblin",
-      "SpawnRoom": 77,
+      "SpawnRoom": 84,
       "LevelRange": {
         "Min": 1,
         "Max": 1
@@ -3005,7 +3464,7 @@
     },
     {
       "Id": "goblin",
-      "SpawnRoom": 78,
+      "SpawnRoom": 85,
       "LevelRange": {
         "Min": 1,
         "Max": 1
