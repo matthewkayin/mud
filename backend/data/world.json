@@ -598,7 +598,7 @@
                 "DropChancePercent": 75
               },
               {
-                "ItemId": "Azurite Pendant",
+                "ItemId": "Chainmail Armor Recipe",
                 "AmountRange": {
                   "Min": 1,
                   "Max": 1
@@ -607,7 +607,43 @@
                   "Min": 100,
                   "Max": 100
                 },
-                "DropChancePercent": 100
+                "DropChancePercent": 5
+              },
+              {
+                "ItemId": "Iron Longsword Recipe",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 5
+              },
+              {
+                "ItemId": "Iron Axe Recipe",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 5
+              },
+              {
+                "ItemId": "Iron Dagger Recipe",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 5
               }
             ]
           },
@@ -2128,7 +2164,7 @@
     },
     {
       "Name": "Goblin Cave",
-      "Description": "This room has been covered on all sides by Goblin graffiti. Do Goblins have created impulses? They are not very good artists...",
+      "Description": "This room has been covered on all sides by Goblin graffiti. Do Goblins have creative impulses? They are not very good artists...",
       "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
@@ -2412,7 +2448,7 @@
             "DropChancePercent": 10
           },
           {
-            "ItemId": "Iron Longsword Recipe",
+            "ItemId": "Iron Longsword",
             "AmountRange": {
               "Min": 1,
               "Max": 1
