@@ -4,12 +4,12 @@ spell.name = "Firebolt"
 spell.description = "Casts a bolt of fire toward the target"
 spell.casts_to_learn = 50
 
-spell.mana_cost = 5
+spell.mana_cost = 10
 spell.cast_time = 1
 spell.target_type = world.TargetType.ENEMY
 
 function spell.on_cast(caster, target)
-    local damage = world.deal_magic_damage(caster, target, 10)
+    local damage = world.deal_magic_damage(caster, target, 20)
 
     local room = world.mob_get_room(caster)
     local target_name = world.mob_get_name(target)

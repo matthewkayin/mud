@@ -9,8 +9,8 @@ npc.experience_worth = 40
 npc.experience_worth_scaling = 5
 npc.respawn_duration = world.time_minutes(1)
 
-npc.stats = { VIT = 7, STR = 2, AGI = 12, INT = 2, FTH = 4 }
-npc.scaling = { VIT = 7, STR = 2, AGI = 12, INT = 2, FTH = 4 }
+npc.stats = { VIT = 10, STR = 2, AGI = 12, INT = 2, FTH = 4 }
+npc.scaling = { VIT = 10, STR = 2, AGI = 12, INT = 2, FTH = 4 }
 npc.damage = 6
 npc.armor_penetration = 2
 npc.deflection = 4
