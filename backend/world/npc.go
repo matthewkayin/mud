@@ -174,21 +174,12 @@ func (npc *Npc) MarshalJSON() ([]byte, error) {
 
 		MovementTypeOverride: movementTypeOverride,
 		DropTableOverride: npc.DropTableOverride,
-
-		BehaviorParams: make(map[string]json.RawMessage, len(npc.BehaviorParams)),
 	}
 
-	for name, value := range npc.BehaviorParams {
-		paramType, isDeclared := npcData.BehaviorParams[name]
-		if !isDeclared {
-			return nil, fmt.Errorf("Cannot save NPC '%s' with undeclared behavior param '%s'.", npcData.Id, name)
-		}
-
-		jsonValue, err := npcBehaviorParamToJson(paramType, value)
-		if err != nil {
-			return nil, fmt.Errorf("Cannot save NPC '%s' behavior param '%s': %w", npcData.Id, name, err)
-		}
-		npcJson.BehaviorParams[name] = jsonValue
+	var err error
+	npcJson.BehaviorParams, err = behaviorParamsToJson(npc.BehaviorParams, npcData.BehaviorParams)
+	if err != nil {
+		return nil, err
 	}
 
 	return json.Marshal(&npcJson)
@@ -223,18 +214,9 @@ func (npc *Npc) UnmarshalJSON(data []byte) error {
 	npc.DropTableOverride = npcJson.DropTableOverride
 
 	// Missing params are reported by Validate()
-	npc.BehaviorParams = make(map[string]any, len(npcJson.BehaviorParams))
-	for name, jsonValue := range npcJson.BehaviorParams {
-		paramType, isDeclared := npcData.BehaviorParams[name]
-		if !isDeclared {
-			return fmt.Errorf("NPC '%s' has no behavior param named '%s'.", npcData.Id, name)
-		}
-
-		value, err := npcBehaviorParamFromJson(paramType, jsonValue)
-		if err != nil {
-			return fmt.Errorf("NPC '%s' behavior param '%s': %w", npcData.Id, name, err)
-		}
-		npc.BehaviorParams[name] = value
+	npc.BehaviorParams, err = behaviorParamsFromJson(npcJson.BehaviorParams, npcData.BehaviorParams)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -242,109 +224,6 @@ func (npc *Npc) UnmarshalJSON(data []byte) error {
 
 func npcIdIsValid(npcId NpcId) bool {
 	return npcId >= 0 && int(npcId) < len(NPC_DATA)
-}
-
-// Returns true if the value has the Go type that the param type expects
-func npcBehaviorParamHasType(paramType NpcBehaviorParamType, value any) bool {
-	switch paramType {
-		case NPC_BEHAVIOR_PARAM_TYPE_STRING:
-			_, ok := value.(string)
-			return ok
-		case NPC_BEHAVIOR_PARAM_TYPE_NUMBER:
-			_, ok := value.(float64)
-			return ok
-		case NPC_BEHAVIOR_PARAM_TYPE_BOOLEAN:
-			_, ok := value.(bool)
-			return ok
-		case NPC_BEHAVIOR_PARAM_TYPE_ITEM:
-			_, ok := value.(Item)
-			return ok
-		case NPC_BEHAVIOR_PARAM_TYPE_DIRECTION:
-			_, ok := value.(Direction)
-			return ok
-		default:
-			return false
-	}
-}
-
-func npcBehaviorParamToJson(paramType NpcBehaviorParamType, value any) (json.RawMessage, error) {
-	if !npcBehaviorParamHasType(paramType, value) {
-		return nil, fmt.Errorf("value %v is not of type %s", value, paramType.String())
-	}
-
-	switch paramType {
-		case NPC_BEHAVIOR_PARAM_TYPE_ITEM: {
-			// Item.MarshalJSON has a pointer receiver, so the Item must be addressable
-			item := value.(Item)
-			return json.Marshal(&item)
-		}
-		case NPC_BEHAVIOR_PARAM_TYPE_DIRECTION: {
-			direction := value.(Direction)
-			if direction < 0 || direction >= DIRECTION_COUNT {
-				return nil, fmt.Errorf("%d is not a valid direction", direction)
-			}
-			return json.Marshal(direction.String())
-		}
-		default:
-			return json.Marshal(value)
-	}
-}
-
-func npcBehaviorParamFromJson(paramType NpcBehaviorParamType, data json.RawMessage) (any, error) {
-	switch paramType {
-		case NPC_BEHAVIOR_PARAM_TYPE_STRING: {
-			var value string
-			err := json.Unmarshal(data, &value)
-			return value, err
-		}
-		case NPC_BEHAVIOR_PARAM_TYPE_NUMBER: {
-			var value float64
-			err := json.Unmarshal(data, &value)
-			return value, err
-		}
-		case NPC_BEHAVIOR_PARAM_TYPE_BOOLEAN: {
-			var value bool
-			err := json.Unmarshal(data, &value)
-			return value, err
-		}
-		case NPC_BEHAVIOR_PARAM_TYPE_ITEM: {
-			var value Item
-			err := json.Unmarshal(data, &value)
-			return value, err
-		}
-		case NPC_BEHAVIOR_PARAM_TYPE_DIRECTION: {
-			var directionString string
-			err := json.Unmarshal(data, &directionString)
-			if err != nil {
-				return nil, err
-			}
-			direction, ok := EnumFromString(directionString, Direction(DIRECTION_COUNT))
-			if !ok {
-				return nil, fmt.Errorf("'%s' is not a valid direction", directionString)
-			}
-			return direction, nil
-		}
-		default:
-			return nil, fmt.Errorf("unhandled behavior param type %d", paramType)
-	}
-}
-
-// Converts a behavior param value into a value that lua.State.NewTableFrom accepts
-func npcBehaviorParamToLua(paramType NpcBehaviorParamType, value any) any {
-	switch paramType {
-		case NPC_BEHAVIOR_PARAM_TYPE_ITEM: {
-			item := value.(Item)
-			return map[string]any {
-				"name": ITEM_DATA[item.Id].Name,
-				"amount": item.Amount,
-				"durability": item.Durability,
-			}
-		}
-		case NPC_BEHAVIOR_PARAM_TYPE_DIRECTION:
-			return value.(Direction).String()
-		default:
-			return value
-	}
 }
 
 //spawns the mob associated with the npc
@@ -411,11 +290,7 @@ func (npc *Npc) spawnMob(world *World) {
 func (npc *Npc) callInit(world *World) {
 	npcData := NPC_DATA[npc.Id]
 
-	paramsTree := make(map[string]any, len(npc.BehaviorParams))
-	for name, value := range npc.BehaviorParams {
-		paramsTree[name] = npcBehaviorParamToLua(npcData.BehaviorParams[name], value)
-	}
-	paramsTable, err := world.luaState.NewTableFrom(paramsTree)
+	paramsTable, err := behaviorParamsToLua(world, npc.BehaviorParams, npcData.BehaviorParams)
 	if err != nil {
 		log.Printf("Warn - Error creating behavior params table for NPC '%s': %s", npcData.Id, err.Error())
 		return

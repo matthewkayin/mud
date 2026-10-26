@@ -157,19 +157,19 @@ func validateNpcBehaviorParams(npc *Npc, npcName string) []string {
 			problems = append(problems, fmt.Sprintf("%s is missing behavior param '%s'.", npcName, name))
 			continue
 		}
-		if !npcBehaviorParamHasType(paramType, value) {
+		if !behaviorParamHasType(paramType, value) {
 			problems = append(problems, fmt.Sprintf("%s behavior param '%s' is not of type %s.", npcName, name, paramType.String()))
 			continue
 		}
 
 		switch paramType {
-			case NPC_BEHAVIOR_PARAM_TYPE_ITEM: {
+			case BEHAVIOR_PARAM_TYPE_ITEM: {
 				item := value.(Item)
 				if !itemIdIsValid(item.Id) {
 					problems = append(problems, fmt.Sprintf("%s behavior param '%s' has invalid item id %d.", npcName, name, item.Id))
 				}
 			}
-			case NPC_BEHAVIOR_PARAM_TYPE_DIRECTION: {
+			case BEHAVIOR_PARAM_TYPE_DIRECTION: {
 				direction := value.(Direction)
 				if direction < 0 || direction >= DIRECTION_COUNT {
 					problems = append(problems, fmt.Sprintf("%s behavior param '%s' has invalid direction %d.", npcName, name, direction))

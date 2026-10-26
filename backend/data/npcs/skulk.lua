@@ -34,7 +34,7 @@ function npc.update(self)
         local has_prey = false
 
         for i = 1, amount do
-            local mob = world.room_get_occupant(i)
+            local mob = world.room_get_occupant(room, i)
 
             if world.mob_is_npc(mob) then
                 goto continue
@@ -43,7 +43,7 @@ function npc.update(self)
             local health = world.mob_get_health(mob)
             local max_health = world.mob_get_max_health(mob)
 
-            if health * 2 < max_heath then
+            if health * 2 < max_health then
                 world.npc_set_disposition(self, world.NpcDisposition.HOSTILE)
             end
 

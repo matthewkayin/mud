@@ -26,8 +26,8 @@ npc.movement_type = world.NpcMovementType.STATIONARY
 
 -- The troll blocks an exit until a player pays it the toll
 npc.behavior_params = {
-	{ name = "Toll", type = world.NpcBehaviorParamType.ITEM },
-	{ name = "ExitToBlock", type = world.NpcBehaviorParamType.DIRECTION },
+	{ name = "Toll", type = world.BehaviorParamType.ITEM },
+	{ name = "ExitToBlock", type = world.BehaviorParamType.DIRECTION },
 }
 
 ---@class Params

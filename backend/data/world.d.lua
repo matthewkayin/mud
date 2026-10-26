@@ -65,8 +65,8 @@ world.NpcMovementType = {
 	WANDER = "Wander",
 }
 
----@enum NpcBehaviorParamType
-world.NpcBehaviorParamType = {
+---@enum BehaviorParamType
+world.BehaviorParamType = {
 	STRING = "String",
 	NUMBER = "Number",
 	BOOLEAN = "Boolean",

@@ -8,18 +8,6 @@ import (
 
 type NpcId int
 
-// The types an NPC script can declare for its behavior params. Each unique NPC in the
-// world JSON stores a value of the declared type for each param.
-type NpcBehaviorParamType int
-const (
-	NPC_BEHAVIOR_PARAM_TYPE_STRING = iota
-	NPC_BEHAVIOR_PARAM_TYPE_NUMBER
-	NPC_BEHAVIOR_PARAM_TYPE_BOOLEAN
-	NPC_BEHAVIOR_PARAM_TYPE_ITEM
-	NPC_BEHAVIOR_PARAM_TYPE_DIRECTION
-	NPC_BEHAVIOR_PARAM_TYPE_COUNT
-)
-
 type NpcData struct {
 	// Id is an internal name used for saving the NPC in JSON data
 	// Name is the actual display name of the NPC
@@ -48,7 +36,7 @@ type NpcData struct {
 	MovementType NpcMovementType
 
 	// Maps each behavior param name to its type
-	BehaviorParams map[string]NpcBehaviorParamType `ts_type:"Record<string, NpcBehaviorParamType>"`
+	BehaviorParams map[string]BehaviorParamType `ts_type:"Record<string, BehaviorParamType>"`
 
 	init *lua.Function
 	update *lua.Function
@@ -57,23 +45,6 @@ type NpcData struct {
 	onItemGiven *lua.Function
 	getStatusDescription *lua.Function
 	onDialog *lua.Function
-}
-
-func (paramType NpcBehaviorParamType) String() string {
-	switch paramType {
-		case NPC_BEHAVIOR_PARAM_TYPE_STRING:
-			return "String"
-		case NPC_BEHAVIOR_PARAM_TYPE_NUMBER:
-			return "Number"
-		case NPC_BEHAVIOR_PARAM_TYPE_BOOLEAN:
-			return "Boolean"
-		case NPC_BEHAVIOR_PARAM_TYPE_ITEM:
-			return "Item"
-		case NPC_BEHAVIOR_PARAM_TYPE_DIRECTION:
-			return "Direction"
-		default:
-			return ""
-	}
 }
 
 // LOAD
@@ -114,7 +85,7 @@ func (world *World) loadNpcData() {
 			log.Fatalf("NPC %s has id '%s' which is a duplicate of another NPC.", path, npcData.Id)
 		}
 
-		// Store item in NPC_DATA
+		// Store npc in NPC_DATA
 		NPC_ID_STR_TO_ID[npcData.Id] = NpcId(len(NPC_DATA))
 		NPC_DATA = append(NPC_DATA, npcData)
 		log.Printf("Loaded NPC '%s'.", npcData.Id)
@@ -170,7 +141,7 @@ func (parser *ScriptParser) parseNpc(table *lua.Table) *NpcData {
 		parser.addProblem(fmt.Errorf("movement_type value '%s' is not a valid NPC movement type.", movementTypeString))
 	}
 
-	npcData.BehaviorParams = parser.getNpcBehaviorParams(table, "behavior_params")
+	npcData.BehaviorParams = parser.getBehaviorParams(table, "behavior_params")
 
 	// Wares
 	npcData.wares = make([]ItemId, 0, 1)
@@ -214,53 +185,4 @@ func (parser *ScriptParser) parseNpc(table *lua.Table) *NpcData {
 	}
 
 	return npcData
-}
-
-// Behavior params are optional. If present, they are a list of { name, type } tables
-func (parser *ScriptParser) getNpcBehaviorParams(table *lua.Table, key string) map[string]NpcBehaviorParamType {
-	params := map[string]NpcBehaviorParamType{}
-
-	value := table.RawGetString(key)
-	if value.IsNil() {
-		return params
-	}
-
-	paramsTable, ok := value.AsTable()
-	if !ok {
-		parser.addProblem(fmt.Errorf("invalid type for '%s'. expected table, got %s", key, value.Kind().String()))
-		return params
-	}
-
-	paramCount := paramsTable.RawLen()
-	for index := 1; index <= paramCount; index++ {
-		paramKey := fmt.Sprintf("%s[%d]", key, index)
-		paramTable, ok := paramsTable.RawGetInt(index).AsTable()
-		if !ok {
-			parser.addProblem(fmt.Errorf("field '%s' must be a table", paramKey))
-			continue
-		}
-
-		name := parser.getString(paramTable, "name")
-		if name == "" {
-			parser.addProblem(fmt.Errorf("field '%s.name' must not be empty", paramKey))
-			continue
-		}
-
-		typeString := parser.getString(paramTable, "type")
-		paramType, ok := EnumFromString(typeString, NpcBehaviorParamType(NPC_BEHAVIOR_PARAM_TYPE_COUNT))
-		if !ok {
-			parser.addProblem(fmt.Errorf("field '%s.type' value '%s' is not a valid behavior param type.", paramKey, typeString))
-			continue
-		}
-
-		_, isDuplicate := params[name]
-		if isDuplicate {
-			parser.addProblem(fmt.Errorf("behavior param '%s' is declared more than once.", name))
-			continue
-		}
-
-		params[name] = paramType
-	}
-
-	return params
 }
