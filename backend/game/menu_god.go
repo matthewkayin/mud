@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"mud/world"
 	"strconv"
+	"strings"
 )
 
 // Commands for Gods (admins). They're used by prefixing the command with a '/' (e.g. /shutdown now), from any menu.
@@ -94,6 +95,69 @@ var MENU_GOD = MenuCreate(MenuCreateParams {
 					default:
 						return false
 				}
+			},
+		},
+		"teleport": {
+			usage: "/teleport <room name> [number]",
+			description: "Move your character to the room with the given name, ignoring exits, locks and combat. Add a number to choose between rooms with the same name.",
+			groups: []string { "root" },
+			handler: func (gamestate *GameState, player *Player, args []string) bool {
+				if len(args) == 0 {
+					return false
+				}
+
+				if player.menu != PLAYER_MENU_WORLD {
+					player.send("You must be in the world to teleport.")
+					return true
+				}
+
+				// Fuzzy find the target room
+				fuzzyNumber, searchWords := getFuzzyNumberFromArgs(args)
+				if len(searchWords) == 0 {
+					return false
+				}
+
+				roomNames := make([]string, len(gamestate.world.Rooms))
+				for index := range len(gamestate.world.Rooms) {
+					roomNames[index] = gamestate.world.Rooms[index].Name
+				}
+
+				roomIndex := fuzzyFind(roomNames, searchWords, fuzzyNumber)
+
+				// Handle edge cases
+				if roomIndex == FUZZY_FIND_RESULT_NOT_FOUND {
+					player.send(fmt.Sprintf("No room matches the name '%s'.", strings.Join(searchWords, " ")))
+					return true
+				}
+				if roomIndex == FUZZY_FIND_RESULT_AMBIGUOUS {
+					player.send(fmt.Sprintf("The room name '%s' is ambiguous.", strings.Join(searchWords, " ")))
+					return true
+				}
+				if roomIndex == FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE {
+					player.send("There is no room matching that number.")
+					return true
+				}
+
+				// Get the player mob and room
+				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+				playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
+
+				if roomIndex == playerMob.Data.Room {
+					player.send(fmt.Sprintf("You are already in %s.", playerRoom.Name))
+					return true
+				}
+
+				// Move player
+				playerRoom.MoveOccupant(gamestate.world, player.mobHandle, roomIndex)
+				player.isMinimapDirty = true
+
+				// Stop talking to current NPC
+				player.isTalking = false
+
+				playerRoom = &gamestate.world.Rooms[roomIndex]
+				player.send(fmt.Sprintf("You teleported to %s.", playerRoom.Name))
+				describeRoomToPlayer(gamestate, player, playerRoom)
+				return true
 			},
 		},
 	},
