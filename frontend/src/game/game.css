@@ -1,4 +1,4 @@
-/* The status bar takes the first column. The second is reserved for the minimap. */
+/* The status bar takes the first column and the minimap takes the second. */
 .game-hud {
     display: grid;
     grid-template-columns: 40% 1fr;

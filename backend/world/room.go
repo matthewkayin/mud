@@ -47,8 +47,8 @@ type Chest struct {
 	Inventory Inventory
 }
 
-// Grid position of the room in the world editor. The server doesn't use it,
-// but it is saved so that the editor can lay out the world.
+// Grid position of the room in the world editor. The editor uses it to lay out the world,
+// and the server uses it to build minimaps.
 type RoomEditorPosition struct {
 	X int
 	Y int

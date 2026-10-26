@@ -86,6 +86,7 @@ func GameStateInit(godUserIds []int, version string) *GameState {
 
 	gamestate.addEventListener(world.EVENT_TYPE_MESSAGE, handleEventMessage)
 	gamestate.addEventListener(world.EVENT_TYPE_MOB_MOVE, tradeSessionOnMobMove)
+	gamestate.addEventListener(world.EVENT_TYPE_MOB_MOVE, playerOnMobMove)
 	gamestate.addEventListener(world.EVENT_TYPE_MOB_DEATH, tradeSessionOnMobDeath)
 	gamestate.addEventListener(world.EVENT_TYPE_MOB_DEATH, playerOnMobDeath)
 

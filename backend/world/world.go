@@ -30,6 +30,9 @@ type World struct {
 	Rooms []Room
 	Npcs []Npc
 
+	// Room index for each editor position, used to build minimaps
+	roomIndexAtPosition map[RoomEditorPosition]int
+
 	replenishTimer int32
 
 	// True while a script function called by scriptCall is running
@@ -77,6 +80,7 @@ func WorldInit() *World {
 	// Init transient data structures
 	world.Events = make([]Event, 0, 64)
 	world.Mobs = MobArrayInit()
+	world.initRoomPositionLookup()
 
 	world.loadCharacters()
 

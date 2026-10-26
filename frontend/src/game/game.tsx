@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import './game.css';
 import { Terminal } from './terminal/terminal';
-import { StatusBar } from './status_bar';
-import { getPlayerStatus, parseSocketMessage, type PlayerStatus } from './socket_message';
+import { StatusBar } from './status_bar/status_bar';
+import { Minimap } from './minimap/minimap';
+import { getMinimap, getPlayerStatus, parseSocketMessage, type PlayerStatus } from './socket_message';
 
 const terminalPrompt = ">";
 
@@ -14,6 +15,7 @@ export const GamePage = () => {
   const [command, setCommand] = useState('');
   const [lines, setLines] = useState<string[]>([]);
   const [playerStatus, setPlayerStatus] = useState<PlayerStatus | null>(null);
+  const [minimap, setMinimap] = useState<number[] | null>(null);
 
   // Web socket
   const webSocketRef = useRef<WebSocket | null>(null);
@@ -72,6 +74,15 @@ export const GamePage = () => {
       if (status !== null || socketMessage.message === null) {
         setPlayerStatus(status);
       }
+      if (status === null && socketMessage.message === null) {
+        setMinimap(null);
+      }
+
+      // The minimap is only sent when it changes, so a message without one leaves it as it is
+      const newMinimap = getMinimap(socketMessage);
+      if (newMinimap !== null) {
+        setMinimap(newMinimap);
+      }
     };
 
     // Web socket close listener
@@ -99,6 +110,7 @@ export const GamePage = () => {
       webSocket.close();
       webSocketRef.current = null;
       setPlayerStatus(null);
+      setMinimap(null);
       terminalWriteLine('The server has disconnected.');
     };
 
@@ -119,6 +131,7 @@ export const GamePage = () => {
       <Terminal prompt={terminalPrompt} lines={lines} command={command} setCommand={setCommand} pendingAction={playerStatus?.action ?? false} onSubmit={onSubmit} />
       <div className="game-hud">
         <StatusBar status={playerStatus} />
+        <Minimap map={minimap} />
       </div>
     </div>
   );

@@ -27,6 +27,9 @@ type Player struct {
 
 	isTalking bool
 	talkingToHandle world.MobHandle
+
+	// True when the player's minimap has changed and must be sent with the next heartbeat
+	isMinimapDirty bool
 }
 
 func playerMenusInit() {
@@ -68,6 +71,9 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 				MaxMana: playerMob.Data.MaxMana(),
 				PendingAction: player.nextAction.actionType != ACTION_TYPE_NONE,
 			}
+			if player.isMinimapDirty {
+				heartbeat.Map = gamestate.world.GetMinimap(playerMob.Data.Room, playerMob.PlayerCharacter.RoomsDiscovered)
+			}
 		}
 	}
 
@@ -75,6 +81,10 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 	// This prevents a stalled connection from blocking the game loop
 	select {
 		case *player.inbox <- heartbeat:
+			// The minimap stays dirty if the heartbeat was dropped, so that it's sent again next time
+			if heartbeat.Map != nil {
+				player.isMinimapDirty = false
+			}
 		default:
 	}
 }
@@ -87,6 +97,18 @@ func (player *Player) setMenu(gamestate *GameState, menu PlayerMenu) {
 	player.getMenu().onExit(gamestate, player)
 	player.menu = menu
 	player.getMenu().onEnter(gamestate, player)
+}
+
+func playerOnMobMove(gamestate *GameState, event *world.Event) {
+	eventData := event.Data.(world.EventMobMove)
+
+	// If the mob is not a player, ignore the event
+	player := gamestate.getPlayerByMobHandle(eventData.MobHandle)
+	if player == nil {
+		return
+	}
+
+	player.isMinimapDirty = true
 }
 
 func playerOnMobDeath(gamestate *GameState, event *world.Event) {

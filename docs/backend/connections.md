@@ -22,31 +22,34 @@ Text colors in messages follow `docs/backend/text_colors.md`.
 
 ## Message format
 
-The client sends commands as plain-text frames. The server sends text frames that each hold one JSON object, defined by `SocketMessage` (`backend/game/socket_message.go`) and `frontend/src/socket_message.ts`:
+The client sends commands as plain-text frames. The server sends text frames that each hold one JSON object, defined by `SocketMessage` (`backend/game/socket_message.go`) and `frontend/src/game/socket_message.ts`:
 
 ```
 {"message":"<y>Bufo</y> cast <g>Firebolt</g>!"}
 {"message":null,"health":12,"maxHealth":20,"mana":5,"maxMana":10,"action":false}
+{"message":null,"health":12,"maxHealth":20,"mana":5,"maxMana":10,"action":false,"map":[-1,-1,4,-1,-1, ...]}
 {"message":null}
 ```
 
 - `message` is always present. It's the text to print, or `null` for a message with nothing to print.
 - `health`, `maxHealth`, `mana`, `maxMana` and `action` are optional. They're sent together or not at all. `action` is true while the player has a combat action queued for the next update.
+- `map` is optional. It's the player's minimap, sent on a heartbeat only after it changes. A message without `map` means the minimap hasn't changed. The format is described in [`MINIMAP.md`](../../MINIMAP.md).
 
 The client:
 - prints `message` when it isn't null.
 - updates the status bar when a message has the status fields.
 - replaces the `>` input prompt with an animated braille wave while `action` is true.
-- hides the status bar when a message has neither text nor status fields, because that is a heartbeat for a player who isn't in-game.
-- leaves the status bar unchanged for text messages without status fields.
+- replaces the minimap when a message has `map`.
+- hides the status bar and the minimap when a message has neither text nor status fields, because that is a heartbeat for a player who isn't in-game.
+- leaves the status bar unchanged for text messages without status fields, and the minimap unchanged for messages without `map`.
 
 ## Heartbeats
 
-At the end of every game update (every `world.WORLD_SECONDS_PER_UPDATE` seconds), `gamestate.update()` calls `player.sendHeartbeat` for every player. A heartbeat has `message: null`. While the player is in-game, it also carries their mob's HP and MP and whether they have a pending action.
+At the end of every game update (every `world.WORLD_SECONDS_PER_UPDATE` seconds), `gamestate.update()` calls `player.sendHeartbeat` for every player. A heartbeat has `message: null`. While the player is in-game, it also carries their mob's HP and MP and whether they have a pending action, and their minimap when it has changed.
 
 If the player's inbox is full, `sendHeartbeat` drops the heartbeat instead of waiting, so a stalled connection can't block the game loop.
 
-Heartbeats let the client detect a dead connection. `frontend/src/game.tsx` restarts a timer on every message, and if nothing arrives for `HEARTBEAT_TIMEOUT_MS` (10s), it treats the connection as dead. A heartbeat's status is up to one update old, so changes made by instant commands show up in the status bar at the next update.
+Heartbeats let the client detect a dead connection. `frontend/src/game/game.tsx` restarts a timer on every message, and if nothing arrives for `HEARTBEAT_TIMEOUT_MS` (10s), it treats the connection as dead. A heartbeat's status is up to one update old, so changes made by instant commands show up in the status bar at the next update.
 
 ## Detecting dead clients
 
