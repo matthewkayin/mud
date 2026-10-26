@@ -2,7 +2,7 @@ local npc = {}
 
 npc.id = "magda"
 npc.name = "Magda"
-npc.description = "This withered old hag seems very stern."
+npc.description = "This withered old hag stands impatiently by the cauldron. She narrows her beady eyes when she sees you, and you find it hard to shake the sense that you're tresspassing."
 
 npc.experience_worth = 1
 npc.experience_worth_scaling = 1
@@ -38,13 +38,14 @@ npc.wares = {
 ---@param subject string
 function npc.on_dialog(self, instance, player, subject)
     if subject == "" then
-        world.message_player(player, "The witch Magda seems nonplussed by visiting adventurers.")
-        world.say_to_player(self, player, "How can I help you?")
+        world.say_to_player(self, player, "What are you gawking at? Or are you here to <b>buy something</b>?")
     elseif subject == "buy" then
-        world.message_player(player, "The witch is willing to sell esoterica to adventurers with the coin for it.")
-        world.say_to_player(self, player, "What is it that you need from me?")
+        local self_name = world.mob_get_name(self)
+        world.say_to_player(self, player, "Yes, I am running a business, you know.")
+        world.message_player(player, string.format("You look around at the esoterica scattered around %s's feet. Tattered spellbooks, chipped bottles, scraps of parchment with words written on them. " ..
+            "You had assumed that these were just the old hags's things, but it occurs to you now that these might be her wares.", self_name))
     else
-        world.say_to_player(self, player, "Why are you trying to talk to me about that?")
+        world.say_to_player(self, player, "What nonsense are you going on about now?")
     end
 end
 
