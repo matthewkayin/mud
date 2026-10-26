@@ -147,7 +147,7 @@
     },
     {
       "Name": "Esoteric Mechanism",
-      "Description": "Stepping into this room is like stepping into.  vast clock, and at its center lies a complex dial covered in runes.",
+      "Description": "Stepping into this room is like stepping into a vast clock, and at its center lies a complex dial covered in runes.",
       "Notes": "Part of the puzzle to get into the Depths/Tomb of Mologok",
       "IsSafeZone": false,
       "EditorPosition": {
@@ -317,7 +317,7 @@
     },
     {
       "Name": "Mire",
-      "Description": "Passing between the trees requires walkign through ankle-deep standing water.",
+      "Description": "Passing between the trees requires walking through ankle-deep standing water.",
       "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
@@ -1054,7 +1054,7 @@
     },
     {
       "Name": "Dark Pool Garden",
-      "Description": "This is a new room",
+      "Description": "An bed of blue and red flowers lies here, their petals dark in the dim light. The pool itself is pitch black, reflecting only the tiniest glint of light at the edge, like staring into a bowl of mercury.",
       "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
