@@ -191,6 +191,48 @@ func fuzzyFindTarget(gamestate *GameState, player *Player, searchWords []string)
 	return room.Occupants[targetIndex], nil
 }
 
+func fuzzyFindFixture(gamestate *GameState, player *Player, searchWords []string) (*world.Fixture, error) {
+	// Check that there are any arguments
+	if len(searchWords) == 0 {
+		return nil, errors.New("You must specify a target.")
+	}
+
+	// Get handle to player room
+	playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+	room := gamestate.world.Rooms[playerMob.Data.Room]
+
+	// Check that there are any fixtures
+	if len(room.Fixtures) == 0 {
+		return nil, fmt.Errorf("No target in the room matches the name '%s'.", strings.Join(searchWords, " "))
+	}
+
+	// Put all fixture names into an array
+	fixtureNames := make([]string, 0, len(room.Fixtures))
+	for index := range room.Fixtures {
+		fixtureNames = append(fixtureNames, room.Fixtures[index].GetName())
+	}
+
+	// Fuzzy find the fixture
+	// TODO: fuzzy numbers on the fixtures, but just not gonna worry about it for tuesday
+	index := fuzzyFind(fixtureNames, searchWords, FUZZY_FIND_NUMBER_NONE)
+
+	if index == FUZZY_FIND_RESULT_NOT_FOUND {
+		return nil, fmt.Errorf("")
+	}
+	// Handle edge cases
+	if index == FUZZY_FIND_RESULT_NOT_FOUND {
+		return nil, fmt.Errorf("No target in the room matches the name '%s'.", strings.Join(searchWords, " "))
+	}
+	if index == FUZZY_FIND_RESULT_AMBIGUOUS {
+		return nil, fmt.Errorf("The target string '%s' is ambiguous.", strings.Join(searchWords, " "))
+	}
+	if index == FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE {
+		panic("Received fuzzy result number out of range but no fuzzy number was specified.")
+	}
+
+	return &room.Fixtures[index], nil
+}
+
 // Chooses either a prepared spell or a class spell
 func fuzzyFindCastableSpell(gamestate *GameState, player *Player, searchWords []string) (world.SpellId, error) {
 	// Check that there are any arguments

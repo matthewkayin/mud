@@ -67,12 +67,11 @@ func (fixture *Fixture) UnmarshalJSON(data []byte) error {
 
 type FixtureData struct {
 	Name string
-	Description string
+	Description lua.Value
 	BehaviorParams map[string]BehaviorParamType `ts_type:"Record<string, BehaviorParamType"`
 
 	init *lua.Function
 	reset *lua.Function
-	getStatusDescription *lua.Function
 	interactions map[string]*lua.Function
 }
 
@@ -127,17 +126,28 @@ func (parser *ScriptParser) parseFixture(table *lua.Table) *FixtureData {
 	fixtureData := &FixtureData{}
 
 	fixtureData.Name = parser.getString(table, "name")
-	fixtureData.Description = parser.getString(table, "description")
+	fixtureData.Description = table.RawGetString("description")
+	if fixtureData.Description.IsNil() {
+		parser.addProblem(fmt.Errorf("missing required field 'description'"))
+	}
+	if !(fixtureData.Description.Kind() == lua.StringKind && fixtureData.Description.Kind() == lua.FunctionKind) {
+		parser.addProblem(fmt.Errorf("Fixture description must be either a string or a function returning a string"))
+	}
 	fixtureData.BehaviorParams = parser.getBehaviorParams(table, "behavior_params")
 
 	fixtureData.init = parser.getOptionalFunction(table, "init")
-	fixtureData.getStatusDescription = parser.getOptionalFunction(table, "get_status_description")
+	fixtureData.reset = parser.getOptionalFunction(table, "reset")
 
 	// Interactions table
 	fixtureData.interactions = make(map[string]*lua.Function)
 	interactionsTable := parser.getTable(table, "interactions")
 	if interactionsTable == nil {
 		parser.addProblem(fmt.Errorf("Fixture must have an interactions table."))
+		return nil
+	}
+
+	if len(fixtureData.interactions) == 0 {
+		parser.addProblem(fmt.Errorf("A fixture must have at least one interaction."))
 		return nil
 	}
 
@@ -187,6 +197,11 @@ func (parser *ScriptParser) parseFixture(table *lua.Table) *FixtureData {
 func (fixture *Fixture) init(world *World) {
 	fixtureData := FIXTURE_DATA[fixture.Id]
 
+	if fixtureData.init == nil {
+		fixture.instance = lua.Nil()
+		return
+	}
+
 	behaviorParams, err := behaviorParamsToLua(world, fixture.BehaviorParams, fixtureData.BehaviorParams)
 	if err != nil {
 		log.Printf("Warn - Error creating behavior params table for fixture '%s': %s", fixtureData.Name, err.Error())
@@ -207,17 +222,37 @@ func (fixture *Fixture) init(world *World) {
 func (fixture *Fixture) reset(world *World) {
 	fixtureData := FIXTURE_DATA[fixture.Id]
 
-	world.scriptCall(fixtureData.reset.Value(), fmt.Sprintf("fixture %s reset()"), fixture.instance)
+	if fixtureData.reset == nil {
+		return
+	}
+
+	world.scriptCall(fixtureData.reset.Value(), fmt.Sprintf("fixture %s reset()", fixtureData.Name), fixture.instance)
 }
 
-func (fixture *Fixture) interact(world *World, verb string) bool {
+func (fixture *Fixture) GetVerbs() []string {
+	fixtureData := FIXTURE_DATA[fixture.Id]
+	verbs := make([]string, 0, len(fixtureData.interactions))
+	for verb, _ := range fixtureData.interactions {
+		verbs = append(verbs, verb)
+	}
+
+	return verbs
+}
+
+func (fixture *Fixture) Interact(world *World, playerHandle MobHandle, verb string) bool {
 	fixtureData := FIXTURE_DATA[fixture.Id]
 	hook, exists := fixtureData.interactions[verb]
 	if !exists {
 		return false
 	}
 
-	world.scriptCall(hook.Value(), fmt.Sprintf("fixture %s interact %s", fixtureData.Name, verb), fixture.instance)
+	playerLuaHandle, err := world.getMobLuaHandle(playerHandle)
+	if err != nil {
+		log.Print(err.Error())
+		return false
+	}
+
+	world.scriptCall(hook.Value(), fmt.Sprintf("fixture %s interact %s", fixtureData.Name, verb), fixture.instance, playerLuaHandle)
 	return true
 }
 
@@ -227,4 +262,35 @@ func (fixture *Fixture) update(world *World) {
 		fixture.reset(world)
 		fixture.timer = FIXTURE_RESET_DURATION
 	}
+}
+
+
+func (fixture *Fixture) GetName() string {
+	return FIXTURE_DATA[fixture.Id].Name
+}
+
+func (fixture *Fixture) GetDescription(world *World) (string, bool) {
+	fixtureData := FIXTURE_DATA[fixture.Id]
+
+	if fixtureData.Description.Kind() == lua.StringKind {
+		description, _ := fixtureData.Description.AsString()
+		return description, true
+	}
+
+	if fixtureData.Description.Kind() == lua.FunctionKind {
+		getDescription, _ := fixtureData.Description.AsFunction()
+		result, ok := world.scriptCall(getDescription.Value(), fmt.Sprintf("fixture %s description()", fixtureData.Name), fixture.instance)
+		if !ok {
+			return "", false
+		}
+		description, ok := result.AsString()
+		if !ok {
+			log.Printf("Warn - Fixture description() did not return a string.")
+			return "", false
+		}
+
+		return description, true
+	}
+
+	return "", false
 }

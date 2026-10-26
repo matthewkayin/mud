@@ -131,6 +131,18 @@ world.TargetType = {
 ---@return number
 function world.deal_magic_damage(caster_handle, target_handle, base_damage) end
 
+--- Emit a signal, which will invoke any listeners who are listening to the signal.
+--- Any arguments provided after the signal name will be passed into the listener function.
+---
+---@param signal string
+---@param ... any
+function world.emit_signal(signal, ...) end
+
+--- Returns the current world tick
+---
+---@return integer
+function world.get_ticks() end
+
 --- Heals a mob with non-magic healing.
 --- Returns the number of damage healed.
 ---
@@ -382,7 +394,7 @@ function world.mob_is_npc(handle) end
 ---
 ---@param handle MobHandle
 ---@param index integer
----@return bool
+---@return boolean
 function world.mob_item_is_repairable(handle, index) end
 
 --- Reinforces the item
@@ -409,7 +421,7 @@ function world.mob_remove_inventory_item(handle, index, amount) end
 
 --- Repairs the item
 ---
----@param handle Mobhandle
+---@param handle MobHandle
 ---@param index integer
 function world.mob_repair_item(handle, index) end
 
@@ -493,6 +505,13 @@ function world.player_get_race(player) end
 ---@return number
 function world.regen_mana(target_handle, regen_amount) end
 
+--- Adds an item to the room
+---
+---@param room integer
+---@param item string
+---@param amount integer
+function world.room_add_item(room, item, amount) end
+
 --- Returns the room's exit in the specified direction. If there is no exit, returns world.ROOM_NONE
 ---
 ---@param room integer
@@ -544,13 +563,19 @@ function world.say_to_player(speaker, player, message) end
 ---@param message string
 function world.say_to_room(speaker, message) end
 
---- Returns the number of updates that will occur in X minutes
+--- Subscribe to a signal. The provided listener will get called whenever a fixture emits the signal.
+---
+---@param signal string
+---@param listener function
+function world.subscribe_to_signal(signal, listener) end
+
+--- Returns the number of ticks that will occur in X minutes
 ---
 ---@param minutes integer
 ---@return integer
 function world.time_minutes(minutes) end
 
---- Return the number of updates that will occur in X seconds
+--- Return the number of ticks that will occur in X seconds
 ---
 ---@param seconds integer
 ---@return integer

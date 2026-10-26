@@ -244,6 +244,14 @@ Each stub is documented with the `//` comment directly above its `SCRIPT_LIBRARY
 "messageRoom": func(frame lua.Frame) lua.Outcome {
 ```
 
+Document variadic arguments with a final `@param ... <type>` line, which generates a stub like `function world.emit_signal(signal, ...) end`:
+
+```go
+// @param signal string
+// @param ... any
+"emit_signal": func(frame lua.Frame) lua.Outcome {
+```
+
 ### Performance
 
 The backend runs Lua with [lunar](https://github.com/mmcdole/lunar) (`github.com/mmcdole/lunar`), a Lua 5.1 interpreter written in pure Go. Calling a `SCRIPT_LIBRARY` function from Lua is an ordinary native call inside the interpreter, with no cgo or FFI cost. With the C Lua implementation, the usual advice is to batch work into fewer Lua/C calls, but that doesn't apply here: one call to a simple getter costs around 90 ns. Allocating Lua tables is what costs time, whether the script allocates them or Go does. Each table is a Go heap allocation that has to be garbage collected later, and that dominates the cost of a call that returns one.
