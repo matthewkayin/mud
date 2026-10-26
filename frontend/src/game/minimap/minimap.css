@@ -1,0 +1,28 @@
+/* Sits in the HUD's second column, against the right edge, and matches the status bar's panel */
+.minimap {
+    display: block;
+    justify-self: end;
+    width: 120px;
+    height: 120px;
+    padding: 10px;
+    border-radius: 4px;
+    background-color: #1e1e1e;
+}
+
+/* Strokes are set in screen pixels so they stay crisp at any size */
+.minimap-room {
+    fill: #3a3a3a;
+    stroke: #ffffff;
+    stroke-width: 1px;
+    vector-effect: non-scaling-stroke;
+}
+
+.minimap-room.current {
+    fill: #ffffff;
+}
+
+.minimap-exit {
+    stroke: #ffffff;
+    stroke-width: 1px;
+    vector-effect: non-scaling-stroke;
+}

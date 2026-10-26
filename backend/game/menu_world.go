@@ -33,6 +33,7 @@ var MENU_WORLD = MenuCreate(MenuCreateParams {
 		playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
 		gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("<y>%s</y> has joined the room.", player.character.Data.Name))
 		playerRoom.AddOccupant(gamestate.world, player.mobHandle)
+		player.isMinimapDirty = true
 
 		// Enter world menu
 		player.send(fmt.Sprintf("You have logged in. Welcome, <y>%s</y>.", player.character.Data.Name))

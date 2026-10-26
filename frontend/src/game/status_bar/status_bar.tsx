@@ -1,6 +1,6 @@
 import './status_bar.css';
-import type { PlayerStatus } from './socket_message';
-import { TextColor, TEXT_COLOR_VALUES } from './terminal/text_color';
+import type { PlayerStatus } from '../socket_message';
+import { TextColor, TEXT_COLOR_VALUES } from '../terminal/text_color';
 
 type StatusBarProps = {
   status: PlayerStatus | null;

@@ -11,7 +11,9 @@ type PlayerStatus struct {
 
 // A message sent to the client. Message is nil for a heartbeat.
 // The PlayerStatus fields are left out of the JSON when PlayerStatus is nil.
+// Map is only sent when the player's minimap has changed, and is left out of the JSON when nil.
 type SocketMessage struct {
 	Message *string `json:"message"`
 	*PlayerStatus
+	Map []int `json:"map,omitempty"`
 }

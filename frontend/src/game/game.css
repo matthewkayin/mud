@@ -1,0 +1,13 @@
+/* The status bar takes the first column and the minimap takes the second. */
+.game-hud {
+    display: grid;
+    grid-template-columns: 40% 1fr;
+    /* Keep each panel at its own height instead of stretching it to the tallest one */
+    align-items: start;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.game-hud:empty {
+    display: none;
+}

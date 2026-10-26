@@ -57,6 +57,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 			// Move player
 			wasHidden := playerMob.CheckFlag(world.MOB_FLAG_HIDDEN)
 			playerRoom.MoveOccupant(gamestate.world, player.mobHandle, newRoomIndex)
+			player.isMinimapDirty = true
 
 			// Narrate movement
 			playerRoom = &gamestate.world.Rooms[playerMob.Data.Room]
