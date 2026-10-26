@@ -252,13 +252,18 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 			if err != nil {
 				description, ok := fixture.GetDescription(gamestate.world)
 				if !ok {
-					player.send(fmt.Sprintf("%s is undescribable.", fixture.GetName()))
+					player.send(fmt.Sprintf("<y>%s</y> is undescribable.", fixture.GetName()))
 					return true
 				}
 
 				// Send description
 				player.send(description)
-				player.send(fmt.Sprintf("You can interact with %s by typing %s", fixture.GetName(), util.CombineNames(fixture.GetVerbs())))
+				verbs := fixture.GetVerbs()
+				if len(verbs) == 0 {
+					player.send("You cannot interact with it.")
+				} else {
+					player.send(fmt.Sprintf("You can interact with it by typing %s", util.CombineNames(fixture.GetVerbs())))
+				}
 			}
 
 			player.send(err.Error())

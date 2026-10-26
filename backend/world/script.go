@@ -129,6 +129,7 @@ func (world *World) scriptCall(function lua.Value, description string, args ...l
 	world.scriptIsRunning = false
 
 	world.handleDeferredNpcEvents()
+	world.handleDeferredSignals()
 
 	if err != nil {
 		log.Printf("Warn - %s failed: %s", description, scriptFormatError(err))

@@ -96,10 +96,10 @@ func (lock *Lock) Relock() {
 	lock.unlockTimer = 0
 }
 
-func (room *Room) init(world *World) {
+func (room *Room) init(roomIndex int, world *World) {
 	// Init fixtures
 	for index := range len(room.Fixtures) {
-		room.Fixtures[index].init(world)
+		room.Fixtures[index].init(roomIndex, world)
 	}
 
 	room.replenish()

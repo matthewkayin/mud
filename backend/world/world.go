@@ -42,6 +42,9 @@ type World struct {
 	isHandlingDeferredNpcEvents bool
 
 	signalListeners map[string][]*lua.Function
+	// Signals emitted while a script was running, emitted once it returns
+	deferredSignals []deferredSignal
+	isHandlingDeferredSignals bool
 	tick uint32
 }
 
@@ -86,10 +89,9 @@ func WorldInit() *World {
 	world.initRoomPositionLookup()
 	world.signalListeners = make(map[string][]*lua.Function)
 
-	// Replenish room items
+	// Init rooms
 	for index := range len(world.Rooms) {
-		world.Rooms[index].init(world)
-		world.Rooms[index].replenish()
+		world.Rooms[index].init(index, world)
 	}
 
 	world.loadCharacters()

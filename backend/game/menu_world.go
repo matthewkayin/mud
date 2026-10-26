@@ -132,12 +132,12 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 		objectNames := make([]string, 0, objectCount)
 		for index := range len(room.Chests) {
 			chest := &room.Chests[index]
-			objectNames = append(objectNames, chest.Name)
+			objectNames = append(objectNames, fmt.Sprintf("<y>%s</y>", chest.Name))
 		}
 
 		for index := range len(room.Fixtures) {
 			fixture := &room.Fixtures[index]
-			objectNames = append(objectNames, fixture.GetName())
+			objectNames = append(objectNames, fmt.Sprintf("<y>%s</y>", fixture.GetName()))
 		}
 
 		player.send(fmt.Sprintf("In the room is %s.", util.CombineNames(objectNames)))

@@ -182,10 +182,6 @@ func (parser *ScriptParser) parseFixture(table *lua.Table) *FixtureData {
 		fixtureData.interactions[name] = function
 	}
 
-	if len(fixtureData.interactions) == 0 {
-		parser.addProblem(fmt.Errorf("A fixture must have at least one interaction."))
-	}
-
 	if parser.getError() != nil {
 		return nil
 	}
@@ -193,7 +189,7 @@ func (parser *ScriptParser) parseFixture(table *lua.Table) *FixtureData {
 	return fixtureData
 }
 
-func (fixture *Fixture) init(world *World) {
+func (fixture *Fixture) init(roomIndex int, world *World) {
 	fixtureData := FIXTURE_DATA[fixture.Id]
 
 	if fixtureData.init == nil {
@@ -206,7 +202,7 @@ func (fixture *Fixture) init(world *World) {
 		log.Printf("Warn - Error creating behavior params table for fixture '%s': %s", fixtureData.Name, err.Error())
 	}
 
-	result, ok := world.scriptCall(fixtureData.init.Value(), fmt.Sprintf("fixture %s init()", fixtureData.Name), behaviorParams.Value())
+	result, ok := world.scriptCall(fixtureData.init.Value(), fmt.Sprintf("fixture %s init()", fixtureData.Name), lua.Number(float64(roomIndex)), behaviorParams.Value())
 	if !ok || result.IsNil() {
 		return
 	}
@@ -230,7 +226,7 @@ func (fixture *Fixture) reset(world *World) {
 
 func (fixture *Fixture) GetVerbs() []string {
 	fixtureData := FIXTURE_DATA[fixture.Id]
-	verbs := make([]string, 0, len(fixtureData.interactions))
+	verbs := make([]string, 0, max(len(fixtureData.interactions), 1))
 	for verb, _ := range fixtureData.interactions {
 		verbs = append(verbs, verb)
 	}

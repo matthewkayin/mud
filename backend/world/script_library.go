@@ -1043,7 +1043,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		}
 		listener, ok := frame.Function(1)
 		if !ok {
-			frame.ThrowArgTypeError(0, lua.FunctionKind)
+			frame.ThrowArgTypeError(1, lua.FunctionKind)
 		}
 
 		__world.subscribeToSignal(signal, listener)
