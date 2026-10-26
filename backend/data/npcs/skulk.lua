@@ -9,8 +9,8 @@ npc.experience_worth = 40
 npc.experience_worth_scaling = 5
 npc.respawn_duration = world.time_minutes(1)
 
-npc.stats = { VIT = 7, STR = 2, AGI = 12, INT = 2, FTH = 4 }
-npc.scaling = { VIT = 7, STR = 2, AGI = 12, INT = 2, FTH = 4 }
+npc.stats = { VIT = 10, STR = 2, AGI = 12, INT = 2, FTH = 4 }
+npc.scaling = { VIT = 10, STR = 2, AGI = 12, INT = 2, FTH = 4 }
 npc.damage = 6
 npc.armor_penetration = 2
 npc.deflection = 4
@@ -34,7 +34,7 @@ function npc.update(self)
         local has_prey = false
 
         for i = 1, amount do
-            local mob = world.room_get_occupant(i)
+            local mob = world.room_get_occupant(room, i)
 
             if world.mob_is_npc(mob) then
                 goto continue
@@ -43,7 +43,7 @@ function npc.update(self)
             local health = world.mob_get_health(mob)
             local max_health = world.mob_get_max_health(mob)
 
-            if health * 2 < max_heath then
+            if health * 2 < max_health then
                 world.npc_set_disposition(self, world.NpcDisposition.HOSTILE)
             end
 

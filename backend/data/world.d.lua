@@ -230,6 +230,11 @@ function world.mob_find_inventory_item(handle, item_name) end
 ---@return string|nil
 function world.mob_forget_spell(mob, spell_name) end
 
+--- Cures all ailments on a mob.
+---
+--- @param target_handle MobHandle
+function world.mob_remove_ailments(target_handle) end
+
 --- Heals a mob completely and sends the player messages about the healing received
 --- Intended to be re-used for things like NPC healing, campfire healing, inns, etc.
 ---
