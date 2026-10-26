@@ -924,7 +924,7 @@ func (mob *Mob) spellcast(world *World) bool {
 }
 
 func (mob *Mob) calculateMagicDamage(baseDamage int32, target *Mob) int32 {
-	return baseDamage + (mob.Data.Faith() / 2) + (target.Data.Faith() / 4)
+	return baseDamage + (mob.Data.Faith() / 2) - (target.Data.Faith() / 4)
 }
 
 func (mob *Mob) calculateMagicConditionDuration(baseDuration int) int {
