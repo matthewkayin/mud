@@ -168,6 +168,8 @@ Lua can't be re-entered while a `world` library function is running: lunar's `St
 
 Scripts refer to mobs through `MobHandle` values, such as the `caster` and `target` arguments of a spell's `on_cast`. A handle is opaque userdata with no readable fields, so scripts read mob state through the `world.mob_get_*` functions, one per value (`mob_get_name`, `mob_get_room`, `mob_get_health`, `mob_get_max_health` etc.). `mob_get_stat(handle, stat)` takes a `world.Stat` value (`world.Stat.STR`), and `mob_get_equipment(handle, slot)` takes a `world.EquipmentSlot` value and returns the equipped item's name, or `nil` if the slot is empty. Handles compare with `==`, and `tostring` gives `MobHandle(<id>:<generation>)` for logging. NPC state is read and set through handles too, with the `npc_*` functions described in [NPC state](npcs.md#npc-state).
 
+Fixtures are referred to the same way, through `FixtureHandle` values. See [Fixture handles](fixtures.md#fixture-handles).
+
 A handle can outlive its mob. Library functions that take a mob throw an error when given a handle to a mob that no longer exists, so a script holding onto a handle (for example in an NPC instance table) should check `world.mob_exists` before using it.
 
 On the Go side, `scriptInit` registers the `MobHandle` userdata type as `World.mobHandleType`. Pass a mob to Lua with `Mob.getLuaHandle`, which creates the userdata on first use and caches it on the mob. Passing a mob to a script therefore doesn't allocate, and every handle for a mob is the same Lua value. Read a handle argument in a `SCRIPT_LIBRARY` function with `frameGetMobHandleArg`, or with `frameGetMobArg` to also look up the mob. Document handle parameters as `@param name MobHandle`.

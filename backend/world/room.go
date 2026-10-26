@@ -99,7 +99,7 @@ func (lock *Lock) Relock() {
 func (room *Room) init(roomIndex int, world *World) {
 	// Init fixtures
 	for index := range len(room.Fixtures) {
-		room.Fixtures[index].init(roomIndex, world)
+		room.Fixtures[index].init(roomIndex, index, world)
 	}
 
 	room.replenish()
@@ -303,6 +303,17 @@ func (room *Room) GetNpcBlockingExit(world *World, direction Direction) (MobHand
 	}
 
 	return MobHandle{}, false
+}
+
+func (room *Room) GetFixtureBlockingExit(direction Direction) (*Fixture, bool) {
+	for index := range room.Fixtures {
+		fixture := &room.Fixtures[index]
+		if fixture.isBlockingExit[direction] {
+			return fixture, true
+		}
+	}
+
+	return nil, false
 }
 
 func (room *Room) updateChests() {

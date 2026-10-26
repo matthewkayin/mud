@@ -11,23 +11,25 @@ fixture.behavior_params = {
 ---@field Signal string
 
 ---@class LeverInstance
+---@field self FixtureHandle
 ---@field signal string
----@field room integer
 
+---@param self FixtureHandle
 ---@param params LeverParams
 ---@return LeverInstance
-function fixture.init(room, params)
+function fixture.init(self, params)
     return {
-        signal = params.Signal,
-        room = room
+        self = self,
+        signal = params.Signal
     }
 end
 
 fixture.interactions = {
     ---@param instance LeverInstance
     pull = function(instance, player)
-        world.message_room(instance.room, string.format("<y>%s</y> pulled the <y>Lever</y>.", world.mob_get_name(player)))
-        world.emit_signal(instance.signal, player)
+        local room = world.fixture_get_room(instance.self)
+        world.message_room(room, string.format("<y>%s</y> pulled the <y>Lever</y>.", world.mob_get_name(player)))
+        world.emit_signal(instance.self, instance.signal)
     end
 }
 

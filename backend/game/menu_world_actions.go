@@ -40,6 +40,13 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 				return true
 			}
 
+			// Check if a fixture is blocking the exit
+			blockingFixture, isExitBlockedByFixture := playerRoom.GetFixtureBlockingExit(direction)
+			if isExitBlockedByFixture {
+				player.send(fmt.Sprintf("<y>%s</y> is blocking the way %s.", blockingFixture.GetName(), direction.String()))
+				return true
+			}
+
 			// Check if an NPC is blocking the exit
 			blockingNpcHandle, isExitBlocked := playerRoom.GetNpcBlockingExit(gamestate.world, direction)
 			if isExitBlocked {

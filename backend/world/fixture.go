@@ -14,12 +14,21 @@ const FIXTURE_RESET_DURATION int = (5 * 60) / WORLD_SECONDS_PER_UPDATE
 
 type FixtureId int
 
+// Identifies a fixture placed in the world. Fixtures are never added or removed
+// while the game is running, so a handle stays valid for the whole run.
+type FixtureHandle struct {
+	RoomIndex int
+	FixtureIndex int
+}
+
 type Fixture struct {
 	Id FixtureId `ts_type:"string"`
 	BehaviorParams map[string]any
 
 	instance lua.Value
 	timer int
+	handle FixtureHandle
+	isBlockingExit [DIRECTION_COUNT]bool
 }
 
 type FixtureJson struct {
@@ -189,8 +198,14 @@ func (parser *ScriptParser) parseFixture(table *lua.Table) *FixtureData {
 	return fixtureData
 }
 
-func (fixture *Fixture) init(roomIndex int, world *World) {
+func (fixture *Fixture) init(roomIndex int, fixtureIndex int, world *World) {
 	fixtureData := FIXTURE_DATA[fixture.Id]
+
+	fixture.handle = FixtureHandle {
+		RoomIndex: roomIndex,
+		FixtureIndex: fixtureIndex,
+	}
+	fixture.isBlockingExit = [DIRECTION_COUNT]bool{}
 
 	if fixtureData.init == nil {
 		fixture.instance = lua.Nil()
@@ -202,7 +217,13 @@ func (fixture *Fixture) init(roomIndex int, world *World) {
 		log.Printf("Warn - Error creating behavior params table for fixture '%s': %s", fixtureData.Name, err.Error())
 	}
 
-	result, ok := world.scriptCall(fixtureData.init.Value(), fmt.Sprintf("fixture %s init()", fixtureData.Name), lua.Number(float64(roomIndex)), behaviorParams.Value())
+	self, err := world.fixtureHandleType.New(fixture.handle)
+	if err != nil {
+		log.Printf("Warn - Error creating handle for fixture '%s': %s", fixtureData.Name, err.Error())
+		return
+	}
+
+	result, ok := world.scriptCall(fixtureData.init.Value(), fmt.Sprintf("fixture %s init()", fixtureData.Name), self.Value(), behaviorParams.Value())
 	if !ok || result.IsNil() {
 		return
 	}
@@ -259,6 +280,10 @@ func (fixture *Fixture) update(world *World) {
 	}
 }
 
+
+func (fixture *Fixture) IsBlockingExit(direction Direction) bool {
+	return fixture.isBlockingExit[direction]
+}
 
 func (fixture *Fixture) GetName() string {
 	return FIXTURE_DATA[fixture.Id].Name

@@ -21,6 +21,7 @@ type World struct {
 	Events []Event `json:"-"`
 	luaState *lua.State
 	mobHandleType *lua.UserDataType[MobHandle]
+	fixtureHandleType *lua.UserDataType[FixtureHandle]
 	dataFolder string
 
 	Characters map[string]*Character `json:"-"`

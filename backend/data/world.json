@@ -732,7 +732,7 @@
         {
           "Id": "Big Door",
           "BehaviorParams": {
-            "ExitToUnlock": "north",
+            "ExitToBlock": "north",
             "LeverSignalA": "fort_greene_lever_a",
             "LeverSignalB": "fort_greene_lever_b"
           }
