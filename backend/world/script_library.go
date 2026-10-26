@@ -882,6 +882,17 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.ReturnNumber(float64(healing))
 	},
 
+	// Removes all ailments from a mobA
+	//
+	// @param target_handle MobHandle
+	"mob_remove_ailments": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+
+		mob.RemoveAilments(__world)
+
+		return frame.Return()
+	},
+
 	// Heals a mob completely and sends the player messages about the healing received
 	// Intended to be re-used for things like NPC healing, campfire healing, inns, etc.
 	//
@@ -895,22 +906,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 			__world.messagePlayer(mob.PlayerCharacter.PlayerId, "Your Health and Mana have been restored.")
 		}
 
-		conditionIndex := 0
-		for conditionIndex < len(mob.Data.Conditions) {
-			condition := &mob.Data.Conditions[conditionIndex]
-			conditionData := CONDITION_DATA[condition.Id]
-			if conditionData.IsAilment {
-				lastIndex := len(mob.Data.Conditions) - 1
-				mob.Data.Conditions[conditionIndex] = mob.Data.Conditions[lastIndex]
-				mob.Data.Conditions = mob.Data.Conditions[:lastIndex]
-				if mob.IsPlayer() {
-					__world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You have been cured of <r>%s</r>.", conditionData.Name))
-				}
-				continue
-			}
-
-			conditionIndex++
-		}
+		mob.RemoveAilments(__world)
 
 		return frame.Return()
 	},

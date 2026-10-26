@@ -1168,3 +1168,22 @@ func mobsAreEnemies(mobA *Mob, mobB *Mob) bool {
 	// If they are both NPCs, then they are enemies if they have different protected statuses
 	return mobA.Npc.IsProtected() != mobB.Npc.IsProtected()
 }
+
+func (mob *Mob) RemoveAilments(world *World) {
+	conditionIndex := 0
+	for conditionIndex < len(mob.Data.Conditions) {
+		condition := &mob.Data.Conditions[conditionIndex]
+		conditionData := CONDITION_DATA[condition.Id]
+		if conditionData.IsAilment {
+			lastIndex := len(mob.Data.Conditions) - 1
+			mob.Data.Conditions[conditionIndex] = mob.Data.Conditions[lastIndex]
+			mob.Data.Conditions = mob.Data.Conditions[:lastIndex]
+			if mob.IsPlayer() {
+				world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You have been cured of <r>%s</r>.", conditionData.Name))
+			}
+			continue
+		}
+
+		conditionIndex++
+	}
+}
