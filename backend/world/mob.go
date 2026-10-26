@@ -582,7 +582,7 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 
 		// Roll to deflect
 		deflectionChance :=
-			float32(mob.Data.Deflection() * MOB_DEFLECTION_AMOUNT_PER_POINT) -
+			float32(targetMob.Data.Deflection() * MOB_DEFLECTION_AMOUNT_PER_POINT) -
 			float32(penetration * MOB_DEFLECTION_AMOUNT_PER_POINT)
 		deflectionChance =  max(min(deflectionChance, 100), 0)
 		deflect = rand.Float32() < (deflectionChance / 100)
@@ -603,13 +603,15 @@ func (mob *Mob) attackTargetWithWeapon(world *World, targetMob *Mob, slot Equipm
 	// Deal damage
 	targetMob.damage(world, mob.Handle, damage)
 	// Broadcast result to room
-	modifierStr := ""
+	var message string
 	if crit {
-		modifierStr = "<r>Critical hit!</r> "
+		message = fmt.Sprintf("<r>Critical hit!</r> <y>%s</y> struck <y>%s</y> for <r>%d damage</r>.", mob.GetName(), targetMob.GetName(), damage)
 	} else if deflect {
-		modifierStr = "<y>Deflected!</y> "
+		message = fmt.Sprintf("<y>%s's</y> attack glanced off <y>%s</y> for <r>%d damage</r>.", mob.GetName(), targetMob.GetName(), damage)
+	} else {
+		message = fmt.Sprintf("<y>%s</y> struck <y>%s</y> for <r>%d damage</r>.", mob.GetName(), targetMob.GetName(), damage)
 	}
-	world.messageRoom(mob.Data.Room, fmt.Sprintf("%s<y>%s</y> struck <y>%s</y> for <r>%d damage</r>.", modifierStr, mob.GetName(), targetMob.GetName(), damage))
+	world.messageRoom(mob.Data.Room, message)
 	if targetMob.IsDead() {
 		world.messageRoom(mob.Data.Room, fmt.Sprintf("<y>%s</y> has <r>slain</r> <y>%s</y>.", mob.GetName(), targetMob.GetName()))
 	} else {
