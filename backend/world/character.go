@@ -9,8 +9,6 @@ import (
 	"encoding/json"
 )
 
-const CHARACTER_ROOMS_DISCOVERED_BYTE_SIZE int = WORLD_MAX_ROOMS / 8
-
 type CharacterSheet struct {
 	Name string
 	Race RaceId
@@ -104,7 +102,7 @@ func CharacterInitEmpty(playerId int, characterSheet *CharacterSheet) *Character
 	character.Data.Equipment.CalculateStatBonuses()
 
 	// Init rooms discovered
-	character.RoomsDiscovered = bitset.New(CHARACTER_ROOMS_DISCOVERED_BYTE_SIZE)
+	character.RoomsDiscovered = bitset.New(WORLD_MAX_ROOMS)
 	bitset.Set(character.RoomsDiscovered, character.Data.Room, true)
 
 	// Grant first level unlocks
