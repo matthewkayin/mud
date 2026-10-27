@@ -165,6 +165,28 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.ReturnString(JOB_DATA[playerMob.PlayerCharacter.Job].Name)
 	},
 
+	// Returns true if the player has completed the quest
+	//
+	// @param player MobHandle
+	// @param quest string
+	// @return boolean
+	"player_is_quest_complete": func(frame lua.Frame) lua.Outcome {
+		playerMob := frameGetPlayerArg(&frame, 0)
+		quest := frameGetQuestArg(&frame, 1)
+		return frame.ReturnBool(playerMob.PlayerCharacter.IsQuestComplete(quest))
+	},
+
+	// Marks the quest as completed by the player. Does nothing if it is already complete
+	//
+	// @param player MobHandle
+	// @param quest string
+	"player_mark_quest_complete": func(frame lua.Frame) lua.Outcome {
+		playerMob := frameGetPlayerArg(&frame, 0)
+		quest := frameGetQuestArg(&frame, 1)
+		playerMob.PlayerCharacter.MarkQuestComplete(quest)
+		return frame.Return()
+	},
+
 	// Returns true if the mob exists
 	//
 	// @param handle MobHandle
@@ -1289,4 +1311,18 @@ func frameGetConditionTypeArg(frame *lua.Frame, index int) ConditionId {
 	}
 
 	return conditionId
+}
+
+func frameGetQuestArg(frame *lua.Frame, index int) QuestId {
+	name, ok := frame.String(index)
+	if !ok {
+		frame.ThrowArgTypeError(index, lua.StringKind)
+	}
+
+	questId, exists := QUEST_NAME_TO_ID[name]
+	if !exists {
+		frame.ThrowArgError(index, fmt.Sprintf("%s is not a valid quest.", name))
+	}
+
+	return questId
 }

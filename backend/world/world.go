@@ -105,6 +105,7 @@ func WorldInit() *World {
 // loading the world JSON, and the world editor uses it to read and validate world files.
 func (world *World) LoadData(dataFolder string) {
 	world.scriptInit(dataFolder)
+	world.loadQuestData()
 	world.loadRaceData()
 	world.loadJobData()
 	world.loadConditionData()

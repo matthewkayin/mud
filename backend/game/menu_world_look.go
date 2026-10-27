@@ -179,7 +179,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 					}
 
 					if len(parts) != 0 {
-						player.send(fmt.Sprintf("Requires: %s", util.CombineNames(parts)))
+						player.send(fmt.Sprintf("Bonuses: %s", util.CombineNames(parts)))
 					}
 				}
 

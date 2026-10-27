@@ -268,11 +268,6 @@ function world.mob_find_inventory_item(handle, item_name) end
 ---@return string|nil
 function world.mob_forget_spell(mob, spell_name) end
 
---- Cures all ailments on a mob.
----
---- @param target_handle MobHandle
-function world.mob_remove_ailments(target_handle) end
-
 --- Heals a mob completely and sends the player messages about the healing received
 --- Intended to be re-used for things like NPC healing, campfire healing, inns, etc.
 ---
@@ -434,6 +429,11 @@ function world.mob_item_is_repairable(handle, index) end
 ---@param index integer
 function world.mob_reinforce_item(handle, index) end
 
+--- Removes all ailments from a mobA
+---
+---@param target_handle MobHandle
+function world.mob_remove_ailments(target_handle) end
+
 --- Remves a condition from a mob
 ---
 ---@param mob MobHandle
@@ -527,6 +527,19 @@ function world.player_get_job(player) end
 ---@param player MobHandle
 ---@return string
 function world.player_get_race(player) end
+
+--- Returns true if the player has completed the quest
+---
+---@param player MobHandle
+---@param quest string
+---@return boolean
+function world.player_is_quest_complete(player, quest) end
+
+--- Marks the quest as completed by the player. Does nothing if it is already complete
+---
+---@param player MobHandle
+---@param quest string
+function world.player_mark_quest_complete(player, quest) end
 
 --- Regenerates an amount of the mobs mana
 --- Returns the number of mana regained.
