@@ -428,6 +428,12 @@ function world.mob_get_stat(handle, stat) end
 ---@return integer
 function world.mob_give_inventory_item(handle, index, target_handle, amount) end
 
+--- Grants the mob the specified amount of experience
+---
+---@param handle MobHandle
+---@param amount integer
+function world.mob_grant_experience(handle, amount) end
+
 --- Returns true if the mob has the specified condition
 ---
 ---@param mob MobHandle
@@ -446,11 +452,6 @@ function world.mob_is_dead(handle) end
 ---@param handle MobHandle
 ---@return boolean
 function world.mob_is_npc(handle) end
-
---- Removes all ailments from a mobA
----
----@param target_handle MobHandle
-function world.mob_remove_ailments(target_handle) end
 
 --- Removes all ailments from a mobA
 ---
@@ -550,7 +551,7 @@ function world.player_get_race(player) end
 ---@param player MobHandle
 ---@param quest string
 ---@return boolean
-function world.player_is_quest_complete(player, quest) end
+function world.player_has_completed_quest(player, quest) end
 
 --- Marks the quest as completed by the player. Does nothing if it is already complete
 ---

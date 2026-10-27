@@ -44,8 +44,12 @@ npc.wares = {
 ---@param subject string
 function npc.on_dialog(self, instance, player, subject)
     if subject == "" then
-        world.say_to_player(self, player, "Oi, 'aven't seen you before. You <b>buying</b> or are you causing <b>trouble</b>?")
-    elseif subject == "buying" then
+        if world.player_has_completed_quest(player, "Goblin Cave") then
+            world.say_to_player(self, player, "Hail, adventurer! In the mood for a little <b>shopping</b> today?")
+        else
+            world.say_to_player(self, player, "Oi, 'aven't seen you before. You <b>buying</b> or are you causing <b>trouble</b>?")
+        end
+    elseif subject == "buying" or subject == "shopping" then
         world.say_to_player(self, player, "Alright, then! I'm a <b>smith</b> as you can see. Do you need to <b>repair</b> your weapon? Or are you lookin' to buy a new one?")
     elseif subject == "smith" then
         local player_job = world.player_get_job(player)
@@ -65,11 +69,20 @@ function npc.on_dialog(self, instance, player, subject)
     elseif subject == "repair" then
         world.say_to_player(self, player, "Weapons and armor take damage as you use them. To keep your gear in tip-top shape, you should always <b>repair</b> it when it gets damaged, otherwise it might break when you really need it!")
     elseif subject == "trouble" then
-        world.say_to_player(self, player, "Aye, lots of folks 'ave been harassing me. Used to be I could keep my shop here in peace. But <b>goblins</b> from the south have been pillaging the town, and now the townsfolk think I'm part of the problem, bein' a goblin meself an' all.")
+        if world.player_has_completed_quest(player, "Goblin Cave") then
+            world.say_to_player(self, player, "Aye, lots of folks 'ave been harassing me. But I heard you took care of those hooligan <b>goblins</b> down south! Maybe once the attacks stop, folks around here will give me a break.")
+        else
+            world.say_to_player(self, player, "Aye, lots of folks 'ave been harassing me. Used to be I could keep my shop here in peace. But <b>goblins</b> from the south have been pillaging the town, and now the townsfolk think I'm part of the problem, bein' a goblin meself an' all.")
+        end
     elseif subject == "goblins" then
-        world.say_to_player(self, player,
-            "I swear I'm not afiliated with those bandits! I'm a good honest <b>smith</b> just trying to get by. Say, you're an adventurer, aren't you? "..
-            "I 'aven't any reward to offer, but if you happen to get rid of those hooligans during your travels I'd be grateful too ya. Rumor has it they're holed up in a cave down south.")
+        if world.player_has_completed_quest(player, "Goblin Cave") then
+            -- she's kind of repeating herself here but eh
+            world.say_to_player(self, player, "I swear I'm not affiliated with those bandits! I'm a good honest <b>smith</b> just trying to get by. Maybe now that you've cleared out some of the hooligans, the townsfolk around here will give me a break.")
+        else
+            world.say_to_player(self, player,
+                "I swear I'm not affiliated with those bandits! I'm a good honest <b>smith</b> just trying to get by. Say, you're an adventurer, aren't you? "..
+                "I 'aven't any reward to offer, but if you happen to get rid of those hooligans during your travels I'd be grateful too ya. Rumor has it they're holed up in a cave down south.")
+        end
     else
         world.say_to_player(self, player, "Can't say I know much about that.")
     end

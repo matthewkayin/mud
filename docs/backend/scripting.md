@@ -254,7 +254,7 @@ A quest is a named flag that an NPC script sets on a player once they complete i
 
 | Function | Returns | Notes |
 | --- | --- | --- |
-| `player_is_quest_complete(player, quest)` | boolean | |
+| `player_has_completed_quest(player, quest)` | boolean | |
 | `player_mark_quest_complete(player, quest)` | | Does nothing if the quest is already complete |
 
 `quest` is the quest's name, and a name that isn't in `quests.lua` raises a script error. The flags are stored in `Character.QuestsComplete`, a bitfield indexed by `QuestId`, and saved by name like other character data. A save that names an unknown quest stops startup.
@@ -265,7 +265,7 @@ function npc.on_item_given(self, instance, player, added_to_index, amount)
         return
     end
 
-    if world.player_is_quest_complete(player, "Find the Lost Ring") then
+    if world.player_has_completed_quest(player, "Find the Lost Ring") then
         world.say_to_player(self, player, "You already found my ring. Thank you again!")
         return
     end
