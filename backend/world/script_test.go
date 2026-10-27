@@ -367,6 +367,106 @@ func TestScriptInventory(t *testing.T) {
 	}
 }
 
+func scriptTestSetItemHandle(t *testing.T, world *World, name string, handle ItemHandle) {
+	value, err := world.itemHandleType.New(handle)
+	if err != nil {
+		t.Fatalf("itemHandleType.New: %s", err.Error())
+	}
+	err = world.luaState.RawSetGlobal(name, value.Value())
+	if err != nil {
+		t.Fatalf("RawSetGlobal %s: %s", name, err.Error())
+	}
+}
+
+func TestScriptItemHandle(t *testing.T) {
+	primeTestData()
+	ITEM_DATA[TEST_ITEM_SWORD].Data.(*ItemDataWeapon).MaxDurability = 20
+
+	world := scriptTestWorld(t)
+
+	mob := scriptTestMob("Bufo")
+	mob.Data.Inventory.Items = []Item {
+		{ Id: TEST_ITEM_GOLD, Amount: 30 },
+		{ Id: TEST_ITEM_SWORD, Amount: 1, Durability: 12 },
+	}
+	mob.Data.Equipment.Equip(EQUIPMENT_SLOT_MAIN_HAND, Item { Id: TEST_ITEM_SWORD, Amount: 1, Durability: 5 })
+	mobHandle := world.Mobs.Push(mob)
+
+	inventorySword := ItemHandle {
+		Mob: mobHandle,
+		Location: ITEM_LOCATION_INVENTORY,
+		Index: 1,
+		Id: TEST_ITEM_SWORD,
+	}
+	equippedSword := ItemHandle {
+		Mob: mobHandle,
+		Location: ITEM_LOCATION_EQUIPMENT,
+		Index: EQUIPMENT_SLOT_MAIN_HAND,
+		Id: TEST_ITEM_SWORD,
+	}
+	scriptTestSetItemHandle(t, world, "inv", inventorySword)
+	scriptTestSetItemHandle(t, world, "inv2", inventorySword)
+	scriptTestSetItemHandle(t, world, "eq", equippedSword)
+	scriptTestSetItemHandle(t, world, "gold", ItemHandle {
+		Mob: mobHandle,
+		Location: ITEM_LOCATION_INVENTORY,
+		Index: 0,
+		Id: TEST_ITEM_GOLD,
+	})
+	scriptTestSetItemHandle(t, world, "stale", ItemHandle {
+		Mob: mobHandle,
+		Location: ITEM_LOCATION_INVENTORY,
+		Index: 0,
+		Id: TEST_ITEM_SWORD,
+	})
+	scriptTestSetItemHandle(t, world, "empty", ItemHandle {
+		Mob: mobHandle,
+		Location: ITEM_LOCATION_EQUIPMENT,
+		Index: EQUIPMENT_SLOT_OUTFIT,
+		Id: TEST_ITEM_SWORD,
+	})
+
+	cases := []struct {
+		source string
+		expected string
+	}{
+		{ "return inv == inv2", "true" },
+		{ "return inv == eq", "false" },
+		{ "return world.item_get_name(inv)", "Sword" },
+		{ "return world.item_get_name(eq)", "Sword" },
+		{ "return world.item_get_durability_percent(inv)", "60" },
+		{ "return world.item_get_durability_percent(eq)", "25" },
+		{ "return world.item_is_repairable(eq)", "true" },
+		{ "return world.item_is_repairable(gold)", "false" },
+		{ "world.item_repair(eq) return world.item_get_durability_percent(eq)", "100" },
+		{ "return world.item_get_durability_percent(inv)", "60" },
+		{ "world.item_reinforce(inv) return world.item_get_durability_percent(inv)", "120" },
+	}
+	for _, testCase := range cases {
+		if result := scriptTestEval(t, world, testCase.source); result != testCase.expected {
+			t.Errorf("%s: expected %s, got %s", testCase.source, testCase.expected, result)
+		}
+	}
+
+	invalidCases := []string {
+		"return world.item_get_name(stale)",
+		"return world.item_get_name(empty)",
+	}
+	for _, source := range invalidCases {
+		_, err := world.luaState.DoString("@test.lua", source)
+		if err == nil || !strings.Contains(err.Error(), "does not refer to the expected item") {
+			t.Errorf("%s: expected stale handle error, got %v", source, err)
+		}
+	}
+
+	// An inventory handle follows its item when the item moves
+	world.Mobs.Get(mobHandle).Data.Inventory.RemoveItems(0, 30)
+	relocated, found := world.RelocateItemHandle(inventorySword)
+	if !found || relocated.Index != 0 {
+		t.Errorf("expected the sword to be relocated to index 0, got %+v %v", relocated, found)
+	}
+}
+
 func TestScriptCallLogsTraceback(t *testing.T) {
 	world := scriptTestWorld(t)
 

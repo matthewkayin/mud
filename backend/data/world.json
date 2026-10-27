@@ -17,32 +17,7 @@
       ],
       "Locks": [],
       "DropTable": {
-        "Entries": [
-          {
-            "ItemId": "Gold",
-            "AmountRange": {
-              "Min": 200,
-              "Max": 200
-            },
-            "DurabilityPercentRange": {
-              "Min": 100,
-              "Max": 100
-            },
-            "DropChancePercent": 100
-          },
-          {
-            "ItemId": "Spellbook of Chain Lightning",
-            "AmountRange": {
-              "Min": 1,
-              "Max": 1
-            },
-            "DurabilityPercentRange": {
-              "Min": 100,
-              "Max": 100
-            },
-            "DropChancePercent": 100
-          }
-        ]
+        "Entries": []
       },
       "Inventory": {
         "Items": []

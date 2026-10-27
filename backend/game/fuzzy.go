@@ -16,6 +16,8 @@ const FUZZY_FIND_RESULT_ITEM_NOT_SPECIFIED = -1
 const FUZZY_FIND_RESULT_NOT_FOUND = -2
 const FUZZY_FIND_RESULT_AMBIGUOUS = -3
 const FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE = -4
+// The item matched in both the mob's inventory and its equipment
+const FUZZY_FIND_RESULT_AMBIGUOUS_LOCATION = -5
 
 func splitArgsBy(args []string, word string) ([]string, []string, bool) {
 	index := slices.Index(args, word)
@@ -405,6 +407,153 @@ func fuzzyFindInventoryItem(inventory *world.Inventory, inventoryName string, se
 	}
 
 	return itemIndex, nil
+}
+
+// Searches both the mob's inventory and equipment for the item.
+// The result is non-negative when the item was found, otherwise it is a FUZZY_FIND_RESULT.
+// This function does not check for the "in" keyword to disambiguate betweeen item "in inventory" or "in <slot>", for that, use fuzzyFindMobItem
+func fuzzyFindMobInventoryOrEquippedItem(mob *world.Mob, searchWords []string) (world.ItemHandle, int) {
+	inventoryIndex := fuzzyFindInventoryItemIndex(&mob.Data.Inventory, searchWords)
+	slot, equipmentResult := fuzzyFindEquippedItemSlot(&mob.Data.Equipment, searchWords)
+
+	if inventoryIndex >= 0 && equipmentResult >= 0 {
+		return world.ItemHandle{}, FUZZY_FIND_RESULT_AMBIGUOUS_LOCATION
+	}
+	if inventoryIndex >= 0 {
+		return world.ItemHandle {
+			Mob: mob.Handle,
+			Location: world.ITEM_LOCATION_INVENTORY,
+			Index: inventoryIndex,
+			Id: mob.Data.Inventory.Items[inventoryIndex].Id,
+		}, inventoryIndex
+	}
+	if equipmentResult >= 0 {
+		return world.ItemHandle {
+			Mob: mob.Handle,
+			Location: world.ITEM_LOCATION_EQUIPMENT,
+			Index: int(slot),
+			Id: mob.Data.Equipment.Get(slot).Id,
+		}, equipmentResult
+	}
+
+	// Report the inventory's result unless only the equipment search has something to say
+	if inventoryIndex == FUZZY_FIND_RESULT_NOT_FOUND || inventoryIndex == FUZZY_FIND_RESULT_ITEM_NOT_SPECIFIED {
+		return world.ItemHandle{}, equipmentResult
+	}
+	return world.ItemHandle{}, inventoryIndex
+}
+
+// Returns the slot of the equipped item matching searchWords, along with the fuzzyFind result
+func fuzzyFindEquippedItemSlot(equipment *world.Equipment, searchWords []string) (world.EquipmentSlot, int) {
+	if len(searchWords) == 0 {
+		return 0, FUZZY_FIND_RESULT_ITEM_NOT_SPECIFIED
+	}
+
+	// Create parallel arrays of equipped item name and equipment slot
+	itemNames := make([]string, 0, world.EQUIPMENT_SLOT_COUNT)
+	equipmentSlots := make([]world.EquipmentSlot, 0, world.EQUIPMENT_SLOT_COUNT)
+	for slotIndex := range world.EQUIPMENT_SLOT_COUNT {
+		slot := world.EquipmentSlot(slotIndex)
+		item := equipment.Get(slot)
+		if item == nil {
+			continue
+		}
+
+		itemNames = append(itemNames, item.GetNameWithCondition())
+		equipmentSlots = append(equipmentSlots, slot)
+	}
+
+	result := fuzzyFind(itemNames, searchWords, FUZZY_FIND_NUMBER_NONE)
+	if result < 0 {
+		return 0, result
+	}
+
+	return equipmentSlots[result], result
+}
+
+// Reads the words after "in" as the player's inventory or one of their equipment slots
+func parseItemLocation(locationWords []string) (world.ItemLocation, world.EquipmentSlot, bool) {
+	if len(locationWords) == 1 && strings.EqualFold(locationWords[0], "inventory") {
+		return world.ITEM_LOCATION_INVENTORY, 0, true
+	}
+
+	slot, err := fuzzyFindEquipmentSlot(locationWords)
+	if err != nil {
+		return 0, 0, false
+	}
+
+	return world.ITEM_LOCATION_EQUIPMENT, slot, true
+}
+
+// Finds an item in the mob's inventory or equipment.
+// searchWords may end with "in inventory" or "in <equipment slot>" to search only there.
+func fuzzyFindMobItem(mob *world.Mob, searchWords []string) (world.ItemHandle, error) {
+	itemWords, locationWords, userSpecifiedLocation := splitArgsBy(searchWords, "in")
+	if len(itemWords) == 0 {
+		return world.ItemHandle{}, errors.New("You must specify an item.")
+	}
+
+	if userSpecifiedLocation {
+		location, slot, isLocation := parseItemLocation(locationWords)
+		if !isLocation {
+			return world.ItemHandle{}, fmt.Errorf("'%s' is not your inventory or an equipment slot.", strings.Join(locationWords, " "))
+		}
+
+		switch location {
+			// If they specified an item "in inventory", then fuzzy find in their inventory and return the result
+			case world.ITEM_LOCATION_INVENTORY: {
+				index, err := fuzzyFindInventoryItem(&mob.Data.Inventory, "your inventory", itemWords)
+				if err != nil {
+					return world.ItemHandle{}, err
+				}
+
+				return world.ItemHandle {
+					Mob: mob.Handle,
+					Location: world.ITEM_LOCATION_INVENTORY,
+					Index: index,
+					Id: mob.Data.Inventory.Items[index].Id,
+				}, nil
+			}
+
+			// If they specified "in <slot>", then fuzzy find against the equipped item in that slot and return the result
+			case world.ITEM_LOCATION_EQUIPMENT: {
+				item := mob.Data.Equipment.Get(slot)
+				if item == nil || fuzzyFind([]string { item.GetNameWithCondition() }, itemWords, FUZZY_FIND_NUMBER_NONE) < 0 {
+					return world.ItemHandle{}, fmt.Errorf("There is no item called '%s' equipped in your %s.",
+						strings.Join(itemWords, " "), strings.ToLower(slot.String()))
+				}
+
+				return world.ItemHandle {
+					Mob: mob.Handle,
+					Location: world.ITEM_LOCATION_EQUIPMENT,
+					Index: int(slot),
+					Id: item.Id,
+				}, nil
+			}
+		}
+	}
+
+	// Fuzzy find in both equipment and inventory and return the result
+	handle, result := fuzzyFindMobInventoryOrEquippedItem(mob, itemWords)
+	switch result {
+		case FUZZY_FIND_RESULT_ITEM_NOT_SPECIFIED:
+			return handle, errors.New("You must specify an item.")
+		case FUZZY_FIND_RESULT_NOT_FOUND:
+			return handle, fmt.Errorf("You have no item called '%s'.", strings.Join(itemWords, " "))
+		case FUZZY_FIND_RESULT_AMBIGUOUS:
+			return handle, fmt.Errorf("There are multiple items matching '%s'.", strings.Join(itemWords, " "))
+		case FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE:
+			return handle, errors.New("There is no item matching that number in your inventory.")
+		case FUZZY_FIND_RESULT_AMBIGUOUS_LOCATION:
+			return handle, ambiguousItemLocationError(itemWords)
+	}
+
+	return handle, nil
+}
+
+func ambiguousItemLocationError(itemWords []string) error {
+	return fmt.Errorf("There are items matching '%s' in both your inventory and your equipment. Add 'in inventory' or 'in <slot>' to choose one.",
+		strings.Join(itemWords, " "))
 }
 
 func fuzzyFindWare(wares []world.ItemId, merchantName string, searchWords []string) (world.ItemId, error) {

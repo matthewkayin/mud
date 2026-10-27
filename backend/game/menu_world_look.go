@@ -95,7 +95,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 	},
 
 	"inspect": {
-		usage: "inspect <target> [in <container>]",
+		usage: "inspect <target> [in <container|inventory|slot>]",
 		description: "Get information about a player, monster, or item",
 		groups: []string { "exploration" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
@@ -110,42 +110,57 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 			// Check for 'in' keyword
 			targetWords, containerWords, userSpecifiedIn := splitArgsBy(args, "in")
 
-			// Check container
-			targetInventory := &playerMob.Data.Inventory
-			chestName := "your inventory"
-			if userSpecifiedIn {
-				var err error
-				targetInventory, chestName, err = fuzzyFindChestInventory(playerRoom, containerWords)
+			// Find the item to inspect, if the player is inspecting one
+			var item *world.Item = nil
+			_, _, userSpecifiedItemLocation := parseItemLocation(containerWords)
+			if userSpecifiedIn && userSpecifiedItemLocation {
+				// Item in the player's inventory or equipment
+				itemHandle, err := fuzzyFindMobItem(playerMob, args)
 				if err != nil {
 					player.send(err.Error())
 					return true
 				}
-			}
+				item, _ = gamestate.world.GetItem(itemHandle)
+			} else if userSpecifiedIn {
+				// Item in a container
+				targetInventory, chestName, err := fuzzyFindChestInventory(playerRoom, containerWords)
+				if err != nil {
+					player.send(err.Error())
+					return true
+				}
 
-			// Get item
-			itemIndex := fuzzyFindInventoryItemIndex(targetInventory, targetWords)
-
-			// Handle errors, but only if user specifically specified "in" (i.e. they are inspecting an item and not a target)
-			if itemIndex < 0 && userSpecifiedIn {
+				itemIndex := fuzzyFindInventoryItemIndex(targetInventory, targetWords)
 				switch itemIndex {
 					case FUZZY_FIND_RESULT_ITEM_NOT_SPECIFIED:
 						player.send("You must specify an item to inspect.")
+						return true
 					case FUZZY_FIND_RESULT_AMBIGUOUS:
 						player.send(fmt.Sprintf("There are multiple items matching '%s' in %s.",
 							strings.Join(targetWords, " "), chestName))
+						return true
 					case FUZZY_FIND_RESULT_NOT_FOUND:
 						player.send(fmt.Sprintf("There is no item named '%s' in %s.",
 							strings.Join(targetWords, " "), chestName))
+						return true
 					case FUZZY_FIND_RESULT_NUMBER_OUT_OF_RANGE:
 						player.send(fmt.Sprintf("There is no item matching that number in %s.", chestName))
+						return true
 				}
-
-				return true
+				item = &targetInventory.Items[itemIndex]
+			} else {
+				// Item in the player's inventory or equipment. If none matches, the player may be inspecting a mob or fixture instead
+				itemHandle, result := fuzzyFindMobInventoryOrEquippedItem(playerMob, targetWords)
+				if result == FUZZY_FIND_RESULT_AMBIGUOUS_LOCATION {
+					player.send(ambiguousItemLocationError(targetWords).Error())
+					return true
+				}
+				if result >= 0 {
+					item, _ = gamestate.world.GetItem(itemHandle)
+				}
 			}
 
 			// Inspect item
-			if itemIndex >= 0 {
-				item := &targetInventory.Items[itemIndex]
+			if item != nil {
 				itemData := world.ITEM_DATA[item.Id]
 
 				player.send(fmt.Sprintf("Item: <g>%s</g>", item.GetNameWithCondition()))

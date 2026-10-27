@@ -259,7 +259,7 @@ func (parser *ScriptParser) parseItemData(table *lua.Table) *ItemData {
 			}
 
 			data.TargetType = parser.getTargetType(table, "target_type")
-			if data.TargetType == TARGET_TYPE_INVENTORY_ITEM || data.TargetType == TARGET_TYPE_ARGUMENT {
+			if data.TargetType == TARGET_TYPE_ITEM || data.TargetType == TARGET_TYPE_ARGUMENT {
 				data.ValidateTarget = parser.getFunction(table, "validate_target")
 			}
 

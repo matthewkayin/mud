@@ -311,28 +311,25 @@ func findTarget(gamestate *GameState, player *Player, params FindTargetParams) (
 			}, nil
 		}
 
-		case world.TARGET_TYPE_INVENTORY_ITEM: {
+		case world.TARGET_TYPE_ITEM: {
 			if !params.userSpecifiedTarget {
-				return world.MobTarget{}, fmt.Errorf("%s is an item-targeting %s. You must specify an inventory item to target.", params.name, params.noun)
+				return world.MobTarget{}, fmt.Errorf("%s is an item-targeting %s. You must specify an item in your inventory or equipment to target.", params.name, params.noun)
 			}
 
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-			index, err := fuzzyFindInventoryItem(&playerMob.Data.Inventory, "your inventory", params.targetWords)
+			itemHandle, err := fuzzyFindMobItem(playerMob, params.targetWords)
 			if err != nil {
 				return world.MobTarget{}, err
 			}
 
 			// Validate the item
-			item := &playerMob.Data.Inventory.Items[index]
+			target := world.MobTarget {
+				Type: world.MOB_TARGET_ITEM,
+				Value: itemHandle,
+			}
 			err = playerMob.ValidateTarget(gamestate.world, world.MobValidateTargetParams {
 				Hook: params.validateTarget,
-				Target: world.MobTarget {
-					Type: world.MOB_TARGET_INVENTORY_ITEM,
-					Value: world.MobItemTarget {
-						Id: item.Id,
-						Index: index,
-					},
-				},
+				Target: target,
 				Verb: params.verb,
 				Name: params.name,
 				Noun: params.noun,
@@ -341,13 +338,7 @@ func findTarget(gamestate *GameState, player *Player, params FindTargetParams) (
 				return world.MobTarget{}, err
 			}
 
-			return world.MobTarget {
-				Type: world.MOB_TARGET_INVENTORY_ITEM,
-				Value: world.MobItemTarget {
-					Id: playerMob.Data.Inventory.Items[index].Id,
-					Index: index,
-				},
-			}, nil
+			return target, nil
 		}
 
 		case world.TARGET_TYPE_ARGUMENT: {

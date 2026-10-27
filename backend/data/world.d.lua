@@ -10,6 +10,9 @@ world = {}
 ---An opaque reference to a fixture placed in a room. Compare with ==. Find its room with world.fixture_get_room.
 ---@class FixtureHandle
 
+---An opaque reference to an item in a mob's inventory or equipment. Compare with ==. Only valid until the mob's inventory or equipment changes, so don't store it.
+---@class ItemHandle
+
 ---A stack of items, such as the value of an Item NPC behavior param.
 ---@class Item
 ---@field name string
@@ -122,7 +125,7 @@ world.TargetType = {
 	NONE = "None",
 	ALLY = "Ally",
 	ENEMY = "Enemy",
-	INVENTORY_ITEM = "Inventory Item",
+	ITEM = "Item",
 	ARGUMENT = "Argument",
 }
 
@@ -176,6 +179,34 @@ function world.get_ticks() end
 ---@param heal_amount integer
 ---@return number
 function world.heal(target_handle, heal_amount) end
+
+--- Returns the durability percent of the item
+---
+---@param item ItemHandle
+---@return integer
+function world.item_get_durability_percent(item) end
+
+--- Returns the name of the item
+---
+---@param item ItemHandle
+---@return string
+function world.item_get_name(item) end
+
+--- Returns true if the item can be repaired
+---
+---@param item ItemHandle
+---@return boolean
+function world.item_is_repairable(item) end
+
+--- Reinforces the item
+---
+---@param item ItemHandle
+function world.item_reinforce(item) end
+
+--- Repairs the item
+---
+---@param item ItemHandle
+function world.item_repair(item) end
 
 --- Logs a message to the game
 ---
@@ -267,11 +298,6 @@ function world.mob_find_inventory_item(handle, item_name) end
 ---@param spell_name string
 ---@return string|nil
 function world.mob_forget_spell(mob, spell_name) end
-
---- Cures all ailments on a mob.
----
---- @param target_handle MobHandle
-function world.mob_remove_ailments(target_handle) end
 
 --- Heals a mob completely and sends the player messages about the healing received
 --- Intended to be re-used for things like NPC healing, campfire healing, inns, etc.
@@ -421,18 +447,10 @@ function world.mob_is_dead(handle) end
 ---@return boolean
 function world.mob_is_npc(handle) end
 
---- Returns true if the item can be repaired
+--- Removes all ailments from a mobA
 ---
----@param handle MobHandle
----@param index integer
----@return boolean
-function world.mob_item_is_repairable(handle, index) end
-
---- Reinforces the item
----
----@param handle Mobhandle
----@param index integer
-function world.mob_reinforce_item(handle, index) end
+---@param target_handle MobHandle
+function world.mob_remove_ailments(target_handle) end
 
 --- Remves a condition from a mob
 ---
@@ -449,12 +467,6 @@ function world.mob_remove_condition(mob, condition) end
 ---@param amount integer
 ---@return integer
 function world.mob_remove_inventory_item(handle, index, amount) end
-
---- Repairs the item
----
----@param handle MobHandle
----@param index integer
-function world.mob_repair_item(handle, index) end
 
 --- Returns true if the two mobs are allies
 ---
