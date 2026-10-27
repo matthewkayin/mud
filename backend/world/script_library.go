@@ -170,7 +170,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	// @param player MobHandle
 	// @param quest string
 	// @return boolean
-	"player_is_quest_complete": func(frame lua.Frame) lua.Outcome {
+	"player_has_completed_quest": func(frame lua.Frame) lua.Outcome {
 		playerMob := frameGetPlayerArg(&frame, 0)
 		quest := frameGetQuestArg(&frame, 1)
 		return frame.ReturnBool(playerMob.PlayerCharacter.IsQuestComplete(quest))
@@ -420,6 +420,21 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		}
 
 		return frame.ReturnNumber(float64(index))
+	},
+
+	// Grants the mob the specified amount of experience
+	//
+	// @param handle MobHandle
+	// @param amount integer
+	"mob_grant_experience": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		amount := frameGetInt32Arg(&frame, 1, "amount")
+		if amount <= 0 {
+			frame.ThrowArgError(1, "amount must be positive.")
+		}
+
+		mob.GrantExperience(__world, amount)
+		return frame.Return()
 	},
 
 	// Returns the name of the item
