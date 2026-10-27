@@ -236,7 +236,7 @@ func (mob *Mob) GrantExperience(world *World, experience int32) {
 			mob.PlayerCharacter.Data.Level = mob.Data.Level
 
 			// Announce level up message
-			world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("Level up! <y>%s</y> is now <p>level %d</p>.", mob.Data.Name, mob.Data.Level))
+			world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("Level up! <y>%s</y> is now <g>level %d</g>.", mob.Data.Name, mob.Data.Level))
 
 			// Grant class unlocks
 			classData := CLASS_DATA[mob.PlayerCharacter.Class]
@@ -259,7 +259,7 @@ func (mob *Mob) GrantExperience(world *World, experience int32) {
 		//give them exp
 		mob.Data.Experience += experience
 		//let them know
-		world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You have gained <p>%d experience</p>.", ))
+		world.messagePlayer(mob.PlayerCharacter.PlayerId, fmt.Sprintf("You have gained <g>%d experience</g>.", experience))
 		experience = 0
 	}
 }

@@ -44,7 +44,7 @@ function npc.on_dialog(self, instance, player, subject)
     elseif subject == "buy" then
         local self_name = world.mob_get_name(self)
         world.say_to_player(self, player, "Yes, I am running a business, you know.")
-        world.message_player(player, string.format("You look at the esoterica scattered around %s's feet. Tattered spellbooks, chipped bottles, scraps of parchment. " ..
+        world.message_player(player, string.format("You look at the esoterica scattered around %s's feet. Tattered spellbooks, chipped bottles, scraps of parchment." ..
             "You had assumed that these were just the old hags's things, but it occurs to you now that these might be her wares.", self_name))
     else
         world.say_to_player(self, player, "What nonsense are you going on about now?")

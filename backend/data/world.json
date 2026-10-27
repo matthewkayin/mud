@@ -2364,7 +2364,12 @@
         73,
         67
       ],
-      "Locks": [],
+      "Locks": [
+        {
+          "Type": 0,
+          "Direction": 2
+        }
+      ],
       "DropTable": {
         "Entries": []
       },
@@ -2489,12 +2494,7 @@
         79,
         -1
       ],
-      "Locks": [
-        {
-          "Type": 0,
-          "Direction": 0
-        }
-      ],
+      "Locks": [],
       "DropTable": {
         "Entries": []
       },
@@ -3463,6 +3463,19 @@
         "Max": 1
       },
       "MovementTypeOverride": "Wander",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "rous",
+      "SpawnRoom": 42,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
       "DropTableOverride": {
         "Entries": []
       },
