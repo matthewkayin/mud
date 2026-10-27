@@ -452,6 +452,11 @@ function world.mob_is_npc(handle) end
 ---@param target_handle MobHandle
 function world.mob_remove_ailments(target_handle) end
 
+--- Removes all ailments from a mobA
+---
+---@param target_handle MobHandle
+function world.mob_remove_ailments(target_handle) end
+
 --- Remves a condition from a mob
 ---
 ---@param mob MobHandle
@@ -539,6 +544,19 @@ function world.player_get_job(player) end
 ---@param player MobHandle
 ---@return string
 function world.player_get_race(player) end
+
+--- Returns true if the player has completed the quest
+---
+---@param player MobHandle
+---@param quest string
+---@return boolean
+function world.player_is_quest_complete(player, quest) end
+
+--- Marks the quest as completed by the player. Does nothing if it is already complete
+---
+---@param player MobHandle
+---@param quest string
+function world.player_mark_quest_complete(player, quest) end
 
 --- Regenerates an amount of the mobs mana
 --- Returns the number of mana regained.

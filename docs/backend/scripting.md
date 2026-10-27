@@ -88,6 +88,7 @@ Each folder under `backend/data/` holds one kind of data, and every `.lua` file 
 
 | Order | Folder | Go type | Loader | References |
 | --- | --- | --- | --- | --- |
+| 0 | `quests.lua` | `string` | `loadQuestData` (`quest.go`) | |
 | 1 | `races/` | `RaceData` | `loadRaceData` (`character_race.go`) | |
 | 2 | `jobs/` | `JobData` | `loadJobData` (`character_job.go`) | |
 | 3 | `spells/` | `SpellData` | `loadSpellData` (`spell.go`) | |
@@ -95,6 +96,8 @@ Each folder under `backend/data/` holds one kind of data, and every `.lua` file 
 | 5 | `items/` | `ItemData` | `loadItemData` (`item.go`) | spells, recipes |
 | 6 | `classes/` | `ClassData` | `loadClassData` (`character_class.go`) | spells, items |
 | 7 | `npcs/` | `NpcData` | `loadNpcData` (`npc_data.go`) | items |
+
+Quests are the exception to the folder layout: `quests.lua` is a single file at the root of the data folder that returns an array of quest names. There can be at most `QUEST_MAX` (32) quests, since characters store them in a `uint32` bitfield. See [Quests](#quests).
 
 Spell scripts and their targets are described in [spells.md](spells.md). Recipes are loaded in two passes. `loadRecipeTables` registers recipe names first so that items can refer to them. `loadRecipeData` parses the rest of each recipe once items exist. Classes and NPCs load after items so they can refer to items. NPC scripts, their behavior hooks and their behavior params are described in [npcs.md](npcs.md). Fixture scripts and signals are described in [fixtures.md](fixtures.md).
 
@@ -133,7 +136,7 @@ class.unlocks = {
 return class
 ```
 
-Character saves (`saves/<Name>.json`, `CharacterJson` in `character.go`) store race, class, job, spell and recipe names instead of IDs. World files (`data/world.json`) store item names in drop tables (`DropTableEntry` in `drop_table.go`) and inventories (`Item` in `item.go`), and NPC keys in unique NPCs (`Npc` in `npc.go`). Both kinds of file store mob conditions by name (`Condition` in `mob_condition.go`). If a save names something that no longer exists, decoding returns an error and startup fails.
+Character saves (`saves/<Name>.json`, `CharacterJson` in `character.go`) store race, class, job, spell, recipe and completed quest names instead of IDs. World files (`data/world.json`) store item names in drop tables (`DropTableEntry` in `drop_table.go`) and inventories (`Item` in `item.go`), and NPC keys in unique NPCs (`Npc` in `npc.go`). Both kinds of file store mob conditions by name (`Condition` in `mob_condition.go`). If a save names something that no longer exists, decoding returns an error and startup fails.
 
 ## Script API
 
@@ -244,6 +247,34 @@ end
 Conditions are stored on `MobData.Conditions`, so they are saved with characters and NPCs. `Condition`'s custom JSON methods save the condition by name along with its remaining duration.
 
 To add a condition, add a `CONDITION_TYPE_*` constant before `CONDITION_TYPE_COUNT`, give it a `CONDITION_DATA` entry, implement its effect in Go, and run `go generate` so that `world.ConditionType` in `world.d.lua` picks it up.
+
+### Quests
+
+A quest is a named flag that an NPC script sets on a player once they complete it, so that the NPC can give its reward only once and change its dialogue afterwards. There is no quest log or progress tracking. To add a quest, add its name to `backend/data/quests.lua`.
+
+| Function | Returns | Notes |
+| --- | --- | --- |
+| `player_is_quest_complete(player, quest)` | boolean | |
+| `player_mark_quest_complete(player, quest)` | | Does nothing if the quest is already complete |
+
+`quest` is the quest's name, and a name that isn't in `quests.lua` raises a script error. The flags are stored in `Character.QuestsComplete`, a bitfield indexed by `QuestId`, and saved by name like other character data. A save that names an unknown quest stops startup.
+
+```lua
+function npc.on_item_given(self, instance, player, added_to_index, amount)
+    if world.mob_get_inventory_item_name(self, added_to_index) ~= "Lost Ring" then
+        return
+    end
+
+    if world.player_is_quest_complete(player, "Find the Lost Ring") then
+        world.say_to_player(self, player, "You already found my ring. Thank you again!")
+        return
+    end
+
+    -- give the reward here
+    world.player_mark_quest_complete(player, "Find the Lost Ring")
+    world.say_to_player(self, player, "My ring! Thank you, take this as a reward.")
+end
+```
 
 ### Language server definitions
 

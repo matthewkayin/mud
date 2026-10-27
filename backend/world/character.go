@@ -33,6 +33,7 @@ type Character struct {
 	ClassSpells []SpellId
 	RecipesKnown []RecipeId
 	RoomsDiscovered []byte
+	QuestsComplete uint32
 	Data MobData
 }
 
@@ -48,6 +49,7 @@ type CharacterJson struct {
 	ClassSpells []string
 	RecipesKnown []string
 	RoomsDiscovered []byte
+	QuestsComplete []string
 	Data MobData
 }
 
@@ -125,6 +127,7 @@ func (character *Character) MarshalJSON() ([]byte, error) {
 		ClassSpells: spellsToStringArray(character.ClassSpells),
 		RecipesKnown: recipesToStringArray(character.RecipesKnown),
 		RoomsDiscovered: character.RoomsDiscovered,
+		QuestsComplete: questsToStringArray(character.QuestsComplete),
 		Data: character.Data,
 	}
 	return json.Marshal(&characterJson)
@@ -166,6 +169,7 @@ func (character *Character) UnmarshalJSON(data []byte) error {
 	character.ClassSpells = spellsFromStringArray(characterJson.ClassSpells)
 	character.RecipesKnown = recipesFromStringArray(characterJson.RecipesKnown)
 	character.RoomsDiscovered = characterJson.RoomsDiscovered
+	character.QuestsComplete = questsFromStringArray(characterJson.QuestsComplete)
 	character.Data = characterJson.Data
 
 	return nil

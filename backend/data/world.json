@@ -3360,6 +3360,45 @@
       "BehaviorParams": {}
     },
     {
+      "Id": "apple_boy",
+      "SpawnRoom": 67,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "edward",
+      "SpawnRoom": 67,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "gretchen",
+      "SpawnRoom": 67,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
       "Id": "hill giant",
       "SpawnRoom": 70,
       "LevelRange": {
