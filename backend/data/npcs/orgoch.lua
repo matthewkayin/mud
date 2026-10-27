@@ -1,7 +1,7 @@
 local npc = {}
 
-npc.id = "magda"
-npc.name = "Magda"
+npc.id = "orgoch"
+npc.name = "Orgoch"
 npc.description = "This withered old hag stands impatiently by the cauldron. She narrows her beady eyes when she sees you, and you find it hard to shake the sense that you're tresspassing."
 
 npc.experience_worth = 1
@@ -30,6 +30,8 @@ npc.wares = {
     "Glass Bottle",
     "Paper",
     "Antidote Recipe",
+    "Health Potion Recipe",
+    "Mana Potion Recipe"
 }
 
 ---@param self MobHandle

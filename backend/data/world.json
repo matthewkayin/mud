@@ -117,7 +117,20 @@
       ],
       "Locks": [],
       "DropTable": {
-        "Entries": []
+        "Entries": [
+          {
+            "ItemId": "Dark Iron",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 1
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 5
+          }
+        ]
       },
       "Inventory": {
         "Items": []
@@ -148,7 +161,14 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [
+        {
+          "Id": "Lever",
+          "BehaviorParams": {
+            "Signal": "fort_greene_lever_b"
+          }
+        }
+      ]
     },
     {
       "Name": "Collapsed Chamber",
@@ -167,7 +187,20 @@
       ],
       "Locks": [],
       "DropTable": {
-        "Entries": []
+        "Entries": [
+          {
+            "ItemId": "Dark Iron",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 1
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 15
+          }
+        ]
       },
       "Inventory": {
         "Items": []
@@ -375,12 +408,98 @@
       ],
       "Locks": [],
       "DropTable": {
-        "Entries": []
+        "Entries": [
+          {
+            "ItemId": "Dark Iron",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 1
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 10
+          }
+        ]
       },
       "Inventory": {
         "Items": []
       },
-      "Chests": [],
+      "Chests": [
+        {
+          "Name": "Arsenal of Mologok",
+          "Type": 0,
+          "Timer": 0,
+          "DropTable": {
+            "Entries": [
+              {
+                "ItemId": "Azurite Pendant",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 10
+              },
+              {
+                "ItemId": "Sword of Alguir",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 10
+              },
+              {
+                "ItemId": "Greenbolt",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 10
+              },
+              {
+                "ItemId": "Chainmail Armor",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 60
+              },
+              {
+                "ItemId": "Crude Maul",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 100
+              }
+            ]
+          },
+          "Inventory": {
+            "Items": []
+          }
+        }
+      ],
       "Fixtures": []
     },
     {
@@ -400,7 +519,20 @@
       ],
       "Locks": [],
       "DropTable": {
-        "Entries": []
+        "Entries": [
+          {
+            "ItemId": "Dark Iron",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 1
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 5
+          }
+        ]
       },
       "Inventory": {
         "Items": []
@@ -753,7 +885,12 @@
         30,
         -1
       ],
-      "Locks": [],
+      "Locks": [
+        {
+          "Type": 0,
+          "Direction": 2
+        }
+      ],
       "DropTable": {
         "Entries": []
       },
@@ -991,7 +1128,12 @@
         -1,
         28
       ],
-      "Locks": [],
+      "Locks": [
+        {
+          "Type": 0,
+          "Direction": 1
+        }
+      ],
       "DropTable": {
         "Entries": []
       },
@@ -1023,15 +1165,117 @@
       "Inventory": {
         "Items": []
       },
-      "Chests": [],
-      "Fixtures": [
+      "Chests": [
         {
-          "Id": "Lever",
-          "BehaviorParams": {
-            "Signal": "fort_greene_lever_b"
+          "Name": "Pile of Scrolls",
+          "Type": 0,
+          "Timer": 0,
+          "DropTable": {
+            "Entries": [
+              {
+                "ItemId": "Paper",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 5
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 100
+              },
+              {
+                "ItemId": "Scroll of Firebolt",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 10
+              },
+              {
+                "ItemId": "Scroll of Chain Lightning",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 10
+              },
+              {
+                "ItemId": "Scroll of Unlock",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 10
+              },
+              {
+                "ItemId": "Dark Iron Axe Recipe",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 10
+              },
+              {
+                "ItemId": "Dark Iron Axe Recipe",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 10
+              },
+              {
+                "ItemId": "Dark Iron Longsword Recipe",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 10
+              },
+              {
+                "ItemId": "Spellbook of Chain Lightning",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 15
+              }
+            ]
+          },
+          "Inventory": {
+            "Items": []
           }
         }
-      ]
+      ],
+      "Fixtures": []
     },
     {
       "Name": "You won!",
@@ -2245,7 +2489,12 @@
         79,
         -1
       ],
-      "Locks": [],
+      "Locks": [
+        {
+          "Type": 0,
+          "Direction": 0
+        }
+      ],
       "DropTable": {
         "Entries": []
       },
@@ -2516,7 +2765,12 @@
         82,
         78
       ],
-      "Locks": [],
+      "Locks": [
+        {
+          "Type": 0,
+          "Direction": 3
+        }
+      ],
       "DropTable": {
         "Entries": []
       },
@@ -2951,6 +3205,30 @@
               "Max": 100
             },
             "DropChancePercent": 10
+          },
+          {
+            "ItemId": "Iron",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 4
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 40
+          },
+          {
+            "ItemId": "Crude Iron Plating",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 1
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 20
           }
         ]
       },
@@ -2989,7 +3267,7 @@
       "BehaviorParams": {}
     },
     {
-      "Id": "magda",
+      "Id": "orgoch",
       "SpawnRoom": 2,
       "LevelRange": {
         "Min": 1,
@@ -3067,7 +3345,7 @@
       "BehaviorParams": {}
     },
     {
-      "Id": "spider",
+      "Id": "primeval spectre",
       "SpawnRoom": 13,
       "LevelRange": {
         "Min": 1,
@@ -3171,8 +3449,8 @@
       "BehaviorParams": {
         "ExitToBlock": "north",
         "Toll": {
-          "Id": "Azurite Pendant",
-          "Amount": 1,
+          "Id": "Gold",
+          "Amount": 400,
           "Durability": 0
         }
       }
@@ -3413,12 +3691,12 @@
     },
     {
       "Id": "goblin",
-      "SpawnRoom": 78,
+      "SpawnRoom": 79,
       "LevelRange": {
         "Min": 1,
         "Max": 1
       },
-      "MovementTypeOverride": "Wander",
+      "MovementTypeOverride": "",
       "DropTableOverride": {
         "Entries": []
       },
