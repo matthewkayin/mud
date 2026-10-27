@@ -506,6 +506,9 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		item.Infusion.ConditionId = frameGetConditionTypeArg(&frame, 1)
 		item.Infusion.ApplyDuration = frameGetInt32Arg(&frame, 2, "apply_duration")
 		apply_chance, okay := frame.Number(3)
+		if !okay {
+			frame.ThrowArgTypeError(3, lua.NumberKind)
+		}
 		if okay {
 			item.Infusion.ApplyChance = float32(apply_chance)
 		}

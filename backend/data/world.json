@@ -92,7 +92,20 @@
       ],
       "Locks": [],
       "DropTable": {
-        "Entries": []
+        "Entries": [
+          {
+            "ItemId": "Azurite Pendant",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 1
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 100
+          }
+        ]
       },
       "Inventory": {
         "Items": []
@@ -351,7 +364,20 @@
       ],
       "Locks": [],
       "DropTable": {
-        "Entries": []
+        "Entries": [
+          {
+            "ItemId": "Wild Mushrooms",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 3
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 20
+          }
+        ]
       },
       "Inventory": {
         "Items": []
@@ -607,7 +633,20 @@
       ],
       "Locks": [],
       "DropTable": {
-        "Entries": []
+        "Entries": [
+          {
+            "ItemId": "Wild Mushrooms",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 3
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 20
+          }
+        ]
       },
       "Inventory": {
         "Items": []
@@ -1267,6 +1306,18 @@
                   "Max": 100
                 },
                 "DropChancePercent": 15
+              },
+              {
+                "ItemId": "Vial of Poison Recipe",
+                "AmountRange": {
+                  "Min": 1,
+                  "Max": 1
+                },
+                "DurabilityPercentRange": {
+                  "Min": 100,
+                  "Max": 100
+                },
+                "DropChancePercent": 12
               }
             ]
           },
@@ -1519,7 +1570,32 @@
       ],
       "Locks": [],
       "DropTable": {
-        "Entries": []
+        "Entries": [
+          {
+            "ItemId": "Wild Mushrooms",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 2
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 15
+          },
+          {
+            "ItemId": "Fancy Plants",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 2
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 15
+          }
+        ]
       },
       "Inventory": {
         "Items": []
@@ -1669,7 +1745,20 @@
       ],
       "Locks": [],
       "DropTable": {
-        "Entries": []
+        "Entries": [
+          {
+            "ItemId": "Wild Mushrooms",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 2
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 40
+          }
+        ]
       },
       "Inventory": {
         "Items": []
@@ -1719,7 +1808,32 @@
       ],
       "Locks": [],
       "DropTable": {
-        "Entries": []
+        "Entries": [
+          {
+            "ItemId": "Wild Mushrooms",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 2
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 20
+          },
+          {
+            "ItemId": "Azurite Pendant",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 1
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 100
+          }
+        ]
       },
       "Inventory": {
         "Items": []
@@ -1908,7 +2022,7 @@
               "Min": 100,
               "Max": 100
             },
-            "DropChancePercent": 100
+            "DropChancePercent": 40
           }
         ]
       },
@@ -1960,7 +2074,20 @@
       ],
       "Locks": [],
       "DropTable": {
-        "Entries": []
+        "Entries": [
+          {
+            "ItemId": "Fancy Plants",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 3
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 15
+          }
+        ]
       },
       "Inventory": {
         "Items": []
@@ -2216,7 +2343,20 @@
       ],
       "Locks": [],
       "DropTable": {
-        "Entries": []
+        "Entries": [
+          {
+            "ItemId": "Wild Mushrooms",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 2
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 15
+          }
+        ]
       },
       "Inventory": {
         "Items": []
@@ -2351,7 +2491,7 @@
     },
     {
       "Name": "Fulton Residential",
-      "Description": "Here on the eastern-most edge of Fulton",
+      "Description": "Here on the eastern-most edge of Fulton you find a beautiful neighborhood of well-maintained homes, at the center of which is a street of walled-off guild offices emblazoned with their various crests.",
       "Notes": "",
       "IsSafeZone": true,
       "EditorPosition": {
@@ -2396,7 +2536,20 @@
       ],
       "Locks": [],
       "DropTable": {
-        "Entries": []
+        "Entries": [
+          {
+            "ItemId": "Fancy Plants",
+            "AmountRange": {
+              "Min": 1,
+              "Max": 3
+            },
+            "DurabilityPercentRange": {
+              "Min": 100,
+              "Max": 100
+            },
+            "DropChancePercent": 15
+          }
+        ]
       },
       "Inventory": {
         "Items": []
@@ -2456,7 +2609,7 @@
     },
     {
       "Name": "Abandoned Shack",
-      "Description": "You have found a shack in a state of deep desuetude. ",
+      "Description": "You have found a shack in a state of advanced desuetude. ",
       "Notes": "",
       "IsSafeZone": false,
       "EditorPosition": {
@@ -3320,6 +3473,19 @@
     },
     {
       "Id": "spider",
+      "SpawnRoom": 10,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "spider",
       "SpawnRoom": 11,
       "LevelRange": {
         "Min": 1,
@@ -3351,7 +3517,7 @@
         "Min": 1,
         "Max": 1
       },
-      "MovementTypeOverride": "Wander",
+      "MovementTypeOverride": "",
       "DropTableOverride": {
         "Entries": []
       },
@@ -3463,6 +3629,19 @@
         "Max": 1
       },
       "MovementTypeOverride": "Wander",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "morel",
+      "SpawnRoom": 40,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
       "DropTableOverride": {
         "Entries": []
       },
@@ -3794,13 +3973,13 @@
       "BehaviorParams": {}
     },
     {
-      "Id": "goblin",
+      "Id": "goblin_chieftain",
       "SpawnRoom": 84,
       "LevelRange": {
         "Min": 1,
         "Max": 1
       },
-      "MovementTypeOverride": "Stationary",
+      "MovementTypeOverride": "",
       "DropTableOverride": {
         "Entries": []
       },

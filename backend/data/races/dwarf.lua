@@ -1,7 +1,7 @@
 local race = {}
 
 race.name = "Dwarf"
-race.description = "Stout folk of the deep mountains, hardy and strong but slow on their feet."
+race.description = "Dwarves are short, mighty, and have big beards. Dwarves typically enjoy being rich, drinking beer and slaying goblins."
 race.stats = { VIT = 2, STR = 2, AGI = -1 }
 
 return race

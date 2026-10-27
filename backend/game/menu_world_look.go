@@ -223,8 +223,10 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				targetMob := gamestate.world.Mobs.Get(targetHandle)
 				if targetMob.Npc != nil {
 					// General description
-					player.send(fmt.Sprintf("<y>%s</y> (Level %d): %s",
-						targetMob.GetName(), targetMob.Data.Level, targetMob.Npc.GetDescription()))
+					player.send(fmt.Sprintf("<y>%s</y>: %s",
+						targetMob.GetName(), targetMob.Npc.GetDescription())) 	//this used to show mob level
+																			  	//and it should in the future
+																				//when we have fixed scaling
 
 
 					// Status description

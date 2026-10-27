@@ -2,7 +2,7 @@ local npc = {}
 
 npc.id = "morel"
 npc.name = "Morel"
-npc.description = "A pale-skinned halfing sits on a stool behind the cart, gaily swinging his feet. His ears are knarled in a way that makes it look like there are mushrooms coming out of his head."
+npc.description = "A pale-skinned pig-man sits on a stool behind the cart, gaily swinging his feet. His ears are knarled in a way that makes it look like there are mushrooms coming out of his head."
 
 npc.experience_worth = 1
 npc.experience_worth_scaling = 1
@@ -22,7 +22,7 @@ npc.starting_disposition = world.NpcDisposition.FRIENDLY
 npc.movement_type = world.NpcMovementType.STATIONARY
 
 npc.wares = {
-    "Wild Mushroom",
+    "Wild Mushrooms",
 }
 
 ---@param self MobHandle
