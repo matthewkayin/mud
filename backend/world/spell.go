@@ -84,7 +84,7 @@ func (parser *ScriptParser) parseSpell(table *lua.Table) *SpellData {
 	parser.checkInt32NonNegative(spellData.CastTime, "CastTime")
 
 	spellData.TargetType = parser.getTargetType(table, "target_type")
-	if spellData.TargetType == TARGET_TYPE_INVENTORY_ITEM || spellData.TargetType == TARGET_TYPE_ARGUMENT {
+	if spellData.TargetType == TARGET_TYPE_ITEM || spellData.TargetType == TARGET_TYPE_ARGUMENT {
 		spellData.ValidateTarget = parser.getFunction(table, "validate_target")
 	}
 

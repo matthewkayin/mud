@@ -9,7 +9,7 @@ const (
 	TARGET_TYPE_NONE TargetType = iota
 	TARGET_TYPE_ALLY
 	TARGET_TYPE_ENEMY
-	TARGET_TYPE_INVENTORY_ITEM
+	TARGET_TYPE_ITEM
 	TARGET_TYPE_ARGUMENT
 	TARGET_TYPE_COUNT
 )
@@ -22,8 +22,8 @@ func (targetType TargetType) String() string {
 			return "Ally"
 		case TARGET_TYPE_ENEMY:
 			return "Enemy"
-		case TARGET_TYPE_INVENTORY_ITEM:
-			return "Inventory Item"
+		case TARGET_TYPE_ITEM:
+			return "Item"
 		case TARGET_TYPE_ARGUMENT:
 			return "Argument"
 		default:

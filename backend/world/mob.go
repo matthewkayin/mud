@@ -57,7 +57,7 @@ type MobTargetType int
 const (
 	MOB_TARGET_NONE MobTargetType = iota
 	MOB_TARGET_MOB
-	MOB_TARGET_INVENTORY_ITEM
+	MOB_TARGET_ITEM
 	MOB_TARGET_ARGUMENT
 )
 
@@ -828,14 +828,19 @@ func (mob *Mob) buildTargetHookArgs(world *World, target MobTarget) ([]lua.Value
 			args = append(args, targetLuaHandle)
 		}
 
-		case MOB_TARGET_INVENTORY_ITEM: {
-			itemTarget := target.Value.(MobItemTarget)
-			index, found := mob.Data.Inventory.FindExpectedItem(itemTarget.Id, itemTarget.Index)
+		case MOB_TARGET_ITEM: {
+			itemHandle := target.Value.(ItemHandle)
+			itemHandle, found := world.RelocateItemHandle(itemHandle)
 			if !found {
-				return args, fmt.Errorf("Target item with ID %d index %d not found during buildTargetHookArgs.", itemTarget.Id, itemTarget.Index)
+				return args, fmt.Errorf("Target item with ID %d %s index %d not found during buildTargetHookArgs.", itemHandle.Id, itemHandle.Location.String(), itemHandle.Index)
 			}
 
-			args = append(args, lua.Number(float64(index)))
+			itemLuaHandle, err := world.itemHandleType.New(itemHandle)
+			if err != nil {
+				return args, err
+			}
+
+			args = append(args, itemLuaHandle.Value())
 		}
 
 		case MOB_TARGET_ARGUMENT: {
@@ -874,7 +879,7 @@ func (mob *Mob) ValidateTarget(world *World, params MobValidateTargetParams) err
 // Calls the on_use() or on_cast() of an item or spell
 func (mob *Mob) onUseOrCast(world *World, params MobOnUseOrCastParams) bool {
 	// Double check argument validation before use/cast
-	if params.targetType == TARGET_TYPE_INVENTORY_ITEM || params.targetType == TARGET_TYPE_ARGUMENT {
+	if params.targetType == TARGET_TYPE_ITEM || params.targetType == TARGET_TYPE_ARGUMENT {
 		err := mob.ValidateTarget(world, MobValidateTargetParams {
 			Hook: params.validateTarget,
 			Target: mob.Target,

@@ -174,6 +174,31 @@ A handle can outlive its mob. Library functions that take a mob throw an error w
 
 On the Go side, `scriptInit` registers the `MobHandle` userdata type as `World.mobHandleType`. Pass a mob to Lua with `Mob.getLuaHandle`, which creates the userdata on first use and caches it on the mob. Passing a mob to a script therefore doesn't allocate, and every handle for a mob is the same Lua value. Read a handle argument in a `SCRIPT_LIBRARY` function with `frameGetMobHandleArg`, or with `frameGetMobArg` to also look up the mob. Document handle parameters as `@param name MobHandle`.
 
+### Item handles
+
+`ITEM` spells and consumables receive their target as an `ItemHandle` (`backend/world/item_handle.go`), an opaque userdata that refers to an item in a mob's inventory or equipment:
+
+| Field | Notes |
+| --- | --- |
+| `Mob` | The `MobHandle` of the item's owner |
+| `Location` | `ITEM_LOCATION_INVENTORY` or `ITEM_LOCATION_EQUIPMENT` |
+| `Index` | The inventory index, or the `EquipmentSlot` for an equipped item |
+| `Id` | The item expected at that position |
+
+Scripts read and change the item through the `world.item_*` functions, which only need the handle:
+
+| Function | Returns |
+| --- | --- |
+| `item_get_name(item)` | string |
+| `item_get_durability_percent(item)` | integer |
+| `item_is_repairable(item)` | boolean |
+| `item_repair(item)` | |
+| `item_reinforce(item)` | |
+
+An item handle refers to a position, not to an item. Items are plain values that move: removing a stack moves the last stack into its index, and equipping copies the item into a slot. So a handle is only valid until the mob's inventory or equipment changes. Use it within the hook that received it, and don't store it or use it as a table key. The `item_*` functions throw an error if the item at the handle's position isn't the expected `Id` (`World.GetItem`).
+
+For the same reason, item handles aren't cached the way mob handles are. `buildTargetHookArgs` allocates a new userdata with `World.itemHandleType` each time it builds hook arguments. Handles compare with `==` by value, and `tostring` gives `ItemHandle(<mob id>:<generation>:<location>:<index>)`. Read a handle argument in a `SCRIPT_LIBRARY` function with `frameGetItemHandleArg`, or with `frameGetItemArg` to also look up the item, and document it as `@param item ItemHandle`.
+
 ### Inventories
 
 Scripts read and change a mob's inventory through the `world.mob_*inventory*` functions. Items are addressed by their **0-based** index in the inventory, the same index that an NPC's `on_item_given` hook receives as `added_to_index`. An index that isn't an integer in `[0, length)` throws an error.

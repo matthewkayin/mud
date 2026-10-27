@@ -71,6 +71,26 @@ func (world *World) scriptInit(dataFolder string) {
 		log.Fatalf("Error registering FixtureHandle metamethods: %s", err.Error())
 	}
 
+	// Register item handle userdata type
+	world.itemHandleType, err = lua.NewUserDataType[ItemHandle](world.luaState, "ItemHandle")
+	if err != nil {
+		log.Fatalf("Error registering ItemHandle userdata type: %s", err.Error())
+	}
+	err = world.luaState.SetFunctions(world.itemHandleType.Metatable(), map[string]lua.NativeFunc {
+		"__eq": func(frame lua.Frame) lua.Outcome {
+			a, aOk := world.itemHandleType.FromArgument(frame, 0)
+			b, bOk := world.itemHandleType.FromArgument(frame, 1)
+			return frame.ReturnBool(aOk && bOk && a == b)
+		},
+		"__tostring": func(frame lua.Frame) lua.Outcome {
+			handle := frameGetItemHandleArg(&frame, 0)
+			return frame.ReturnString(fmt.Sprintf("ItemHandle(%d:%d:%s:%d)", handle.Mob.Id, handle.Mob.Generation, handle.Location.String(), handle.Index))
+		},
+	})
+	if err != nil {
+		log.Fatalf("Error registering ItemHandle metamethods: %s", err.Error())
+	}
+
 	// Create world table
 	worldTable, err := world.luaState.NewTableWithCapacity(0, len(SCRIPT_LIBRARY))
 	if err != nil {

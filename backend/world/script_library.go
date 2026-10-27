@@ -400,27 +400,38 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.ReturnNumber(float64(index))
 	},
 
+	// Returns the name of the item
+	//
+	// @param item ItemHandle
+	// @return string
+	"item_get_name": func(frame lua.Frame) lua.Outcome {
+		item := frameGetItemArg(&frame, 0)
+		return frame.ReturnString(ITEM_DATA[item.Id].Name)
+	},
+
+	// Returns the durability percent of the item
+	//
+	// @param item ItemHandle
+	// @return integer
+	"item_get_durability_percent": func(frame lua.Frame) lua.Outcome {
+		item := frameGetItemArg(&frame, 0)
+		return frame.ReturnNumber(float64(item.GetDurabilityPercent()))
+	},
+
 	// Returns true if the item can be repaired
 	//
-	// @param handle MobHandle
-	// @param index integer
+	// @param item ItemHandle
 	// @return boolean
-	"mob_item_is_repairable": func(frame lua.Frame) lua.Outcome {
-		mob := frameGetMobArg(&frame, 0)
-		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
-		item := &mob.Data.Inventory.Items[index]
-
+	"item_is_repairable": func(frame lua.Frame) lua.Outcome {
+		item := frameGetItemArg(&frame, 0)
 		return frame.ReturnBool(item.isRepairable())
 	},
 
 	// Repairs the item
 	//
-	// @param handle MobHandle
-	// @param index integer
-	"mob_repair_item": func(frame lua.Frame) lua.Outcome {
-		mob := frameGetMobArg(&frame, 0)
-		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
-		item := &mob.Data.Inventory.Items[index]
+	// @param item ItemHandle
+	"item_repair": func(frame lua.Frame) lua.Outcome {
+		item := frameGetItemArg(&frame, 0)
 		item.repair()
 
 		return frame.Return()
@@ -428,12 +439,9 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 
 	// Reinforces the item
 	//
-	// @param handle Mobhandle
-	// @param index integer
-	"mob_reinforce_item": func(frame lua.Frame) lua.Outcome {
-		mob := frameGetMobArg(&frame, 0)
-		index := frameGetInventoryIndexArg(&frame, 1, &mob.Data.Inventory)
-		item := &mob.Data.Inventory.Items[index]
+	// @param item ItemHandle
+	"item_reinforce": func(frame lua.Frame) lua.Outcome {
+		item := frameGetItemArg(&frame, 0)
 		item.reinforce()
 
 		return frame.Return()
@@ -1149,6 +1157,25 @@ func frameGetFixtureArg(frame *lua.Frame, index int) *Fixture {
 	}
 
 	return &room.Fixtures[handle.FixtureIndex]
+}
+
+func frameGetItemHandleArg(frame *lua.Frame, index int) ItemHandle {
+	handle, ok := __world.itemHandleType.FromArgument(*frame, index)
+	if !ok {
+		frame.ThrowArgError(index, "ItemHandle expected")
+	}
+
+	return handle
+}
+
+func frameGetItemArg(frame *lua.Frame, index int) *Item {
+	handle := frameGetItemHandleArg(frame, index)
+	item, exists := __world.GetItem(handle)
+	if !exists {
+		frame.ThrowArgError(index, fmt.Sprintf("ItemHandle %d:%d:%s:%d does not refer to the expected item.", handle.Mob.Id, handle.Mob.Generation, handle.Location.String(), handle.Index))
+	}
+
+	return item
 }
 
 func frameGetMobHandleArg(frame *lua.Frame, index int) MobHandle {
