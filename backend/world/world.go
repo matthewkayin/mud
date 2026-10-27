@@ -14,6 +14,7 @@ const WORLD_JSON_PATH = WORLD_DATA_FOLDER + "/world.json"
 const WORLD_SECONDS_PER_UPDATE = 3
 const WORLD_MAX_ROOMS int = 1024
 const WORLD_REPLENISH_INTERVAL uint32 = (1 * 60) / WORLD_SECONDS_PER_UPDATE
+const CHEST_REPLENISH_INTERVAL uint32 = (4 * 60) / WORLD_SECONDS_PER_UPDATE
 
 // `json:"-"` tells the JSON parser to ignore those fields
 
@@ -148,6 +149,11 @@ func (world *World) Update() {
 	if world.tick % WORLD_REPLENISH_INTERVAL == 0 {
 		for index := range len(world.Rooms) {
 			world.Rooms[index].replenish()
+		}
+	}
+	if world.tick % CHEST_REPLENISH_INTERVAL == 0 {
+		for index := range len(world.Rooms) {
+			world.Rooms[index].replenishChests()
 		}
 	}
 
