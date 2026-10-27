@@ -84,6 +84,7 @@ var MENU_CREATE = MenuCreate(MenuCreateParams {
 		"describe": {
 			usage: "describe <property>",
 			description: "Get more info about a property",
+			groups: []string { "root" },
 			handler: func (gameState *GameState, player *Player, args []string) bool {
 				var property string = ""
 				if len(args) > 0 {

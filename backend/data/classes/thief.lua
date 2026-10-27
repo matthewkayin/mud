@@ -1,7 +1,7 @@
 local class = {}
 
 class.name = "Thief"
-class.description = "Thieves prefer to sneak and steal over direct conflict with monsters. Can scout, unlock doors and pick traps for a party."
+class.description = "Thieves prefer to sneak and steal over direct conflict with monsters. Can scout and unlock doors for a party."
 class.stats = { VIT = 8, STR = 8, AGI = 10, INT = 6, FTH = 8 }
 class.scaling = { VIT = 8, STR = 8, AGI = 10, INT = 6, FTH = 8 }
 class.starting_items = {
