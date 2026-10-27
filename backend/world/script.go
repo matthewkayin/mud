@@ -51,6 +51,26 @@ func (world *World) scriptInit(dataFolder string) {
 		log.Fatalf("Error registering MobHandle metamethods: %s", err.Error())
 	}
 
+	// Register fixture handle userdata type
+	world.fixtureHandleType, err = lua.NewUserDataType[FixtureHandle](world.luaState, "FixtureHandle")
+	if err != nil {
+		log.Fatalf("Error registering FixtureHandle userdata type: %s", err.Error())
+	}
+	err = world.luaState.SetFunctions(world.fixtureHandleType.Metatable(), map[string]lua.NativeFunc {
+		"__eq": func(frame lua.Frame) lua.Outcome {
+			a, aOk := world.fixtureHandleType.FromArgument(frame, 0)
+			b, bOk := world.fixtureHandleType.FromArgument(frame, 1)
+			return frame.ReturnBool(aOk && bOk && a == b)
+		},
+		"__tostring": func(frame lua.Frame) lua.Outcome {
+			handle := frameGetFixtureHandleArg(&frame, 0)
+			return frame.ReturnString(fmt.Sprintf("FixtureHandle(%d:%d)", handle.RoomIndex, handle.FixtureIndex))
+		},
+	})
+	if err != nil {
+		log.Fatalf("Error registering FixtureHandle metamethods: %s", err.Error())
+	}
+
 	// Create world table
 	worldTable, err := world.luaState.NewTableWithCapacity(0, len(SCRIPT_LIBRARY))
 	if err != nil {
@@ -129,6 +149,7 @@ func (world *World) scriptCall(function lua.Value, description string, args ...l
 	world.scriptIsRunning = false
 
 	world.handleDeferredNpcEvents()
+	world.handleDeferredSignals()
 
 	if err != nil {
 		log.Printf("Warn - %s failed: %s", description, scriptFormatError(err))

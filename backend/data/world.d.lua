@@ -7,6 +7,9 @@ world = {}
 ---An opaque reference to a mob. Compare with ==. It may refer to a mob that no longer exists; check with world.mob_exists.
 ---@class MobHandle
 
+---An opaque reference to a fixture placed in a room. Compare with ==. Find its room with world.fixture_get_room.
+---@class FixtureHandle
+
 ---A stack of items, such as the value of an Item NPC behavior param.
 ---@class Item
 ---@field name string
@@ -132,11 +135,34 @@ world.TargetType = {
 function world.deal_magic_damage(caster_handle, target_handle, base_damage) end
 
 --- Emit a signal, which will invoke any listeners who are listening to the signal.
---- Any arguments provided after the signal name will be passed into the listener function.
+--- The emitter is the handle of the fixture emitting the signal, and is passed to the listener first.
+--- Any arguments provided after the signal name will be passed into the listener function after the emitter.
 ---
+---@param emitter FixtureHandle
 ---@param signal string
 ---@param ... any
-function world.emit_signal(signal, ...) end
+function world.emit_signal(emitter, signal, ...) end
+
+--- Returns the index of the room the fixture is in
+---
+---@param handle FixtureHandle
+---@return integer
+function world.fixture_get_room(handle) end
+
+--- Returns true if the fixture is blocking its room's exit in the specified direction
+---
+---@param handle FixtureHandle
+---@param direction Direction
+---@return boolean
+function world.fixture_is_blocking_exit(handle, direction) end
+
+--- Sets whether the fixture is blocking its room's exit in the specified direction.
+--- While blocking, players and other mobs can't leave the fixture's room through that exit.
+---
+---@param handle FixtureHandle
+---@param direction Direction
+---@param blocking boolean
+function world.fixture_set_blocking_exit(handle, direction, blocking) end
 
 --- Returns the current world tick
 ---
@@ -569,6 +595,7 @@ function world.say_to_player(speaker, player, message) end
 function world.say_to_room(speaker, message) end
 
 --- Subscribe to a signal. The provided listener will get called whenever a fixture emits the signal.
+--- The listener receives the emitting fixture's handle, followed by any arguments the emitter provided.
 ---
 ---@param signal string
 ---@param listener function
