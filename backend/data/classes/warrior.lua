@@ -6,6 +6,7 @@ class.stats = { VIT = 8, STR = 10, AGI = 6, INT = 6, FTH = 8 }
 class.scaling = { VIT = 8, STR = 10, AGI = 6, INT = 6, FTH = 8 }
 class.starting_items = {
     { item = "Crude Maul", amount = 1 },
+    { item = "Vial of Poison", amount = 10 },
 }
 class.starting_equipment = {
     outfit = "Rags"

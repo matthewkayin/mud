@@ -1,7 +1,5 @@
 local npc = {}
 
----UNFINISHED
-
 npc.id = "primeval spectre"
 npc.name = "Primeval Spectre"
 npc.description = "A terrifying apparation of an ancient king guards this tomb."
@@ -76,9 +74,7 @@ npc.drop_table = {
 
 }
 
-npc.starting_disposition = world.NpcDisposition.NEUTRAL
-npc.movement_type = world.NpcMovementType.WANDER
+npc.starting_disposition = world.NpcDisposition.HOSTILE
+npc.movement_type = world.NpcMovementType.STATIONARY
 
----TO DO: make him wander around in neutral disposition until he finds a happy cow, which he then eats, and then naps
----too long without a cow snack and he gets angry, becoming hostile.
 return npc

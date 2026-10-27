@@ -15,7 +15,26 @@ npc.armor_penetration = 1
 npc.deflection = 6
 npc.damage_resistance = 1
 
-npc.equipment = {}
+npc.equipment = {
+    {
+        item = "Monster Slime",
+        amount = { min = 1, max = 2 },
+        durability_percent = 100,
+        drop_chance_percent = 20
+    },
+    {
+        item = "Pixie Dust",
+        amount = { min = 1, max = 3 },
+        durability_percent = 100,
+        drop_chance_percent = 10
+    },
+    {
+        item = "Venom Gland",
+        amount = 1,
+        durability_percent = 100,
+        drop_chance_percent = 80
+    },
+}
 
 npc.infusion = {
     condition = "Poison",

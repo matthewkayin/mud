@@ -186,11 +186,26 @@ function world.heal(target_handle, heal_amount) end
 ---@return integer
 function world.item_get_durability_percent(item) end
 
+--- Returns the item kind as a string
+---
+---@param item ItemHandle
+---@return string
+function world.item_get_kind(item) end
+
 --- Returns the name of the item
 ---
 ---@param item ItemHandle
 ---@return string
 function world.item_get_name(item) end
+
+--- apply an infusion to a weapon
+---
+---@param item ItemHandle
+---@param condition_name string
+---@param condition_duration int
+---@param condition_apply_chance float
+---@param condition_charges_remaining int
+function world.item_infuse(item, condition_name, condition_duration, condition_apply_chance, condition_charges_remaining) end
 
 --- Returns true if the item can be repaired
 ---
@@ -446,11 +461,6 @@ function world.mob_is_dead(handle) end
 ---@param handle MobHandle
 ---@return boolean
 function world.mob_is_npc(handle) end
-
---- Removes all ailments from a mobA
----
----@param target_handle MobHandle
-function world.mob_remove_ailments(target_handle) end
 
 --- Removes all ailments from a mobA
 ---

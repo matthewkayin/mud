@@ -431,6 +431,16 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.ReturnString(ITEM_DATA[item.Id].Name)
 	},
 
+	// Returns the item kind as a string
+	//
+	// @param item ItemHandle
+	// @return string
+	"item_get_kind": func(frame lua.Frame) lua.Outcome {
+		item := frameGetItemArg(&frame, 0)
+		return frame.ReturnString(ITEM_DATA[item.Id].Kind.String())
+	},
+
+
 	// Returns the durability percent of the item
 	//
 	// @param item ItemHandle
@@ -465,6 +475,26 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	"item_reinforce": func(frame lua.Frame) lua.Outcome {
 		item := frameGetItemArg(&frame, 0)
 		item.reinforce()
+
+		return frame.Return()
+	},
+
+	//apply an infusion to a weapon
+	//
+	// @param item ItemHandle
+	// @param condition_name string
+	// @param condition_duration int
+	// @param condition_apply_chance float
+	// @param condition_charges_remaining int
+	"item_infuse": func(frame lua.Frame) lua.Outcome {
+		item := frameGetItemArg(&frame, 0)
+		item.Infusion.ConditionId = frameGetConditionTypeArg(&frame, 1)
+		item.Infusion.ApplyDuration = frameGetInt32Arg(&frame, 2, "apply_duration")
+		apply_chance, okay := frame.Number(3)
+		if okay {
+			item.Infusion.ApplyChance = float32(apply_chance)
+		}
+		item.Infusion.UsesRemaining = frameGetInt32Arg(&frame, 4, "uses_remaining")
 
 		return frame.Return()
 	},
