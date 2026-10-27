@@ -107,7 +107,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 			playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
 
-			// Check for in keyword
+			// Check for 'in' keyword
 			targetWords, containerWords, userSpecifiedIn := splitArgsBy(args, "in")
 
 			// Check container
@@ -249,7 +249,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 
 			// Handle fixture case
 			fixture, err := fuzzyFindFixture(gamestate, player, args)
-			if err != nil {
+			if err == nil {
 				description, ok := fixture.GetDescription(gamestate.world)
 				if !ok {
 					player.send(fmt.Sprintf("<y>%s</y> is undescribable.", fixture.GetName()))

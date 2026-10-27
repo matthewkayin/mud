@@ -7,8 +7,8 @@ item.kind = world.ItemKind.EQUIPMENT_TWO_HANDED
 item.price = 15
 item.size = 10
 
-item.damage = 6
-item.armor_penetration = 5
+item.damage = 5
+item.armor_penetration = 4
 item.max_durability = 200
 item.stat_bonuses = {}
 item.stat_requirements = { STR = 9 }

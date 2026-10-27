@@ -7,17 +7,48 @@ npc.name = "Skulk"
 npc.description = "A shadowy, half-visible little create with clawed hands and a large mouth. It seems interested in watching from the shadows."
 npc.experience_worth = 40
 npc.experience_worth_scaling = 5
-npc.respawn_duration = world.time_minutes(1)
+npc.respawn_duration = world.time_minutes(5)
 
 npc.stats = { VIT = 10, STR = 2, AGI = 12, INT = 2, FTH = 4 }
 npc.scaling = { VIT = 10, STR = 2, AGI = 12, INT = 2, FTH = 4 }
-npc.damage = 6
+npc.damage = 5
 npc.armor_penetration = 2
 npc.deflection = 4
 npc.damage_resistance = 0
 
 npc.equipment = {}
-npc.drop_table = { }
+npc.drop_table = {
+    {
+        item = "Monster Slime",
+        amount = { min = 1, max = 2 },
+        durability_percent = 100,
+        drop_chance_percent = 15
+    },
+    {
+        item = "Monster Horn",
+        amount = { min = 1, max = 2 },
+        durability_percent = 100,
+        drop_chance_percent = 25
+    },
+    {
+        item = "Bezoar",
+        amount = 1,
+        durability_percent = 100,
+        drop_chance_percent = 15
+    },
+    {
+        item = "Pixie Dust",
+        amount = { min = 1, max = 3 },
+        durability_percent = 100,
+        drop_chance_percent = 15
+    },
+    {
+        item = "Gold",
+        amount = { min = 15, max = 35 },
+        durability_percent = 100,
+        drop_chance_percent = 80
+    },
+}
 
 npc.starting_disposition = world.NpcDisposition.NEUTRAL
 npc.movement_type = world.NpcMovementType.STATIONARY
