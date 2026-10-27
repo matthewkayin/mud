@@ -10,7 +10,7 @@ npc.respawn_duration = world.time_minutes(1)
 
 npc.stats = { VIT = 12, STR = 2, AGI = 10, INT = 2, FTH = 4 }
 npc.scaling = { VIT = 9, STR = 2, AGI = 10, INT = 2, FTH = 4 }
-npc.damage = 4
+npc.damage = 3
 npc.armor_penetration = 1
 npc.deflection = 6
 npc.damage_resistance = 1

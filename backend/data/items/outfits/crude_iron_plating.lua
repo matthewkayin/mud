@@ -7,7 +7,7 @@ item.kind = world.ItemKind.EQUIPMENT_OUTFIT
 item.price = 300
 item.size = 25
 
-item.deflection = 6
+item.deflection = 7
 item.damage_resistance = 0
 item.max_durability = 200
 item.stealth_penalty = 0.25

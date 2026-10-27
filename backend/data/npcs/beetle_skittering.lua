@@ -3,16 +3,16 @@ local npc = {}
 npc.id = "skittering beetle"
 npc.name = "Skittering Beetle"
 npc.description = "This scuttling little villain has a hard little shell and sharp little pincers."
-npc.experience_worth = 50
+npc.experience_worth = 40
 npc.experience_worth_scaling = 15
 npc.respawn_duration = world.time_minutes(1)
 
-npc.stats = { VIT = 1, STR = 2, AGI = 4, INT = 1, FTH = 1 }
+npc.stats = { VIT = 2, STR = 2, AGI = 4, INT = 1, FTH = 1 }
 npc.scaling = { VIT = 1, STR = 2, AGI = 4, INT = 1, FTH = 1 }
-npc.damage = 1
+npc.damage = 2
 npc.armor_penetration = 0
 npc.deflection = 4
-npc.damage_resistance = 0
+npc.damage_resistance = 4
 
 npc.equipment = {}
 npc.drop_table = {}

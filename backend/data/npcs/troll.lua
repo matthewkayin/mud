@@ -19,7 +19,44 @@ npc.deflection = 5
 npc.damage_resistance = 3
 
 npc.equipment = {}
-npc.drop_table = {}
+npc.drop_table = {
+    {
+        item = "Gold",
+        amount = { min = 25, max = 250 },
+        durability_percent = 100,
+        drop_chance_percent = 100
+    },
+    {
+        item = "Monster Slime",
+        amount = { min = 1, max = 4 },
+        durability_percent = 100,
+        drop_chance_percent = 50
+    },
+    {
+        item = "Iron",
+        amount = { min = 2, max = 8 },
+        durability_percent = 100,
+        drop_chance_percent = 30
+    },
+    {
+        item = "Dark Iron",
+        amount = { min = 1, max = 3 },
+        durability_percent = 100,
+        drop_chance_percent = 20
+    },
+    {
+        item = "Common Lumber",
+        amount = { min = 2, max = 8 },
+        durability_percent = 100,
+        drop_chance_percent = 30
+    },
+    {
+        item = "Leather",
+        amount = { min = 2, max = 4 },
+        durability_percent = 100,
+        drop_chance_percent = 80
+    },
+}
 
 npc.starting_disposition = world.NpcDisposition.NEUTRAL
 npc.movement_type = world.NpcMovementType.STATIONARY

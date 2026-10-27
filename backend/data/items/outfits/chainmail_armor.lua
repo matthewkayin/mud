@@ -12,7 +12,7 @@ item.damage_resistance = 1
 item.max_durability = 200
 item.stealth_penalty = 0.25
 item.stat_bonuses = {}
-item.stat_requirements = { STR = 11 }
+item.stat_requirements = { STR = 10 }
 
 item.notes = "tier 1 common"
 

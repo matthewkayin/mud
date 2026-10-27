@@ -256,6 +256,7 @@ var MENU_WORLD_ENTRIES_SHOP = map[string]MenuEntry {
 
 					sellProfit += playerMob.Data.Inventory.Items[toRemoveIndex].GetSellPrice()
 					playerMob.Data.Inventory.RemoveItem(toRemoveIndex)
+					sellAmount--
 				}
 			}
 
