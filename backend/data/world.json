@@ -3651,6 +3651,19 @@
       "BehaviorParams": {}
     },
     {
+      "Id": "rowan",
+      "SpawnRoom": 66,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
       "Id": "apple_boy",
       "SpawnRoom": 67,
       "LevelRange": {
@@ -3679,6 +3692,32 @@
     {
       "Id": "gretchen",
       "SpawnRoom": 67,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "allan",
+      "SpawnRoom": 68,
+      "LevelRange": {
+        "Min": 1,
+        "Max": 1
+      },
+      "MovementTypeOverride": "",
+      "DropTableOverride": {
+        "Entries": []
+      },
+      "BehaviorParams": {}
+    },
+    {
+      "Id": "worried_mayor",
+      "SpawnRoom": 68,
       "LevelRange": {
         "Min": 1,
         "Max": 1
