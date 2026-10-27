@@ -1,7 +1,7 @@
 local npc = {}
 
 npc.id = "rowan"
-npc.name = "Rowman the Hunter"
+npc.name = "Rowan the Hunter"
 npc.description = "A muscular man wearing a bear-skin coat prowls back and forth. He checks his reflection, using his axe as a mirror, and smoothes back his greasy hair."
 
 npc.experience_worth = 1
