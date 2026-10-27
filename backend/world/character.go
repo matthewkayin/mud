@@ -239,7 +239,7 @@ func (world *World) AddCharacter(playerId int, character *Character) {
 func (world *World) RemoveCharacter(character *Character) {
 	// Find the index of the character's name in the PlayerCharacters[playerId] array
 	var index int
-	for index = 0; index < len(world.PlayerCharacters[character.PlayerId]) - 1; index++ {
+	for index = 0; index < len(world.PlayerCharacters[character.PlayerId]); index++ {
 		if world.PlayerCharacters[character.PlayerId][index] == character.Data.Name {
 			break
 		}

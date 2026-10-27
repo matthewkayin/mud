@@ -147,7 +147,7 @@ var MENU_LOGIN = MenuCreate(MenuCreateParams {
 					return false
 				}
 
-				nameInput := strings.Join(args, " ")
+				nameInput := strings.ToLower(strings.Join(args, " "))
 
 				character, characterExists := gamestate.world.GetCharacterIfExists(nameInput)
 				if !characterExists {

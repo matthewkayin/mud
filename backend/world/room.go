@@ -103,6 +103,7 @@ func (room *Room) init(roomIndex int, world *World) {
 	}
 
 	room.replenish()
+	room.replenishChests()
 }
 
 func (room *Room) updateLocks() {
@@ -157,6 +158,9 @@ func (room *Room) cleanUp() {
 // Adds any items that the floor and chests are missing from their drop tables
 func (room *Room) replenish() {
 	room.DropTable.replenish(&room.Inventory)
+}
+
+func (room *Room) replenishChests() {
 	for chestIndex := range room.Chests {
 		chest := &room.Chests[chestIndex]
 		if chest.Type == CHEST_TYPE_CHEST {
