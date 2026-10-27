@@ -26,14 +26,15 @@ npc.movement_type = world.NpcMovementType.STATIONARY
 ---@param player MobHandle
 ---@param subject string
 function npc.on_dialog(self, instance, player, subject)
+    local self_name = world.mob_get_name(self)
     if subject == "" then
-        world.message_player(player, "Elena responds in a curt tone, hardly looking up from her book.")
+        world.message_player(player, string.format("<y>%s</y> responds in a curt tone, hardly looking up from her book.", self_name))
         world.say_to_player(self, player, "Yes, can I <b>help</b> you? Do you need <b>healing</b>?")
     elseif subject == "help" then
         world.say_to_player(self, player, "You are in Church. House of gods and goddesses. There is comfy couch if you like. Or, if you are injured, I can <b>heal</b> you.")
     elseif subject == "healing" or subject == "heal" then
         world.say_to_player(self, player, "Stand still, I will heal your wounds.")
-        world.message_player(player, string.format("%s whispers a divine prayer. A ray of light from the window shines on you.", npc.name))
+        world.message_player(player, string.format("<y>%s<y/> whispers a divine prayer. A ray of light from the window shines on you.", self_name))
 
         world.mob_full_heal(player)
     else
