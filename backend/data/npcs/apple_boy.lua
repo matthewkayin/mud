@@ -2,7 +2,7 @@ local npc = {}
 
 npc.id = "apple_boy"
 npc.name = "Apple Boy"
-npc.description = "A young boy with a gaped toothed smile and a paper-boy cap sits on top of a turned over wooden bucket. Bushels of apples lie at his feet. All the fruit is crushed together, juices leaking into the wood. He hawks his wares tirelessly at all who passes."
+npc.description = "A young boy with a gap-toothed smile and a paper-boy cap sits on top of a turned over wooden bucket. Bushels of apples lie at his feet. All the fruit is crushed together, juices leaking into the wood. He hawks his wares tirelessly at all who pass."
 
 npc.experience_worth = 1
 npc.experience_worth_scaling = 1
