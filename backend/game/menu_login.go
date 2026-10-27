@@ -137,5 +137,33 @@ var MENU_LOGIN = MenuCreate(MenuCreateParams {
 				return true
 			},
 		},
+
+		"delete": {
+			usage: "delete <character>",
+			description: "Delete a character",
+			groups: []string { "root" },
+			handler: func (gamestate *GameState, player *Player, args []string) bool {
+				if len(args) == 0 {
+					return false
+				}
+
+				nameInput := strings.Join(args, " ")
+
+				character, characterExists := gamestate.world.GetCharacterIfExists(nameInput)
+				if !characterExists {
+					player.send(fmt.Sprintf("A character named '%s' does not exist.", nameInput))
+					return true
+				}
+
+				if character.PlayerId != player.id {
+					player.send(fmt.Sprintf("'%s' is not a character that you own.", nameInput))
+					return true
+				}
+
+				player.send(fmt.Sprintf("You deleted '%s'.", character.Data.Name))
+				gamestate.world.RemoveCharacter(character)
+				return true
+			},
+		},
 	},
 })
