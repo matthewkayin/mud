@@ -48,6 +48,12 @@ npc.drop_table = {
        drop_chance_percent = 10
     },
     {
+        item = "Azurite Pendant",
+        amount = 1,
+        durability_percent = 100,
+        drop_chance_percent = 6
+    },
+    {
         item = "Spellbook of Chain Lightning",
         amount = 1,
         durability_percent = 100,

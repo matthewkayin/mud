@@ -1,7 +1,7 @@
 local race = {}
 
 race.name = "Elf"
-race.description = "Tall, fair folk with pointed ears who dwell in ancient forests. They are long-lived and often aloof toward the younger races."
+race.description = "The elves are a tall, beautiful race who descend from a better age of the world. Elves are dying out, and most that still live have withdrawn from history."
 race.stats = { AGI = 1, INT = 2 }
 
 return race

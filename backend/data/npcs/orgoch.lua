@@ -31,7 +31,8 @@ npc.wares = {
     "Paper",
     "Antidote Recipe",
     "Potion of Health Recipe",
-    "Potion of Mana Recipe"
+    "Potion of Mana Recipe",
+    "Vial of Poison Recipe",
 }
 
 ---@param self MobHandle

@@ -1,6 +1,6 @@
 local item = {}
 
-item.name = "Vial of Poison recipe"
+item.name = "Vial of Poison Recipe"
 item.description = "The recipe for a Vial of Poison. Useable by Alchemists of level 2 or higher."
 item.kind = world.ItemKind.RECIPE
 item.price = 40
