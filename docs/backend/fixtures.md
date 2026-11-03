@@ -3,7 +3,7 @@
 Fixtures are scripted objects in a room, such as a tree, a lever or a door, that players can look at and interact with. There are two halves to a fixture:
 
 - **FixtureData** (`backend/world/fixture.go`) is the definition, such as "Lever". It's loaded from a Lua script in `backend/data/fixtures/`, and `FIXTURE_DATA` is indexed by `FixtureId`.
-- **Fixture** is one fixture placed in a room (`Room.Fixtures`). It's saved in `world.json` by its script's name along with the values of its behavior params, and edited in the world editor.
+- **Fixture** is one fixture placed in a room (`Room.Fixtures`). It's saved in `world.json` by its script's name along with the values of its behavior params, and edited in the [world editor](../editor.md).
 
 Players list a room's fixtures with `look`, read one's description with `look <fixture>` and use one with `<verb> <fixture>` (`backend/game/menu_world.go`).
 

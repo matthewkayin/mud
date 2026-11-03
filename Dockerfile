@@ -1,4 +1,5 @@
-# Builds the game server and web client into one image. The editor is not included.
+# Builds the game server and web client into one image. The editor is part of the web client and the server,
+# but it's only enabled when the server runs with --edit, which the image's CMD doesn't pass.
 
 # Build the web client. It's written to /build/backend/web/dist (see frontend/vite.config.ts).
 FROM node:24-bookworm-slim AS frontend
@@ -8,10 +9,9 @@ RUN npm ci
 COPY frontend/ ./
 RUN npm run build
 
-# Build the game server. go.work references the editor, which isn't copied, so it's turned off.
+# Build the game server
 FROM golang:1.26-bookworm AS backend
 WORKDIR /build/backend
-ENV GOWORK=off
 COPY backend/go.mod backend/go.sum ./
 RUN go mod download
 COPY backend/ ./

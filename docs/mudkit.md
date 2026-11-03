@@ -28,8 +28,8 @@ As an author, I want to be able to edit the world using the provided editor. I d
 need to edit Lua files manually. I expect to manually use version control and handle merge conflicts between my changes and those of my collaborators. 
 
 Requirements:
-- **The editor is in the server binary.** It's enabled with `ENABLE_EDITOR=true`, served at `/editor`, and only available to gods. The plan is in [mudkit_editor_migration.md](mudkit_editor_migration.md).
-- **Reload.** Saving in the editor reloads the world, and `/reload` reloads it after hand edits. See the reload decision below.
+- **The editor is in the server binary.** It's enabled with the `--edit` flag, served at `/editor`, and only available to gods. The plan is in [mudkit_editor_migration.md](mudkit_editor_migration.md).
+- **Reload.** The editor's Reload button reloads the world from the saved files, and `/reload` reloads it after hand edits. See the reload decision below.
 
 ### Story: Username and password accounts
 As a player, I can create an account from the web client with a username and password, and log in with it. Usernames are unique. Passwords are stored only as hashes. There's no OAuth and no email verification.

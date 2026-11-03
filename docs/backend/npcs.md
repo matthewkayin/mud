@@ -148,4 +148,4 @@ A unique NPC must have a value for every declared param, and it can't have param
 - `MovementTypeOverride` is `""` to use the script's `movement_type`, or a movement type name such as `"Wander"`.
 - `DropTableOverride` replaces the script's `drop_table` if it has any entries.
 
-In the world editor, the NPCs section of a room's sidebar edits all of these fields. The editor builds the behavior param inputs from the schema that `GET /api/npcs` returns.
+In the [world editor](../editor.md), the NPCs section of a room's sidebar edits all of these fields. The editor builds the behavior param inputs from the schema that `GET /api/editor/npcs` returns.

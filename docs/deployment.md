@@ -1,6 +1,6 @@
 # Deployment
 
-The game (the `backend/` server and the `frontend/` web client) deploys to a [Disco](https://disco.cloud/docs/) server. The editor isn't deployed.
+The game (the `backend/` server and the `frontend/` web client) deploys to a [Disco](https://disco.cloud/docs/) server. The [world editor](editor.md) is part of the same binary and client, but it's only enabled when the server runs with `--edit`. A deployed server must never run with `--edit`, since the editor writes to the files in the data folder. To load new content into a running server without a restart, a God can run `/reload`.
 
 ## How it's built
 
@@ -9,7 +9,7 @@ Disco builds the `Dockerfile` at the repo root and runs it as the `web` service 
 The `Dockerfile` has three stages:
 
 1. Builds the web client (`npm run build` in `frontend/`), which writes it to `backend/web/dist`.
-2. Builds the game server with `-tags embed`, which embeds the built client in the binary, and with `GOWORK=off`, since `go.work` references `editor/` and the editor isn't copied into the image.
+2. Builds the game server with `-tags embed`, which embeds the built client in the binary.
 3. Copies the server binary, `backend/data/` and `backend/banner.txt` into `/app`.
 
 The server runs with `/app` as its working directory, so its relative paths (`./data`, `./saves`, `./logs`, `./banner.txt`) resolve there. The server serves the embedded web client as well as `/api`. Any path that isn't a file gets `index.html`, so client-side routes like `/game` work. The client and the API share one origin, so the session cookie and the websocket need no CORS setup.
