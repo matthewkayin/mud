@@ -28,8 +28,6 @@ func (apiState *ApiState) RegisterEditorRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/editor/items", apiState.requireGod(withScriptDataReadLock(handleEditorGetItems)))
 	mux.HandleFunc("GET /api/editor/npcs", apiState.requireGod(withScriptDataReadLock(handleEditorGetNpcs)))
 	mux.HandleFunc("GET /api/editor/fixtures", apiState.requireGod(withScriptDataReadLock(handleEditorGetFixtures)))
-	mux.HandleFunc("GET /api/editor/world", apiState.requireGod(withScriptDataReadLock(handleEditorGetWorld)))
-	mux.HandleFunc("PUT /api/editor/world", apiState.requireGod(withScriptDataReadLock(handleEditorPutWorld)))
 	mux.HandleFunc("POST /api/editor/reload", apiState.requireGod(apiState.handleEditorReload))
 }
 
@@ -81,48 +79,6 @@ func handleEditorGetNpcs(writer http.ResponseWriter, request *http.Request) {
 
 func handleEditorGetFixtures(writer http.ResponseWriter, request *http.Request) {
 	writeJson(writer, world.FIXTURE_DATA)
-}
-
-// Reads the world file and sends it in the editor's format
-func handleEditorGetWorld(writer http.ResponseWriter, request *http.Request) {
-	data, err := os.ReadFile(world.WORLD_JSON_PATH)
-	if err != nil {
-		writeError(writer, err)
-		return
-	}
-
-	editorWorld, err := decodeWorld(data)
-	if err != nil {
-		writeError(writer, err)
-		return
-	}
-
-	writeJson(writer, editorWorld)
-}
-
-// Converts the editor's world into the world file format and saves it
-func handleEditorPutWorld(writer http.ResponseWriter, request *http.Request) {
-	var editorWorld EditorWorld
-	err := json.NewDecoder(request.Body).Decode(&editorWorld)
-	if err != nil {
-		writeError(writer, fmt.Errorf("Error reading editor world JSON: %w", err))
-		return
-	}
-
-	// Encode first so that an invalid world never touches the file
-	data, err := encodeWorld(editorWorld)
-	if err != nil {
-		writeError(writer, err)
-		return
-	}
-
-	err = writeFileAtomic(world.WORLD_JSON_PATH, data)
-	if err != nil {
-		writeError(writer, fmt.Errorf("Error saving world file: %w", err))
-		return
-	}
-
-	writer.WriteHeader(http.StatusNoContent)
 }
 
 // Asks the game loop to reload the world from the data folder and waits for the result.

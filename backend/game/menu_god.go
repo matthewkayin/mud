@@ -160,7 +160,7 @@ var MENU_GOD = MenuCreate(MenuCreateParams {
 
 				// Get the player mob and room
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-				playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
+				playerRoom := gamestate.world.Rooms[playerMob.Data.Room]
 
 				if roomIndex == playerMob.Data.Room {
 					player.send(fmt.Sprintf("You are already in %s.", playerRoom.Name))
@@ -174,7 +174,7 @@ var MENU_GOD = MenuCreate(MenuCreateParams {
 				// Stop talking to current NPC
 				player.isTalking = false
 
-				playerRoom = &gamestate.world.Rooms[roomIndex]
+				playerRoom = gamestate.world.Rooms[roomIndex]
 				player.send(fmt.Sprintf("You teleported to %s.", playerRoom.Name))
 				describeRoomToPlayer(gamestate, player, playerRoom)
 				return true

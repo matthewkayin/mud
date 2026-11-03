@@ -22,7 +22,7 @@ func minimapTestConnect(world *World, roomIndex int, direction Direction, otherR
 // Corner sits next to East and South but has no exits.
 func minimapTestWorld() *World {
 	world := &World {
-		Rooms: []Room {
+		Rooms: []*Room {
 			validateTestRoom("Center", 0, 0),
 			validateTestRoom("North", 0, -1),
 			validateTestRoom("East", 1, 0),

@@ -437,8 +437,8 @@ func (room *Room) hasPlayerOccupants(world *World) bool {
 	return false
 }
 
-// Maps each room's position to its index. Positions are how saves and the editor identify rooms, since indices
-// are only stable within one load. Validate guarantees that positions are unique.
+// Maps each room's position to its index, for worlds whose rooms are built in code, such as in tests.
+// loadRooms builds the map itself for loaded worlds. Positions must be unique.
 func (world *World) initRoomPositionLookup() {
 	world.roomIndexAtPosition = make(map[RoomPosition]int, len(world.Rooms))
 	for roomIndex, room := range world.Rooms {

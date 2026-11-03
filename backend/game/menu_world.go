@@ -27,7 +27,7 @@ var MENU_WORLD = MenuCreate(MenuCreateParams {
 
 		// Enter world menu
 		player.send(fmt.Sprintf("You have logged in. Welcome, <y>%s</y>.", player.character.Data.Name))
-		room := &gamestate.world.Rooms[player.character.Data.Room]
+		room := gamestate.world.Rooms[player.character.Data.Room]
 		describeRoomToPlayer(gamestate, player, room)
 	},
 	onExit: func(gamestate *GameState, player *Player) {
@@ -38,7 +38,7 @@ var MENU_WORLD = MenuCreate(MenuCreateParams {
 		playerMob, mobExists := gamestate.world.Mobs.GetIfExists(player.mobHandle)
 		if mobExists {
 			// Remove player from current room
-			playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
+			playerRoom := gamestate.world.Rooms[playerMob.Data.Room]
 			playerRoom.RemoveOccupant(player.mobHandle)
 			gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("<y>%s</y> has left the world.", playerMob.Data.Name))
 
@@ -124,7 +124,7 @@ func spawnPlayerMob(gamestate *GameState, player *Player) {
 
 	playerMob := world.MobInitFromCharacter(player.character)
 	player.mobHandle = gamestate.world.Mobs.Push(playerMob)
-	playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
+	playerRoom := gamestate.world.Rooms[playerMob.Data.Room]
 	playerRoom.AddOccupant(gamestate.world, player.mobHandle)
 	player.isMinimapDirty = true
 }

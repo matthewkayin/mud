@@ -98,7 +98,7 @@ var MENU_WORLD_ENTRIES_TALK = map[string]MenuEntry {
 
 			// Get a handle to the player room
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-			playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
+			playerRoom := gamestate.world.Rooms[playerMob.Data.Room]
 
 			// Collect a list containing all rooms to broadcast to
 			rooms := make([]int, 0, 5)

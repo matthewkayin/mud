@@ -108,6 +108,19 @@ func ScriptConstantTables() []ScriptConstantTable {
 		})
 	}
 
+	// Lock type
+	lockTypeTable := ScriptConstantTable {
+		Name: "LockType",
+		Constants: make([]ScriptConstant, 0, LOCK_TYPE_COUNT),
+	}
+	for index := range LOCK_TYPE_COUNT {
+		lockType := LockType(index)
+		lockTypeTable.Constants = append(lockTypeTable.Constants, ScriptConstant {
+			Name: strings.ToUpper(lockType.String()),
+			Value: lua.String(lockType.String()),
+		})
+	}
+
 	// Stat
 	statTable := ScriptConstantTable {
 		Name: "Stat",
@@ -179,6 +192,7 @@ func ScriptConstantTables() []ScriptConstantTable {
 		npcMovementTypeTable,
 		npcBehaviorParamTypeTable,
 		directionTable,
+		lockTypeTable,
 		statTable,
 		equipmentSlotTable,
 		conditionEffectTypeTable,

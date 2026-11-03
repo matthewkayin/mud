@@ -18,7 +18,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 
 			// Get the player mob and room
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-			playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
+			playerRoom := gamestate.world.Rooms[playerMob.Data.Room]
 
 			// Determine the index of the target room
 			direction, directionFound := world.EnumFromString[world.Direction](args[0], world.DIRECTION_COUNT)
@@ -67,7 +67,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 			player.isMinimapDirty = true
 
 			// Narrate movement
-			playerRoom = &gamestate.world.Rooms[playerMob.Data.Room]
+			playerRoom = gamestate.world.Rooms[playerMob.Data.Room]
 			if playerMob.CheckFlag(world.MOB_FLAG_HIDDEN) {
 				player.send(fmt.Sprintf("You snuck into %s.", playerRoom.Name))
 			} else if wasHidden {
@@ -452,7 +452,7 @@ var MENU_WORLD_ENTRIES_ACTIONS = map[string]MenuEntry {
 			}
 
 			// Check that there is an exit
-			playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
+			playerRoom := gamestate.world.Rooms[playerMob.Data.Room]
 			if playerRoom.Exits[direction] == world.ROOM_NONE {
 				player.send("There is no exit in that direction.")
 				return true

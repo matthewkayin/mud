@@ -11,7 +11,7 @@ The minimap uses each room's `Position` (see [Position](backend/rooms.md#positio
 
 So the backend can find the rooms around the player by position, without walking exits. North is `Y - 1` and east is `X + 1`, the same as `directionStepFrom`.
 
-The minimap looks up the rooms around the player in `world.roomIndexAtPosition`, the position-to-index map that `World.initRoomPositionLookup()` (`backend/world/room.go`) builds when the world loads, so building a minimap doesn't scan every room.
+The minimap looks up the rooms around the player in `world.roomIndexAtPosition`, the position-to-index map that `loadRooms` (`backend/world/room_parse.go`) builds when the world loads, so building a minimap doesn't scan every room.
 
 ## Wire format
 

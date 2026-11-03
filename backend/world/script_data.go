@@ -13,6 +13,8 @@ import (
 type scriptDataSnapshot struct {
 	world *World
 
+	rooms []*Room
+	roomIndexAtPosition map[RoomPosition]int
 	questNames []string
 	questNameToId map[string]QuestId
 	raceData []*RaceData

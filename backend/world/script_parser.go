@@ -321,6 +321,22 @@ func (parser *ScriptParser) getTargetType(table *lua.Table, key string) TargetTy
 	return targetType
 }
 
+// Parses a direction string such as world.Direction.NORTH. The key names the value in problems.
+func (parser *ScriptParser) getDirection(value lua.Value, key string) (Direction, bool) {
+	directionString, ok := value.AsString()
+	if !ok {
+		parser.addProblem(fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, lua.StringKind, value.Kind().String()))
+		return 0, false
+	}
+
+	direction, ok := EnumFromString(directionString, Direction(DIRECTION_COUNT))
+	if !ok {
+		parser.addProblem(fmt.Errorf("field '%s' value '%s' is not a valid direction", key, directionString))
+		return 0, false
+	}
+
+	return direction, true
+}
 
 // Parses a table of the form { item = "<item name>", amount = N }
 func (parser *ScriptParser) parseItem(table *lua.Table, key string) (ItemId, int32) {

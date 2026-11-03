@@ -55,7 +55,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 		groups: []string { "items" },
 		handler: func(gamestate *GameState, player *Player, args []string) bool {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-			playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
+			playerRoom := gamestate.world.Rooms[playerMob.Data.Room]
 
 			result, err := inventoryTransfer(InventoryTransferParams {
 				from: InventoryTransferLocation {
@@ -90,7 +90,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 		groups: []string { "items" },
 		handler: func(gamestate *GameState, player *Player, args []string) bool {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-			room := &gamestate.world.Rooms[playerMob.Data.Room]
+			room := gamestate.world.Rooms[playerMob.Data.Room]
 
 			// Split args
 			itemWords, chestWords, userSpecifiedInto := splitArgsBy(args, "into")
@@ -212,7 +212,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 
 			// Get pointer to room
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-			playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
+			playerRoom := gamestate.world.Rooms[playerMob.Data.Room]
 
 			// Determine target inventory
 			targetInventory := &playerRoom.Inventory
@@ -261,7 +261,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			// Get pointer to room
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-			playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
+			playerRoom := gamestate.world.Rooms[playerMob.Data.Room]
 
 			targetInventory, chestName, err := fuzzyFindChestInventory(playerRoom, args)
 			if err != nil {

@@ -17,7 +17,6 @@ import (
 	"mud/api"
 	"mud/game"
 	"mud/web"
-	"mud/world"
 	"strings"
 )
 
@@ -74,7 +73,7 @@ func main() {
 	}
 	mux.HandleFunc("/api/websocket", apiState.HandleGetWebSocket)
 	if *editorEnabled {
-		log.Printf("Editor enabled, editing %s", world.WORLD_JSON_PATH)
+		log.Printf("Editor enabled.")
 		apiState.RegisterEditorRoutes(mux)
 	}
 	// Unknown API paths (e.g. the editor's routes without --edit) shouldn't fall through to the frontend's index.html

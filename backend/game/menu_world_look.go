@@ -16,7 +16,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 		groups: []string { "exploration" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-			room := &gamestate.world.Rooms[playerMob.Data.Room]
+			room := gamestate.world.Rooms[playerMob.Data.Room]
 			player.send(fmt.Sprintf("You are in %s.", room.Name))
 			describeRoomToPlayer(gamestate, player, room)
 			return true
@@ -29,7 +29,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 		groups: []string { "exploration" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-			room := &gamestate.world.Rooms[playerMob.Data.Room]
+			room := gamestate.world.Rooms[playerMob.Data.Room]
 
 			// Exits
 			exitFound := false
@@ -62,7 +62,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 		groups: []string { "exploration", "items" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-			room := &gamestate.world.Rooms[playerMob.Data.Room]
+			room := gamestate.world.Rooms[playerMob.Data.Room]
 
 			targetInventory := &room.Inventory
 
@@ -105,7 +105,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 
 			// Get mob and room handle
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-			playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
+			playerRoom := gamestate.world.Rooms[playerMob.Data.Room]
 
 			// Check for 'in' keyword
 			targetWords, containerWords, userSpecifiedIn := splitArgsBy(args, "in")
@@ -303,7 +303,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				targets = append(targets, player.mobHandle)
 			} else if len(args) == 1 && strings.EqualFold(args[0], "friends") {
 				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-				playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
+				playerRoom := gamestate.world.Rooms[playerMob.Data.Room]
 				for _, occupantHandle := range playerRoom.Occupants {
 					occupantMob := gamestate.world.Mobs.Get(occupantHandle)
 

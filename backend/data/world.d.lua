@@ -90,6 +90,12 @@ world.Direction = {
 	DOWN = "down",
 }
 
+---@enum LockType
+world.LockType = {
+	PHYSICAL = "physical",
+	MAGICAL = "magical",
+}
+
 ---@enum Stat
 world.Stat = {
 	VIT = "VIT",

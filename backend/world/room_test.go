@@ -7,7 +7,7 @@ import (
 // Two rooms connected east-west, with a lock on the west room's east exit only
 func roomTestWorld() *World {
 	world := &World {
-		Rooms: []Room {
+		Rooms: []*Room {
 			validateTestRoom("West", 0, 0),
 			validateTestRoom("East", 1, 0),
 		},

@@ -136,11 +136,11 @@ class.unlocks = {
 return class
 ```
 
-Character saves (`saves/<Name>.json`, `CharacterJson` in `character.go`) store race, class, job, spell, recipe and completed quest names instead of IDs, and store the character's room and discovered rooms as room positions (see [Position](rooms.md#position)). World files (`data/world.json`) store item names in drop tables (`DropTableEntry` in `drop_table.go`) and inventories (`Item` in `item.go`), and NPC keys in unique NPCs (`Npc` in `npc.go`). Both kinds of file store mob conditions by name (`Condition` in `mob_condition.go`). If a save names something that no longer exists, decoding returns an error and the world fails to load. Rooms are the exception: a character whose room no longer exists is moved to the start room, and discovered rooms that no longer exist are dropped.
+Character saves (`saves/<Name>.json`, `CharacterJson` in `character.go`) store race, class, job, spell, recipe and completed quest names instead of IDs, and store the character's room and discovered rooms as room positions (see [Position](rooms.md#position)). Saves store mob conditions by name (`Condition` in `mob_condition.go`). If a save names something that no longer exists, decoding returns an error and the world fails to load. Rooms are the exception: a character whose room no longer exists is moved to the start room, and discovered rooms that no longer exist are dropped.
 
 ### Loading and reloading
 
-`WorldLoad` (`backend/world/world.go`) builds a world from the data folder: it loads the script data, decodes and validates `world.json`, and loads every character save. It returns the problems it found instead of exiting. At startup, any problem stops the server. A god can also run `/reload` in the game (`backend/game/reload.go`), and the editor has a Reload button, to load the current files into the running server without a restart. A reload that finds problems is refused, and the world that was running keeps going.
+`WorldLoad` (`backend/world/world.go`) builds a world from the data folder: it loads the script data (including the [room scripts](rooms.md#room-scripts)), validates the rooms, and loads every character save. It returns the problems it found instead of exiting. At startup, any problem stops the server. A god can also run `/reload` in the game (`backend/game/reload.go`), and the editor has a Reload button, to load the current files into the running server without a restart. A reload that finds problems is refused, and the world that was running keeps going.
 
 A loader returns an `error` naming the file that failed (`"<path>: <problem>"`) rather than calling `log.Fatalf`, and it doesn't log anything when a file loads fine.
 

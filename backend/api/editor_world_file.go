@@ -74,11 +74,12 @@ func editorWorldToWorld(editorWorld EditorWorld) (*world.World, []string) {
 
 	problems := []string{}
 	result := &world.World {
-		Rooms: make([]world.Room, 0, len(editorRooms)),
+		Rooms: make([]*world.Room, 0, len(editorRooms)),
 		Npcs: []world.Npc{},
 	}
 	for roomIndex, editorRoom := range editorRooms {
-		room := editorRoom.Room
+		room := &world.Room{}
+		*room = editorRoom.Room
 		room.Position = editorRoom.Position
 
 		isConnected := [world.DIRECTION_COUNT]bool{}
@@ -133,7 +134,7 @@ func worldToEditorWorld(loadedWorld *world.World) (EditorWorld, []string) {
 	for _, room := range loadedWorld.Rooms {
 		editorRoom := EditorWorldRoom {
 			Position: room.Position,
-			Room: room,
+			Room: *room,
 			Npcs: []world.Npc{},
 			Connections: []world.RoomPosition{},
 		}

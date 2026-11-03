@@ -4,18 +4,18 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"encoding/json"
 	"github.com/mmcdole/lunar"
 )
 
 const WORLD_DATA_FOLDER = "./data"
 const WORLD_CHARACTER_SAVES_FOLDER = "./saves"
-const WORLD_JSON_PATH = WORLD_DATA_FOLDER + "/world.json"
 
 const WORLD_SECONDS_PER_UPDATE = 3
 const WORLD_MAX_ROOMS int = 1024
 // New characters spawn in the start room, and so do characters whose saved room no longer exists
 const WORLD_START_ROOM int = 0
+// loadRooms always puts the room at this position at index WORLD_START_ROOM
+var WORLD_START_ROOM_POSITION = RoomPosition { X: 0, Y: 0, Z: 0 }
 const WORLD_REPLENISH_INTERVAL uint32 = (1 * 60) / WORLD_SECONDS_PER_UPDATE
 const CHEST_REPLENISH_INTERVAL uint32 = (4 * 60) / WORLD_SECONDS_PER_UPDATE
 
@@ -84,30 +84,17 @@ func loadWorld() (*World, []string) {
 		return world, []string { fmt.Sprintf("Failed to create saves folder: %s", err.Error()) }
 	}
 
-	// Load script data. This must happen before decoding, since saved data references it by name
+	// Load script data, including the rooms. Character saves reference it by name, so it must load before them
 	err = world.LoadData(WORLD_DATA_FOLDER)
 	if err != nil {
 		return world, []string { err.Error() }
 	}
 
-	// Decode JSON into world object
-	data, err := os.ReadFile(WORLD_JSON_PATH)
-	if err != nil {
-		return world, []string { fmt.Sprintf("Error opening world JSON: %s", err.Error()) }
-	}
-	err = json.Unmarshal(data, world)
-	if err != nil {
-		return world, []string { fmt.Sprintf("Error reading world JSON: %s", err.Error()) }
-	}
-
-	// Validate world JSON
+	// Validate rooms
 	problems := world.Validate()
 	if len(problems) != 0 {
 		return world, problems
 	}
-
-	// Validate guarantees that room positions are unique. Character saves reference rooms by position, so this must happen before loading them
-	world.initRoomPositionLookup()
 
 	// Load character saves, which also checks that they only reference content that exists
 	problems = world.loadCharacters()
@@ -129,7 +116,7 @@ func loadWorld() (*World, []string) {
 }
 
 // Loads the script data from the data folder into the script data globals and this world's lua state.
-// loadWorld uses this before loading the world JSON, and the editor's tests use it to read and validate world files.
+// loadWorld uses this before loading character saves, and the editor's tests use it to read and validate world files.
 func (world *World) LoadData(dataFolder string) error {
 	err := world.scriptInit(dataFolder)
 	if err != nil {
@@ -139,6 +126,7 @@ func (world *World) LoadData(dataFolder string) error {
 	// Loaders run in order, since later data references earlier data by name.
 	// Recipes are read in two passes so that items can reference recipes and recipes can reference items.
 	// Classes load after items because they have starting items.
+	// Rooms load last because they reference items and fixtures.
 	var recipeScripts []recipeScript
 	loaders := []func() error {
 		world.loadQuestData,
@@ -158,6 +146,7 @@ func (world *World) LoadData(dataFolder string) error {
 		world.loadClassData,
 		world.loadNpcData,
 		world.loadFixtureData,
+		world.loadRooms,
 	}
 	for _, loader := range loaders {
 		err = loader()

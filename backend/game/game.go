@@ -306,7 +306,7 @@ func (gamestate *GameState) broadcast(message string) {
 }
 
 func (gamestate *GameState) messageRoom(roomIndex int, message string) {
-	room := &gamestate.world.Rooms[roomIndex]
+	room := gamestate.world.Rooms[roomIndex]
 
 	for _, mobHandle := range room.Occupants {
 		mob := gamestate.world.Mobs.Get(mobHandle)

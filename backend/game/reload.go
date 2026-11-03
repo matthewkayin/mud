@@ -79,5 +79,5 @@ func (gamestate *GameState) respawnPlayerAfterReload(player *Player) {
 	player.character = character
 
 	spawnPlayerMob(gamestate, player)
-	describeRoomToPlayer(gamestate, player, &gamestate.world.Rooms[character.Data.Room])
+	describeRoomToPlayer(gamestate, player, gamestate.world.Rooms[character.Data.Room])
 }

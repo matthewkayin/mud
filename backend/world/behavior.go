@@ -234,3 +234,100 @@ func behaviorParamsToLua(world *World, paramValues map[string]any, paramTypes ma
 
 	return world.luaState.NewTableFrom(paramLuaValues)
 }
+
+// Parses a table of behavior param values, keyed by param name. Every name must be declared in paramTypes.
+func (parser *ScriptParser) getBehaviorParamValues(table *lua.Table, key string, paramTypes map[string]BehaviorParamType) map[string]any {
+	paramValues := map[string]any{}
+
+	valuesTable := parser.getTable(table, key)
+	if valuesTable == nil {
+		return paramValues
+	}
+
+	paramKey := lua.Nil()
+	for {
+		var value lua.Value
+		var ok bool
+		var err error
+		paramKey, value, ok, err = valuesTable.Next(paramKey)
+		if err != nil {
+			parser.addProblem(fmt.Errorf("error reading '%s': %w", key, err))
+			break
+		}
+		if !ok {
+			break
+		}
+
+		name, isString := paramKey.AsString()
+		if !isString {
+			parser.addProblem(fmt.Errorf("invalid key type in '%s'. expected %s, got %s", key, lua.StringKind, paramKey.Kind().String()))
+			continue
+		}
+
+		paramType, isDeclared := paramTypes[name]
+		if !isDeclared {
+			parser.addProblem(fmt.Errorf("no behavior param named '%s'", name))
+			continue
+		}
+
+		paramValue, ok := parser.behaviorParamFromLua(paramType, value, fmt.Sprintf("%s.%s", key, name))
+		if !ok {
+			continue
+		}
+
+		paramValues[name] = paramValue
+	}
+
+	return paramValues
+}
+
+// Converts a lua value into the Go type that behaviorParamHasType expects for the param type
+func (parser *ScriptParser) behaviorParamFromLua(paramType BehaviorParamType, value lua.Value, key string) (any, bool) {
+	switch paramType {
+		case BEHAVIOR_PARAM_TYPE_STRING: {
+			result, ok := value.AsString()
+			if !ok {
+				parser.addProblem(fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, lua.StringKind, value.Kind().String()))
+			}
+			return result, ok
+		}
+		case BEHAVIOR_PARAM_TYPE_NUMBER: {
+			result, ok := value.AsNumber()
+			if !ok {
+				parser.addProblem(fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, lua.NumberKind, value.Kind().String()))
+			}
+			return result, ok
+		}
+		case BEHAVIOR_PARAM_TYPE_BOOLEAN: {
+			result, ok := value.AsBool()
+			if !ok {
+				parser.addProblem(fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, lua.BoolKind, value.Kind().String()))
+			}
+			return result, ok
+		}
+		case BEHAVIOR_PARAM_TYPE_ITEM: {
+			itemTable, ok := value.AsTable()
+			if !ok {
+				parser.addProblem(fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, lua.TableKind, value.Kind().String()))
+				return nil, false
+			}
+
+			problemCount := len(parser.problems)
+			itemId, amount := parser.parseItem(itemTable, key)
+			if len(parser.problems) != problemCount {
+				return nil, false
+			}
+
+			return Item {
+				Id: itemId,
+				Amount: amount,
+				Durability: ITEM_DATA[itemId].GetMaxDurability(),
+			}, true
+		}
+		case BEHAVIOR_PARAM_TYPE_DIRECTION:
+			return parser.getDirection(value, key)
+		default:
+			parser.addProblem(fmt.Errorf("unhandled behavior param type %d for '%s'", paramType, key))
+			return nil, false
+	}
+}

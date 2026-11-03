@@ -1,6 +1,36 @@
 # Rooms
 
-Rooms (`backend/world/room.go`) are saved in `data/world.json` and edited in the [world editor](../editor.md). A room has a name, description, notes, safe zone flag, exits, locks, a drop table that fills its floor inventory, chests, and fixtures. Fixtures (`Room.Fixtures`) are scripted objects that players can look at and interact with. Their scripts are in `backend/data/fixtures/`, and each fixture in a room is saved by its script's name along with the values of its behavior params. Fixture scripts, their instances and signals are described in [fixtures.md](fixtures.md). `Room.Notes` is for content developers to record the intent behind a part of the world. It's saved in `world.json` and edited in the world editor, but the game never reads or shows it. Mobs in the room are listed in `Room.Occupants` by `MobHandle`. Occupants are transient, so they aren't saved.
+Rooms (`backend/world/room.go`) are Lua scripts in `backend/data/rooms/` (see [Room scripts](#room-scripts)). A room has a name, description, notes, safe zone flag, exits, locks, a drop table that fills its floor inventory, chests, and fixtures. Fixtures (`Room.Fixtures`) are scripted objects that players can look at and interact with. Their scripts are in `backend/data/fixtures/`, and each fixture in a room is saved by its script's name along with the values of its behavior params. Fixture scripts, their instances and signals are described in [fixtures.md](fixtures.md). `Room.Notes` is for content developers to record the intent behind a part of the world. The game never reads or shows it. Mobs in the room are listed in `Room.Occupants` by `MobHandle`. Occupants are transient, so they aren't saved.
+
+## Room scripts
+
+`World.LoadData` loads the room scripts last (`loadRooms` in `room_parse.go`), since rooms reference items and fixtures by name. Each script returns a table, and every field is required:
+
+```lua
+local room = {}
+
+room.name = "Presentation Space"
+room.description = "You are in a wide-open room with chairs stacked against the columns."
+room.notes = ""
+
+room.position = { x = 0, y = 0, z = 0 }
+room.is_safe_zone = true
+room.exits = { world.Direction.WEST, world.Direction.UP }
+
+room.locks = { { direction = world.Direction.WEST, type = world.LockType.PHYSICAL } }
+-- Same format as an NPC's drop table
+room.drop_table = { { item = "Gold", amount = { min = 1, max = 5 }, durability_percent = 100, drop_chance_percent = 50 } }
+room.chests = { { name = "Strongbox", drop_table = {} } }
+room.fixtures = { { fixture = "Lever", behavior_params = { Signal = "fort_greene_lever_a" } } }
+
+return room
+```
+
+- `exits` lists the directions the room has exits in. Room indices depend on load order, so a script can't name the room an exit leads to. `parseRoom` returns the directions, and once every room is loaded, `loadRooms` connects each one to the room one grid step away in that direction. It's an error if no room is there.
+- `fixtures` names each fixture by its script's `name`. `behavior_params` holds a value for each param that the fixture script declares. An `Item` param is written as `{ item = "<name>", amount = N }` and gets the item's full durability.
+- Chests in a room script are always `CHEST_TYPE_CHEST`. Corpses are only created at runtime.
+
+Room scripts don't place NPCs yet, so `World.Npcs` is empty.
 
 ## Position
 
@@ -8,7 +38,8 @@ Rooms (`backend/world/room.go`) are saved in `data/world.json` and edited in the
 
 A room's position is its identity. Its index in `World.Rooms` is only stable within one load, so anything that is saved, or that must survive a reload, references the room by position:
 
-- `World.initRoomPositionLookup()` (`room.go`) builds `world.roomIndexAtPosition`, the map from position to index. `WorldLoad` builds it right after validating the world, before it loads character saves.
+- `loadRooms` builds `world.roomIndexAtPosition`, the map from position to index, and reports two rooms with the same position. Worlds built in code, such as in tests, build it with `World.initRoomPositionLookup()` (`room.go`).
+- The start room is always the room at `WORLD_START_ROOM_POSITION` (0, 0, 0). `loadRooms` reports an error if there's no room there, and moves it to index `WORLD_START_ROOM` (0), so code that spawns characters can use the index.
 - Character saves store the character's room (`MobDataJson.Room`) and discovered rooms (`CharacterJson.RoomsDiscovered`) as positions. `world.characterToJson` and `world.characterFromJson` (`character.go`) convert between positions and indices, and `world.SaveCharacter` and `world.loadCharacter` (`world_save.go`) use them.
 - A character whose saved room no longer exists loads in the start room (`WORLD_START_ROOM`, index 0), with a warning in the log. Discovered rooms that no longer exist are dropped. Neither stops the world from loading.
 - `/reload` saves every player, loads the new world and loads the players from their saves, so each player comes back in the room at the same position, even if rooms were added and indices shifted.

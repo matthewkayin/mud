@@ -488,7 +488,7 @@ func (trader *Trader) cancelTrade(gamestate *GameState) {
 	}
 
 	playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-	playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
+	playerRoom := gamestate.world.Rooms[playerMob.Data.Room]
 	droppedItemNames := make([]string, 0, 1)
 	droppedItemAmount := int32(0)
 	for _, item := range trader.offer.Items {
