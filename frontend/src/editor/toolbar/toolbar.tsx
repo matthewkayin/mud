@@ -14,6 +14,7 @@ import {
   Button,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
@@ -46,17 +47,19 @@ export function Toolbar() {
       editorStore.markSaved(savePoint);
     } catch (error) {
       setErrorDialog({ title: 'Could not save world', message: String(error) });
-      return;
     }
+  }, []);
 
-    // Reload so the running game picks up the change
+  // Reloads the running game from the saved files, so unsaved changes aren't included
+  const reloadWorld = useCallback(async () => {
     try {
       await ReloadWorld();
     } catch (error) {
-      setErrorDialog({ title: 'Saved, but could not reload world', message: String(error) });
+      setErrorDialog({ title: 'Could not reload world', message: String(error) });
       return;
     }
 
+    // A reload can change the item, NPC and fixture scripts
     try {
       await loadScriptData();
     } catch (error) {
@@ -98,6 +101,13 @@ export function Toolbar() {
     >
       <IconButton title="Save (Ctrl+S)" aria-label="Save" onClick={saveWorld}>
         <SaveIcon/>
+      </IconButton>
+      <IconButton
+        title="Reload the game from the saved files"
+        aria-label="Reload the game from the saved files"
+        onClick={reloadWorld}
+      >
+        <RefreshIcon/>
       </IconButton>
 
       <Divider orientation='vertical' flexItem />

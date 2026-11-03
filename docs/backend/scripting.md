@@ -140,7 +140,7 @@ Character saves (`saves/<Name>.json`, `CharacterJson` in `character.go`) store r
 
 ### Loading and reloading
 
-`WorldLoad` (`backend/world/world.go`) builds a world from the data folder: it loads the script data, decodes and validates `world.json`, and loads every character save. It returns the problems it found instead of exiting. At startup, any problem stops the server. A god can also run `/reload` in the game (`backend/game/reload.go`), and the editor reloads after each save, to load the current files into the running server without a restart. A reload that finds problems is refused, and the world that was running keeps going.
+`WorldLoad` (`backend/world/world.go`) builds a world from the data folder: it loads the script data, decodes and validates `world.json`, and loads every character save. It returns the problems it found instead of exiting. At startup, any problem stops the server. A god can also run `/reload` in the game (`backend/game/reload.go`), and the editor has a Reload button, to load the current files into the running server without a restart. A reload that finds problems is refused, and the world that was running keeps going.
 
 A loader returns an `error` naming the file that failed (`"<path>: <problem>"`) rather than calling `log.Fatalf`, and it doesn't log anything when a file loads fine.
 
