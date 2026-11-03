@@ -103,7 +103,7 @@ func TestNpcRespawnsAfterRespawnDuration(t *testing.T) {
 		LevelRange: Int32Range{ Min: 1, Max: 1 },
 		MovementTypeOverride: NPC_MOVEMENT_TYPE_STATIONARY,
 	}
-	spawnRoom := &world.Rooms[npc.SpawnRoom]
+	spawnRoom := world.Rooms[npc.SpawnRoom]
 
 	// A player in the spawn room doesn't prevent the respawn
 	playerMob := MobInit(&MobData { Name: "Bufo", Room: npc.SpawnRoom, Equipment: EquipmentInitEmpty() })

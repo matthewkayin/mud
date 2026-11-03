@@ -715,7 +715,7 @@ func (mob *Mob) RollForStealth(world *World) bool {
 	var enemyAlertness float32 = 0.0
 
 	// Determine the highest intelligence of all hostile mobs in the room
-	room := &world.Rooms[mob.Data.Room]
+	room := world.Rooms[mob.Data.Room]
 	for _, handle := range room.Occupants {
 		occupant := world.Mobs.Get(handle)
 		if !occupant.IsNpc() || occupant.Npc.disposition != NPC_DISPOSITION_HOSTILE {

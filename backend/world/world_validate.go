@@ -19,7 +19,7 @@ func (world *World) Validate() []string {
 
 	roomIndexAtPosition := map[RoomPosition]int{}
 	for roomIndex := range world.Rooms {
-		room := &world.Rooms[roomIndex]
+		room := world.Rooms[roomIndex]
 		roomName := fmt.Sprintf("Room %d (%s)", roomIndex, room.Name)
 
 		if room.Name == "" {
@@ -44,7 +44,7 @@ func (world *World) Validate() []string {
 				continue
 			}
 
-			exitRoom := &world.Rooms[exitRoomIndex]
+			exitRoom := world.Rooms[exitRoomIndex]
 			oppositeDirection := DirectionOppositeOf(direction)
 			if exitRoom.Exits[oppositeDirection] != roomIndex {
 				addProblem("%s has a %s exit to room %d, but room %d has no %s exit back.",

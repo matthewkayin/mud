@@ -35,7 +35,7 @@ type World struct {
 	Mobs MobArray `json:"-"`
 	Npcs []Npc
 
-	Rooms []Room
+	Rooms []*Room
 	roomIndexAtPosition map[RoomPosition]int
 
 	replenishTimer int32
@@ -214,40 +214,6 @@ func (world *World) Update() {
 
 	// Room updates
 	for index := range len(world.Rooms) {
-		world.updateRoom(index)
+		world.Rooms[index].update(world)
 	}
-}
-
-func (world *World) updateRoom(roomIndex int) {
-	room := &world.Rooms[roomIndex]
-
-	// Update fixtures
-	for fixtureIndex := range len(room.Fixtures) {
-		room.Fixtures[fixtureIndex].update(world)
-	}
-
-	// Cleanup
-	room.updateCleanup(world)
-
-	// Relock unlocked locks
-	room.updateLocks()
-
-	// Corpse decay
-	room.updateChests()
-
-	// Occupant update / combat
-	occupants := room.sortOccupantsByInitiativeOrder(world)
-	for _, occupantHandle := range occupants {
-		// Get occupant mob
-		occupantMob := world.Mobs.Get(occupantHandle)
-		if occupantMob.IsDead() {
-			continue
-		}
-
-		// Update mob
-		occupantMob.Update(world)
-	}
-
-	// Remove dead occupants
-	room.removeDeadOccupants(world)
 }

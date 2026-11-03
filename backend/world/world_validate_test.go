@@ -5,8 +5,8 @@ import (
 	"testing"
 )
 
-func validateTestRoom(name string, x int, y int) Room {
-	return Room {
+func validateTestRoom(name string, x int, y int) *Room {
+	return &Room {
 		Name: name,
 		Exits: [DIRECTION_COUNT]int { ROOM_NONE, ROOM_NONE, ROOM_NONE, ROOM_NONE, ROOM_NONE, ROOM_NONE },
 		Position: RoomPosition { X: x, Y: y },
@@ -18,7 +18,7 @@ func validateTestWorld() *World {
 	primeTestData()
 
 	world := &World {
-		Rooms: []Room {
+		Rooms: []*Room {
 			validateTestRoom("West", 0, 0),
 			validateTestRoom("East", 1, 0),
 		},
@@ -74,7 +74,7 @@ func TestValidateProblems(t *testing.T) {
 		expectedProblem string
 	}{
 		{ "no rooms", func(world *World) {
-			world.Rooms = []Room{}
+			world.Rooms = []*Room{}
 			world.Npcs = []Npc{}
 		}, "no rooms" },
 		{ "empty name", func(world *World) {

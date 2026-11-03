@@ -228,7 +228,7 @@ func npcIdIsValid(npcId NpcId) bool {
 
 //spawns the mob associated with the npc
 func (npc *Npc) spawnMob(world *World) {
-	npcRoom := &world.Rooms[npc.SpawnRoom]
+	npcRoom := world.Rooms[npc.SpawnRoom]
 	npcData := NPC_DATA[npc.Id]
 
 	dropTable := &npcData.dropTable
@@ -394,7 +394,7 @@ func (npc *Npc) update(world *World) {
 	}
 
 	// Heal mob to full health if out of combat for NPC_HEAL_DURATION amount of time
-	npcRoom := &world.Rooms[npcMob.Data.Room]
+	npcRoom := world.Rooms[npcMob.Data.Room]
 	npcIsInCombat := npcRoom.hasPlayerOccupants(world)
 	if npc.healTimer == 0 && npcMob.Data.Health < npcMob.Data.MaxHealth() && !npcIsInCombat {
 		npc.healTimer = NPC_HEAL_DURATION
@@ -464,7 +464,7 @@ func (npc *Npc) update(world *World) {
 			}
 
 			// Find a target to attack
-			npcRoom := &world.Rooms[npcMob.Data.Room]
+			npcRoom := world.Rooms[npcMob.Data.Room]
 			for _, targetHandle := range npcRoom.Occupants {
 				// Don't attack yourself
 				if targetHandle == npc.mobHandle {
@@ -506,7 +506,7 @@ func (npc *Npc) getMovementType() NpcMovementType {
 
 func (npc *Npc) movementStep(world *World) {
 	npcMob := world.Mobs.Get(npc.mobHandle)
-	npcRoom := &world.Rooms[npcMob.Data.Room]
+	npcRoom := world.Rooms[npcMob.Data.Room]
 
 	switch npc.getMovementType() {
 		case NPC_MOVEMENT_TYPE_STATIONARY: {
@@ -533,7 +533,7 @@ func (npc *Npc) movementStep(world *World) {
 				}
 
 				// Don't walk into safe rooms
-				adjacentRoom := &world.Rooms[adjacentRoomIndex]
+				adjacentRoom := world.Rooms[adjacentRoomIndex]
 				if adjacentRoom.IsSafeZone {
 					continue
 				}

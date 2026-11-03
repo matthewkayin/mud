@@ -1001,7 +1001,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	// @param room integer
 	"room_get_occupant_count": func(frame lua.Frame) lua.Outcome {
 		roomIndex := frameGetRoomIndexArg(&frame, 0, "room")
-		room := &__world.Rooms[roomIndex]
+		room := __world.Rooms[roomIndex]
 
 		return frame.ReturnNumber(float64(len(room.Occupants)))
 	},
@@ -1015,7 +1015,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		roomIndex := frameGetRoomIndexArg(&frame, 0, "room")
 		occupantIndex := frameGetIntegerArg(&frame, 1, "occupant_index") - 1
 
-		room := &__world.Rooms[roomIndex]
+		room := __world.Rooms[roomIndex]
 		if occupantIndex < 0 || occupantIndex >= len(room.Occupants) {
 			frame.ThrowArgError(1, fmt.Sprintf("Occupant index %d is out of bounds for room %d (%s), which has occupant count %d",
 				occupantIndex, roomIndex, room.Name, len(room.Occupants)))
@@ -1038,7 +1038,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		roomIndex := frameGetRoomIndexArg(&frame, 0, "room")
 		direction := frameGetDirectionArg(&frame, 1)
 
-		room := &__world.Rooms[roomIndex]
+		room := __world.Rooms[roomIndex]
 		return frame.ReturnNumber(float64(room.Exits[direction]))
 	},
 
@@ -1051,7 +1051,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		roomIndex := frameGetRoomIndexArg(&frame, 0, "room")
 		direction := frameGetDirectionArg(&frame, 1)
 
-		room := &__world.Rooms[roomIndex]
+		room := __world.Rooms[roomIndex]
 		if room.Exits[direction] == ROOM_NONE {
 			frame.ThrowArgError(0, fmt.Sprintf("Room %d (%s) has no %s exit.", roomIndex, room.Name, direction.String()))
 		}
@@ -1073,7 +1073,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 			frame.ThrowArgTypeError(2, lua.BoolKind)
 		}
 
-		room := &__world.Rooms[roomIndex]
+		room := __world.Rooms[roomIndex]
 		lock := room.GetLock(direction)
 		if lock == nil {
 			frame.ThrowArgError(0, fmt.Sprintf("Room %d (%s) has no lock on its %s exit.", roomIndex, room.Name, direction.String()))
@@ -1144,7 +1144,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 			frame.ThrowArgTypeError(2, lua.BoolKind)
 		}
 
-		room := &__world.Rooms[handle.RoomIndex]
+		room := __world.Rooms[handle.RoomIndex]
 		if room.Exits[direction] == ROOM_NONE {
 			frame.ThrowArgError(1, fmt.Sprintf("Room %d (%s) has no %s exit.", handle.RoomIndex, room.Name, direction.String()))
 		}
@@ -1221,7 +1221,7 @@ func frameGetFixtureArg(frame *lua.Frame, index int) *Fixture {
 	if handle.RoomIndex < 0 || handle.RoomIndex >= len(__world.Rooms) {
 		frame.ThrowArgError(index, fmt.Sprintf("FixtureHandle %d:%d refers to a room that does not exist.", handle.RoomIndex, handle.FixtureIndex))
 	}
-	room := &__world.Rooms[handle.RoomIndex]
+	room := __world.Rooms[handle.RoomIndex]
 	if handle.FixtureIndex < 0 || handle.FixtureIndex >= len(room.Fixtures) {
 		frame.ThrowArgError(index, fmt.Sprintf("FixtureHandle %d:%d refers to a fixture that does not exist.", handle.RoomIndex, handle.FixtureIndex))
 	}

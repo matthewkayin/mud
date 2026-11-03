@@ -66,7 +66,7 @@ func (world *World) messageRoom(roomIndex int, message string) {
 }
 
 func (world *World) messageRoomWithOptions(options MessageRoomOptions) {
-	room := &world.Rooms[options.roomIndex]
+	room := world.Rooms[options.roomIndex]
 
 	toPlayers := make([]int, 0, len(room.Occupants))
 	for _, mobHandle := range room.Occupants {

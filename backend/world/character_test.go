@@ -16,7 +16,7 @@ func characterTestWorld() *World {
 	JOB_NAME_TO_ID = map[string]JobId { "Farmer": 0 }
 
 	world := &World {
-		Rooms: []Room {
+		Rooms: []*Room {
 			validateTestRoom("Start", 0, 0),
 			validateTestRoom("Middle", 1, 0),
 			validateTestRoom("End", 2, 0),

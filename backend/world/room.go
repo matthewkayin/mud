@@ -11,44 +11,8 @@ import (
 )
 
 const ROOM_NONE int = -1
-
-const CHEST_CORPOSE_DECAY_DURATION = 30 / WORLD_SECONDS_PER_UPDATE
-// How long a room must go without players before it is cleaned up
 const ROOM_CLEANUP_DURATION int32 = 60 / WORLD_SECONDS_PER_UPDATE
-const LOCK_UNLOCK_DURATION int32 = (5 * 60) / WORLD_SECONDS_PER_UPDATE
 
-type ChestType int
-const (
-	CHEST_TYPE_CHEST ChestType = iota
-	CHEST_TYPE_CORPSE
-)
-
-type LockType int
-const (
-	LOCK_TYPE_PHYSICAL LockType = iota
-	LOCK_TYPE_MAGICAL
-	LOCK_TYPE_COUNT
-)
-
-// Locks are one-directional, they only block leaving the room through the lock's direction.
-// A lock is active while its unlock timer is 0. Unlocking it starts the timer,
-// and the lock becomes active again when the timer runs out.
-type Lock struct {
-	Type LockType
-	Direction Direction
-	unlockTimer int32
-}
-
-type Chest struct {
-	Name string
-	Type ChestType
-	Timer int32
-	DropTable DropTable
-	Inventory Inventory
-}
-
-// Grid position of the room. It identifies the room across loads (unlike its index), so saves and the editor
-// reference rooms by it. The server also uses it to build minimaps.
 type RoomPosition struct {
 	X int
 	Y int
@@ -74,29 +38,6 @@ type Room struct {
 	cleanupTimer int32
 }
 
-func (lockType LockType) String() string {
-	switch lockType {
-		case LOCK_TYPE_PHYSICAL:
-			return "physical"
-		case LOCK_TYPE_MAGICAL:
-			return "magical"
-		default:
-			panic(fmt.Sprintf("%d is not a valid lock type.", lockType))
-	}
-}
-
-func (lock *Lock) IsActive() bool {
-	return lock.unlockTimer == 0
-}
-
-func (lock *Lock) Unlock() {
-	lock.unlockTimer = LOCK_UNLOCK_DURATION
-}
-
-func (lock *Lock) Relock() {
-	lock.unlockTimer = 0
-}
-
 func (room *Room) init(roomIndex int, world *World) {
 	// Init fixtures
 	for index := range len(room.Fixtures) {
@@ -107,13 +48,71 @@ func (room *Room) init(roomIndex int, world *World) {
 	room.replenishChests()
 }
 
-func (room *Room) updateLocks() {
+func (room *Room) update(world *World) {
+	// Update fixtures
+	for fixtureIndex := range len(room.Fixtures) {
+		room.Fixtures[fixtureIndex].update(world)
+	}
+
+	// Cleanup items
+	if room.hasPlayerOccupants(world) {
+		room.cleanupTimer = ROOM_CLEANUP_DURATION
+		return
+	}
+
+	if room.cleanupTimer > 0 {
+		room.cleanupTimer--
+		if room.cleanupTimer == 0 {
+			room.cleanUp()
+		}
+	}
+
+	// Relock unlocked locks
 	for lockIndex := range room.Locks {
 		lock := &room.Locks[lockIndex]
 		if lock.unlockTimer > 0 {
 			lock.unlockTimer--
 		}
 	}
+
+	// Corpse decay
+	chestIndex := 0
+	for chestIndex < len(room.Chests) {
+		chest := &room.Chests[chestIndex]
+
+		if chest.Type != CHEST_TYPE_CORPSE {
+			chestIndex++
+			continue
+		}
+
+		chest.Timer--
+		if chest.Timer <= 0 {
+			room.Chests[chestIndex] = room.Chests[len(room.Chests) - 1]
+			room.Chests = room.Chests[:len(room.Chests) - 1]
+			continue
+		}
+
+		chestIndex++
+	}
+
+	// Occupant / combat
+	occupants := room.sortOccupantsByInitiativeOrder(world)
+	for _, occupantHandle := range occupants {
+		// Get occupant mob
+		occupantMob := world.Mobs.Get(occupantHandle)
+		if occupantMob.IsDead() {
+			continue
+		}
+
+		// Update mob
+		occupantMob.Update(world)
+	}
+
+	// Remove dead occupants
+	room.removeDeadOccupants(world)
+}
+
+func (room *Room) updateLocks() {
 }
 
 // Counts down while the room has no players, and cleans the room up once ROOM_CLEANUP_DURATION
@@ -172,7 +171,7 @@ func (room *Room) replenishChests() {
 
 func (room *Room) MoveOccupant(world *World, occupantHandle MobHandle, newRoomIndex int) {
 	// Get a pointer to the new room
-	newRoom := &world.Rooms[newRoomIndex]
+	newRoom := world.Rooms[newRoomIndex]
 	occupantMob := world.Mobs.Get(occupantHandle)
 	oldRoomIndex := occupantMob.Data.Room
 
@@ -322,24 +321,6 @@ func (room *Room) GetFixtureBlockingExit(direction Direction) (*Fixture, bool) {
 }
 
 func (room *Room) updateChests() {
-	chestIndex := 0
-	for chestIndex < len(room.Chests) {
-		chest := &room.Chests[chestIndex]
-
-		if chest.Type != CHEST_TYPE_CORPSE {
-			chestIndex++
-			continue
-		}
-
-		chest.Timer--
-		if chest.Timer <= 0 {
-			room.Chests[chestIndex] = room.Chests[len(room.Chests) - 1]
-			room.Chests = room.Chests[:len(room.Chests) - 1]
-			continue
-		}
-
-		chestIndex++
-	}
 }
 
 // Sorts combatants by initiative order

@@ -293,8 +293,7 @@ func TestScriptInventory(t *testing.T) {
 	ITEM_DATA[TEST_ITEM_SWORD].Data.(*ItemDataWeapon).MaxDurability = 20
 
 	world := scriptTestWorld(t)
-	world.Rooms = []Room{ {}, {} }
-
+	world.Rooms = []*Room{ {}, {} }
 	npcMob := scriptTestMob("Bufo")
 	npcMob.Data.Room = 1
 	npcMob.Data.Inventory.Items = []Item {
@@ -345,7 +344,7 @@ func TestScriptInventory(t *testing.T) {
 		}
 	}
 
-	roomInventory := &world.Rooms[1].Inventory
+	roomInventory := world.Rooms[1].Inventory
 	if roomInventory.Length() != 1 || roomInventory.Items[0].Id != TEST_ITEM_GOLD || roomInventory.Items[0].Amount != 30 {
 		t.Errorf("expected 30 gold in room 1, got %+v", roomInventory.Items)
 	}

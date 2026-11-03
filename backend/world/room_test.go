@@ -24,8 +24,8 @@ func roomTestWorld() *World {
 
 func TestRoomLockRelocksAfterTimer(t *testing.T) {
 	world := roomTestWorld()
-	westRoom := &world.Rooms[0]
-	eastRoom := &world.Rooms[1]
+	westRoom := world.Rooms[0]
+	eastRoom := world.Rooms[1]
 
 	if !westRoom.IsExitLocked(DIRECTION_EAST) {
 		t.Errorf("Expected west room's east exit to start locked")
@@ -59,7 +59,7 @@ func TestRoomLockRelocksAfterTimer(t *testing.T) {
 
 func TestRoomNpcBlockSurvivesCleanup(t *testing.T) {
 	world := roomTestWorld()
-	eastRoom := &world.Rooms[1]
+	eastRoom := world.Rooms[1]
 
 	npc := &Npc{}
 	npc.mobHandle = world.Mobs.Push(Mob {
@@ -111,7 +111,7 @@ func roomTestDropTable() DropTable {
 func TestRoomReplenishOnlyAddsMissingItems(t *testing.T) {
 	primeTestData()
 	world := roomTestWorld()
-	room := &world.Rooms[0]
+	room := world.Rooms[0]
 	room.DropTable = roomTestDropTable()
 	room.Inventory = Inventory {
 		Items: []Item {
@@ -144,7 +144,7 @@ func TestRoomReplenishOnlyAddsMissingItems(t *testing.T) {
 func TestRoomReplenishSkipsCorpses(t *testing.T) {
 	primeTestData()
 	world := roomTestWorld()
-	room := &world.Rooms[0]
+	room := world.Rooms[0]
 	room.Chests = []Chest {
 		{ Name: "Chest", Type: CHEST_TYPE_CHEST, DropTable: roomTestDropTable() },
 		{ Name: "Goblin's Corpse", Type: CHEST_TYPE_CORPSE, DropTable: roomTestDropTable() },
@@ -162,7 +162,7 @@ func TestRoomReplenishSkipsCorpses(t *testing.T) {
 func TestRoomCleanupAfterPlayersLeave(t *testing.T) {
 	primeTestData()
 	world := roomTestWorld()
-	room := &world.Rooms[0]
+	room := world.Rooms[0]
 	room.DropTable = roomTestDropTable()
 	droppedItems := Inventory {
 		Items: []Item { { Id: TEST_ITEM_POTION_HEALTH, Amount: 4 } },
