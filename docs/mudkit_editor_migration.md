@@ -11,7 +11,7 @@ Part of [Mudkit](mudkit.md). This plan moves the world editor out of its separat
 
 ## Scope
 
-This plan moves the editor **as it is today**. It still edits `world.json`, and it still covers the same content (rooms, exits, locks, NPC placement, fixtures, drop tables). Other Mudkit work builds on this plan and is planned separately:
+This plan moves the editor **as it is today**. It still edits `world.json`, and it still covers the same content (rooms, exits, locks, NPC placement, drop tables). Other Mudkit work builds on this plan and is planned separately:
 
 - Rooms as Lua scripts with X,Y,Z coordinates, replacing `world.json`
 - Stable string `id`s for all content
@@ -39,7 +39,7 @@ A reload rebuilds the whole world rather than patching the live one.
 3. **Build off to the side.** The game loop saves every online player, then loads a new `World` from the data folder (`world.WorldLoad`: a new Lua VM, all scripts, `world.json`, every save in `saves/`) and validates it. Validation includes everything `World.Validate()` checks, plus every save (including the online players' fresh ones) only referencing content that exists in the new world. Loading writes the script data globals, so `WorldLoad` holds the script data write lock and snapshots the globals first.
 4. **On failure**, the snapshot is restored and the new VM is closed, so the old world keeps running untouched. The errors go back to the caller: the editor shows them, and `/reload` prints them.
 5. **On success**, the new world replaces the old one, and each online player's mob is spawned again from their save in the same room. If that room no longer exists, they go to the start room (room index 0 for now, and the room at 0,0,0 once rooms move to Lua). Players stay connected, since connections belong to `game`, not `world`. Players in character creation go back to the login menu, since their character sheet holds load-order IDs. Everyone online is told the world was reloaded.
-6. **What's lost** is only transient state: NPCs respawn, room items and chests are rerolled, conditions, combat and queued actions end, and locks and fixtures reset.
+6. **What's lost** is only transient state: NPCs respawn, room items and chests are rerolled, conditions, combat and queued actions end, and locks reset.
 
 Reload uses the same loading and validation code as server startup, so there's no second code path to keep in sync. Script **runtime** errors (a hook that throws while the game is running) can't be caught by validation. They behave as they do after a restart.
 

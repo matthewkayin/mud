@@ -527,10 +527,6 @@ func (npc *Npc) movementStep(world *World) {
 				if isExitBlocked {
 					continue
 				}
-				_, isExitBlockedByFixture := npcRoom.GetFixtureBlockingExit(Direction(directionIndex))
-				if isExitBlockedByFixture {
-					continue
-				}
 
 				// Don't walk into safe rooms
 				adjacentRoom := world.Rooms[adjacentRoomIndex]

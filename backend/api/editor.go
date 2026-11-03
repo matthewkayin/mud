@@ -21,13 +21,12 @@ type EditorConstants struct {
 
 // Registers the editor's routes. Only called when the server runs with --edit.
 // The handlers never touch the game state. They read and write files in the data folder, and they read the
-// server's script data (items, NPCs, fixtures), which they must do under the script data read lock, since a
+// server's script data (items, NPCs), which they must do under the script data read lock, since a
 // reload on the game loop replaces it. Changes reach the running game only through a reload.
 func (apiState *ApiState) RegisterEditorRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/editor/constants", apiState.requireGod(handleEditorGetConstants))
 	mux.HandleFunc("GET /api/editor/items", apiState.requireGod(withScriptDataReadLock(handleEditorGetItems)))
 	mux.HandleFunc("GET /api/editor/npcs", apiState.requireGod(withScriptDataReadLock(handleEditorGetNpcs)))
-	mux.HandleFunc("GET /api/editor/fixtures", apiState.requireGod(withScriptDataReadLock(handleEditorGetFixtures)))
 	mux.HandleFunc("POST /api/editor/reload", apiState.requireGod(apiState.handleEditorReload))
 }
 
@@ -75,10 +74,6 @@ func handleEditorGetItems(writer http.ResponseWriter, request *http.Request) {
 
 func handleEditorGetNpcs(writer http.ResponseWriter, request *http.Request) {
 	writeJson(writer, world.NPC_DATA)
-}
-
-func handleEditorGetFixtures(writer http.ResponseWriter, request *http.Request) {
-	writeJson(writer, world.FIXTURE_DATA)
 }
 
 // Asks the game loop to reload the world from the data folder and waits for the result.

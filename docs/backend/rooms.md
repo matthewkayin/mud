@@ -1,10 +1,10 @@
 # Rooms
 
-Rooms (`backend/world/room.go`) are Lua scripts in `backend/data/rooms/` (see [Room scripts](#room-scripts)). A room has a name, description, notes, safe zone flag, exits, locks, a drop table that fills its floor inventory, chests, and fixtures. Fixtures (`Room.Fixtures`) are scripted objects that players can look at and interact with. Their scripts are in `backend/data/fixtures/`, and each fixture in a room is saved by its script's name along with the values of its behavior params. Fixture scripts, their instances and signals are described in [fixtures.md](fixtures.md). `Room.Notes` is for content developers to record the intent behind a part of the world. The game never reads or shows it. Mobs in the room are listed in `Room.Occupants` by `MobHandle`. Occupants are transient, so they aren't saved.
+Rooms (`backend/world/room.go`) are Lua scripts in `backend/data/rooms/` (see [Room scripts](#room-scripts)). A room has a name, description, notes, safe zone flag, exits, locks, a drop table that fills its floor inventory, and chests. `Room.Notes` is for content developers to record the intent behind a part of the world. The game never reads or shows it. Mobs in the room are listed in `Room.Occupants` by `MobHandle`. Occupants are transient, so they aren't saved.
 
 ## Room scripts
 
-`World.LoadData` loads the room scripts last (`loadRooms` in `room_parse.go`), since rooms reference items and fixtures by name. Each script returns a table, and every field is required:
+`World.LoadData` loads the room scripts last (`loadRooms` in `room_parse.go`), since rooms reference items by name. Each script returns a table, and every field is required:
 
 ```lua
 local room = {}
@@ -21,13 +21,11 @@ room.locks = { { direction = world.Direction.WEST, type = world.LockType.PHYSICA
 -- Same format as an NPC's drop table
 room.drop_table = { { item = "Gold", amount = { min = 1, max = 5 }, durability_percent = 100, drop_chance_percent = 50 } }
 room.chests = { { name = "Strongbox", drop_table = {} } }
-room.fixtures = { { fixture = "Lever", behavior_params = { Signal = "fort_greene_lever_a" } } }
 
 return room
 ```
 
 - `exits` lists the directions the room has exits in. Room indices depend on load order, so a script can't name the room an exit leads to. `parseRoom` returns the directions, and once every room is loaded, `loadRooms` connects each one to the room one grid step away in that direction. It's an error if no room is there.
-- `fixtures` names each fixture by its script's `name`. `behavior_params` holds a value for each param that the fixture script declares. An `Item` param is written as `{ item = "<name>", amount = N }` and gets the item's full durability.
 - Chests in a room script are always `CHEST_TYPE_CHEST`. Corpses are only created at runtime.
 
 Room scripts don't place NPCs yet, so `World.Npcs` is empty.
@@ -66,12 +64,11 @@ Players with the `Unlock` ability (granted by the Thief class) can deactivate an
 
 ## Exit blocking
 
-NPCs and fixtures can also block exits, for example a troll guarding a bridge or a closed door. Blocking is separate from locks: it belongs to the NPC (`Npc.isBlockingExit`) or fixture (`Fixture.isBlockingExit`), not to the room, so unlocking a room never removes a block. Like locks, blocks are one-directional and only stop leaving the blocker's own room.
+NPCs can also block exits, for example a troll guarding a bridge. Blocking is separate from locks: it belongs to the NPC (`Npc.isBlockingExit`), not to the room, so unlocking a room never removes a block. Like locks, blocks are one-directional and only stop leaving the blocker's own room.
 
-- NPC scripts set a block with `world.npc_set_blocking_exit(self, direction, blocking)` (see [NPC state](npcs.md#npc-state)). `room.GetNpcBlockingExit(world, direction)` finds an NPC occupant that is blocking the exit. A block is checked only while its mob is in the room. It ends when the mob dies, and the NPC's blocked exits are cleared before the next spawn calls `init`.
-- Fixture scripts set a block with `world.fixture_set_blocking_exit(self, direction, blocking)` (see [Exit blocking](fixtures.md#exit-blocking)). `room.GetFixtureBlockingExit(direction)` finds a fixture that is blocking the exit. A fixture's block lasts until its script removes it.
+NPC scripts set a block with `world.npc_set_blocking_exit(self, direction, blocking)` (see [NPC state](npcs.md#npc-state)). `room.GetNpcBlockingExit(world, direction)` finds an NPC occupant that is blocking the exit. A block is checked only while its mob is in the room. It ends when the mob dies, and the NPC's blocked exits are cleared before the next spawn calls `init`.
 
-Cleanup doesn't affect either kind of block. Players moving through an exit are stopped by a lock ("The north exit is locked.") first, then a fixture block ("Big Door is blocking the way north."), then an NPC block ("Troll is blocking the way north."). Wandering NPCs avoid locked and blocked exits.
+Cleanup doesn't affect blocks. Players moving through an exit are stopped by a lock ("The north exit is locked.") first, then an NPC block ("Troll is blocking the way north."). Wandering NPCs avoid locked and blocked exits.
 
 ## Replenishing and cleanup
 

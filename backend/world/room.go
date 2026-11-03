@@ -32,28 +32,17 @@ type Room struct {
 	DropTable DropTable
 	Inventory Inventory
 	Chests []Chest
-	Fixtures []Fixture
 
 	Occupants []MobHandle `json:"-"`
 	cleanupTimer int32
 }
 
-func (room *Room) init(roomIndex int, world *World) {
-	// Init fixtures
-	for index := range len(room.Fixtures) {
-		room.Fixtures[index].init(roomIndex, index, world)
-	}
-
+func (room *Room) init() {
 	room.replenish()
 	room.replenishChests()
 }
 
 func (room *Room) update(world *World) {
-	// Update fixtures
-	for fixtureIndex := range len(room.Fixtures) {
-		room.Fixtures[fixtureIndex].update(world)
-	}
-
 	// Cleanup items
 	if room.hasPlayerOccupants(world) {
 		room.cleanupTimer = ROOM_CLEANUP_DURATION
@@ -307,17 +296,6 @@ func (room *Room) GetNpcBlockingExit(world *World, direction Direction) (MobHand
 	}
 
 	return MobHandle{}, false
-}
-
-func (room *Room) GetFixtureBlockingExit(direction Direction) (*Fixture, bool) {
-	for index := range room.Fixtures {
-		fixture := &room.Fixtures[index]
-		if fixture.isBlockingExit[direction] {
-			return fixture, true
-		}
-	}
-
-	return nil, false
 }
 
 func (room *Room) updateChests() {

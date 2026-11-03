@@ -59,11 +59,11 @@ export function Toolbar() {
       return;
     }
 
-    // A reload can change the item, NPC and fixture scripts
+    // A reload can change the item and NPC scripts
     try {
       await loadScriptData();
     } catch (error) {
-      setErrorDialog({ title: 'Could not load item, NPC and fixture data', message: String(error) });
+      setErrorDialog({ title: 'Could not load item and NPC data', message: String(error) });
     }
   }, []);
 

@@ -21,7 +21,6 @@ type MenuGroup struct {
 type MenuCreateParams struct {
 	onEnter func(gamestate* GameState, player *Player)
 	onExit func(gamestate* GameState, player *Player)
-	fallbackHandler func(gamestate* GameState, player *Player, verb string, args []string) bool
 	groups map[string]string
 	entries map[string]MenuEntry
 }
@@ -29,7 +28,6 @@ type MenuCreateParams struct {
 type Menu struct {
 	onEnter func(gamestate* GameState, player *Player)
 	onExit func(gamestate* GameState, player *Player)
-	fallbackHandler func(gamestate* GameState, player *Player, verb string, args []string) bool
 	groups map[string]*MenuGroup
 	entries map[string]MenuEntry
 }
@@ -38,7 +36,6 @@ func MenuCreate(params MenuCreateParams) Menu {
 	menu := Menu {
 		onEnter: params.onEnter,
 		onExit: params.onExit,
-		fallbackHandler: params.fallbackHandler,
 		entries: params.entries,
 		groups: make(map[string]*MenuGroup),
 	}
@@ -82,19 +79,7 @@ func (menu *Menu) handleCommand(gamestate *GameState, player *Player, command st
 	// Lookup command from registry
 	entry, entryExists := menu.entries[verb]
 
-	// If the entry does not exist... fallback
 	if !entryExists {
-		// If there is a fallback handler, try using it
-		if menu.fallbackHandler != nil {
-			handled := menu.fallbackHandler(gamestate, player, verb, args)
-
-			// If it handled the command, then success
-			if handled {
-				return
-			}
-		}
-
-		// If no fallback handler or if the fallback did not succeed, then send an error message
 		player.send(fmt.Sprintf("%s is not a legal action.", verb))
 		return
 	}

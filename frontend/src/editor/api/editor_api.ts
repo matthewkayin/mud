@@ -47,10 +47,6 @@ export function GetNpcData(): Promise<world.NpcData[]> {
   return getJson('/api/editor/npcs');
 }
 
-export function GetFixtureData(): Promise<world.FixtureData[]> {
-  return getJson('/api/editor/fixtures');
-}
-
 export function SetIsDirty(value: boolean) {
   isDirty = value;
   updateTitle();

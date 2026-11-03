@@ -49,15 +49,6 @@ var MENU_WORLD = MenuCreate(MenuCreateParams {
 		player.character = nil
 	},
 
-	fallbackHandler: func(gamestate *GameState, player *Player, verb string, args []string) bool {
-		fixture, err := fuzzyFindFixture(gamestate, player, args)
-		if err != nil {
-			return false
-		}
-
-		return fixture.Interact(gamestate.world, player.mobHandle, verb)
-	},
-
 	groups: map[string]string {
 		"combat": "Commands related to combat",
 		"exploration": "Commands related to exploration",
@@ -133,17 +124,11 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 	player.send(room.Description)
 
 	// Chests
-	objectCount := len(room.Chests) + len(room.Fixtures)
-	if objectCount != 0 {
-		objectNames := make([]string, 0, objectCount)
+	if len(room.Chests) != 0 {
+		objectNames := make([]string, 0, len(room.Chests))
 		for index := range len(room.Chests) {
 			chest := &room.Chests[index]
 			objectNames = append(objectNames, fmt.Sprintf("<y>%s</y>", chest.Name))
-		}
-
-		for index := range len(room.Fixtures) {
-			fixture := &room.Fixtures[index]
-			objectNames = append(objectNames, fmt.Sprintf("<y>%s</y>", fixture.GetName()))
 		}
 
 		player.send(fmt.Sprintf("In the room is %s.", util.CombineNames(objectNames)))

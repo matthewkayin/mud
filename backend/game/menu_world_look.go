@@ -148,7 +148,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				}
 				item = &targetInventory.Items[itemIndex]
 			} else {
-				// Item in the player's inventory or equipment. If none matches, the player may be inspecting a mob or fixture instead
+				// Item in the player's inventory or equipment. If none matches, the player may be inspecting a mob instead
 				itemHandle, result := fuzzyFindMobInventoryOrEquippedItem(playerMob, targetWords)
 				if result == FUZZY_FIND_RESULT_AMBIGUOUS_LOCATION {
 					player.send(ambiguousItemLocationError(targetWords).Error())
@@ -262,26 +262,6 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 					world.CLASS_DATA[targetMob.PlayerCharacter.Class].Name,
 					world.JOB_DATA[targetMob.PlayerCharacter.Job].Name))
 				printMobEquipmentList(player, targetMob)
-			}
-
-			// Handle fixture case
-			fixture, err := fuzzyFindFixture(gamestate, player, args)
-			if err == nil {
-				description, ok := fixture.GetDescription(gamestate.world)
-				if !ok {
-					player.send(fmt.Sprintf("<y>%s</y> is undescribable.", fixture.GetName()))
-					return true
-				}
-
-				// Send description
-				player.send(description)
-				verbs := fixture.GetVerbs()
-				if len(verbs) == 0 {
-					player.send("You cannot interact with it.")
-				} else {
-					player.send(fmt.Sprintf("You can interact with it by typing %s", util.CombineNames(fixture.GetVerbs())))
-				}
-
 				return true
 			}
 

@@ -6,7 +6,7 @@ import { Sidebar } from './sidebar';
 import { loadScriptData } from './store';
 
 export function Editor() {
-  // Load item, NPC and fixture data
+  // Load item and NPC data
   useEffect(() => {
     loadScriptData();
   }, []);

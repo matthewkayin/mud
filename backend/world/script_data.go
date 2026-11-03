@@ -13,8 +13,6 @@ import (
 type scriptDataSnapshot struct {
 	world *World
 
-	rooms []*Room
-	roomIndexAtPosition map[RoomPosition]int
 	questNames []string
 	questNameToId map[string]QuestId
 	raceData []*RaceData
@@ -35,8 +33,6 @@ type scriptDataSnapshot struct {
 	classNameToId map[string]ClassId
 	npcData []*NpcData
 	npcIdStrToId map[string]NpcId
-	fixtureData []*FixtureData
-	fixtureNameToId map[string]FixtureId
 }
 
 // Guards the script data globals against readers outside the game loop (the editor's HTTP handlers).
@@ -77,8 +73,6 @@ func captureScriptData() scriptDataSnapshot {
 		classNameToId: CLASS_NAME_TO_ID,
 		npcData: NPC_DATA,
 		npcIdStrToId: NPC_ID_STR_TO_ID,
-		fixtureData: FIXTURE_DATA,
-		fixtureNameToId: FIXTURE_NAME_TO_STRING,
 	}
 }
 
@@ -105,6 +99,4 @@ func (snapshot *scriptDataSnapshot) restore() {
 	CLASS_NAME_TO_ID = snapshot.classNameToId
 	NPC_DATA = snapshot.npcData
 	NPC_ID_STR_TO_ID = snapshot.npcIdStrToId
-	FIXTURE_DATA = snapshot.fixtureData
-	FIXTURE_NAME_TO_STRING = snapshot.fixtureNameToId
 }

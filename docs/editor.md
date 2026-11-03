@@ -1,6 +1,6 @@
 # World Editor
 
-The world editor is a page of the web client (`/editor`, code in `frontend/src/editor/`) for editing `data/world.json` without typing out the JSON. It edits rooms, exits, locks, room drop tables and chests, and the NPCs and fixtures placed in each room. Items, spells, NPC definitions and other script content are still edited by hand in the Lua files under `backend/data/`.
+The world editor is a page of the web client (`/editor`, code in `frontend/src/editor/`) for editing `data/world.json` without typing out the JSON. It edits rooms, exits, locks, room drop tables and chests, and the NPCs placed in each room. Items, spells, NPC definitions and other script content are still edited by hand in the Lua files under `backend/data/`.
 
 ![World Editor Screenshot](./readme/editor.png)
 
@@ -39,7 +39,7 @@ cd ../backend && go build -tags embed && ./mud --edit
 ## Saving and reloading
 
 - **Save** (Ctrl+S, or the toolbar button) sends the editor's world to `PUT /api/editor/world`. The server converts it to the world file format (`encodeWorld` in `backend/api/editor_world_file.go`) and writes `world.json` atomically, so a failed conversion or write never leaves a broken file. Saving doesn't change the running game.
-- **Reload** (toolbar button) calls `POST /api/editor/reload`, which asks the game loop to rebuild the world from the files in the data folder. It's the same reload as the `/reload` god command. Unsaved changes aren't included, so save first. After a successful reload the editor fetches the item, NPC and fixture data again, since the scripts may have changed.
+- **Reload** (toolbar button) calls `POST /api/editor/reload`, which asks the game loop to rebuild the world from the files in the data folder. It's the same reload as the `/reload` god command. Unsaved changes aren't included, so save first. After a successful reload the editor fetches the item and NPC data again, since the scripts may have changed.
 
 A reload builds a new world next to the running one. If the new world has problems, the editor shows them and the running world is untouched. Otherwise online players are saved and spawned into the new world in the same room (or room 0 if their room is gone), and transient state such as NPCs, room items, combat and conditions is reset. See [Loading and reloading](backend/scripting.md#loading-and-reloading) for how loading and validation work.
 
@@ -52,7 +52,6 @@ The routes are registered by `ApiState.RegisterEditorRoutes` (`backend/api/edito
 | `GET /api/editor/constants` | World constants the editor needs (`ROOM_NONE`, `WORLD_SECONDS_PER_UPDATE`) |
 | `GET /api/editor/items` | `ITEM_DATA` |
 | `GET /api/editor/npcs` | `NPC_DATA`, including each NPC's behavior param schema |
-| `GET /api/editor/fixtures` | `FIXTURE_DATA`, including each fixture's behavior param schema |
 | `GET /api/editor/world` | `world.json`, converted to the editor's format (`EditorWorld`) |
 | `PUT /api/editor/world` | Converts an `EditorWorld` back to the world file format and saves it |
 | `POST /api/editor/reload` | Reloads the running world from the data folder |
@@ -63,7 +62,7 @@ The handlers never touch `GameState` or `World`, since all game state belongs to
 
 - `editor_page.tsx` checks the auth config, loads the constants and renders `editor.tsx`, which lays out the canvas, the toolbar and the sidebar.
 - `canvas/` draws the room grid and the connections between rooms. Rooms sit on grid cells.
-- `sidebar/` edits the selected room or connection. Each section (NPCs, fixtures, chests, locks, drop tables, behavior params) is a component in `sidebar/components/`.
+- `sidebar/` edits the selected room or connection. Each section (NPCs, chests, locks, drop tables, behavior params) is a component in `sidebar/components/`.
 - `toolbar/` has Save, Reload and the theme toggle, and handles the Ctrl+S, Ctrl+Z and redo shortcuts.
 - `api/editor_api.ts` wraps the routes above. `api/models.ts` is generated (see below).
 

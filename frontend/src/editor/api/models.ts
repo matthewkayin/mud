@@ -336,34 +336,6 @@ export namespace world {
 	}
 	
 	
-	export class Fixture {
-	    Id: string;
-	    BehaviorParams: Record<string, any>;
-	
-	    static createFrom(source: any = {}) {
-	        return new Fixture(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.Id = source["Id"];
-	        this.BehaviorParams = source["BehaviorParams"];
-	    }
-	}
-	export class FixtureData {
-	    Name: string;
-	    BehaviorParams: Record<string, BehaviorParamType>;
-	
-	    static createFrom(source: any = {}) {
-	        return new FixtureData(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.Name = source["Name"];
-	        this.BehaviorParams = source["BehaviorParams"];
-	    }
-	}
 	
 	
 	
@@ -505,7 +477,6 @@ export namespace world {
 	    DropTable: DropTable;
 	    Inventory: Inventory;
 	    Chests: Chest[];
-	    Fixtures: Fixture[];
 	
 	    static createFrom(source: any = {}) {
 	        return new Room(source);
@@ -523,7 +494,6 @@ export namespace world {
 	        this.DropTable = this.convertValues(source["DropTable"], DropTable);
 	        this.Inventory = this.convertValues(source["Inventory"], Inventory);
 	        this.Chests = this.convertValues(source["Chests"], Chest);
-	        this.Fixtures = this.convertValues(source["Fixtures"], Fixture);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

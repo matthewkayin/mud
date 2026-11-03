@@ -34,7 +34,6 @@ func generateModels(path string) error {
 	generator.addStruct(api.EditorWorld{})
 	generator.addStruct(world.ItemData{})
 	generator.addStruct(world.NpcData{})
-	generator.addStruct(world.FixtureData{})
 
 	generator.addEnum(ALL_DIRECTIONS)
 	generator.addEnum(ALL_NPC_DISPOSITIONS)

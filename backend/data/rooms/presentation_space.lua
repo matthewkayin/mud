@@ -16,6 +16,5 @@ room.exits = {
 room.locks = {}
 room.drop_table = {}
 room.chests = {}
-room.fixtures = {}
 
 return room

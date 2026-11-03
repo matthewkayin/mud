@@ -47,7 +47,7 @@ As an author, I want the world to be made of Lua files that I can edit by hand o
 
 The Lua files are the world. The editor is a helper tool that makes editing those Lua files easier, so anything it saves is Lua, and anything an author writes by hand still works when the editor opens the file.
 
-In release 1, the editor edits **rooms only**: the world map, room fields, exits, locks, and the NPCs, fixtures and items placed in a room. Every other kind of content (items, spells, classes, races, NPC definitions, fixtures, conditions, quests) is edited by hand in Lua. Editing it in the editor is in [Later](#later).
+In release 1, the editor edits **rooms only**: the world map, room fields, exits, locks, and the NPCs and items placed in a room. Every other kind of content (items, spells, classes, races, NPC definitions, conditions, quests) is edited by hand in Lua. Editing it in the editor is in [Later](#later).
 
 As a non-functional outcome of this story, the world JSON goes away. Each room is a Lua script, and rooms no longer point to each other with room indexes for exits. Instead, rooms are marked with X,Y,Z coordinates and list their exits by direction (see Decisions). Player positions are X,Y,Z coordinates too. Navigation uses the directions north, east, south, west, up, and down. When content loads, the server validates that no two rooms share the same coordinates.
 
@@ -72,7 +72,7 @@ As a god, I can use god commands to manage the world. The purpose of these comma
 Stories that are agreed but not in release 1. The agent does not build these.
 
 ### Story: Edit all content in the editor
-As an author, I want to edit classes, races, NPC definitions, items, spells, fixtures, conditions and quests in the editor, not only rooms. Like rooms, the editor edits the data fields of these Lua files in place and leaves their hook functions to the author.
+As an author, I want to edit classes, races, NPC definitions, items, spells, conditions and quests in the editor, not only rooms. Like rooms, the editor edits the data fields of these Lua files in place and leaves their hook functions to the author.
 
 ## Out of scope
 What this PRD deliberately doesn't cover, so the agent doesn't add it.

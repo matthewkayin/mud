@@ -7,7 +7,7 @@ import (
 	"github.com/mmcdole/lunar"
 )
 
-// The types an NPC or Fixture script can declare for its behavior params
+// The types an NPC script can declare for its behavior params
 type BehaviorParamType int
 const (
 	BEHAVIOR_PARAM_TYPE_STRING = iota

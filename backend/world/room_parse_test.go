@@ -25,30 +25,16 @@ return {
 			{ item = "Potion of Health", amount = 2, durability_percent = 100, drop_chance_percent = 100 },
 		} },
 	},
-	fixtures = {
-		{ fixture = "Big Door", behavior_params = {
-			LeverSignalA = "a",
-			LeverSignalB = "b",
-			ExitToBlock = world.Direction.NORTH,
-		} },
-		{ fixture = "Lever", behavior_params = { Signal = "a" } },
-	},
 }
 `
 
-// A script world with the fixture scripts from data/fixtures loaded and the room scripts
-// written to its rooms folder, keyed by file name
+// A script world with the room scripts written to its rooms folder, keyed by file name
 func roomParseTestWorld(t *testing.T, roomScripts map[string]string) *World {
 	primeTestData()
 
 	dataFolder := t.TempDir()
-	err := os.CopyFS(filepath.Join(dataFolder, FIXTURE_DATA_FOLDER), os.DirFS(filepath.Join("..", "data", FIXTURE_DATA_FOLDER)))
-	if err != nil {
-		t.Fatalf("Error copying fixture scripts: %s", err.Error())
-	}
-
 	roomsFolder := filepath.Join(dataFolder, ROOMS_FOLDER)
-	err = os.MkdirAll(roomsFolder, 0755)
+	err := os.MkdirAll(roomsFolder, 0755)
 	if err != nil {
 		t.Fatalf("Error creating rooms folder: %s", err.Error())
 	}
@@ -67,11 +53,6 @@ func roomParseTestWorld(t *testing.T, roomScripts map[string]string) *World {
 		t.Fatalf("Error initializing scripts: %s", err.Error())
 	}
 	t.Cleanup(world.ScriptQuit)
-
-	err = world.loadFixtureData()
-	if err != nil {
-		t.Fatalf("Error loading fixture data: %s", err.Error())
-	}
 
 	return world
 }
@@ -137,30 +118,6 @@ func TestRoomParseFullRoom(t *testing.T) {
 	if chest.Name != "Strongbox" || chest.Type != CHEST_TYPE_CHEST || len(chest.DropTable.Entries) != 1 {
 		t.Errorf("Unexpected chest %v", chest)
 	}
-
-	if len(room.Fixtures) != 2 {
-		t.Fatalf("Expected 2 fixtures, got %d", len(room.Fixtures))
-	}
-	door := room.Fixtures[0]
-	if door.Id != FIXTURE_NAME_TO_STRING["Big Door"] {
-		t.Errorf("Expected first fixture to be Big Door, got %d", door.Id)
-	}
-	if door.BehaviorParams["LeverSignalA"] != "a" || door.BehaviorParams["LeverSignalB"] != "b" {
-		t.Errorf("Unexpected door signal params %v", door.BehaviorParams)
-	}
-	if door.BehaviorParams["ExitToBlock"] != Direction(DIRECTION_NORTH) {
-		t.Errorf("Expected door ExitToBlock to be north, got %v", door.BehaviorParams["ExitToBlock"])
-	}
-	lever := room.Fixtures[1]
-	if lever.Id != FIXTURE_NAME_TO_STRING["Lever"] || lever.BehaviorParams["Signal"] != "a" {
-		t.Errorf("Unexpected lever %v", lever)
-	}
-
-	// Parsed params must round trip through the fixture's JSON conversion
-	_, err = door.MarshalJSON()
-	if err != nil {
-		t.Errorf("Expected door to marshal, got error: %s", err.Error())
-	}
 }
 
 func TestRoomParseErrors(t *testing.T) {
@@ -174,9 +131,6 @@ func TestRoomParseErrors(t *testing.T) {
 		{ "invalid exit direction", `exits = { world.Direction.NORTH, world.Direction.SOUTH }`, `exits = { "northwest" }`, "not a valid direction" },
 		{ "duplicate exit", `exits = { world.Direction.NORTH, world.Direction.SOUTH }`, `exits = { world.Direction.NORTH, world.Direction.NORTH }`, "more than one north exit" },
 		{ "invalid lock type", `type = world.LockType.MAGICAL`, `type = "wooden"`, "not a valid lock type" },
-		{ "unknown fixture", `fixture = "Lever"`, `fixture = "Crank"`, "fixture 'Crank' which does not exist" },
-		{ "undeclared behavior param", `Signal = "a"`, `Signal = "a", Color = "red"`, "no behavior param named 'Color'" },
-		{ "wrong behavior param type", `Signal = "a"`, `Signal = 5`, "behavior_params.Signal" },
 	}
 
 	for _, testCase := range testCases {
@@ -210,7 +164,6 @@ return {
 	locks = {},
 	drop_table = {},
 	chests = {},
-	fixtures = {},
 }
 `, name, x, exits)
 }

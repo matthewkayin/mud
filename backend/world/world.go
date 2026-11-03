@@ -25,7 +25,6 @@ type World struct {
 	Events []Event `json:"-"`
 	luaState *lua.State
 	mobHandleType *lua.UserDataType[MobHandle]
-	fixtureHandleType *lua.UserDataType[FixtureHandle]
 	itemHandleType *lua.UserDataType[ItemHandle]
 	dataFolder string
 
@@ -46,10 +45,6 @@ type World struct {
 	deferredNpcEvents []deferredNpcEvent
 	isHandlingDeferredNpcEvents bool
 
-	signalListeners map[string][]*lua.Function
-	// Signals emitted while a script was running, emitted once it returns
-	deferredSignals []deferredSignal
-	isHandlingDeferredSignals bool
 	tick uint32
 }
 
@@ -105,11 +100,10 @@ func loadWorld() (*World, []string) {
 	// Init transient data structures
 	world.Events = make([]Event, 0, 64)
 	world.Mobs = MobArrayInit()
-	world.signalListeners = make(map[string][]*lua.Function)
 
 	// Init rooms
 	for index := range len(world.Rooms) {
-		world.Rooms[index].init(index, world)
+		world.Rooms[index].init()
 	}
 
 	return world, nil
@@ -126,7 +120,7 @@ func (world *World) LoadData(dataFolder string) error {
 	// Loaders run in order, since later data references earlier data by name.
 	// Recipes are read in two passes so that items can reference recipes and recipes can reference items.
 	// Classes load after items because they have starting items.
-	// Rooms load last because they reference items and fixtures.
+	// Rooms load last because they reference items.
 	var recipeScripts []recipeScript
 	loaders := []func() error {
 		world.loadQuestData,
@@ -145,7 +139,6 @@ func (world *World) LoadData(dataFolder string) error {
 		},
 		world.loadClassData,
 		world.loadNpcData,
-		world.loadFixtureData,
 		world.loadRooms,
 	}
 	for _, loader := range loaders {

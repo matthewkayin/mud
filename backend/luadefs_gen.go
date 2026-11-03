@@ -44,9 +44,6 @@ func generateLuaDefs(path string) error {
 	output.WriteString("\n---An opaque reference to a mob. Compare with ==. It may refer to a mob that no longer exists; check with world.mob_exists.\n")
 	output.WriteString("---@class MobHandle\n")
 
-	output.WriteString("\n---An opaque reference to a fixture placed in a room. Compare with ==. Find its room with world.fixture_get_room.\n")
-	output.WriteString("---@class FixtureHandle\n")
-
 	output.WriteString("\n---An opaque reference to an item in a mob's inventory or equipment. Compare with ==. Only valid until the mob's inventory or equipment changes, so don't store it.\n")
 	output.WriteString("---@class ItemHandle\n")
 

@@ -83,7 +83,6 @@ func (parser *ScriptParser) parseRoom(table *lua.Table) (*Room, []Direction) {
 		Locks: []Lock{},
 		Inventory: Inventory { Items: []Item{} },
 		Chests: []Chest{},
-		Fixtures: []Fixture{},
 		Occupants: []MobHandle{},
 	}
 	for direction := range DIRECTION_COUNT {
@@ -109,7 +108,6 @@ func (parser *ScriptParser) parseRoom(table *lua.Table) (*Room, []Direction) {
 	room.Locks = parser.parseRoomLocks(table, "locks")
 	room.DropTable = parser.getDropTable(table, "drop_table")
 	room.Chests = parser.parseRoomChests(table, "chests")
-	room.Fixtures = parser.parseRoomFixtures(table, "fixtures")
 
 	if parser.getError() != nil {
 		return nil, nil
@@ -211,37 +209,4 @@ func (parser *ScriptParser) parseRoomChests(table *lua.Table, key string) []Ches
 	}
 
 	return chests
-}
-
-func (parser *ScriptParser) parseRoomFixtures(table *lua.Table, key string) []Fixture {
-	fixtures := []Fixture{}
-
-	fixturesTable := parser.getTable(table, key)
-	if fixturesTable == nil {
-		return fixtures
-	}
-
-	fixtureCount := fixturesTable.RawLen()
-	for index := 1; index <= fixtureCount; index++ {
-		fixtureKey := fmt.Sprintf("%s[%d]", key, index)
-		fixtureTable, ok := fixturesTable.RawGetInt(index).AsTable()
-		if !ok {
-			parser.addProblem(fmt.Errorf("field '%s' must be a table", fixtureKey))
-			continue
-		}
-
-		fixtureName := parser.getString(fixtureTable, "fixture")
-		fixtureId, exists := FIXTURE_NAME_TO_STRING[fixtureName]
-		if !exists {
-			parser.addProblem(fmt.Errorf("field '%s.fixture' references fixture '%s' which does not exist", fixtureKey, fixtureName))
-			continue
-		}
-
-		fixtures = append(fixtures, Fixture {
-			Id: fixtureId,
-			BehaviorParams: parser.getBehaviorParamValues(fixtureTable, "behavior_params", FIXTURE_DATA[fixtureId].BehaviorParams),
-		})
-	}
-
-	return fixtures
 }

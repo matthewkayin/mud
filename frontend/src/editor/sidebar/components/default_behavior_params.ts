@@ -1,7 +1,7 @@
 import { world } from '../../api/models';
 import { DIRECTION_NAMES } from '../../store';
 
-// Maps each behavior param name that an NPC or fixture script declares to its type
+// Maps each behavior param name that an NPC script declares to its type
 export type BehaviorParamTypes = Record<string, world.BehaviorParamType>;
 
 // A direction param holds the direction's name
