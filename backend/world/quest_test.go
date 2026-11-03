@@ -41,7 +41,10 @@ func TestQuestStringArrayRoundTrip(t *testing.T) {
 		t.Errorf("questsToStringArray = %v", questNames)
 	}
 
-	result := questsFromStringArray(questNames)
+	result, err := questsFromStringArray(questNames)
+	if err != nil {
+		t.Fatalf("questsFromStringArray: %s", err.Error())
+	}
 	if result != quests {
 		t.Errorf("questsFromStringArray = %b, expected %b", result, quests)
 	}

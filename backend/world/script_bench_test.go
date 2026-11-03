@@ -59,7 +59,10 @@ func benchScriptMobData(b *testing.B, body string) {
 	world := &World {
 		Mobs: MobArrayInit(),
 	}
-	world.scriptInit(b.TempDir())
+	err := world.scriptInit(b.TempDir())
+	if err != nil {
+		b.Fatalf("Error initializing scripts: %s", err.Error())
+	}
 	b.Cleanup(world.ScriptQuit)
 
 	mob := MobInit(&MobData {

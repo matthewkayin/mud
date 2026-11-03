@@ -3,7 +3,6 @@ package world
 import (
 	"strings"
 	"fmt"
-	"log"
 
 	"github.com/mmcdole/lunar"
 )
@@ -33,12 +32,11 @@ func RaceIdFromString(raceName string) (RaceId, error) {
 
 // LOAD
 
-func (world *World) loadRaceData() {
+func (world *World) loadRaceData() error {
 	// Read race folder
-	log.Printf("Loading race data...")
 	paths, err := scriptGetFilesFrom(world.dataFolder, RACE_DATA_FOLDER)
 	if err != nil {
-		log.Fatalf("Error opening race data folder: %s", err.Error())
+		return fmt.Errorf("Error opening race data folder: %s", err.Error())
 	}
 
 	RACE_DATA = make([]*RaceData, 0, len(paths))
@@ -48,29 +46,28 @@ func (world *World) loadRaceData() {
 		// Open script
 		table, err := world.scriptLoadTable(path)
 		if err != nil {
-			log.Fatalf("%s: %s", path, err.Error())
+			return err
 		}
 
 		// Parse race data
 		parser := ScriptParser{}
 		raceData := parser.parseRace(table)
 		if raceData == nil {
-			log.Fatalf("%s: %s", path, parser.getError().Error())
+			return fmt.Errorf("%s: %s", path, parser.getError().Error())
 		}
 
 		// Check for duplicates
 		_, duplicateRaceName := RACE_NAME_TO_ID[raceData.Name]
 		if duplicateRaceName {
-			log.Fatalf("Race %s has name '%s' which is a duplicate of another race.", path, raceData.Name)
+			return fmt.Errorf("Race %s has name '%s' which is a duplicate of another race.", path, raceData.Name)
 		}
 
 		// Store race in RACE_DATA
 		RACE_NAME_TO_ID[raceData.Name] = RaceId(len(RACE_DATA))
 		RACE_DATA = append(RACE_DATA, raceData)
-		log.Printf("Loaded race '%s'.", raceData.Name)
 	}
 
-	log.Printf("All race data has been loaded.")
+	return nil
 }
 
 func (parser *ScriptParser) parseRace(table *lua.Table) *RaceData {

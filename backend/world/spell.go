@@ -1,7 +1,7 @@
 package world
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/mmcdole/lunar"
 )
@@ -28,12 +28,11 @@ var SPELL_NAME_TO_ID map[string]SpellId
 
 const SPELL_DATA_FOLDER = "spells"
 
-func (world *World) loadSpellData() {
+func (world *World) loadSpellData() error {
 	// Read spell folder
-	log.Printf("Loading spell data...")
 	paths, err := scriptGetFilesFrom(world.dataFolder, SPELL_DATA_FOLDER)
 	if err != nil {
-		log.Fatalf("Error opening spell data folder: %s", err.Error())
+		return fmt.Errorf("Error opening spell data folder: %s", err.Error())
 	}
 
 	SPELL_DATA = make([]*SpellData, 0, len(paths))
@@ -43,29 +42,28 @@ func (world *World) loadSpellData() {
 		// Open script
 		table, err := world.scriptLoadTable(path)
 		if err != nil {
-			log.Fatalf("%s: %s", path, err.Error())
+			return err
 		}
 
 		// Parse spell data
 		parser := ScriptParser{}
 		spellData := parser.parseSpell(table)
 		if spellData == nil {
-			log.Fatalf("%s: %s", path, parser.getError().Error())
+			return fmt.Errorf("%s: %s", path, parser.getError().Error())
 		}
 
 		// Check for duplicates
 		_, duplicateSpellName := SPELL_NAME_TO_ID[spellData.Name]
 		if duplicateSpellName {
-			log.Fatalf("Spell %s has name '%s' which is a duplicate of another spell.", path, spellData.Name)
+			return fmt.Errorf("Spell %s has name '%s' which is a duplicate of another spell.", path, spellData.Name)
 		}
 
 		// Store spell in SPELL_DATA
 		SPELL_NAME_TO_ID[spellData.Name] = SpellId(len(SPELL_DATA))
 		SPELL_DATA = append(SPELL_DATA, spellData)
-		log.Printf("Loaded spell '%s'.", spellData.Name)
 	}
 
-	log.Printf("All spell data has been loaded.")
+	return nil
 }
 
 func (parser *ScriptParser) parseSpell(table *lua.Table) *SpellData {

@@ -3,15 +3,12 @@ import { Box } from '@mui/material';
 import { Canvas } from './canvas';
 import { Toolbar } from './toolbar';
 import { Sidebar } from './sidebar';
-import { editorStore } from './store';
-import { GetItemData, GetNpcData, GetFixtureData } from './api/editor_api';
+import { loadScriptData } from './store';
 
 export function Editor() {
   // Load item, NPC and fixture data
   useEffect(() => {
-    GetItemData().then(editorStore.setItemData);
-    GetNpcData().then(editorStore.setNpcData);
-    GetFixtureData().then(editorStore.setFixtureData);
+    loadScriptData();
   }, []);
 
   return (

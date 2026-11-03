@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"mud/game"
 	"mud/world"
 	"net/http"
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 )
 
 // Constants from the world package that the editor needs and that aren't enums
@@ -18,15 +20,17 @@ type EditorConstants struct {
 }
 
 // Registers the editor's routes. Only called when the server runs with --edit.
-// The handlers never touch the game state. They read and write files in the data folder, and they
-// read the script data (items, NPCs, fixtures) that was loaded at startup, before the HTTP server began.
+// The handlers never touch the game state. They read and write files in the data folder, and they read the
+// server's script data (items, NPCs, fixtures), which they must do under the script data read lock, since a
+// reload on the game loop replaces it. Changes reach the running game only through a reload.
 func (apiState *ApiState) RegisterEditorRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/editor/constants", apiState.requireGod(handleEditorGetConstants))
-	mux.HandleFunc("GET /api/editor/items", apiState.requireGod(handleEditorGetItems))
-	mux.HandleFunc("GET /api/editor/npcs", apiState.requireGod(handleEditorGetNpcs))
-	mux.HandleFunc("GET /api/editor/fixtures", apiState.requireGod(handleEditorGetFixtures))
-	mux.HandleFunc("GET /api/editor/world", apiState.requireGod(handleEditorGetWorld))
-	mux.HandleFunc("PUT /api/editor/world", apiState.requireGod(handleEditorPutWorld))
+	mux.HandleFunc("GET /api/editor/items", apiState.requireGod(withScriptDataReadLock(handleEditorGetItems)))
+	mux.HandleFunc("GET /api/editor/npcs", apiState.requireGod(withScriptDataReadLock(handleEditorGetNpcs)))
+	mux.HandleFunc("GET /api/editor/fixtures", apiState.requireGod(withScriptDataReadLock(handleEditorGetFixtures)))
+	mux.HandleFunc("GET /api/editor/world", apiState.requireGod(withScriptDataReadLock(handleEditorGetWorld)))
+	mux.HandleFunc("PUT /api/editor/world", apiState.requireGod(withScriptDataReadLock(handleEditorPutWorld)))
+	mux.HandleFunc("POST /api/editor/reload", apiState.requireGod(apiState.handleEditorReload))
 }
 
 // Only lets logged in gods through to the handler
@@ -41,6 +45,16 @@ func (apiState *ApiState) requireGod(handler http.HandlerFunc) http.HandlerFunc 
 			http.Error(writer, "Only gods can use the editor.", http.StatusForbidden)
 			return
 		}
+
+		handler(writer, request)
+	}
+}
+
+// Holds the script data read lock while the handler runs
+func withScriptDataReadLock(handler http.HandlerFunc) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		world.LockScriptDataForReading()
+		defer world.UnlockScriptDataForReading()
 
 		handler(writer, request)
 	}
@@ -105,6 +119,40 @@ func handleEditorPutWorld(writer http.ResponseWriter, request *http.Request) {
 	err = writeFileAtomic(world.WORLD_JSON_PATH, data)
 	if err != nil {
 		writeError(writer, fmt.Errorf("Error saving world file: %w", err))
+		return
+	}
+
+	writer.WriteHeader(http.StatusNoContent)
+}
+
+// Asks the game loop to reload the world from the data folder and waits for the result.
+// Must not hold the script data read lock, since the reload takes the write lock.
+func (apiState *ApiState) handleEditorReload(writer http.ResponseWriter, request *http.Request) {
+	reloadRequest := game.ReloadRequest {
+		Reply: make(chan []string, 1),
+	}
+
+	select {
+		case apiState.gamestate.ReloadRequests <- reloadRequest:
+		case <- request.Context().Done():
+			return
+		case <- apiState.gamestate.Stopped:
+			http.Error(writer, "The server is shutting down.", http.StatusServiceUnavailable)
+			return
+	}
+
+	var problems []string
+	select {
+		case problems = <- reloadRequest.Reply:
+		case <- request.Context().Done():
+			return
+		case <- apiState.gamestate.Stopped:
+			http.Error(writer, "The server is shutting down.", http.StatusServiceUnavailable)
+			return
+	}
+
+	if len(problems) != 0 {
+		writeError(writer, fmt.Errorf("The world could not be reloaded:\n%s", strings.Join(problems, "\n")))
 		return
 	}
 

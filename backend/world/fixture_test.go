@@ -21,9 +21,15 @@ func fixtureTestWorld(t *testing.T) (*World, MobHandle) {
 	}
 
 	world := roomTestWorld()
-	world.scriptInit(dataFolder)
+	err = world.scriptInit(dataFolder)
+	if err != nil {
+		t.Fatalf("Error initializing scripts: %s", err.Error())
+	}
 	t.Cleanup(world.ScriptQuit)
-	world.loadFixtureData()
+	err = world.loadFixtureData()
+	if err != nil {
+		t.Fatalf("Error loading fixture data: %s", err.Error())
+	}
 	world.signalListeners = make(map[string][]*lua.Function)
 
 	// The door blocks the exit itself, so the test world's lock isn't needed

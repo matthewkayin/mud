@@ -1,7 +1,6 @@
 package world
 
 import (
-	"log"
 	"fmt"
 	"github.com/mmcdole/lunar"
 )
@@ -54,12 +53,11 @@ var NPC_ID_STR_TO_ID map[string]NpcId
 
 const NPC_DATA_FOLDER = "npcs"
 
-func (world *World) loadNpcData() {
+func (world *World) loadNpcData() error {
 	// Read npc folder
-	log.Printf("Loading NPC data...")
 	paths, err := scriptGetFilesFrom(world.dataFolder, NPC_DATA_FOLDER)
 	if err != nil {
-		log.Fatalf("Error opening NPC data folder: %s", err.Error())
+		return fmt.Errorf("Error opening NPC data folder: %s", err.Error())
 	}
 
 	NPC_DATA = make([]*NpcData, 0, len(paths))
@@ -69,29 +67,28 @@ func (world *World) loadNpcData() {
 		// Open script
 		table, err := world.scriptLoadTable(path)
 		if err != nil {
-			log.Fatalf("%s: %s", path, err.Error())
+			return err
 		}
 
 		// Parse item data
 		parser := ScriptParser{}
 		npcData := parser.parseNpc(table)
 		if npcData == nil {
-			log.Fatalf("%s: %s", path, parser.getError().Error())
+			return fmt.Errorf("%s: %s", path, parser.getError().Error())
 		}
 
 		// Check for duplicates
 		_, duplicateNpcId := NPC_ID_STR_TO_ID[npcData.Id]
 		if duplicateNpcId {
-			log.Fatalf("NPC %s has id '%s' which is a duplicate of another NPC.", path, npcData.Id)
+			return fmt.Errorf("NPC %s has id '%s' which is a duplicate of another NPC.", path, npcData.Id)
 		}
 
 		// Store npc in NPC_DATA
 		NPC_ID_STR_TO_ID[npcData.Id] = NpcId(len(NPC_DATA))
 		NPC_DATA = append(NPC_DATA, npcData)
-		log.Printf("Loaded NPC '%s'.", npcData.Id)
 	}
 
-	log.Printf("All NPC data has been loaded.")
+	return nil
 }
 
 func (parser *ScriptParser) parseNpc(table *lua.Table) *NpcData {

@@ -84,7 +84,7 @@ Then when loading the player's inventory JSON, we will need to walk back using a
 
 ## Data scripts
 
-Each folder under `backend/data/` holds one kind of data, and every `.lua` file in it returns a single table of that kind. `World.LoadData(dataFolder)` (`backend/world/world.go`) loads the folders in this order. `WorldInit` calls it with `./data`, and the world editor calls it with the backend's data folder so it can read world files. A script can only refer to data that was loaded before it, and those references are names that are checked during parsing:
+Each folder under `backend/data/` holds one kind of data, and every `.lua` file in it returns a single table of that kind. `World.LoadData(dataFolder)` (`backend/world/world.go`) loads the folders in this order. `WorldLoad` calls it with `./data` (see [Loading and reloading](#loading-and-reloading)). A script can only refer to data that was loaded before it, and those references are names that are checked during parsing:
 
 | Order | Folder | Go type | Loader | References |
 | --- | --- | --- | --- | --- |
@@ -92,14 +92,14 @@ Each folder under `backend/data/` holds one kind of data, and every `.lua` file 
 | 1 | `races/` | `RaceData` | `loadRaceData` (`character_race.go`) | |
 | 2 | `jobs/` | `JobData` | `loadJobData` (`character_job.go`) | |
 | 3 | `spells/` | `SpellData` | `loadSpellData` (`spell.go`) | |
-| 4 | `recipes/` | `RecipeData` | `loadRecipeTables` + `loadRecipeData` (`recipe.go`) | jobs, items |
+| 4 | `recipes/` | `RecipeData` | `loadRecipeScripts` + `loadRecipeData` (`recipe.go`) | jobs, items |
 | 5 | `items/` | `ItemData` | `loadItemData` (`item.go`) | spells, recipes |
 | 6 | `classes/` | `ClassData` | `loadClassData` (`character_class.go`) | spells, items |
 | 7 | `npcs/` | `NpcData` | `loadNpcData` (`npc_data.go`) | items |
 
 Quests are the exception to the folder layout: `quests.lua` is a single file at the root of the data folder that returns an array of quest names. There can be at most `QUEST_MAX` (32) quests, since characters store them in a `uint32` bitfield. See [Quests](#quests).
 
-Spell scripts and their targets are described in [spells.md](spells.md). Recipes are loaded in two passes. `loadRecipeTables` registers recipe names first so that items can refer to them. `loadRecipeData` parses the rest of each recipe once items exist. Classes and NPCs load after items so they can refer to items. NPC scripts, their behavior hooks and their behavior params are described in [npcs.md](npcs.md). Fixture scripts and signals are described in [fixtures.md](fixtures.md).
+Spell scripts and their targets are described in [spells.md](spells.md). Recipes are loaded in two passes. `loadRecipeScripts` registers recipe names first so that items can refer to them. `loadRecipeData` parses the rest of each recipe once items exist. Classes and NPCs load after items so they can refer to items. NPC scripts, their behavior hooks and their behavior params are described in [npcs.md](npcs.md). Fixture scripts and signals are described in [fixtures.md](fixtures.md).
 
 Each ID is the entry's position in load order, and files load in alphabetical order. Names must be unique within a kind, and the player-facing lookups (`RaceIdFromString` etc.) ignore case.
 
@@ -136,7 +136,15 @@ class.unlocks = {
 return class
 ```
 
-Character saves (`saves/<Name>.json`, `CharacterJson` in `character.go`) store race, class, job, spell, recipe and completed quest names instead of IDs. World files (`data/world.json`) store item names in drop tables (`DropTableEntry` in `drop_table.go`) and inventories (`Item` in `item.go`), and NPC keys in unique NPCs (`Npc` in `npc.go`). Both kinds of file store mob conditions by name (`Condition` in `mob_condition.go`). If a save names something that no longer exists, decoding returns an error and startup fails.
+Character saves (`saves/<Name>.json`, `CharacterJson` in `character.go`) store race, class, job, spell, recipe and completed quest names instead of IDs. World files (`data/world.json`) store item names in drop tables (`DropTableEntry` in `drop_table.go`) and inventories (`Item` in `item.go`), and NPC keys in unique NPCs (`Npc` in `npc.go`). Both kinds of file store mob conditions by name (`Condition` in `mob_condition.go`). If a save names something that no longer exists, decoding returns an error and the world fails to load.
+
+### Loading and reloading
+
+`WorldLoad` (`backend/world/world.go`) builds a world from the data folder: it loads the script data, decodes and validates `world.json`, and loads every character save. It returns the problems it found instead of exiting. At startup, any problem stops the server. A god can also run `/reload` in the game (`backend/game/reload.go`), and the editor reloads after each save, to load the current files into the running server without a restart. A reload that finds problems is refused, and the world that was running keeps going.
+
+A loader returns an `error` naming the file that failed (`"<path>: <problem>"`) rather than calling `log.Fatalf`, and it doesn't log anything when a file loads fine.
+
+The script data lives in package globals (`ITEM_DATA`, `ITEM_NAME_TO_ID`, ...). Before loading, `WorldLoad` captures them in a `scriptDataSnapshot` (`backend/world/script_data.go`) and restores it if the load fails. The snapshot copies slice headers and map pointers, not the data, so **a loader must assign a new slice or map to its global** (`ITEM_DATA = make(...)`) and never clear or truncate the old one in place. A new global must be added to the snapshot. Only the game loop writes the globals, holding `scriptDataLock`. Any other goroutine that reads them, such as the editor's HTTP handlers, must hold the read lock (`LockScriptDataForReading`).
 
 ## Script API
 

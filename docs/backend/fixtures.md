@@ -22,7 +22,7 @@ A fixture script returns a table with these fields:
 
 ## Instance lifecycle
 
-`WorldInit` calls `init` once for each placed fixture with the fixture's handle and behavior params. The table that `init` returns is the fixture's instance. It lasts for the rest of the run and is passed to `description`, `reset` and every interaction, so all of a fixture's state lives in it. A fixture that needs its handle after `init` keeps it in the instance (`instance.self`). A fixture without `init` gets `nil` as its instance.
+`WorldLoad` calls `init` once for each placed fixture with the fixture's handle and behavior params. The table that `init` returns is the fixture's instance. It lasts until the server stops or the world is reloaded, and is passed to `description`, `reset` and every interaction, so all of a fixture's state lives in it. A fixture that needs its handle after `init` keeps it in the instance (`instance.self`). A fixture without `init` gets `nil` as its instance.
 
 Prefer reading state the world already tracks over copying it into the instance. For example, the Big Door asks `world.fixture_is_blocking_exit` whether it's open instead of keeping its own flag.
 

@@ -28,7 +28,7 @@ Editor API routes require a logged-in god (`GOD_USERS` or the gods file), checke
 
 ### The editor works on files, the game works on the live world
 
-The editor's HTTP handlers never touch `GameState` or `World`. That keeps the rule that all world state is mutated on the game loop. The handlers read and write files in the data folder, and they keep **their own** loaded copy of the script data (`world.LoadData`), as the editor server does today, to validate and convert world files. Changes reach the live world only through a reload.
+The editor's HTTP handlers never touch `GameState` or `World`. That keeps the rule that all world state is mutated on the game loop. The handlers read and write files in the data folder. To validate and convert world files they read the server's script data globals (`ITEM_DATA` etc.), holding the script data read lock (`world.LockScriptDataForReading`), since a reload on the game loop replaces them. Changes reach the live world only through a reload.
 
 ### Reload
 
@@ -36,9 +36,9 @@ A reload rebuilds the whole world rather than patching the live one.
 
 1. **Trigger.** A reload only happens when it's requested. The editor requests one after a successful save (`POST /api/editor/reload`), and a god can run `/reload` after editing Lua files by hand. There's no file watcher, so half-saved files are never loaded.
 2. **On the game loop.** The HTTP handler sends a reload event into the game loop (alongside `SocketEvents`), carrying a reply channel, and waits for the result. `/reload` runs on the game loop already.
-3. **Build off to the side.** The game loop loads a new `World` from the data folder (a new Lua VM, all scripts, `world.json`) and validates it. Validation includes everything `World.Validate()` checks, plus: every online player's mob data and every save in `saves/` only references content that exists in the new world.
-4. **On failure**, the old world keeps running untouched. The errors go back to the caller: the editor shows them, and `/reload` prints them.
-5. **On success**, each online player is saved, the new world replaces the old one, and each online player's mob is spawned again from their save in the same room. If that room no longer exists, they go to the start room (the room at 0,0,0 once rooms move to Lua). Players stay connected, since connections belong to `game`, not `world`. Everyone online is told the world was reloaded.
+3. **Build off to the side.** The game loop saves every online player, then loads a new `World` from the data folder (`world.WorldLoad`: a new Lua VM, all scripts, `world.json`, every save in `saves/`) and validates it. Validation includes everything `World.Validate()` checks, plus every save (including the online players' fresh ones) only referencing content that exists in the new world. Loading writes the script data globals, so `WorldLoad` holds the script data write lock and snapshots the globals first.
+4. **On failure**, the snapshot is restored and the new VM is closed, so the old world keeps running untouched. The errors go back to the caller: the editor shows them, and `/reload` prints them.
+5. **On success**, the new world replaces the old one, and each online player's mob is spawned again from their save in the same room. If that room no longer exists, they go to the start room (room index 0 for now, and the room at 0,0,0 once rooms move to Lua). Players stay connected, since connections belong to `game`, not `world`. Players in character creation go back to the login menu, since their character sheet holds load-order IDs. Everyone online is told the world was reloaded.
 6. **What's lost** is only transient state: NPCs respawn, room items and chests are rerolled, conditions, combat and queued actions end, and locks and fixtures reset.
 
 Reload uses the same loading and validation code as server startup, so there's no second code path to keep in sync. Script **runtime** errors (a hook that throws while the game is running) can't be caught by validation. They behave as they do after a restart.

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log"
 	"mud/world"
 	"os"
 	"reflect"
@@ -10,7 +11,10 @@ import (
 
 func TestMain(m *testing.M) {
 	testWorld := world.World{}
-	testWorld.LoadData("../data")
+	err := testWorld.LoadData("../data")
+	if err != nil {
+		log.Fatalf("Error loading script data: %s", err.Error())
+	}
 	os.Exit(m.Run())
 }
 

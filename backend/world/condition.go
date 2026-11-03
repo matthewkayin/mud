@@ -2,7 +2,6 @@ package world
 
 import (
 	"fmt"
-	"log"
 	"encoding/json"
 	"github.com/mmcdole/lunar"
 )
@@ -127,12 +126,11 @@ var CONDITION_NAME_TO_ID map[string]ConditionId
 
 const CONDITION_DATA_FOLDER = "conditions"
 
-func (world *World) loadConditionData() {
+func (world *World) loadConditionData() error {
 	// Read condition folder
-	log.Printf("Loading condition data...")
 	paths, err := scriptGetFilesFrom(world.dataFolder, CONDITION_DATA_FOLDER)
 	if err != nil {
-		log.Fatalf("Error opening condition data folder: %s", err.Error())
+		return fmt.Errorf("Error opening condition data folder: %s", err.Error())
 	}
 
 	CONDITION_DATA = make([]*ConditionData, 0, len(paths))
@@ -142,29 +140,28 @@ func (world *World) loadConditionData() {
 		// Open script
 		table, err := world.scriptLoadTable(path)
 		if err != nil {
-			log.Fatalf("%s: %s", path, err.Error())
+			return err
 		}
 
 		// Parse item data
 		parser := ScriptParser{}
 		conditionData := parser.parseConditionData(table)
 		if conditionData == nil {
-			log.Fatalf("%s: %s", path, parser.getError().Error())
+			return fmt.Errorf("%s: %s", path, parser.getError().Error())
 		}
 
 		// Check for duplicates
 		_, duplicateItemName := CONDITION_NAME_TO_ID[conditionData.Name]
 		if duplicateItemName {
-			log.Fatalf("Condition %s has name '%s' which is a duplicate of another item.", path, conditionData.Name)
+			return fmt.Errorf("Condition %s has name '%s' which is a duplicate of another item.", path, conditionData.Name)
 		}
 
 		// Store in CONDITION_DATA
 		CONDITION_NAME_TO_ID[conditionData.Name] = ConditionId(len(CONDITION_DATA))
 		CONDITION_DATA = append(CONDITION_DATA, conditionData)
-		log.Printf("Loaded condition '%s'.", conditionData.Name)
 	}
 
-	log.Printf("All condition data has been loaded.")
+	return nil
 }
 
 func (parser *ScriptParser) parseConditionData(table *lua.Table) *ConditionData {

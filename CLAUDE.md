@@ -56,7 +56,7 @@ go test ./...
 ### World data conventions
 - Static game data that isn't scripted yet is defined as Go tables indexed by enum constants (e.g. `MOB_ABILITY_DATA` in `mob_ability.go`).
 - Mobs live in `MobArray`, a sparse-set with generational `MobHandle{Id, Generation}`. `Get` panics on stale handles; use `GetIfExists` when a handle may be dead. Rooms reference occupants by handle; rooms are referenced by index with `ROOM_NONE` as the sentinel.
-- Item, spell, recipe, race, job, class and NPC data are Lua scripts in `backend/data/` (see `docs/backend/scripting.md` and `docs/backend/npcs.md`), and their IDs are load-order indices. `World.LoadData(dataFolder)` loads them, and both `WorldInit` and the editor call it.
+- Item, spell, recipe, race, job, class and NPC data are Lua scripts in `backend/data/` (see `docs/backend/scripting.md` and `docs/backend/npcs.md`), and their IDs are load-order indices. `World.LoadData(dataFolder)` loads them, `WorldLoad` calls it at startup and on `/reload`, and the editor reads the loaded data under `LockScriptDataForReading` (see `docs/backend/scripting.md`).
 - Persistence is JSON: `data/world.json` (fields tagged `json:"-"` are transient) and `saves/<Name>.json` for characters. Since script data IDs are not stable, saved files reference it by name through custom `MarshalJSON`/`UnmarshalJSON` (e.g. `Item`, `DropTableEntry`, `CharacterJson`).
 - While a player is logged in, their mob's `Data` is the live copy and `Character.Data` is only the last saved snapshot. `MobInit` clones the data so the two share no slices. Read and change `playerMob.Data`, not `PlayerCharacter.Data`, and save with `mob.SavePlayerCharacter()`, which copies the mob's data back before writing.
 

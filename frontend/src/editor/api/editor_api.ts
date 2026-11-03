@@ -65,6 +65,11 @@ export async function LoadWorld(): Promise<api.EditorWorld> {
   return editorWorld;
 }
 
+// Asks the server to reload the world from its files. Throws the problems if the new world is invalid.
+export async function ReloadWorld() {
+  await request('/api/editor/reload', { method: 'POST' });
+}
+
 export async function SaveWorld(editorWorld: api.EditorWorld) {
   await request('/api/editor/world', {
     method: 'PUT',

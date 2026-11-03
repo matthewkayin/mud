@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { editorStore } from '../store';
+import { editorStore, loadScriptData } from '../store';
 import {
   Box,
   Stack,
@@ -18,7 +18,7 @@ import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
-import { LoadWorld, SaveWorld } from '../api/editor_api';
+import { LoadWorld, SaveWorld, ReloadWorld } from '../api/editor_api';
 
 type ErrorDialogState = {
   title: string;
@@ -46,6 +46,21 @@ export function Toolbar() {
       editorStore.markSaved(savePoint);
     } catch (error) {
       setErrorDialog({ title: 'Could not save world', message: String(error) });
+      return;
+    }
+
+    // Reload so the running game picks up the change
+    try {
+      await ReloadWorld();
+    } catch (error) {
+      setErrorDialog({ title: 'Saved, but could not reload world', message: String(error) });
+      return;
+    }
+
+    try {
+      await loadScriptData();
+    } catch (error) {
+      setErrorDialog({ title: 'Could not load item, NPC and fixture data', message: String(error) });
     }
   }, []);
 
