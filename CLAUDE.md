@@ -16,15 +16,17 @@ go test ./...                 # all tests
 go test ./world -run TestName # single test
 go generate                   # regenerates data/world.d.lua (Lua language server defs for the script API)
 ```
-The server is configured by env vars (`PORT`, `PUBLIC_URL`, `ENABLE_DEBUG_AUTH`, `RC_*` OAuth settings, `STATIC_FOLDER`, `GOD_USER_IDS` — see `backend/api/env.go`). `backend/.env` is not in git; copy it from `backend/.env.example`.
+The server is configured by env vars (`PORT`, `PUBLIC_URL`, `ENABLE_DEBUG_AUTH`, `RC_*` OAuth settings, `GOD_USER_IDS` — see `backend/api/env.go`). `backend/.env` is not in git; copy it from `backend/.env.example`.
 
 Web frontend (run from `frontend/`):
 ```
 npm install
 npm run dev     # Vite on :5173, proxies /api/auth and /api/websocket to :7272
-npm run build   # tsc -b && vite build
+npm run build   # tsc -b && vite build, writes to backend/web/dist
 npm run lint
 ```
+`go build -tags embed` (run after `npm run build`) embeds `backend/web/dist` in the server binary, which then serves the client itself (`backend/web`). Without the tag, the server only serves `/api` and Vite serves the client.
+
 The frontend uses same-origin URLs (`/api/...`, `ws(s)://<host>/api/websocket`), so it works both behind the Vite proxy and when the Go server serves the built files.
 
 Deployment (Disco, game only — not the editor): the root `Dockerfile` builds the frontend and backend into one image and `disco.json` defines the `web` service and its volumes. See `docs/deployment.md`.

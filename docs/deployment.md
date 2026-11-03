@@ -8,11 +8,11 @@ Disco builds the `Dockerfile` at the repo root and runs it as the `web` service 
 
 The `Dockerfile` has three stages:
 
-1. Builds the web client (`npm run build` in `frontend/`).
-2. Builds the game server with `GOWORK=off`, since `go.work` references `editor/` and the editor isn't copied into the image.
-3. Copies the server binary, `backend/data/`, `backend/banner.txt` and the built client into `/app`.
+1. Builds the web client (`npm run build` in `frontend/`), which writes it to `backend/web/dist`.
+2. Builds the game server with `-tags embed`, which embeds the built client in the binary, and with `GOWORK=off`, since `go.work` references `editor/` and the editor isn't copied into the image.
+3. Copies the server binary, `backend/data/` and `backend/banner.txt` into `/app`.
 
-The server runs with `/app` as its working directory, so its relative paths (`./data`, `./saves`, `./logs`, `./banner.txt`) resolve there. `STATIC_FOLDER=/app/static` makes the server serve the web client as well as `/api`. Any path that isn't a file gets `index.html`, so client-side routes like `/game` work. The client and the API share one origin, so the session cookie and the websocket need no CORS setup.
+The server runs with `/app` as its working directory, so its relative paths (`./data`, `./saves`, `./logs`, `./banner.txt`) resolve there. The server serves the embedded web client as well as `/api`. Any path that isn't a file gets `index.html`, so client-side routes like `/game` work. The client and the API share one origin, so the session cookie and the websocket need no CORS setup.
 
 `data/world.json` and the script data ship in the image, so a deploy picks up world changes. Only runtime-written files live on volumes:
 
@@ -31,7 +31,6 @@ The server reads its config from environment variables (`backend/api/env.go`). N
 | `PUBLIC_URL` | Yes | The origin browsers use to reach the game, e.g. `https://mud.example.com`. OAuth redirects are built from it, and the session cookie is `Secure` when it starts with `https://`. |
 | `ENABLE_DEBUG_AUTH` | No | `true` enables `/api/auth/debug`, which logs in as any user ID. Never set it in production. |
 | `RC_API_URL`, `RC_AUTH_URL`, `RC_TOKEN_URL`, `RC_CLIENT_ID`, `RC_CLIENT_SECRET` | Yes, unless debug auth is on | Recurse Center OAuth settings. |
-| `STATIC_FOLDER` | No | Folder of built web client files to serve. The `Dockerfile` sets it. Local dev leaves it unset, since Vite serves the client. |
 | `GOD_USER_IDS` | No | Comma-separated Recurse Center user IDs (e.g. `1234,5678`) of the players who can use God commands, such as `/shutdown`. |
 
 The web client asks `GET /api/auth/config` whether debug auth is on, so one client build works with any server config.
@@ -42,7 +41,7 @@ The Recurse Center OAuth app must list `<PUBLIC_URL>/api/auth/callback` as a red
 
 1. Give Disco's GitHub app access to the repo, then create a project from it in the Disco dashboard. Set the project's branch to `prod` (`disco projects:update <project> --branch prod`).
 2. Add the project's domain.
-3. Set the env vars above. `PORT` and `STATIC_FOLDER` come from the `Dockerfile`, so leave them out.
+3. Set the env vars above. `PORT` comes from the `Dockerfile`, so leave it out.
 4. Publish a release (see [Releasing](#releasing)).
 
 To move existing characters over, copy their `saves/*.json` files into the `mud-saves` volume.

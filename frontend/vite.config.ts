@@ -4,6 +4,11 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  build: {
+    // The server embeds the build when compiled with -tags embed (see backend/web)
+    outDir: '../backend/web/dist',
+    emptyOutDir: true
+  },
   server: {
     host: '0.0.0.0',
     port: 5173,

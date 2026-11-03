@@ -13,10 +13,9 @@ import (
 	"flag"
 	"time"
 	"net/http"
-	"path"
-	"path/filepath"
 	"mud/api"
 	"mud/game"
+	"mud/web"
 )
 
 const MUD_LOG_FOLDER = "./logs"
@@ -61,8 +60,10 @@ func main() {
 		mux.HandleFunc("/api/auth/debug", apiState.HandleDebugLogin)
 	}
 	mux.HandleFunc("/api/websocket", apiState.HandleGetWebSocket)
-	if env.STATIC_FOLDER != "" {
-		mux.Handle("/", staticFolderHandler(env.STATIC_FOLDER))
+	frontendHandler := web.Handler()
+	if frontendHandler != nil {
+		log.Printf("Serving the embedded frontend.")
+		mux.Handle("/", frontendHandler)
 	}
 
 	// Kick off server in a separate goroutine
@@ -130,21 +131,6 @@ func corsMiddleware(next http.Handler) http.Handler {
 		}
 
 		next.ServeHTTP(writer, request)
-	})
-}
-
-// Serves the built frontend. Paths that aren't files get index.html, so that the client side router handles them.
-func staticFolderHandler(staticFolder string) http.Handler {
-	fileServer := http.FileServer(http.Dir(staticFolder))
-	return http.HandlerFunc(func (writer http.ResponseWriter, request *http.Request) {
-		filePath := filepath.Join(staticFolder, filepath.FromSlash(path.Clean("/" + request.URL.Path)))
-		fileInfo, err := os.Stat(filePath)
-		if err != nil || fileInfo.IsDir() {
-			http.ServeFile(writer, request, filepath.Join(staticFolder, "index.html"))
-			return
-		}
-
-		fileServer.ServeHTTP(writer, request)
 	})
 }
 
