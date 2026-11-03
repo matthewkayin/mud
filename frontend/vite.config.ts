@@ -13,13 +13,13 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     proxy: {
-      '/api/auth': {
-        target: process.env.MUD_BACKEND_URL ?? 'http://localhost:7272',
-        changeOrigin: true
-      },
       '/api/websocket': {
         target: process.env.MUD_BACKEND_URL ?? 'http://localhost:7272',
         ws: true,
+        changeOrigin: true
+      },
+      '/api': {
+        target: process.env.MUD_BACKEND_URL ?? 'http://localhost:7272',
         changeOrigin: true
       }
     }

@@ -1,4 +1,4 @@
-import { main, world } from './models';
+import { api, world } from './models';
 
 // Talks to the editor's Go server. The server reads and writes the world file in the
 // backend's data folder and converts between its format and the editor's, since that
@@ -35,20 +35,20 @@ async function getJson<T>(url: string): Promise<T> {
   return response.json();
 }
 
-export function GetConstants(): Promise<main.EditorConstants> {
-  return getJson('/api/constants');
+export function GetConstants(): Promise<api.EditorConstants> {
+  return getJson('/api/editor/constants');
 }
 
 export function GetItemData(): Promise<world.ItemData[]> {
-  return getJson('/api/items');
+  return getJson('/api/editor/items');
 }
 
 export function GetNpcData(): Promise<world.NpcData[]> {
-  return getJson('/api/npcs');
+  return getJson('/api/editor/npcs');
 }
 
 export function GetFixtureData(): Promise<world.FixtureData[]> {
-  return getJson('/api/fixtures');
+  return getJson('/api/editor/fixtures');
 }
 
 export function SetIsDirty(value: boolean) {
@@ -56,8 +56,8 @@ export function SetIsDirty(value: boolean) {
   updateTitle();
 }
 
-export async function LoadWorld(): Promise<main.EditorWorld> {
-  const editorWorld: main.EditorWorld = await getJson('/api/world');
+export async function LoadWorld(): Promise<api.EditorWorld> {
+  const editorWorld: api.EditorWorld = await getJson('/api/editor/world');
 
   isDirty = false;
   updateTitle();
@@ -65,8 +65,8 @@ export async function LoadWorld(): Promise<main.EditorWorld> {
   return editorWorld;
 }
 
-export async function SaveWorld(editorWorld: main.EditorWorld) {
-  await request('/api/world', {
+export async function SaveWorld(editorWorld: api.EditorWorld) {
+  await request('/api/editor/world', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(editorWorld),

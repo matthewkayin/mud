@@ -45,7 +45,7 @@ Reload uses the same loading and validation code as server startup, so there's n
 
 ### Frontend
 
-The editor becomes a route of the game's web client: `/editor`. It's loaded with a lazy import, so players on `/` and `/game` never download the editor's code or its MUI dependency. The editor page only shows its UI if `GET /api/auth/config` reports that the editor is enabled and the user is a god.
+The editor becomes a route of the game's web client: `/editor`. It's part of the same bundle as the game, so players also download the editor's code and its MUI dependency. If that gets too heavy, MUI can be replaced later. The editor page only shows its UI if `GET /api/auth/config` reports that the editor is enabled and the user is a god.
 
 ### TypeScript types
 
@@ -56,11 +56,11 @@ The editor becomes a route of the game's web client: `/editor`. It's loaded with
 Each step leaves the game and the editor working.
 
 1. **Embed the frontend in the server.** Build `frontend/dist` into the binary with `go:embed`, serve it with the existing index.html fallback, and remove `STATIC_FOLDER`. Local development still uses Vite on :5173. Because `go build` needs `frontend/dist` to exist, decide how a fresh checkout builds (see open questions).
-2. **Move the editor frontend into `frontend/`.** Move `editor/frontend/src` to `frontend/src/editor/`, add the `/editor` route with a lazy import, merge `package.json` dependencies (aligning the React, Vite and TypeScript versions), and point the editor's API calls at `/api/editor/...`. Until step 3, Vite proxies `/api/editor` to the old editor server on :7373.
-3. **Move the editor API into the server.** Move the handlers in `editor/main.go` and the conversion in `editor/world_file.go` (and its tests) into `backend/api/`, under `/api/editor/*`, registered only when `ENABLE_EDITOR` is set and behind the god check. Exclude these routes from `corsMiddleware`'s wildcard origin, since they write files. Move type generation (`models_gen.go`, `enums.go`, typescriptify) into `backend/`.
+2. **Move the editor frontend into `frontend/`.** Move `editor/frontend/src` to `frontend/src/editor/`, add the `/editor` route, merge `package.json` dependencies (aligning the React, Vite and TypeScript versions), and point the editor's API calls at `/api/editor/...`. Until step 3, Vite proxies `/api/editor` to the old editor server on :7373.
+3. **Move the editor API into the server.** Move the handlers in `editor/main.go` and the conversion in `editor/world_file.go` (and its tests) into `backend/api/`, under `/api/editor/*`, registered only when the server runs with `--edit` and behind the god check. Exclude these routes from `corsMiddleware`'s wildcard origin, since they write files. Move type generation (`models_gen.go`, `enums.go`, typescriptify) into `backend/`.
 4. **Add reload.** Add the reload event and the reload result to the game loop, `/reload` in `game/menu_god.go`, `POST /api/editor/reload`, and the save and respawn of online players. The editor calls reload after each save and shows the validation errors it returns.
 5. **Delete the old editor.** Remove `editor/`, `go.work` and the `justfile`. Update the Dockerfile (it no longer needs `GOWORK=off` or `STATIC_FOLDER`).
-6. **Update the docs.** Update `CLAUDE.md` (commands, the Go ↔ TypeScript section, the frontends section), `docs/deployment.md` (`STATIC_FOLDER`, `ENABLE_EDITOR`), and `docs/backend/rooms.md` and `docs/backend/npcs.md`, which describe editing in the world editor. Move `editor/README.md` into a new `docs/editor.md` that covers editor mode, reload and the editor's architecture (store, `EditorAction` undo/redo).
+6. **Update the docs.** Update `CLAUDE.md` (commands, the Go ↔ TypeScript section, the frontends section), `docs/deployment.md` (`STATIC_FOLDER`, `--edit`), and `docs/backend/rooms.md` and `docs/backend/npcs.md`, which describe editing in the world editor. Move `editor/README.md` into a new `docs/editor.md` that covers editor mode, reload and the editor's architecture (store, `EditorAction` undo/redo).
 
 ## Open questions
 

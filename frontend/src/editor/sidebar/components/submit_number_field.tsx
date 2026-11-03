@@ -34,9 +34,14 @@ export function SubmitNumberField({ label, value, min, max, step = 1, disabled =
   // blur handler runs, so read the latest draft from a ref rather than from state
   const draftRef = useRef<number | null>(value);
 
+  // Reset the draft when the value changes from outside the field (e.g. undo)
+  const [previousValue, setPreviousValue] = useState(value);
+  if (value !== previousValue) {
+    setPreviousValue(value);
+    setDraft(value);
+  }
   useEffect(() => {
     draftRef.current = value;
-    setDraft(value);
   }, [value]);
 
   const setDraftValue = (newValue: number | null) => {

@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"mud/world"
@@ -10,7 +10,7 @@ import (
 
 func TestMain(m *testing.M) {
 	testWorld := world.World{}
-	testWorld.LoadData("../backend/data")
+	testWorld.LoadData("../data")
 	os.Exit(m.Run())
 }
 

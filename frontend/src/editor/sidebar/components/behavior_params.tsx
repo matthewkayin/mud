@@ -9,52 +9,20 @@ import {
 } from '@mui/material';
 import { world } from '../../api/models';
 import { editorStore, DIRECTION_NAMES } from '../../store';
+import type { BehaviorParamTypes, BehaviorParamValue, BehaviorParams } from './default_behavior_params';
 import { SubmitTextField } from './submit_textfield';
 import { SubmitNumberField } from './submit_number_field';
 
-// Maps each behavior param name that an NPC or fixture script declares to its type
-type BehaviorParamTypes = Record<string, world.BehaviorParamType>;
-
-// Returns a value for each declared behavior param
-export function defaultBehaviorParams(paramTypes: BehaviorParamTypes, itemData: world.ItemData[]): Record<string, any> {
-  const params: Record<string, any> = {};
-  for (const [name, paramType] of Object.entries(paramTypes)) {
-    switch (paramType) {
-      case world.BehaviorParamType.STRING:
-        params[name] = '';
-        break;
-      case world.BehaviorParamType.NUMBER:
-        params[name] = 0;
-        break;
-      case world.BehaviorParamType.BOOLEAN:
-        params[name] = false;
-        break;
-      case world.BehaviorParamType.ITEM:
-        params[name] = world.Item.createFrom({
-          Id: itemData.length > 0 ? itemData[0].Name : '',
-          Amount: 1,
-          Durability: 0,
-        });
-        break;
-      case world.BehaviorParamType.DIRECTION:
-        params[name] = DIRECTION_NAMES[world.Direction.NORTH];
-        break;
-    }
-  }
-
-  return params;
-}
-
 type BehaviorParamsEditorProps = {
   paramTypes: BehaviorParamTypes;
-  params: Record<string, any>;
-  onEdit: (params: Record<string, any>) => void;
+  params: BehaviorParams;
+  onEdit: (params: BehaviorParams) => void;
 }
 
 export function BehaviorParamsEditor({ paramTypes, params, onEdit }: BehaviorParamsEditorProps) {
   const itemData = useSyncExternalStore(editorStore.subscribe, editorStore.getItemData);
 
-  const editParam = (name: string, value: any) => {
+  const editParam = (name: string, value: BehaviorParamValue) => {
     const editedParams = structuredClone(params);
     editedParams[name] = value;
     onEdit(editedParams);
@@ -77,7 +45,7 @@ export function BehaviorParamsEditor({ paramTypes, params, onEdit }: BehaviorPar
               <SubmitTextField
                 key={name}
                 label={name}
-                value={value}
+                value={value as string}
                 onSubmit={(newValue) => editParam(name, newValue)}
               />
             );
@@ -87,7 +55,7 @@ export function BehaviorParamsEditor({ paramTypes, params, onEdit }: BehaviorPar
               <SubmitNumberField
                 key={name}
                 label={name}
-                value={value}
+                value={value as number}
                 onSubmit={(newValue) => editParam(name, newValue)}
               />
             );
@@ -99,21 +67,22 @@ export function BehaviorParamsEditor({ paramTypes, params, onEdit }: BehaviorPar
                 label={name}
                 control={
                   <Checkbox
-                    checked={value}
+                    checked={value as boolean}
                     onChange={(event) => editParam(name, event.target.checked)}
                   />
                 }
               />
             );
 
-          case world.BehaviorParamType.ITEM:
+          case world.BehaviorParamType.ITEM: {
+            const item = value as world.Item;
             return (
               <Stack key={name} direction="row" spacing={2} sx={{ alignItems: 'center' }}>
                 <Typography>{name}:</Typography>
                 <Select
                   size="small"
-                  value={itemData.some((item) => item.Name === value.Id) ? value.Id : ''}
-                  onChange={(event) => editParam(name, { ...value, Id: event.target.value })}
+                  value={itemData.some((data) => data.Name === item.Id) ? item.Id : ''}
+                  onChange={(event) => editParam(name, world.Item.createFrom({ ...item, Id: event.target.value }))}
                   sx={{ minWidth: '45%' }}
                 >
                   {itemData.map((item) => (
@@ -123,11 +92,12 @@ export function BehaviorParamsEditor({ paramTypes, params, onEdit }: BehaviorPar
                 <SubmitNumberField
                   label="Amount"
                   min={1}
-                  value={value.Amount}
-                  onSubmit={(amount) => editParam(name, { ...value, Amount: amount })}
+                  value={item.Amount}
+                  onSubmit={(amount) => editParam(name, world.Item.createFrom({ ...item, Amount: amount }))}
                 />
               </Stack>
             );
+          }
 
           case world.BehaviorParamType.DIRECTION:
             return (
@@ -135,7 +105,7 @@ export function BehaviorParamsEditor({ paramTypes, params, onEdit }: BehaviorPar
                 <Typography>{name}:</Typography>
                 <Select
                   size="small"
-                  value={value}
+                  value={value as string}
                   onChange={(event) => editParam(name, event.target.value)}
                   sx={{ minWidth: '45%' }}
                 >

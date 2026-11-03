@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { TextField, type SxProps, type Theme } from '@mui/material';
 
 type SubmitTextFieldProps = {
@@ -12,9 +12,12 @@ type SubmitTextFieldProps = {
 export function SubmitTextField({ label, value, onSubmit, multiline, sx }: SubmitTextFieldProps) {
   const [draft, setDraft] = useState(value);
 
-  useEffect(() => {
+  // Reset the draft when the value changes from outside the field (e.g. undo)
+  const [previousValue, setPreviousValue] = useState(value);
+  if (value !== previousValue) {
+    setPreviousValue(value);
     setDraft(value);
-  }, [value]);
+  }
 
   const submit = () => {
     if (draft === value) {

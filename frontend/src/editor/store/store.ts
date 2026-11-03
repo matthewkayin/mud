@@ -1,6 +1,6 @@
-import { EditorCell, EditorConnection, EditorRoom, EditorState } from './state';
-import { EditorAction } from './action';
-import { main, world } from '../api/models';
+import { EditorCell, EditorConnection, type EditorRoom, type EditorState } from './state';
+import type { EditorAction } from './action';
+import { api, world } from '../api/models';
 import { SetIsDirty } from '../api/editor_api';
 
 const ACTION_HISTORY_MAX_LENGTH = 64;
@@ -99,7 +99,7 @@ export class EditorStore {
   }
 
   // Converts the editor state into the format the Go side saves
-  toEditorWorld = (): main.EditorWorld => {
+  toEditorWorld = (): api.EditorWorld => {
     const rooms = [];
     for (const [key, editorRoom] of this.state.rooms) {
       const { Npcs, ...room } = editorRoom;
@@ -112,16 +112,16 @@ export class EditorStore {
       });
     }
 
-    // This is a plain object rather than main.EditorWorld.createFrom() so that rooms and NPCs
+    // This is a plain object rather than api.EditorWorld.createFrom() so that rooms and NPCs
     // are sent as-is. NPC BehaviorParams are untyped, so the generated models can't describe them.
     return {
       Rooms: rooms,
       StartRoom: this.state.startCell?.toPosition(),
-    } as main.EditorWorld;
+    } as api.EditorWorld;
   }
 
   // Replaces the editor state with an opened world. This can't be undone.
-  loadEditorWorld = (editorWorld: main.EditorWorld) => {
+  loadEditorWorld = (editorWorld: api.EditorWorld) => {
     const rooms = new Map<string, EditorRoom>();
     const connections = new Map<string, string[]>();
     for (const editorRoom of editorWorld.Rooms) {

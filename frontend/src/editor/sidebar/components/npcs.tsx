@@ -19,7 +19,8 @@ import { editorStore, NPC_MOVEMENT_TYPE_NAMES } from '../../store';
 import { getEditorConstants } from '../../store/constants';
 import { SubmitRangeNumberPicker } from './submit_range_number_picker';
 import { DropTableEditor } from './drop_table';
-import { BehaviorParamsEditor, defaultBehaviorParams } from './behavior_params';
+import { BehaviorParamsEditor } from './behavior_params';
+import { defaultBehaviorParams } from './default_behavior_params';
 
 type NpcsEditorProps = {
   npcs: world.Npc[];

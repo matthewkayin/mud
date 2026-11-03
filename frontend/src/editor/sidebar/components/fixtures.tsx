@@ -16,7 +16,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { world } from '../../api/models';
 import { editorStore } from '../../store';
-import { BehaviorParamsEditor, defaultBehaviorParams } from './behavior_params';
+import { BehaviorParamsEditor } from './behavior_params';
+import { defaultBehaviorParams } from './default_behavior_params';
 
 type FixturesEditorProps = {
   fixtures: world.Fixture[];

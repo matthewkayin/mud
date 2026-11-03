@@ -2,8 +2,8 @@ import { world } from '../api/models';
 import {
   type EditorCell,
   EditorConnection,
-  EditorRoom,
-  EditorState,
+  type EditorRoom,
+  type EditorState,
   editorStateDeleteRoom,
   editorStateRemoveConnection,
 } from './state';

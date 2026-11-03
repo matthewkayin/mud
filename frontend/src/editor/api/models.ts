@@ -1,4 +1,4 @@
-export namespace main {
+export namespace api {
 	
 	export class EditorConstants {
 	    RoomNone: number;

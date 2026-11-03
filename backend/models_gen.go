@@ -1,13 +1,14 @@
 package main
 
-// Generates frontend/src/api/models.ts from the Go types the editor API sends and receives.
+// Generates frontend/src/editor/api/models.ts from the Go types the editor API sends and receives.
 // This is ported from Wails v2.16.0 (internal/binding/binding.go, MIT License, Copyright (c) 2018-Present Lea Anthony),
 // which generated these models before the editor moved off Wails, so the output keeps the same shape.
 
 import (
 	"bufio"
 	"bytes"
-	"editor/internal/typescriptify"
+	"mud/api"
+	"mud/internal/typescriptify"
 	"mud/world"
 	"os"
 	"reflect"
@@ -29,8 +30,8 @@ func generateModels(path string) error {
 		enums: make(map[string]map[string]interface{}),
 	}
 
-	generator.addStruct(EditorConstants{})
-	generator.addStruct(EditorWorld{})
+	generator.addStruct(api.EditorConstants{})
+	generator.addStruct(api.EditorWorld{})
 	generator.addStruct(world.ItemData{})
 	generator.addStruct(world.NpcData{})
 	generator.addStruct(world.FixtureData{})
