@@ -59,15 +59,18 @@ func deleteCharacter(character *Character) {
 	log.Printf("Deleted character save %s.", path)
 }
 
-func (world *World) loadCharacters() {
-	files, err := os.ReadDir(WORLD_CHARACTER_SAVES_FOLDER)
-	if err != nil {
-		log.Fatalf("Failed to read character save folder: %s.", err.Error())
-	}
-
+// Loads every character save. Returns one problem for each save that couldn't be read,
+// such as one that references content that no longer exists.
+func (world *World) loadCharacters() []string {
 	world.PlayerCharacters = make(map[int][]string)
 	world.Characters = make(map[string]*Character)
 
+	files, err := os.ReadDir(WORLD_CHARACTER_SAVES_FOLDER)
+	if err != nil {
+		return []string { fmt.Sprintf("Failed to read character save folder: %s.", err.Error()) }
+	}
+
+	problems := []string{}
 	for _, fileEntry := range files {
 		path := fmt.Sprintf("%s/%s", WORLD_CHARACTER_SAVES_FOLDER, fileEntry.Name())
 
@@ -76,19 +79,29 @@ func (world *World) loadCharacters() {
 			continue
 		}
 
-		file, err := os.Open(path)
+		character, err := loadCharacter(path)
 		if err != nil {
-			log.Fatalf("Failed opening character file %s: %s.", path, err.Error())
-		}
-		defer file.Close()
-
-		character := &Character{}
-		decoder := json.NewDecoder(file)
-		err = decoder.Decode(character)
-		if err != nil {
-			log.Fatalf("Error reading character file %s: %s.", path, err.Error())
+			problems = append(problems, fmt.Sprintf("%s: %s", path, err.Error()))
+			continue
 		}
 
 		world.AddCharacter(character.PlayerId, character)
 	}
+
+	return problems
+}
+
+func loadCharacter(path string) (*Character, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	character := &Character{}
+	err = json.Unmarshal(data, character)
+	if err != nil {
+		return nil, err
+	}
+
+	return character, nil
 }

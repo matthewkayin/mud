@@ -41,6 +41,9 @@ type EventListener func (gamestate *GameState, event* world.Event)
 
 type GameState struct {
 	SocketEvents chan SocketEvent
+	ReloadRequests chan ReloadRequest
+	// Closed when the game loop stops, so that goroutines waiting on it can give up
+	Stopped chan struct{}
 	bannerLines []string
 	version string
 
@@ -64,15 +67,26 @@ func GameStateInit(godUserIds []int, version string) *GameState {
 		log.Fatalf("Error loading ASCII banner: %s", err.Error())
 	}
 
+	loadedWorld, problems := world.WorldLoad()
+	if len(problems) != 0 {
+		log.Printf("Unable to load the world because of these problems:")
+		for _, problem := range problems {
+			log.Print(problem)
+		}
+		log.Fatalf("Unable to load the world.")
+	}
+
 	gamestate := &GameState {
 		SocketEvents: make(chan SocketEvent, 1024),
+		ReloadRequests: make(chan ReloadRequest),
+		Stopped: make(chan struct{}),
 		bannerLines: bannerLines,
 		version: version,
 
 		players: make([]Player, 0, 64),
 		playerIdToIndexMap: make(map[int]int),
 
-		world: world.WorldInit(),
+		world: loadedWorld,
 		eventListeners: make([][]EventListener, world.EVENT_TYPE_COUNT),
 
 		godPlayerIds: make(map[int]bool),
@@ -93,6 +107,8 @@ func GameStateInit(godUserIds []int, version string) *GameState {
 }
 
 func (gamestate *GameState) Run(ctx context.Context) {
+	defer close(gamestate.Stopped)
+
 	ticker := time.NewTicker(GAME_UPDATE_INTERVAL)
 	defer ticker.Stop()
 
@@ -123,6 +139,8 @@ func (gamestate *GameState) Run(ctx context.Context) {
 						log.Printf("Socket event type %d not handled!", event.Type)
 				}
 				gamestate.handleWorldEvents()
+			case request := <- gamestate.ReloadRequests:
+				request.Reply <- gamestate.reloadWorld()
 			case <- ticker.C:
 				gamestate.update()
 			case <- saveTicker.C:

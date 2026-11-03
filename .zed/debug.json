@@ -11,4 +11,13 @@
     "cwd": "$ZED_WORKTREE_ROOT/backend",
     "envFile": "$ZED_WORKTREE_ROOT/backend/.env",
   },
+  {
+    "label": "Run Editor",
+    "adapter": "Delve",
+    "request": "launch",
+    "program": ".",
+    "args": ["--edit"],
+    "cwd": "$ZED_WORKTREE_ROOT/backend",
+    "envFile": "$ZED_WORKTREE_ROOT/backend/.env",
+  },
 ]

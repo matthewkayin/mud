@@ -11,7 +11,7 @@ import (
 	"github.com/mmcdole/lunar"
 )
 
-func (world *World) scriptInit(dataFolder string) {
+func (world *World) scriptInit(dataFolder string) error {
 	world.dataFolder = dataFolder
 
 	var err error
@@ -25,7 +25,7 @@ func (world *World) scriptInit(dataFolder string) {
 		ScriptLoader: lua.FSLoader(os.DirFS(dataFolder)),
 	})
 	if err != nil {
-		log.Fatalf("Error initializing lua state: %s", err.Error())
+		return fmt.Errorf("Error initializing lua state: %s", err.Error())
 	}
 
 	// Hacky world pointer so that script functions have access to the world
@@ -34,7 +34,7 @@ func (world *World) scriptInit(dataFolder string) {
 	// Register mob handle userdata type
 	world.mobHandleType, err = lua.NewUserDataType[MobHandle](world.luaState, "MobHandle")
 	if err != nil {
-		log.Fatalf("Error registering MobHandle userdata type: %s", err.Error())
+		return fmt.Errorf("Error registering MobHandle userdata type: %s", err.Error())
 	}
 	err = world.luaState.SetFunctions(world.mobHandleType.Metatable(), map[string]lua.NativeFunc {
 		"__eq": func(frame lua.Frame) lua.Outcome {
@@ -48,13 +48,13 @@ func (world *World) scriptInit(dataFolder string) {
 		},
 	})
 	if err != nil {
-		log.Fatalf("Error registering MobHandle metamethods: %s", err.Error())
+		return fmt.Errorf("Error registering MobHandle metamethods: %s", err.Error())
 	}
 
 	// Register fixture handle userdata type
 	world.fixtureHandleType, err = lua.NewUserDataType[FixtureHandle](world.luaState, "FixtureHandle")
 	if err != nil {
-		log.Fatalf("Error registering FixtureHandle userdata type: %s", err.Error())
+		return fmt.Errorf("Error registering FixtureHandle userdata type: %s", err.Error())
 	}
 	err = world.luaState.SetFunctions(world.fixtureHandleType.Metatable(), map[string]lua.NativeFunc {
 		"__eq": func(frame lua.Frame) lua.Outcome {
@@ -68,13 +68,13 @@ func (world *World) scriptInit(dataFolder string) {
 		},
 	})
 	if err != nil {
-		log.Fatalf("Error registering FixtureHandle metamethods: %s", err.Error())
+		return fmt.Errorf("Error registering FixtureHandle metamethods: %s", err.Error())
 	}
 
 	// Register item handle userdata type
 	world.itemHandleType, err = lua.NewUserDataType[ItemHandle](world.luaState, "ItemHandle")
 	if err != nil {
-		log.Fatalf("Error registering ItemHandle userdata type: %s", err.Error())
+		return fmt.Errorf("Error registering ItemHandle userdata type: %s", err.Error())
 	}
 	err = world.luaState.SetFunctions(world.itemHandleType.Metatable(), map[string]lua.NativeFunc {
 		"__eq": func(frame lua.Frame) lua.Outcome {
@@ -88,20 +88,20 @@ func (world *World) scriptInit(dataFolder string) {
 		},
 	})
 	if err != nil {
-		log.Fatalf("Error registering ItemHandle metamethods: %s", err.Error())
+		return fmt.Errorf("Error registering ItemHandle metamethods: %s", err.Error())
 	}
 
 	// Create world table
 	worldTable, err := world.luaState.NewTableWithCapacity(0, len(SCRIPT_LIBRARY))
 	if err != nil {
-		log.Fatalf("Error creating lua world table: %s", err.Error())
+		return fmt.Errorf("Error creating lua world table: %s", err.Error())
 	}
 
 	// Register library functions
 	for key, handler := range SCRIPT_LIBRARY {
 		luaFunc, err := world.luaState.NewNativeFunction(handler)
 		if err != nil {
-			log.Fatalf("Error registering function '%s': %s", key, err.Error())
+			return fmt.Errorf("Error registering function '%s': %s", key, err.Error())
 		}
 
 		worldTable.RawSet(lua.String(key), luaFunc.Value())
@@ -111,7 +111,7 @@ func (world *World) scriptInit(dataFolder string) {
 	for _, constantTable := range ScriptConstantTables() {
 		luaTable, err := world.luaState.NewTableWithCapacity(0, len(constantTable.Constants))
 		if err != nil {
-			log.Fatalf("Error creating constant table '%s': %s", constantTable.Name, err.Error())
+			return fmt.Errorf("Error creating constant table '%s': %s", constantTable.Name, err.Error())
 		}
 		for _, constant := range constantTable.Constants {
 			luaTable.RawSetString(constant.Name, constant.Value)
@@ -128,11 +128,11 @@ func (world *World) scriptInit(dataFolder string) {
 	// Disallow creating or reading undefined globals so that a missing "local" or a typo errors instead of silently working
 	globalTable, err := world.luaState.RawGlobal("_G")
 	if err != nil {
-		log.Fatalf("Error getting lua global table: %s", err.Error())
+		return fmt.Errorf("Error getting lua global table: %s", err.Error())
 	}
 	globalMetatable, err := world.luaState.NewTable()
 	if err != nil {
-		log.Fatalf("Error creating lua global metatable: %s", err.Error())
+		return fmt.Errorf("Error creating lua global metatable: %s", err.Error())
 	}
 	err = world.luaState.SetFunctions(globalMetatable, map[string]lua.NativeFunc {
 		"__newindex": func(frame lua.Frame) lua.Outcome {
@@ -147,15 +147,22 @@ func (world *World) scriptInit(dataFolder string) {
 		},
 	})
 	if err != nil {
-		log.Fatalf("Error registering lua global metamethods: %s", err.Error())
+		return fmt.Errorf("Error registering lua global metamethods: %s", err.Error())
 	}
 	err = world.luaState.SetMetatable(globalTable, globalMetatable)
 	if err != nil {
-		log.Fatalf("Error setting lua global metatable: %s", err.Error())
+		return fmt.Errorf("Error setting lua global metatable: %s", err.Error())
 	}
+
+	return nil
 }
 
 func (world *World) ScriptQuit() {
+	// The lua state is nil if scriptInit failed to create it
+	if world.luaState == nil {
+		return
+	}
+
 	world.luaState.Close()
 }
 
@@ -203,21 +210,25 @@ func scriptFormatError(err error) string {
 
 // Loads a table from a script. The path is relative to the data folder, e.g. "spells/firebolt.lua"
 func (world *World) scriptLoadTable(path string) (*lua.Table, error) {
-	// Do file
+	// Do file. Every error names the script's path
 	results, err := world.luaState.DoFile(path)
 	if err != nil {
+		// Lua's own errors usually start with "<path>:<line>:" already
+		if strings.HasPrefix(err.Error(), path + ":") {
+			return nil, err
+		}
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
 
 	// Get results
 	if len(results) != 1 {
-		return nil, fmt.Errorf("script must return exactly one table, got %d values", len(results))
+		return nil, fmt.Errorf("%s: script must return exactly one table, got %d values", path, len(results))
 	}
 
 	// Get table
 	table, ok := results[0].AsTable()
 	if !ok {
-		return nil, fmt.Errorf("script must return a table, got %s", results[0].Kind())
+		return nil, fmt.Errorf("%s: script must return a table, got %s", path, results[0].Kind())
 	}
 
 	return table, nil

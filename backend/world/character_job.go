@@ -2,7 +2,6 @@ package world
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/mmcdole/lunar"
@@ -36,12 +35,11 @@ func JobIdFromString(jobName string) (JobId, error) {
 
 // LOAD
 
-func (world *World) loadJobData() {
+func (world *World) loadJobData() error {
 	// Read job folder
-	log.Printf("Loading job data...")
 	paths, err := scriptGetFilesFrom(world.dataFolder, JOB_DATA_FOLDER)
 	if err != nil {
-		log.Fatalf("Error opening job data folder: %s", err.Error())
+		return fmt.Errorf("Error opening job data folder: %s", err.Error())
 	}
 
 	JOB_DATA = make([]*JobData, 0, len(paths))
@@ -51,35 +49,34 @@ func (world *World) loadJobData() {
 		// Open script
 		table, err := world.scriptLoadTable(path)
 		if err != nil {
-			log.Fatalf("%s: %s", path, err.Error())
+			return err
 		}
 
 		// Parse job data
 		parser := ScriptParser{}
 		jobData := parser.parseJob(table)
 		if jobData == nil {
-			log.Fatalf("%s: %s", path, parser.getError().Error())
+			return fmt.Errorf("%s: %s", path, parser.getError().Error())
 		}
 
 		// Check for duplicates
 		_, duplicateJobName := JOB_NAME_TO_ID[jobData.Name]
 		if duplicateJobName {
-			log.Fatalf("Job %s has name '%s' which is a duplicate of another job.", path, jobData.Name)
+			return fmt.Errorf("Job %s has name '%s' which is a duplicate of another job.", path, jobData.Name)
 		}
 
 		// Store job in JOB_DATA
 		JOB_NAME_TO_ID[jobData.Name] = JobId(len(JOB_DATA))
 		JOB_DATA = append(JOB_DATA, jobData)
-		log.Printf("Loaded job '%s'.", jobData.Name)
 	}
 
 	var exists bool
 	JOB_ENCHANTER, exists = JOB_NAME_TO_ID["Enchanter"]
 	if !exists {
-		log.Fatalf("Enchanter job not found!")
+		return fmt.Errorf("Enchanter job not found!")
 	}
 
-	log.Printf("All job data has been loaded.")
+	return nil
 }
 
 func (parser *ScriptParser) parseJob(table *lua.Table) *JobData {

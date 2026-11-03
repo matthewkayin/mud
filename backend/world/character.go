@@ -144,32 +144,44 @@ func (character *Character) UnmarshalJSON(data []byte) error {
 	var exists bool
 	character.Race, exists = RACE_NAME_TO_ID[characterJson.Race]
 	if !exists {
-		log.Fatalf("No race ID matches race '%s'.", characterJson.Race)
+		return fmt.Errorf("No race ID matches race '%s'.", characterJson.Race)
 	}
 	character.Class, exists = CLASS_NAME_TO_ID[characterJson.Class]
 	if !exists {
-		log.Fatalf("No class ID matches class '%s'.", characterJson.Class)
+		return fmt.Errorf("No class ID matches class '%s'.", characterJson.Class)
 	}
 	character.Job, exists = JOB_NAME_TO_ID[characterJson.Job]
 	if !exists {
-		log.Fatalf("No job ID matches job '%s'.", characterJson.Job)
+		return fmt.Errorf("No job ID matches job '%s'.", characterJson.Job)
 	}
 
 	character.SpellsEquipped = make(map[SpellId]*CharacterEquippedSpell)
 	for spellName, equippedSpell := range characterJson.SpellsEquipped {
 		spellId, exists := SPELL_NAME_TO_ID[spellName]
 		if !exists {
-			log.Fatalf("No spell ID matches the spell '%s'.", spellName)
+			return fmt.Errorf("No spell ID matches the spell '%s'.", spellName)
 		}
 
 		character.SpellsEquipped[spellId] = equippedSpell
 	}
 
-	character.SpellsKnown = spellsFromStringArray(characterJson.SpellsKnown)
-	character.ClassSpells = spellsFromStringArray(characterJson.ClassSpells)
-	character.RecipesKnown = recipesFromStringArray(characterJson.RecipesKnown)
+	character.SpellsKnown, err = spellsFromStringArray(characterJson.SpellsKnown)
+	if err != nil {
+		return err
+	}
+	character.ClassSpells, err = spellsFromStringArray(characterJson.ClassSpells)
+	if err != nil {
+		return err
+	}
+	character.RecipesKnown, err = recipesFromStringArray(characterJson.RecipesKnown)
+	if err != nil {
+		return err
+	}
 	character.RoomsDiscovered = characterJson.RoomsDiscovered
-	character.QuestsComplete = questsFromStringArray(characterJson.QuestsComplete)
+	character.QuestsComplete, err = questsFromStringArray(characterJson.QuestsComplete)
+	if err != nil {
+		return err
+	}
 	character.Data = characterJson.Data
 
 	return nil
@@ -184,17 +196,17 @@ func spellsToStringArray(spellIds []SpellId) []string {
 	return result
 }
 
-func spellsFromStringArray(spellNames []string) []SpellId {
+func spellsFromStringArray(spellNames []string) ([]SpellId, error) {
 	result := make([]SpellId, len(spellNames))
 	for index := range len(spellNames) {
 		spellId, exists := SPELL_NAME_TO_ID[spellNames[index]]
 		if !exists {
-			log.Fatalf("No spell ID matches spell '%s'.", spellNames[index])
+			return nil, fmt.Errorf("No spell ID matches spell '%s'.", spellNames[index])
 		}
 		result[index] = spellId
 	}
 
-	return result
+	return result, nil
 }
 
 func recipesToStringArray(recipeIds []RecipeId) []string {
@@ -206,17 +218,17 @@ func recipesToStringArray(recipeIds []RecipeId) []string {
 	return result
 }
 
-func recipesFromStringArray(recipeNames []string) []RecipeId {
+func recipesFromStringArray(recipeNames []string) ([]RecipeId, error) {
 	result := make([]RecipeId, len(recipeNames))
 	for index := range len(recipeNames) {
 		recipeId, exists := RECIPE_NAME_TO_ID[recipeNames[index]]
 		if !exists {
-			log.Fatalf("No recipe ID matches recipe '%s'.", recipeNames[index])
+			return nil, fmt.Errorf("No recipe ID matches recipe '%s'.", recipeNames[index])
 		}
 		result[index] = recipeId
 	}
 
-	return result
+	return result, nil
 }
 
 func (world *World) GetCharacterIfExists(name string) (*Character, bool) {

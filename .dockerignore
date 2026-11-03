@@ -4,7 +4,7 @@
 .zed
 editor
 **/node_modules
-frontend/dist
+backend/web/dist
 frontend/.env
 backend/env.json
 backend/.env

@@ -97,6 +97,26 @@ var MENU_GOD = MenuCreate(MenuCreateParams {
 				}
 			},
 		},
+		"reload": {
+			usage: "/reload",
+			description: "Reload the world and all scripts from the data folder. Online players stay connected, but NPCs, room items and combat are reset.",
+			groups: []string { "root" },
+			handler: func (gamestate *GameState, player *Player, args []string) bool {
+				if len(args) != 0 {
+					return false
+				}
+
+				// On success, the reload tells every player
+				problems := gamestate.reloadWorld()
+				if len(problems) != 0 {
+					player.send("The world could not be reloaded:")
+					for _, problem := range problems {
+						player.send(problem)
+					}
+				}
+				return true
+			},
+		},
 		"teleport": {
 			usage: "/teleport <room name> [number]",
 			description: "Move your character to the room with the given name, ignoring exits, locks and combat. Add a number to choose between rooms with the same name.",

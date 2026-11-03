@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-RC Disco MUD: a multi-user dungeon with a Go game server (`backend/`), a React/Vite web client (`frontend/`), and a browser-based world editor (`editor/`, a local Go server plus a React app). `go.work` ties the `backend` (module `mud`) and `editor` modules together so the editor can import `mud/world` directly.
+RC Disco MUD: a multi-user dungeon with a Go game server (`backend/`, module `mud`) and a React/Vite web client (`frontend/`). The client also contains the world editor (route `/editor`, code in `frontend/src/editor/`), which the server only enables when it runs with `--edit` (see `docs/editor.md`).
 
 ## Commands
 
@@ -12,32 +12,27 @@ Backend (run from `backend/`, since it reads `./data`, `./banner.txt` and writes
 ```
 set -a; . ./.env; set +a      # load config env vars from backend/.env
 go run .                      # start server (port comes from PORT, normally 7272)
+go run . --edit               # start server with the world editor enabled at /editor (gods only; writes data/world.json)
 go test ./...                 # all tests
 go test ./world -run TestName # single test
-go generate                   # regenerates data/world.d.lua (Lua language server defs for the script API)
+go generate                   # regenerates data/world.d.lua (Lua language server defs for the script API) and frontend/src/editor/api/models.ts
 ```
-The server is configured by env vars (`PORT`, `PUBLIC_URL`, `ENABLE_DEBUG_AUTH`, `RC_*` OAuth settings, `STATIC_FOLDER`, `GOD_USER_IDS` — see `backend/api/env.go`). `backend/.env` is not in git; copy it from `backend/.env.example`.
+The server is configured by env vars (`PORT`, `PUBLIC_URL`, `ENABLE_DEBUG_AUTH`, `RC_*` OAuth settings, `GOD_USER_IDS` — see `backend/api/env.go`). `backend/.env` is not in git; copy it from `backend/.env.example`.
 
 Web frontend (run from `frontend/`):
 ```
 npm install
-npm run dev     # Vite on :5173, proxies /api/auth and /api/websocket to :7272
-npm run build   # tsc -b && vite build
+npm run dev     # Vite on :5173, proxies /api (including /api/websocket) to :7272
+npm run build   # tsc -b && vite build, writes to backend/web/dist
 npm run lint
 ```
+`go build -tags embed` (run after `npm run build`) embeds `backend/web/dist` in the server binary, which then serves the client itself (`backend/web`). Without the tag, the server only serves `/api` and Vite serves the client.
+
 The frontend uses same-origin URLs (`/api/...`, `ws(s)://<host>/api/websocket`), so it works both behind the Vite proxy and when the Go server serves the built files.
 
-Deployment (Disco, game only — not the editor): the root `Dockerfile` builds the frontend and backend into one image and `disco.json` defines the `web` service and its volumes. See `docs/deployment.md`.
+Deployment (Disco): the root `Dockerfile` builds the frontend and backend into one image and `disco.json` defines the `web` service and its volumes. The deployed server never runs with `--edit`. See `docs/deployment.md`.
 
-World editor (Go server runs from `editor/`, frontend from `editor/frontend/`). It always edits `world.json` in the data folder (`../backend/data/world.json` by default), loading it on startup and saving back to it:
-```
-just dev                      # starts the server and Vite, opens a Chromium app window; closing it stops both
-go run .                      # editor server on 127.0.0.1:7373 (-port to change); serves the built frontend/dist and loads Lua data and world.json from ../backend/data (-data to change)
-npm run dev                   # (in editor/frontend) Vite on :5173 with hot reload, proxies /api to :7373
-npm run build                 # (in editor/frontend) must be run before go run . serves the latest frontend
-go generate                   # regenerates frontend/src/api/models.ts from the Go types
-go test ./...
-```
+World editor: run the backend with `go run . --edit` and Vite with `npm run dev`, log in as a god, and open `localhost:5173/editor`. It edits `data/world.json` in place. Save writes the file; Reload (or the `/reload` god command) rebuilds the running world from the data folder. See `docs/editor.md`.
 
 ## Architecture
 
@@ -54,16 +49,16 @@ go test ./...
 ### World data conventions
 - Static game data that isn't scripted yet is defined as Go tables indexed by enum constants (e.g. `MOB_ABILITY_DATA` in `mob_ability.go`).
 - Mobs live in `MobArray`, a sparse-set with generational `MobHandle{Id, Generation}`. `Get` panics on stale handles; use `GetIfExists` when a handle may be dead. Rooms reference occupants by handle; rooms are referenced by index with `ROOM_NONE` as the sentinel.
-- Item, spell, recipe, race, job, class and NPC data are Lua scripts in `backend/data/` (see `docs/backend/scripting.md` and `docs/backend/npcs.md`), and their IDs are load-order indices. `World.LoadData(dataFolder)` loads them, and both `WorldInit` and the editor call it.
+- Item, spell, recipe, race, job, class and NPC data are Lua scripts in `backend/data/` (see `docs/backend/scripting.md` and `docs/backend/npcs.md`), and their IDs are load-order indices. `World.LoadData(dataFolder)` loads them, `WorldLoad` calls it at startup and on `/reload`, and the editor reads the loaded data under `LockScriptDataForReading` (see `docs/backend/scripting.md`).
 - Persistence is JSON: `data/world.json` (fields tagged `json:"-"` are transient) and `saves/<Name>.json` for characters. Since script data IDs are not stable, saved files reference it by name through custom `MarshalJSON`/`UnmarshalJSON` (e.g. `Item`, `DropTableEntry`, `CharacterJson`).
 - While a player is logged in, their mob's `Data` is the live copy and `Character.Data` is only the last saved snapshot. `MobInit` clones the data so the two share no slices. Read and change `playerMob.Data`, not `PlayerCharacter.Data`, and save with `mob.SavePlayerCharacter()`, which copies the mob's data back before writing.
 
 ### Go ↔ TypeScript types
-- `editor/frontend/src/api/models.ts` is generated by `go generate` (`editor/models_gen.go`, using a copy of Wails' typescriptify in `editor/internal/typescriptify`) from the types the editor API exposes (`main.EditorWorld`, `world.Room` etc.) and the enum lists in `editor/enums.go`. Rerun it after changing those Go types. `editor/frontend/src/api/editor_api.ts` wraps the server's `/api` routes (`editor/main.go`); the server reads and writes `world.json` (`GET`/`PUT /api/world`) and converts between the world file format and the editor's format.
+- `frontend/src/editor/api/models.ts` is generated by `go generate` in `backend/` (`backend/models_gen.go`, using a copy of Wails' typescriptify in `backend/internal/typescriptify`) from the types the editor API exposes (`api.EditorWorld`, `world.Room` etc.) and the enum lists in `backend/enums.go`. Rerun it after changing those Go types. `frontend/src/editor/api/editor_api.ts` wraps the server's `/api/editor/*` routes (`backend/api/editor.go`); the server reads and writes `world.json` (`GET`/`PUT /api/editor/world`) and converts between the world file format and the editor's format (`backend/api/editor_world_file.go`).
 
 ### Frontends
-- `frontend/` routes: `/` login, `/game` (terminal UI over websocket).
-- `editor/` is the world editor (active work on branch `kayin/editor`); it replaced the old in-browser editor that lived in `frontend/`. It was a Wails desktop app until WebKitGTK's rendering performance on Linux made it too laggy, so it now runs in Chromium. Its state lives in an external store (`src/store/store.ts`) consumed via subscribe/emitChange; every mutation is an `EditorAction` with `do`/`undo` pushed through `editorStore.doAction` to support undo/redo. Add new edits as new `EditorAction` classes rather than mutating state directly.
+- `frontend/` routes: `/` login, `/game` (terminal UI over websocket), `/editor` (world editor; only shown when the server runs with `--edit` and the user is a god, per `GET /api/auth/config`).
+- The editor (`frontend/src/editor/`, MUI) keeps its state in an external store (`store/store.ts`) consumed via subscribe/emitChange; every mutation is an `EditorAction` with `do`/`undo` pushed through `editorStore.doAction` to support undo/redo. Add new edits as new `EditorAction` classes rather than mutating state directly. See `docs/editor.md`.
 
 ## Style
 Go code uses long descriptive camelCase names, `SCREAMING_SNAKE_CASE` constants/enums declared with `iota`, and `log.Printf("Warn - ...")` for recoverable problems. Types should be defined at the top of the file and should not be interleved with function definitions (excepting types which are defined only within the scope of a function).

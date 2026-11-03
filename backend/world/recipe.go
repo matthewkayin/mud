@@ -2,7 +2,6 @@ package world
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/mmcdole/lunar"
 )
@@ -24,6 +23,12 @@ type RecipeData struct {
 	Output Item
 }
 
+// A recipe script whose name has been read, but which hasn't been parsed yet
+type recipeScript struct {
+	path string
+	table *lua.Table
+}
+
 var RECIPE_DATA []*RecipeData
 var RECIPE_NAME_TO_ID map[string]RecipeId
 
@@ -34,16 +39,15 @@ const RECIPE_DATA_FOLDER = "recipes"
 
 // Loads each recipe script and maps its name to a RecipeId, without parsing the rest of the recipe.
 // This lets items reference recipes by name before the recipes themselves are parsed.
-// The returned tables are indexed by RecipeId and should be passed to loadRecipeData once items are loaded.
-func (world *World) loadRecipeTables() []*lua.Table {
+// The returned scripts are indexed by RecipeId and should be passed to loadRecipeData once items are loaded.
+func (world *World) loadRecipeScripts() ([]recipeScript, error) {
 	// Read recipe folder
-	log.Printf("Loading recipe tables...")
 	paths, err := scriptGetFilesFrom(world.dataFolder, RECIPE_DATA_FOLDER)
 	if err != nil {
-		log.Fatalf("Error opening recipe data folder: %s", err.Error())
+		return nil, fmt.Errorf("Error opening recipe data folder: %s", err.Error())
 	}
 
-	recipeTables := make([]*lua.Table, 0, len(paths))
+	recipeScripts := make([]recipeScript, 0, len(paths))
 	RECIPE_DATA = make([]*RecipeData, len(paths))
 	RECIPE_NAME_TO_ID = make(map[string]RecipeId)
 
@@ -51,50 +55,48 @@ func (world *World) loadRecipeTables() []*lua.Table {
 		// Open script
 		table, err := world.scriptLoadTable(path)
 		if err != nil {
-			log.Fatalf("%s: %s", path, err.Error())
+			return nil, err
 		}
 
 		// Get recipe name
 		parser := ScriptParser{}
 		recipeName := parser.getString(table, "name")
 		if len(parser.problems) != 0 {
-			log.Fatalf("%s: %s", path, parser.getError().Error())
+			return nil, fmt.Errorf("%s: %s", path, parser.getError().Error())
 		}
 
 		// Check for duplicates
 		_, duplicateRecipeName := RECIPE_NAME_TO_ID[recipeName]
 		if duplicateRecipeName {
-			log.Fatalf("Recipe %s has name '%s' which is a duplicate of another recipe.", path, recipeName)
+			return nil, fmt.Errorf("Recipe %s has name '%s' which is a duplicate of another recipe.", path, recipeName)
 		}
 
-		// Store recipe table
-		RECIPE_NAME_TO_ID[recipeName] = RecipeId(len(recipeTables))
-		recipeTables = append(recipeTables, table)
+		// Store recipe script
+		RECIPE_NAME_TO_ID[recipeName] = RecipeId(len(recipeScripts))
+		recipeScripts = append(recipeScripts, recipeScript {
+			path: path,
+			table: table,
+		})
 	}
 
-	log.Printf("All recipe tables have been loaded.")
-	return recipeTables
+	return recipeScripts, nil
 }
 
-// Parses the recipe tables returned by loadRecipeTables. Must be called after loadItemData.
-func (world *World) loadRecipeData(recipeTables []*lua.Table) {
-	log.Printf("Loading recipe data...")
-
-	for index, table := range recipeTables {
+// Parses the recipe scripts returned by loadRecipeScripts. Must be called after loadItemData.
+func (world *World) loadRecipeData(recipeScripts []recipeScript) error {
+	for index, script := range recipeScripts {
 		// Parse recipe data
 		parser := ScriptParser{}
-		recipeData := parser.parseRecipe(table)
+		recipeData := parser.parseRecipe(script.table)
 		if recipeData == nil {
-			recipeName, _ := table.RawGetString("name").AsString()
-			log.Fatalf("Recipe '%s': %s", recipeName, parser.getError().Error())
+			return fmt.Errorf("%s: %s", script.path, parser.getError().Error())
 		}
 
 		// Store recipe in RECIPE_DATA
 		RECIPE_DATA[index] = recipeData
-		log.Printf("Loaded recipe '%s'.", recipeData.Name)
 	}
 
-	log.Printf("All recipe data has been loaded.")
+	return nil
 }
 
 func (parser *ScriptParser) parseRecipe(table *lua.Table) *RecipeData {

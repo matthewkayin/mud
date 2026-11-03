@@ -3,7 +3,6 @@ package world
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/mmcdole/lunar"
 )
@@ -178,12 +177,11 @@ var ITEM_GOLD ItemId
 
 const ITEM_DATA_FOLDER = "items"
 
-func (world *World) loadItemData() {
+func (world *World) loadItemData() error {
 	// Read item folder
-	log.Printf("Loading item data...")
 	paths, err := scriptGetFilesFrom(world.dataFolder, ITEM_DATA_FOLDER)
 	if err != nil {
-		log.Fatalf("Error opening item data folder: %s", err.Error())
+		return fmt.Errorf("Error opening item data folder: %s", err.Error())
 	}
 
 	ITEM_DATA = make([]*ItemData, 0, len(paths))
@@ -193,36 +191,35 @@ func (world *World) loadItemData() {
 		// Open script
 		table, err := world.scriptLoadTable(path)
 		if err != nil {
-			log.Fatalf("%s: %s", path, err.Error())
+			return err
 		}
 
 		// Parse item data
 		parser := ScriptParser{}
 		itemData := parser.parseItemData(table)
 		if itemData == nil {
-			log.Fatalf("%s: %s", path, parser.getError().Error())
+			return fmt.Errorf("%s: %s", path, parser.getError().Error())
 		}
 
 		// Check for duplicates
 		_, duplicateItemName := ITEM_NAME_TO_ID[itemData.Name]
 		if duplicateItemName {
-			log.Fatalf("Item %s has name '%s' which is a duplicate of another item.", path, itemData.Name)
+			return fmt.Errorf("Item %s has name '%s' which is a duplicate of another item.", path, itemData.Name)
 		}
 
 		// Store item in ITEM_DATA
 		ITEM_NAME_TO_ID[itemData.Name] = ItemId(len(ITEM_DATA))
 		ITEM_DATA = append(ITEM_DATA, itemData)
-		log.Printf("Loaded item '%s'.", itemData.Name)
 	}
 
 	// Set the gold item ID
 	var exists bool
 	ITEM_GOLD, exists = ITEM_NAME_TO_ID["Gold"]
 	if !exists {
-		log.Fatalf("There must be an item called 'Gold'.")
+		return fmt.Errorf("There must be an item called 'Gold'.")
 	}
 
-	log.Printf("All item data has been loaded.")
+	return nil
 }
 
 func (parser *ScriptParser) parseItemData(table *lua.Table) *ItemData {

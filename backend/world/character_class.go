@@ -2,7 +2,6 @@ package world
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/mmcdole/lunar"
@@ -49,12 +48,11 @@ func ClassIdFromString(name string) (ClassId, error) {
 // LOAD
 
 // Must be called after loadSpellData and loadItemData, since classes reference spells and items by name
-func (world *World) loadClassData() {
+func (world *World) loadClassData() error {
 	// Read class folder
-	log.Printf("Loading class data...")
 	paths, err := scriptGetFilesFrom(world.dataFolder, CLASS_DATA_FOLDER)
 	if err != nil {
-		log.Fatalf("Error opening class data folder: %s", err.Error())
+		return fmt.Errorf("Error opening class data folder: %s", err.Error())
 	}
 
 	CLASS_DATA = make([]*ClassData, 0, len(paths))
@@ -64,29 +62,28 @@ func (world *World) loadClassData() {
 		// Open script
 		table, err := world.scriptLoadTable(path)
 		if err != nil {
-			log.Fatalf("%s: %s", path, err.Error())
+			return err
 		}
 
 		// Parse class data
 		parser := ScriptParser{}
 		classData := parser.parseClass(table)
 		if classData == nil {
-			log.Fatalf("%s: %s", path, parser.getError().Error())
+			return fmt.Errorf("%s: %s", path, parser.getError().Error())
 		}
 
 		// Check for duplicates
 		_, duplicateClassName := CLASS_NAME_TO_ID[classData.Name]
 		if duplicateClassName {
-			log.Fatalf("Class %s has name '%s' which is a duplicate of another class.", path, classData.Name)
+			return fmt.Errorf("Class %s has name '%s' which is a duplicate of another class.", path, classData.Name)
 		}
 
 		// Store class in CLASS_DATA
 		CLASS_NAME_TO_ID[classData.Name] = ClassId(len(CLASS_DATA))
 		CLASS_DATA = append(CLASS_DATA, classData)
-		log.Printf("Loaded class '%s'.", classData.Name)
 	}
 
-	log.Printf("All class data has been loaded.")
+	return nil
 }
 
 func (parser *ScriptParser) parseClass(table *lua.Table) *ClassData {

@@ -14,7 +14,10 @@ func scriptTestWorld(t *testing.T) *World {
 	world := &World{
 		Mobs: MobArrayInit(),
 	}
-	world.scriptInit(t.TempDir())
+	err := world.scriptInit(t.TempDir())
+	if err != nil {
+		t.Fatalf("Error initializing scripts: %s", err.Error())
+	}
 	t.Cleanup(world.ScriptQuit)
 	return world
 }

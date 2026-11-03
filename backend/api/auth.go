@@ -32,16 +32,23 @@ type rcGetProfilesResponseBody struct {
 
 type authConfigResponseBody struct {
 	DebugAuth bool `json:"debugAuth"`
+	// Whether the server runs with --edit
+	Editor bool `json:"editor"`
+	// Whether the logged in user is a god
+	God bool `json:"god"`
 }
 
 const MUD_SESSION_COOKIE_NAME = "mud_session"
 
 func (apiState *ApiState) HandleAuthConfig(writer http.ResponseWriter, request *http.Request) {
 	env := GetEnv()
+	userId, authenticated := apiState.getAuthenticatedUserId(request)
 
 	writer.Header().Set("Content-Type", "application/json")
 	err := json.NewEncoder(writer).Encode(authConfigResponseBody {
 		DebugAuth: env.ENABLE_DEBUG_AUTH,
+		Editor: apiState.editorEnabled,
+		God: authenticated && isGod(userId),
 	})
 	if err != nil {
 		log.Printf("Warn - failed to write auth config response: %s", err.Error())

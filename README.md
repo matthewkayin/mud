@@ -56,29 +56,15 @@ Since this is a realtime multiplayer game, good concurrency is an important part
 
 ![World Editor Screenshot](./docs/readme/editor.png)
 
-The world editor allows developers to edit the game world without manually typing out the world JSON. The editor is a separate self-contained full stack web app that lives inside the `./editor` folder. The editor should not be run at the same time as the backend or frontend.
+The world editor allows developers to edit the game world without manually typing out the world JSON. It's part of the game's frontend and backend, but it's only enabled when the backend runs with `--edit`, and only Gods (users in `GOD_USER_IDS`) can use it.
 
-The easiest way to run the editor is to run `just dev` (which requires that you have [Just](https://github.com/casey/just) installed). This will 1. start the backend, 2. start the frontend, and 3. open up the frontend in a separate Chrome window. When you close the Chrome window, the frontend and backend will also shutdown.
-
-If you don't have Just or Chrome, you can also run each piece manually:
-
-1. Start the backend: `cd editor && go run .`
-2. In a separate terminal, start the frontend: `cd editor/frontend && npm run dev`
-3. Navigate to `localhost:5173` in your browser.
-
-### Generating TypeScript Types
-
-The editor frontend uses TypeScript versions of the Go types that the editor server sends to it (`EditorWorld`, `world.Room`, the enums in `editor/enums.go`, etc). These live in `editor/frontend/src/api/models.ts`, which is generated, so don't edit it by hand. After changing any of those Go types, regenerate it:
-
+1. Start the backend in editor mode:
 ```
-cd editor
-go generate
+cd backend
+set -a; . ./.env; set +a
+go run . --edit
 ```
+2. In another terminal, start the frontend: `cd frontend && npm run dev`
+3. Log in at `localhost:5173` as a God, then navigate to `localhost:5173/editor`.
 
-`go generate` is a built-in Go tool command. It scans the package's source files for comments of the form `//go:generate <command>` and runs each command. `editor/main.go` contains:
-
-```go
-//go:generate go run . -generate-types frontend/src/api/models.ts
-```
-
-So `go generate` just runs the editor program with the `-generate-types` flag. When `main()` sees that flag, it calls `generateModels()` (in `editor/models_gen.go`) instead of starting the server. `generateModels()` uses reflection to walk the registered Go types, converts them to TypeScript with a copy of Wails' typescriptify (`editor/internal/typescriptify`), writes the result to the given path, and exits.
+Save writes `backend/data/world.json`, and Reload loads the saved files into the running game. See [World Editor](./docs/editor.md) for details.

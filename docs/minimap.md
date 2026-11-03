@@ -11,7 +11,7 @@ The minimap uses each room's `EditorPosition`. `World.Validate()` (`backend/worl
 
 So the backend can find the rooms around the player by position, without walking exits. North is `Y - 1` and east is `X + 1`, the same as `directionStepFrom`.
 
-`World.initRoomPositionLookup()` (`backend/world/minimap.go`) builds a transient lookup from `RoomEditorPosition` to room index. `WorldInit` calls it after validating `world.json`, so building a minimap doesn't scan every room.
+`World.initRoomPositionLookup()` (`backend/world/minimap.go`) builds a transient lookup from `RoomEditorPosition` to room index. `WorldLoad` calls it after validating `world.json`, so building a minimap doesn't scan every room.
 
 ## Wire format
 

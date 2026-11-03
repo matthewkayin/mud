@@ -1,7 +1,7 @@
 package world
 
 import (
-	"log"
+	"fmt"
 	"slices"
 	"encoding/json"
 )
@@ -128,13 +128,19 @@ func (mobData *MobData) UnmarshalJSON(data []byte) error {
 	mobData.BaseDeflection = mobDataJson.BaseDeflection
 	mobData.BaseDamageResistance = mobDataJson.BaseDamageResistance
 
-	mobData.setAbilitiesFromStringArray(mobDataJson.Abilities)
+	err = mobData.setAbilitiesFromStringArray(mobDataJson.Abilities)
+	if err != nil {
+		return err
+	}
 
 	mobData.Health = mobDataJson.Health
 	mobData.Mana = mobDataJson.Mana
 	mobData.Conditions = mobDataJson.Conditions
 
-	mobData.Spells = spellsFromStringArray(mobDataJson.Spells)
+	mobData.Spells, err = spellsFromStringArray(mobDataJson.Spells)
+	if err != nil {
+		return err
+	}
 	mobData.Inventory = mobDataJson.Inventory
 	mobData.Equipment = mobDataJson.Equipment
 
@@ -155,7 +161,7 @@ func (mobData *MobData) abilitiesToStringArray() []string {
 	return results
 }
 
-func (mobData *MobData) setAbilitiesFromStringArray(abilities []string) {
+func (mobData *MobData) setAbilitiesFromStringArray(abilities []string) error {
 	for _, abilityName := range abilities {
 		var abilityIndex int = -1
 		for index := range MOB_ABILITY_COUNT {
@@ -166,11 +172,13 @@ func (mobData *MobData) setAbilitiesFromStringArray(abilities []string) {
 		}
 
 		if abilityIndex == -1 {
-			log.Fatalf("No mob ability exists with name '%s'.", abilityName)
+			return fmt.Errorf("No mob ability exists with name '%s'.", abilityName)
 		}
 
 		mobData.SetHasAbility(MobAbility(abilityIndex), true)
 	}
+
+	return nil
 }
 
 func (mobData *MobData) GetExpToNextLevel() int32 {

@@ -2303,7 +2303,7 @@
     },
     {
       "Name": "Castle Recurse Steps",
-      "Description": "The steps to the fourth floor are long and winding. Your footsteps echo in the stairwell.",
+      "Description": "The steps to the fourth floor are long and winding. Your footsteps echo in the stairwell. This is another test description.",
       "Notes": "",
       "IsSafeZone": true,
       "EditorPosition": {

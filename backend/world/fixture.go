@@ -92,12 +92,11 @@ var FIXTURE_NAME_TO_STRING map[string]FixtureId
 
 const FIXTURE_DATA_FOLDER = "fixtures"
 
-func (world *World) loadFixtureData() {
+func (world *World) loadFixtureData() error {
 	// Read fixture folder
-	log.Printf("Loading fixture data...")
 	paths, err := scriptGetFilesFrom(world.dataFolder, FIXTURE_DATA_FOLDER)
 	if err != nil {
-		log.Fatalf("Error opening fixture data folder: %s", err.Error())
+		return fmt.Errorf("Error opening fixture data folder: %s", err.Error())
 	}
 
 	FIXTURE_DATA = make([]*FixtureData, 0, len(paths))
@@ -107,29 +106,28 @@ func (world *World) loadFixtureData() {
 		// Open script
 		table, err := world.scriptLoadTable(path)
 		if err != nil {
-			log.Fatalf("%s: %s", path, err.Error())
+			return err
 		}
 
 		// Parse fixture data
 		parser := ScriptParser{}
 		fixtureData := parser.parseFixture(table)
 		if fixtureData == nil {
-			log.Fatalf("%s: %s", path, parser.getError().Error())
+			return fmt.Errorf("%s: %s", path, parser.getError().Error())
 		}
 
 		// Check for duplicates
 		_, isDuplicate := FIXTURE_NAME_TO_STRING[fixtureData.Name]
 		if isDuplicate {
-			log.Fatalf("Fixture %s has name '%s' which is a duplicate of another fixture.", path, fixtureData.Name)
+			return fmt.Errorf("Fixture %s has name '%s' which is a duplicate of another fixture.", path, fixtureData.Name)
 		}
 
 		// Store fixture in FIXUTRE_DATA
 		FIXTURE_NAME_TO_STRING[fixtureData.Name] = FixtureId(len(FIXTURE_DATA))
 		FIXTURE_DATA = append(FIXTURE_DATA, fixtureData)
-		log.Printf("Loaded Fixture '%s'.", fixtureData.Name)
 	}
 
-	log.Printf("All fixtures have been loaded.")
+	return nil
 }
 
 func (parser *ScriptParser) parseFixture(table *lua.Table) *FixtureData {

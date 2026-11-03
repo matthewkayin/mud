@@ -1,6 +1,7 @@
 package world
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"encoding/json"
@@ -51,39 +52,63 @@ type World struct {
 	tick uint32
 }
 
-func WorldInit() *World {
+// Loads the world from the data folder and validates it, along with the character saves. Used at startup
+// and by reloads. On failure it returns the problems, and the script data globals are left as they were,
+// so the world that was already running is untouched.
+// Must only be called from the game loop, since it writes the script data globals.
+func WorldLoad() (*World, []string) {
+	scriptDataLock.Lock()
+	defer scriptDataLock.Unlock()
+
+	snapshot := captureScriptData()
+	world, problems := loadWorld()
+	if len(problems) != 0 {
+		world.ScriptQuit()
+		snapshot.restore()
+		return nil, problems
+	}
+
+	log.Printf("World loaded.")
+	return world, nil
+}
+
+// Loads the world into the script data globals. On failure, the caller is responsible for closing the
+// world's lua state and restoring the globals.
+func loadWorld() (*World, []string) {
+	world := &World{}
+
 	// Create world saves folder
 	err := os.MkdirAll(WORLD_CHARACTER_SAVES_FOLDER, 0755)
 	if err != nil {
-		log.Fatalf("Failed to create saves folder: %s", err.Error())
+		return world, []string { fmt.Sprintf("Failed to create saves folder: %s", err.Error()) }
 	}
-
-	// Open world JSON
-	file, err := os.Open(WORLD_JSON_PATH)
-	if err != nil {
-		log.Fatalf("Error opening world JSON: %s", err.Error())
-	}
-	defer file.Close()
 
 	// Load script data. This must happen before decoding, since saved data references it by name
-	world := &World{}
-	world.LoadData(WORLD_DATA_FOLDER)
+	err = world.LoadData(WORLD_DATA_FOLDER)
+	if err != nil {
+		return world, []string { err.Error() }
+	}
 
 	// Decode JSON into world object
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(world)
+	data, err := os.ReadFile(WORLD_JSON_PATH)
 	if err != nil {
-		log.Fatalf("Error reading world JSON: %s", err.Error())
+		return world, []string { fmt.Sprintf("Error opening world JSON: %s", err.Error()) }
+	}
+	err = json.Unmarshal(data, world)
+	if err != nil {
+		return world, []string { fmt.Sprintf("Error reading world JSON: %s", err.Error()) }
 	}
 
 	// Validate world JSON
 	problems := world.Validate()
 	if len(problems) != 0 {
-		log.Printf("World validation encountered problems:")
-		for _, problem := range problems {
-			log.Print(problem)
-		}
-		log.Fatalf("Unable to load world because of validation issues.")
+		return world, problems
+	}
+
+	// Load character saves, which also checks that they only reference content that exists
+	problems = world.loadCharacters()
+	if len(problems) != 0 {
+		return world, problems
 	}
 
 	// Init transient data structures
@@ -97,27 +122,49 @@ func WorldInit() *World {
 		world.Rooms[index].init(index, world)
 	}
 
-	world.loadCharacters()
-
-	log.Printf("World initialized.")
-	return world
+	return world, nil
 }
 
-// Creates a world with only the script data loaded from the data folder. WorldInit uses this before
-// loading the world JSON, and the world editor uses it to read and validate world files.
-func (world *World) LoadData(dataFolder string) {
-	world.scriptInit(dataFolder)
-	world.loadQuestData()
-	world.loadRaceData()
-	world.loadJobData()
-	world.loadConditionData()
-	world.loadSpellData()
-	recipeTables := world.loadRecipeTables()
-	world.loadItemData()
-	world.loadRecipeData(recipeTables)
-	world.loadClassData()
-	world.loadNpcData()
-	world.loadFixtureData()
+// Loads the script data from the data folder into the script data globals and this world's lua state.
+// loadWorld uses this before loading the world JSON, and the editor's tests use it to read and validate world files.
+func (world *World) LoadData(dataFolder string) error {
+	err := world.scriptInit(dataFolder)
+	if err != nil {
+		return err
+	}
+
+	// Loaders run in order, since later data references earlier data by name.
+	// Recipes are read in two passes so that items can reference recipes and recipes can reference items.
+	// Classes load after items because they have starting items.
+	var recipeScripts []recipeScript
+	loaders := []func() error {
+		world.loadQuestData,
+		world.loadRaceData,
+		world.loadJobData,
+		world.loadConditionData,
+		world.loadSpellData,
+		func() error {
+			var err error
+			recipeScripts, err = world.loadRecipeScripts()
+			return err
+		},
+		world.loadItemData,
+		func() error {
+			return world.loadRecipeData(recipeScripts)
+		},
+		world.loadClassData,
+		world.loadNpcData,
+		world.loadFixtureData,
+	}
+	for _, loader := range loaders {
+		err = loader()
+		if err != nil {
+			return err
+		}
+	}
+
+	log.Printf("Loaded script data.")
+	return nil
 }
 
 func (world *World) getMobLuaHandle(handle MobHandle) (lua.Value, error) {

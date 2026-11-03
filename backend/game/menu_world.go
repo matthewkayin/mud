@@ -21,19 +21,9 @@ type FindTargetParams struct {
 
 var MENU_WORLD = MenuCreate(MenuCreateParams {
 	onEnter: func(gamestate *GameState, player *Player) {
-		// Clear the player's action in case they had any leftover from a previous login session
-		player.nextAction = Action {
-			actionType: ACTION_TYPE_NONE,
-			data: nil,
-		}
-
-		// Create a mob for the player
-		playerMob := world.MobInitFromCharacter(player.character)
-		player.mobHandle = gamestate.world.Mobs.Push(playerMob)
-		playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
-		gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("<y>%s</y> has joined the room.", player.character.Data.Name))
-		playerRoom.AddOccupant(gamestate.world, player.mobHandle)
-		player.isMinimapDirty = true
+		// Sent before spawning so that the player doesn't get the message themselves
+		gamestate.messageRoom(player.character.Data.Room, fmt.Sprintf("<y>%s</y> has joined the room.", player.character.Data.Name))
+		spawnPlayerMob(gamestate, player)
 
 		// Enter world menu
 		player.send(fmt.Sprintf("You have logged in. Welcome, <y>%s</y>.", player.character.Data.Name))
@@ -121,6 +111,22 @@ var MENU_WORLD_ENTRIES_GENERAL = map[string]MenuEntry {
 			return true
 		},
 	},
+}
+
+// Creates a mob for the player's character and adds it to the character's room.
+// Used when the player enters the world and when the world is reloaded.
+func spawnPlayerMob(gamestate *GameState, player *Player) {
+	// Clear the player's action in case they had any leftover from a previous login session or world
+	player.nextAction = Action {
+		actionType: ACTION_TYPE_NONE,
+		data: nil,
+	}
+
+	playerMob := world.MobInitFromCharacter(player.character)
+	player.mobHandle = gamestate.world.Mobs.Push(playerMob)
+	playerRoom := &gamestate.world.Rooms[playerMob.Data.Room]
+	playerRoom.AddOccupant(gamestate.world, player.mobHandle)
+	player.isMinimapDirty = true
 }
 
 func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room) {

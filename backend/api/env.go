@@ -21,9 +21,6 @@ type Env struct {
 	RC_CLIENT_ID string
 	RC_CLIENT_SECRET string
 
-	// Folder of built frontend files to serve. Empty means the frontend is served separately.
-	STATIC_FOLDER string
-
 	// User IDs of the players who can use God commands (e.g. /shutdown)
 	GOD_USER_IDS []int
 }
@@ -42,7 +39,6 @@ func LoadEnv() {
 
 	env.PUBLIC_URL = getRequiredEnvVar("PUBLIC_URL")
 	env.ENABLE_DEBUG_AUTH = os.Getenv("ENABLE_DEBUG_AUTH") == "true"
-	env.STATIC_FOLDER = os.Getenv("STATIC_FOLDER")
 	env.GOD_USER_IDS = parseUserIdList("GOD_USER_IDS")
 
 	// RC OAuth settings may be left out when debug auth is used instead

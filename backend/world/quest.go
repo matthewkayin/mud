@@ -1,7 +1,7 @@
 package world
 
 import (
-	"log"
+	"fmt"
 )
 
 type QuestId int
@@ -13,16 +13,15 @@ const QUEST_DATA_FILE = "quests.lua"
 var QUEST_NAMES []string
 var QUEST_NAME_TO_ID map[string]QuestId
 
-func (world *World) loadQuestData() {
-	log.Printf("Loading quest data...")
+func (world *World) loadQuestData() error {
 	table, err := world.scriptLoadTable(QUEST_DATA_FILE)
 	if err != nil {
-		log.Fatalf("%s: %s", QUEST_DATA_FILE, err.Error())
+		return err
 	}
 
 	questCount := table.RawLen()
 	if questCount > QUEST_MAX {
-		log.Fatalf("%s: there are %d quests, but the maximum is %d.", QUEST_DATA_FILE, questCount, QUEST_MAX)
+		return fmt.Errorf("%s: there are %d quests, but the maximum is %d.", QUEST_DATA_FILE, questCount, QUEST_MAX)
 	}
 
 	QUEST_NAMES = make([]string, 0, questCount)
@@ -31,21 +30,20 @@ func (world *World) loadQuestData() {
 	for index := 1; index <= questCount; index++ {
 		questName, ok := table.RawGetInt(index).AsString()
 		if !ok {
-			log.Fatalf("%s: quests[%d] must be a string.", QUEST_DATA_FILE, index)
+			return fmt.Errorf("%s: quests[%d] must be a string.", QUEST_DATA_FILE, index)
 		}
 
 		// Check for duplicates
 		_, duplicateQuestName := QUEST_NAME_TO_ID[questName]
 		if duplicateQuestName {
-			log.Fatalf("%s: quest '%s' is a duplicate of another quest.", QUEST_DATA_FILE, questName)
+			return fmt.Errorf("%s: quest '%s' is a duplicate of another quest.", QUEST_DATA_FILE, questName)
 		}
 
 		QUEST_NAME_TO_ID[questName] = QuestId(len(QUEST_NAMES))
 		QUEST_NAMES = append(QUEST_NAMES, questName)
-		log.Printf("Loaded quest '%s'.", questName)
 	}
 
-	log.Printf("All quest data has been loaded.")
+	return nil
 }
 
 func (character *Character) IsQuestComplete(quest QuestId) bool {
@@ -67,15 +65,15 @@ func questsToStringArray(quests uint32) []string {
 	return result
 }
 
-func questsFromStringArray(questNames []string) uint32 {
+func questsFromStringArray(questNames []string) (uint32, error) {
 	var result uint32 = 0
 	for _, questName := range questNames {
 		quest, exists := QUEST_NAME_TO_ID[questName]
 		if !exists {
-			log.Fatalf("No quest ID matches quest '%s'.", questName)
+			return 0, fmt.Errorf("No quest ID matches quest '%s'.", questName)
 		}
 		result |= 1 << quest
 	}
 
-	return result
+	return result, nil
 }

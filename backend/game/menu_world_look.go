@@ -281,6 +281,8 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				} else {
 					player.send(fmt.Sprintf("You can interact with it by typing %s", util.CombineNames(fixture.GetVerbs())))
 				}
+
+				return true
 			}
 
 			player.send(err.Error())
