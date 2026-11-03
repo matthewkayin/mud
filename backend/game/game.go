@@ -258,7 +258,7 @@ func (gamestate *GameState) saveAllLoggedInPlayers() {
 			continue
 		}
 
-		playerMob.SavePlayerCharacter()
+		gamestate.world.SavePlayerCharacter(playerMob)
 	}
 
 	log.Printf("Saved all logged in player characters.")
@@ -338,7 +338,7 @@ func (gamestate *GameState) createCharacter(playerId int, characterSheet *world.
 	character.SpellsKnown = append(character.SpellsKnown, 0)
 
 	gamestate.world.AddCharacter(playerId, character)
-	world.SaveCharacter(character)
+	gamestate.world.SaveCharacter(character)
 }
 
 // This function is the update that is called on a 3-second interval

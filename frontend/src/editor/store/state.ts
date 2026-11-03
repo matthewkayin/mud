@@ -15,6 +15,8 @@ export const DIRECTION_NAMES: Record<Exclude<world.Direction, world.Direction.CO
   [world.Direction.EAST]: 'east',
   [world.Direction.SOUTH]: 'south',
   [world.Direction.WEST]: 'west',
+  [world.Direction.UP]: 'up',
+  [world.Direction.DOWN]: 'down',
 };
 
 // The world stores NPCs in a world-level list that references rooms by index,
@@ -45,8 +47,9 @@ export class EditorCell {
     return `${this.x},${this.y}`;
   }
 
-  toPosition = (): world.RoomEditorPosition => {
-    return { X: this.x, Y: this.y };
+  toPosition = (): world.RoomPosition => {
+    // The editor only shows one floor, so every room it makes is at Z 0
+    return { X: this.x, Y: this.y, Z: 0 };
   }
 
   static fromString = (cellString: string): EditorCell => {
@@ -54,7 +57,7 @@ export class EditorCell {
     return new EditorCell(Number.parseInt(parts[0]), Number.parseInt(parts[1]));
   }
 
-  static fromPosition = (position: world.RoomEditorPosition): EditorCell => {
+  static fromPosition = (position: world.RoomPosition): EditorCell => {
     return new EditorCell(position.X, position.Y);
   }
 }

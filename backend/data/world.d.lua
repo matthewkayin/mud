@@ -86,6 +86,8 @@ world.Direction = {
 	EAST = "east",
 	SOUTH = "south",
 	WEST = "west",
+	UP = "up",
+	DOWN = "down",
 }
 
 ---@enum Stat

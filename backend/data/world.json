@@ -5,39 +5,12 @@
       "Description": "You are in a wide-open room with chairs stacked against the columns. A makeshift, blue octopus hangs overhead.",
       "Notes": "",
       "IsSafeZone": true,
-      "EditorPosition": {
-        "X": 1,
-        "Y": 2
-      },
       "Exits": [
         46,
         -1,
         61,
-        53
-      ],
-      "Locks": [],
-      "DropTable": {
-        "Entries": []
-      },
-      "Inventory": {
-        "Items": []
-      },
-      "Chests": [],
-      "Fixtures": []
-    },
-    {
-      "Name": "Ancient Vines",
-      "Description": "This porton of the forest is overrun with heaps of shaggy vines that hang from the trees and filly the forest floor. You can see smoke rising from the East.",
-      "Notes": "",
-      "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 2,
-        "Y": -5
-      },
-      "Exits": [
+        53,
         -1,
-        2,
-        8,
         -1
       ],
       "Locks": [],
@@ -48,22 +21,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 1,
+        "Y": 2,
+        "Z": 0
+      }
     },
     {
-      "Name": "Witch Hut",
-      "Description": "A hut made of knarled wood squats in a clearing in the woods. Out front, a small black cauldron gurgles over the fire.",
-      "Notes": "There should be a kooky witch here",
-      "IsSafeZone": true,
-      "EditorPosition": {
-        "X": 3,
-        "Y": -5
-      },
+      "Name": "Ancient Vines",
+      "Description": "This porton of the forest is overrun with heaps of shaggy vines that hang from the trees and filly the forest floor. You can see smoke rising from the East.",
+      "Notes": "",
+      "IsSafeZone": false,
       "Exits": [
         -1,
-        3,
+        2,
+        8,
         -1,
-        1
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -73,22 +49,53 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 2,
+        "Y": -5,
+        "Z": 0
+      }
+    },
+    {
+      "Name": "Witch Hut",
+      "Description": "A hut made of knarled wood squats in a clearing in the woods. Out front, a small black cauldron gurgles over the fire.",
+      "Notes": "There should be a kooky witch here",
+      "IsSafeZone": true,
+      "Exits": [
+        -1,
+        3,
+        -1,
+        1,
+        -1,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": [],
+      "Fixtures": [],
+      "Position": {
+        "X": 3,
+        "Y": -5,
+        "Z": 0
+      }
     },
     {
       "Name": "Gargantuan Mushrooms",
       "Description": "The trees open up here to make room for vast mushrooms that loom overhead. To the west you can see smoke rising.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 4,
-        "Y": -5
-      },
       "Exits": [
         -1,
         -1,
         10,
-        2
+        2,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -111,21 +118,24 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 4,
+        "Y": -5,
+        "Z": 0
+      }
     },
     {
       "Name": "Cramped Stairwell",
       "Description": "Moving up and down this stairwell makes you feel as though you might get stuck, even though the landings at its beginning, middle and end are spacious.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 7,
-        "Y": -5
-      },
       "Exits": [
         -1,
         5,
         12,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -149,22 +159,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 7,
+        "Y": -5,
+        "Z": 0
+      }
     },
     {
       "Name": "Esoteric Mechanism",
       "Description": "Stepping into this room is like stepping into a vast clock, and at its center lies a complex dial covered in runes.",
       "Notes": "Part of the puzzle to get into the Depths/Tomb of Mologok",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 8,
-        "Y": -5
-      },
       "Exits": [
         -1,
         6,
         -1,
-        4
+        4,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -181,22 +194,25 @@
             "Signal": "fort_greene_lever_b"
           }
         }
-      ]
+      ],
+      "Position": {
+        "X": 8,
+        "Y": -5,
+        "Z": 0
+      }
     },
     {
       "Name": "Collapsed Chamber",
       "Description": "This porton of Fort Green has collapsed, admitting a ray of sunlight into the crypt.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 9,
-        "Y": -5
-      },
       "Exits": [
         -1,
         -1,
         14,
-        5
+        5,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -219,21 +235,24 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 9,
+        "Y": -5,
+        "Z": 0
+      }
     },
     {
       "Name": "Undergrowth Cavern",
       "Description": "You have entered into a cavern, the ceiling of which is comprised entirely by the roots of the black oaks.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 1,
-        "Y": -4
-      },
       "Exits": [
         -1,
         8,
         15,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -244,22 +263,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 1,
+        "Y": -4,
+        "Z": 0
+      }
     },
     {
       "Name": "Undergrowth Crossroad",
       "Description": "This confluence of paths is under a dome formed by the roots of the tree overhead.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 2,
-        "Y": -4
-      },
       "Exits": [
         1,
         9,
         16,
-        7
+        7,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -269,22 +291,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 2,
+        "Y": -4,
+        "Z": 0
+      }
     },
     {
       "Name": "Gargantuan Web",
       "Description": "Above you there is the vast web of some enormous spider as though you were under a circus tent.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 3,
-        "Y": -4
-      },
       "Exits": [
         -1,
         10,
         17,
-        8
+        8,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -307,22 +332,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 3,
+        "Y": -4,
+        "Z": 0
+      }
     },
     {
       "Name": "Webbed Passage",
       "Description": "This passage through the forest is enclosed on all sides by dense spider webs.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 4,
-        "Y": -4
-      },
       "Exits": [
         3,
         11,
         -1,
-        9
+        9,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -345,22 +373,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 4,
+        "Y": -4,
+        "Z": 0
+      }
     },
     {
       "Name": "Mire",
       "Description": "Passing between the trees requires walking through ankle-deep standing water.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 5,
-        "Y": -4
-      },
       "Exits": [
         -1,
         -1,
         19,
-        10
+        10,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -383,21 +414,24 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 5,
+        "Y": -4,
+        "Z": 0
+      }
     },
     {
       "Name": "Control Chamber",
       "Description": "Grand magical lanterns illuminate a dizzying array of bronze levers and switches, the purpose of which are not documented anywhere in this room.",
       "Notes": "Part of the puzzle to get into the Depths/Tomb of Mologok",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 7,
-        "Y": -4
-      },
       "Exits": [
         4,
         -1,
         20,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -415,21 +449,24 @@
             "Signal": "fort_greene_lever_a"
           }
         }
-      ]
+      ],
+      "Position": {
+        "X": 7,
+        "Y": -4,
+        "Z": 0
+      }
     },
     {
       "Name": "Tomb of Mologok",
       "Description": "This grand tomb is to some strange sort of primeval warlord who predates all record. It is lined with burial urns, as well as a dust-covered arsenal of weapons belonging to Mologok's defeated foes. Perhaps tomb raiders have not yet succesfully entered this place?",
       "Notes": "A boss goes here, as well as a badass chest.",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 8,
-        "Y": -4
-      },
       "Exits": [
         -1,
         -1,
         21,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -526,21 +563,24 @@
           }
         }
       ],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 8,
+        "Y": -4,
+        "Z": 0
+      }
     },
     {
       "Name": "Burial Chamber",
       "Description": "This room is lined interred remains of great warriors from another age of the world.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 9,
-        "Y": -4
-      },
       "Exits": [
         6,
         -1,
         22,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -564,21 +604,24 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 9,
+        "Y": -4,
+        "Z": 0
+      }
     },
     {
       "Name": "Thorny Pathway",
       "Description": "This path through the forest is lined on either side by a menacing wall of thorns.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 1,
-        "Y": -3
-      },
       "Exits": [
         7,
         -1,
         23,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -589,21 +632,24 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 1,
+        "Y": -3,
+        "Z": 0
+      }
     },
     {
       "Name": "Undergrowth Passage",
       "Description": "This path through the forest goes under the roots of the trees, which form a lattice above you.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 2,
-        "Y": -3
-      },
       "Exits": [
         8,
         -1,
         24,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -614,20 +660,23 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 2,
+        "Y": -3,
+        "Z": 0
+      }
     },
     {
       "Name": "Buzzing Pathway",
       "Description": "This pathway through the forest is cut down into the damp earth, and as you traverse it you are assaulted by mosquitoes. ",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 3,
-        "Y": -3
-      },
       "Exits": [
         9,
         18,
+        -1,
+        -1,
         -1,
         -1
       ],
@@ -652,22 +701,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 3,
+        "Y": -3,
+        "Z": 0
+      }
     },
     {
       "Name": "Black Wood Junction",
       "Description": "In the middle of the forest there is a confluence of paths into a small clearing. On all sides are vast oak tree with black bark and black leaves.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 4,
-        "Y": -3
-      },
       "Exits": [
         -1,
         19,
         26,
-        17
+        17,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -677,22 +729,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 4,
+        "Y": -3,
+        "Z": 0
+      }
     },
     {
       "Name": "Abandoned Caravan",
       "Description": "Here is the final resting place of a caravan, with its goods strewn across the forest floor from when it was overturned by some great blow to its side. There is no trace of what happened to any of the people who led this caravan into the forest.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 5,
-        "Y": -3
-      },
       "Exits": [
         11,
         -1,
         27,
-        18
+        18,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -848,21 +903,24 @@
           }
         }
       ],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 5,
+        "Y": -3,
+        "Z": 0
+      }
     },
     {
       "Name": "Shadowy Walkway",
       "Description": "This stone corridor is uneven and seems to branch off into darkness at various points, making it hard to keep a good view of the light ahead or behind.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 7,
-        "Y": -3
-      },
       "Exits": [
         12,
         -1,
         28,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -873,21 +931,24 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 7,
+        "Y": -3,
+        "Z": 0
+      }
     },
     {
       "Name": "Fort Green (Depths)",
       "Description": "In this dark room at the core of Fort Green there is the omnipresent stench of decay, as well as the filthy aura of difting particulate and inumerable insects.",
       "Notes": "We need there to be a door that blocks this off and requires that players interact with esoteric mechanism, ritual chamber and control chamber, perhaps at the same time. ",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 8,
-        "Y": -3
-      },
       "Exits": [
         13,
         -1,
         29,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -907,21 +968,24 @@
             "LeverSignalB": "fort_greene_lever_b"
           }
         }
-      ]
+      ],
+      "Position": {
+        "X": 8,
+        "Y": -3,
+        "Z": 0
+      }
     },
     {
       "Name": "Silent Walkway",
       "Description": "As you move along this walkway you are perturbed by the utter lack of sound.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 9,
-        "Y": -3
-      },
       "Exits": [
         14,
         -1,
         30,
+        -1,
+        -1,
         -1
       ],
       "Locks": [
@@ -937,20 +1001,23 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 9,
+        "Y": -3,
+        "Z": 0
+      }
     },
     {
       "Name": "Fey Waters",
       "Description": "You have found a swirling pond of glimmering blue waters. The blue fireflies indicate that this must be near to some entrance to the Fey World.",
       "Notes": "If we ever get to a the fey or some kind of fey world we could do more with this place.",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 1,
-        "Y": -2
-      },
       "Exits": [
         15,
         24,
+        -1,
+        -1,
         -1,
         -1
       ],
@@ -975,22 +1042,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 1,
+        "Y": -2,
+        "Z": 0
+      }
     },
     {
       "Name": "Blue Flowers",
       "Description": "You find yourself in a small field of bright crimson flowers amongst the trees.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 2,
-        "Y": -2
-      },
       "Exits": [
         16,
         -1,
         34,
-        23
+        23,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -1025,21 +1095,24 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 2,
+        "Y": -2,
+        "Z": 0
+      }
     },
     {
       "Name": "Hanging Tree",
       "Description": "A vast tree stands at the entrance to these woods. Decayed rope hangs from its limbs where bandits have been put to death.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 3,
-        "Y": -2
-      },
       "Exits": [
         -1,
         26,
         35,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -1050,22 +1123,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 3,
+        "Y": -2,
+        "Z": 0
+      }
     },
     {
       "Name": "Black Wood Pathway",
       "Description": "This pathway cuts down through the roots of the forest. All around the roots of the vast black trees interconnect to form impenetrable walls.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 4,
-        "Y": -2
-      },
       "Exits": [
         18,
         27,
         -1,
-        25
+        25,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -1075,22 +1151,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 4,
+        "Y": -2,
+        "Z": 0
+      }
     },
     {
       "Name": "Crimson Flowers",
       "Description": "You find yourself in a small field of bright crimson flowers amongst the trees.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 5,
-        "Y": -2
-      },
       "Exits": [
         19,
         -1,
         -1,
-        26
+        26,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -1125,21 +1204,24 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 5,
+        "Y": -2,
+        "Z": 0
+      }
     },
     {
       "Name": "Fort Greene (Foyer)",
       "Description": "You're in a circular room inside the monument's column. It's cramped, but there are stairs leading deeper into the crypt connecting outward onto deeper floors to the North and East.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 7,
-        "Y": -2
-      },
       "Exits": [
         20,
         29,
         38,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -1150,22 +1232,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 7,
+        "Y": -2,
+        "Z": 0
+      }
     },
     {
       "Name": "Fetid Walkway",
       "Description": "This deep walkways is lined with bones, and the air is filled with the smell of death.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 8,
-        "Y": -2
-      },
       "Exits": [
         21,
         30,
         -1,
-        28
+        28,
+        -1,
+        -1
       ],
       "Locks": [
         {
@@ -1180,22 +1265,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 8,
+        "Y": -2,
+        "Z": 0
+      }
     },
     {
       "Name": "Ritual Chamber",
       "Description": "In the South-Eastern corner of Fort Green there is an ancient ritual chamber with a pedestal at its center.",
       "Notes": "Part of the puzzle to get into the Depths/Tomb of Mologok",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 9,
-        "Y": -2
-      },
       "Exits": [
         22,
         -1,
         -1,
-        29
+        29,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -1326,19 +1414,78 @@
           }
         }
       ],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 9,
+        "Y": -2,
+        "Z": 0
+      }
     },
     {
       "Name": "You won!",
       "Description": "THERE IS NOTHING MORE TO DO IN THIS DIRECTION.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": -3,
-        "Y": -1
-      },
       "Exits": [
         -1,
+        32,
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": [],
+      "Fixtures": [],
+      "Position": {
+        "X": -3,
+        "Y": -1,
+        "Z": 0
+      }
+    },
+    {
+      "Name": "Bridge",
+      "Description": "The bridge is old, but seems sturdy enough. The wind whips about you, and you can hear the rush of the river below.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "Exits": [
+        -1,
+        33,
+        -1,
+        31,
+        -1,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": [],
+      "Fixtures": [],
+      "Position": {
+        "X": -2,
+        "Y": -1,
+        "Z": 0
+      }
+    },
+    {
+      "Name": "Bridgeside Bluff",
+      "Description": "A rocky bluff locks out over the East River. The tides of the river clash against each other. In the distance is a great wooden bridge.",
+      "Notes": "There should be a high level troll blocking the bridge here",
+      "IsSafeZone": false,
+      "Exits": [
+        -1,
+        -1,
+        39,
         32,
         -1,
         -1
@@ -1351,70 +1498,23 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
-    },
-    {
-      "Name": "Bridge",
-      "Description": "The bridge is old, but seems sturdy enough. The wind whips about you, and you can hear the rush of the river below.",
-      "Notes": "",
-      "IsSafeZone": false,
-      "EditorPosition": {
-        "X": -2,
-        "Y": -1
-      },
-      "Exits": [
-        -1,
-        33,
-        -1,
-        31
-      ],
-      "Locks": [],
-      "DropTable": {
-        "Entries": []
-      },
-      "Inventory": {
-        "Items": []
-      },
-      "Chests": [],
-      "Fixtures": []
-    },
-    {
-      "Name": "Bridgeside Bluff",
-      "Description": "A rocky bluff locks out over the East River. The tides of the river clash against each other. In the distance is a great wooden bridge.",
-      "Notes": "There should be a high level troll blocking the bridge here",
-      "IsSafeZone": false,
-      "EditorPosition": {
+      "Fixtures": [],
+      "Position": {
         "X": -1,
-        "Y": -1
-      },
-      "Exits": [
-        -1,
-        -1,
-        39,
-        32
-      ],
-      "Locks": [],
-      "DropTable": {
-        "Entries": []
-      },
-      "Inventory": {
-        "Items": []
-      },
-      "Chests": [],
-      "Fixtures": []
+        "Y": -1,
+        "Z": 0
+      }
     },
     {
       "Name": "Dark Pool Garden",
       "Description": "An bed of blue and red flowers lies here, their petals dark in the dim light. The pool itself is pitch black, reflecting only the tiniest glint of light at the edge, like staring into a bowl of mercury.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 2,
-        "Y": -1
-      },
       "Exits": [
         24,
         35,
+        -1,
+        -1,
         -1,
         -1
       ],
@@ -1451,46 +1551,24 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 2,
+        "Y": -1,
+        "Z": 0
+      }
     },
     {
       "Name": "Warning Sign",
       "Description": "A \"Keep Out\" sign warns travelers that the dense, black forest ahead may not be welcoming to casual visitors.",
       "Notes": "The zone beyond needs some form of Big Bad like a spectre or wight who prowls slowly and makes players afraid of passing through to loot items from the ground or move through to get back and forth to and from the Witch Hut to buy items from the witch.",
       "IsSafeZone": true,
-      "EditorPosition": {
-        "X": 3,
-        "Y": -1
-      },
       "Exits": [
         25,
         -1,
         43,
-        34
-      ],
-      "Locks": [],
-      "DropTable": {
-        "Entries": []
-      },
-      "Inventory": {
-        "Items": []
-      },
-      "Chests": [],
-      "Fixtures": []
-    },
-    {
-      "Name": "Fort Greene Courtyard",
-      "Description": "An old courtyard with a faded compass rose engraved in the center. Many of the courtyard's tiles are cracked and dislodged, with roots and vines reaching out from underneath them, grasping for air.",
-      "Notes": "",
-      "IsSafeZone": true,
-      "EditorPosition": {
-        "X": 5,
-        "Y": -1
-      },
-      "Exits": [
+        34,
         -1,
-        37,
-        44,
         -1
       ],
       "Locks": [],
@@ -1501,22 +1579,53 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 3,
+        "Y": -1,
+        "Z": 0
+      }
+    },
+    {
+      "Name": "Fort Greene Courtyard",
+      "Description": "An old courtyard with a faded compass rose engraved in the center. Many of the courtyard's tiles are cracked and dislodged, with roots and vines reaching out from underneath them, grasping for air.",
+      "Notes": "",
+      "IsSafeZone": true,
+      "Exits": [
+        -1,
+        37,
+        44,
+        -1,
+        -1,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": [],
+      "Fixtures": [],
+      "Position": {
+        "X": 5,
+        "Y": -1,
+        "Z": 0
+      }
     },
     {
       "Name": "Fort Greene Steps",
       "Description": "A grand staircase, lined by trees on each side, leads the way up to the monument.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 6,
-        "Y": -1
-      },
       "Exits": [
         -1,
         38,
         -1,
-        36
+        36,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -1526,22 +1635,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 6,
+        "Y": -1,
+        "Z": 0
+      }
     },
     {
       "Name": "Fort Greene Plaza",
       "Description": "At the top of the hill is a wide-open courtyard. In the center, a magnificent column reaches toward the sky. At its peak sits a limestone-green brazier.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 7,
-        "Y": -1
-      },
       "Exits": [
         28,
         -1,
         -1,
-        37
+        37,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -1551,21 +1663,24 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 7,
+        "Y": -1,
+        "Z": 0
+      }
     },
     {
       "Name": "Clearing in the Trees",
       "Description": "The woods are thinner here, and there are many stumps where the trees would be.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": -1,
-        "Y": 0
-      },
       "Exits": [
         33,
         40,
         45,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -1601,121 +1716,24 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": -1,
+        "Y": 0,
+        "Z": 0
+      }
     },
     {
       "Name": "Mushroom Cart",
       "Description": "There is a break in the trees here, and a circular courtyard of dirt where many boots have worn away the surrounding grass. A wooden cart full of various mushrooms waits patiently under the trees.",
       "Notes": "There should be a weird guy here selling mushrooms",
       "IsSafeZone": true,
-      "EditorPosition": {
-        "X": 0,
-        "Y": 0
-      },
       "Exits": [
         -1,
         41,
         -1,
-        39
-      ],
-      "Locks": [],
-      "DropTable": {
-        "Entries": []
-      },
-      "Inventory": {
-        "Items": []
-      },
-      "Chests": [],
-      "Fixtures": []
-    },
-    {
-      "Name": "Below the Church Window",
-      "Description": "Castle Recurse looms overhead, and you have a nice view of the stained glass octopus that adorns the Church window. If you listen closely, you can hear choral hymns, or is that karaoke?",
-      "Notes": "",
-      "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 1,
-        "Y": 0
-      },
-      "Exits": [
+        39,
         -1,
-        42,
-        -1,
-        40
-      ],
-      "Locks": [],
-      "DropTable": {
-        "Entries": []
-      },
-      "Inventory": {
-        "Items": []
-      },
-      "Chests": [],
-      "Fixtures": []
-    },
-    {
-      "Name": "Overgrown Shrine",
-      "Description": "A little statue of a dog peeks out from among the foliage. He is a good boy, and he points the way west.",
-      "Notes": "",
-      "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 2,
-        "Y": 0
-      },
-      "Exits": [
-        -1,
-        43,
-        47,
-        41
-      ],
-      "Locks": [],
-      "DropTable": {
-        "Entries": []
-      },
-      "Inventory": {
-        "Items": []
-      },
-      "Chests": [],
-      "Fixtures": []
-    },
-    {
-      "Name": "Woodlawn Stream",
-      "Description": "A small stream trickles to the east here.",
-      "Notes": "",
-      "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 3,
-        "Y": 0
-      },
-      "Exits": [
-        35,
-        -1,
-        48,
-        42
-      ],
-      "Locks": [],
-      "DropTable": {
-        "Entries": []
-      },
-      "Inventory": {
-        "Items": []
-      },
-      "Chests": [],
-      "Fixtures": []
-    },
-    {
-      "Name": "Willow Road",
-      "Description": "Knarled willow trees canopy the path ahead. An eerie quiet hangs in the air, interrupted only by the crunch of brittle leaves underfoot.",
-      "Notes": "",
-      "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 5,
-        "Y": 0
-      },
-      "Exits": [
-        36,
-        -1,
-        50,
         -1
       ],
       "Locks": [],
@@ -1726,21 +1744,136 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 0,
+        "Y": 0,
+        "Z": 0
+      }
+    },
+    {
+      "Name": "Below the Church Window",
+      "Description": "Castle Recurse looms overhead, and you have a nice view of the stained glass octopus that adorns the Church window. If you listen closely, you can hear choral hymns, or is that karaoke?",
+      "Notes": "",
+      "IsSafeZone": false,
+      "Exits": [
+        -1,
+        42,
+        -1,
+        40,
+        -1,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": [],
+      "Fixtures": [],
+      "Position": {
+        "X": 1,
+        "Y": 0,
+        "Z": 0
+      }
+    },
+    {
+      "Name": "Overgrown Shrine",
+      "Description": "A little statue of a dog peeks out from among the foliage. He is a good boy, and he points the way west.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "Exits": [
+        -1,
+        43,
+        47,
+        41,
+        -1,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": [],
+      "Fixtures": [],
+      "Position": {
+        "X": 2,
+        "Y": 0,
+        "Z": 0
+      }
+    },
+    {
+      "Name": "Woodlawn Stream",
+      "Description": "A small stream trickles to the east here.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "Exits": [
+        35,
+        -1,
+        48,
+        42,
+        -1,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": [],
+      "Fixtures": [],
+      "Position": {
+        "X": 3,
+        "Y": 0,
+        "Z": 0
+      }
+    },
+    {
+      "Name": "Willow Road",
+      "Description": "Knarled willow trees canopy the path ahead. An eerie quiet hangs in the air, interrupted only by the crunch of brittle leaves underfoot.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "Exits": [
+        36,
+        -1,
+        50,
+        -1,
+        -1,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": [],
+      "Fixtures": [],
+      "Position": {
+        "X": 5,
+        "Y": 0,
+        "Z": 0
+      }
     },
     {
       "Name": "By a Fallen Oak",
       "Description": "An old fallen tree interrupts the trail. Many ants and plants have made it their home.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": -1,
-        "Y": 1
-      },
       "Exits": [
         39,
         -1,
         52,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -1764,21 +1897,24 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": -1,
+        "Y": 1,
+        "Z": 0
+      }
     },
     {
       "Name": "Church",
       "Description": "This spatious room is furnished with couches that are arranged like pews. On the far window is a stained glass panel depicting an orange octopus.",
       "Notes": "",
       "IsSafeZone": true,
-      "EditorPosition": {
-        "X": 1,
-        "Y": 1
-      },
       "Exits": [
         -1,
         -1,
         0,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -1789,21 +1925,24 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 1,
+        "Y": 1,
+        "Z": 0
+      }
     },
     {
       "Name": "Woodland Trail",
       "Description": "A dirt path leads south to north along this part of the woods.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 2,
-        "Y": 1
-      },
       "Exits": [
         42,
         48,
         54,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -1839,22 +1978,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 2,
+        "Y": 1,
+        "Z": 0
+      }
     },
     {
       "Name": "Forest Boulder",
       "Description": "There's a big boulder in the center of your path here. It seems like it would be fun to climb on.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 3,
-        "Y": 1
-      },
       "Exits": [
         43,
         49,
         55,
-        47
+        47,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -1864,22 +2006,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 3,
+        "Y": 1,
+        "Z": 0
+      }
     },
     {
       "Name": "Rotting Apple Trees",
       "Description": "These apple trees are planted in rows like an orchard, but the branches are knarled and all the fruit is rotting on the floor.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 4,
-        "Y": 1
-      },
       "Exits": [
         -1,
         50,
         56,
-        48
+        48,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -1919,22 +2064,25 @@
           "Id": "Apple Tree",
           "BehaviorParams": {}
         }
-      ]
+      ],
+      "Position": {
+        "X": 4,
+        "Y": 1,
+        "Z": 0
+      }
     },
     {
       "Name": "Tall Apple Tree",
       "Description": "An exceptionally tall apple tree towers over the rest of the trees in the nearby orchard.",
       "Notes": "There should be a pathetic goblin trying to get goblins from this tree. Players can give the goblin an apple or kill it.",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 5,
-        "Y": 1
-      },
       "Exits": [
         44,
         51,
         57,
-        49
+        49,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -1949,22 +2097,25 @@
           "Id": "Apple Tree",
           "BehaviorParams": {}
         }
-      ]
+      ],
+      "Position": {
+        "X": 5,
+        "Y": 1,
+        "Z": 0
+      }
     },
     {
       "Name": "Farmer Gill's Shed",
       "Description": "Inside this old wooden shed lies a scattering of rusted tools. They look like they haven't been moved from their place in some time.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 6,
-        "Y": 1
-      },
       "Exits": [
         -1,
         -1,
         58,
-        50
+        50,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -1992,21 +2143,24 @@
           "Id": "Apple Tree",
           "BehaviorParams": {}
         }
-      ]
+      ],
+      "Position": {
+        "X": 6,
+        "Y": 1,
+        "Z": 0
+      }
     },
     {
       "Name": "Underneath a Shady Tree",
       "Description": "There is a large tree here whose branches reach out and shield you from the sunlight. You feel safe here, as do the squirrels that call this tree home.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": -1,
-        "Y": 2
-      },
       "Exits": [
         45,
         -1,
         59,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -2030,20 +2184,23 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": -1,
+        "Y": 2,
+        "Z": 0
+      }
     },
     {
       "Name": "Kitchen",
       "Description": "In the corner of a room is a long, rectangular dining table. Many coffee makers line the kitchen counter.",
       "Notes": "",
       "IsSafeZone": true,
-      "EditorPosition": {
-        "X": 0,
-        "Y": 2
-      },
       "Exits": [
         -1,
         0,
+        -1,
+        -1,
         -1,
         -1
       ],
@@ -2055,21 +2212,24 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 0,
+        "Y": 2,
+        "Z": 0
+      }
     },
     {
       "Name": "Gazebo",
       "Description": "A quaint gazebo rests outside the castle's walls. In the ground, you see a colony of ants helping themselves to another Recurser's forgotten lunch.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 2,
-        "Y": 2
-      },
       "Exits": [
         47,
         55,
         62,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -2093,22 +2253,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 2,
+        "Y": 2,
+        "Z": 0
+      }
     },
     {
       "Name": "Old Arrow Tree",
       "Description": "In this section of the woods, a broad tree stands above all the others. A cluster of arrows are lodged in its trunk.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 3,
-        "Y": 2
-      },
       "Exits": [
         48,
         56,
         63,
-        54
+        54,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -2118,22 +2281,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 3,
+        "Y": 2,
+        "Z": 0
+      }
     },
     {
       "Name": "Apple Orchard",
       "Description": "Rows of apple trees line dirt paths. Some of the apples bear bite marks from insects, but the fruits look tasty overall.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 4,
-        "Y": 2
-      },
       "Exits": [
         49,
         57,
         -1,
-        55
+        55,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -2173,22 +2339,25 @@
           "Id": "Apple Tree",
           "BehaviorParams": {}
         }
-      ]
+      ],
+      "Position": {
+        "X": 4,
+        "Y": 2,
+        "Z": 0
+      }
     },
     {
       "Name": "Farmer Gill's House",
       "Description": "Farmer Gill is an industrious man, and his house is well-maintained because of it. The walls are all recently white-washed, the trimming is bright red, the roof is in good repair. Inside his larder is well-stocked, and while the barn is weathered, it has a certain rustic charm, and his herd seem more than happy with it.",
       "Notes": "Players can talk to farmer gill here. pls let me do the dialog for him he is inspired by a real farmer I met once who had strong opinions about the benefits of apple maggots",
       "IsSafeZone": true,
-      "EditorPosition": {
-        "X": 5,
-        "Y": 2
-      },
       "Exits": [
         50,
         58,
         64,
-        56
+        56,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -2211,22 +2380,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 5,
+        "Y": 2,
+        "Z": 0
+      }
     },
     {
       "Name": "Grapevines",
       "Description": "Clusters of dark purple grapes line the path here. They're smaller than the ones you're used to seeing, but they look delicious.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 6,
-        "Y": 2
-      },
       "Exits": [
         51,
         -1,
         65,
-        57
+        57,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -2249,19 +2421,78 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 6,
+        "Y": 2,
+        "Z": 0
+      }
     },
     {
       "Name": "Hill near the Castle",
       "Description": "From atop this hill, treetops stretch as far as you can see. To the west, you glimse the East River rushing. To the northeast, Castle Recurse, light leaking out the Kitchen window. To the southeast, the tops of wooden houses peek out from the forest canopy.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": -1,
-        "Y": 3
-      },
       "Exits": [
         52,
+        60,
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": [],
+      "Fixtures": [],
+      "Position": {
+        "X": -1,
+        "Y": 3,
+        "Z": 0
+      }
+    },
+    {
+      "Name": "Below the Kitchen Winow",
+      "Description": "The wall of Castle Recurse looms above you, and you can see the Kitchen window, cracked open to let in the cool air, but you cannot see inside it from here.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "Exits": [
+        -1,
+        61,
+        -1,
+        59,
+        -1,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": [],
+      "Fixtures": [],
+      "Position": {
+        "X": 0,
+        "Y": 3,
+        "Z": 0
+      }
+    },
+    {
+      "Name": "Castle Recurse Steps",
+      "Description": "The steps to the fourth floor are long and winding. Your footsteps echo in the stairwell. This is another test description.",
+      "Notes": "",
+      "IsSafeZone": true,
+      "Exits": [
+        0,
+        62,
+        66,
         60,
         -1,
         -1
@@ -2274,72 +2505,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
-    },
-    {
-      "Name": "Below the Kitchen Winow",
-      "Description": "The wall of Castle Recurse looms above you, and you can see the Kitchen window, cracked open to let in the cool air, but you cannot see inside it from here.",
-      "Notes": "",
-      "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 0,
-        "Y": 3
-      },
-      "Exits": [
-        -1,
-        61,
-        -1,
-        59
-      ],
-      "Locks": [],
-      "DropTable": {
-        "Entries": []
-      },
-      "Inventory": {
-        "Items": []
-      },
-      "Chests": [],
-      "Fixtures": []
-    },
-    {
-      "Name": "Castle Recurse Steps",
-      "Description": "The steps to the fourth floor are long and winding. Your footsteps echo in the stairwell. This is another test description.",
-      "Notes": "",
-      "IsSafeZone": true,
-      "EditorPosition": {
+      "Fixtures": [],
+      "Position": {
         "X": 1,
-        "Y": 3
-      },
-      "Exits": [
-        0,
-        62,
-        66,
-        60
-      ],
-      "Locks": [],
-      "DropTable": {
-        "Entries": []
-      },
-      "Inventory": {
-        "Items": []
-      },
-      "Chests": [],
-      "Fixtures": []
+        "Y": 3,
+        "Z": 0
+      }
     },
     {
       "Name": "Willoughby Woods",
       "Description": "These woods surround Castle Recurse. Their vines climb up the castle's walls. Birds sing their morning songs, and you hear the rustle of leaves in the wind.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 2,
-        "Y": 3
-      },
       "Exits": [
         54,
         63,
         67,
-        61
+        61,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -2362,22 +2546,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 2,
+        "Y": 3,
+        "Z": 0
+      }
     },
     {
       "Name": "Forest Playground",
       "Description": "Someone has shaped the woods here into a sort of playground. Two swings hang over a sturdy tree branch, and a halved log has been fashioned into a seesaw.",
       "Notes": "",
       "IsSafeZone": true,
-      "EditorPosition": {
-        "X": 3,
-        "Y": 3
-      },
       "Exits": [
         55,
         -1,
         68,
-        62
+        62,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -2387,21 +2574,24 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 3,
+        "Y": 3,
+        "Z": 0
+      }
     },
     {
       "Name": "Pastures",
       "Description": "A green field with grass kept short by hungry farm animals.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 5,
-        "Y": 3
-      },
       "Exits": [
         57,
         65,
         69,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -2412,46 +2602,24 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 5,
+        "Y": 3,
+        "Z": 0
+      }
     },
     {
       "Name": "Junk Pile",
       "Description": "There is no telling how long Farmer Gill, and by the looks of it his extended family and perhaps his ancestors, have been discrding their junk here.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 6,
-        "Y": 3
-      },
       "Exits": [
         58,
         -1,
         -1,
-        64
-      ],
-      "Locks": [],
-      "DropTable": {
-        "Entries": []
-      },
-      "Inventory": {
-        "Items": []
-      },
-      "Chests": [],
-      "Fixtures": []
-    },
-    {
-      "Name": "Fulton Outskirts",
-      "Description": "You find yourself at the outskirts of a small town which stretches to the east and is comprised of ramshakle wooden houses. 'Welcome to Fulton' the sign out front reads.",
-      "Notes": "",
-      "IsSafeZone": true,
-      "EditorPosition": {
-        "X": 1,
-        "Y": 4
-      },
-      "Exits": [
-        61,
-        67,
-        72,
+        64,
+        -1,
         -1
       ],
       "Locks": [],
@@ -2462,22 +2630,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 6,
+        "Y": 3,
+        "Z": 0
+      }
     },
     {
-      "Name": "Dekalb Market",
-      "Description": "In the center of Fulton is a large, circular courtyard with steps on all sides leading down to it like a colosseum. Here the townsfolk all gather, and merchants call out to passerbys, advertising their wares.",
+      "Name": "Fulton Outskirts",
+      "Description": "You find yourself at the outskirts of a small town which stretches to the east and is comprised of ramshakle wooden houses. 'Welcome to Fulton' the sign out front reads.",
       "Notes": "",
       "IsSafeZone": true,
-      "EditorPosition": {
-        "X": 2,
-        "Y": 4
-      },
       "Exits": [
-        62,
-        68,
+        61,
+        67,
+        72,
         -1,
-        66
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -2487,22 +2658,53 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 1,
+        "Y": 4,
+        "Z": 0
+      }
+    },
+    {
+      "Name": "Dekalb Market",
+      "Description": "In the center of Fulton is a large, circular courtyard with steps on all sides leading down to it like a colosseum. Here the townsfolk all gather, and merchants call out to passerbys, advertising their wares.",
+      "Notes": "",
+      "IsSafeZone": true,
+      "Exits": [
+        62,
+        68,
+        -1,
+        66,
+        -1,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": [],
+      "Fixtures": [],
+      "Position": {
+        "X": 2,
+        "Y": 4,
+        "Z": 0
+      }
     },
     {
       "Name": "Fulton Residential",
       "Description": "Here on the eastern-most edge of Fulton you find a beautiful neighborhood of well-maintained homes, at the center of which is a street of walled-off guild offices emblazoned with their various crests.",
       "Notes": "",
       "IsSafeZone": true,
-      "EditorPosition": {
-        "X": 3,
-        "Y": 4
-      },
       "Exits": [
         63,
         -1,
         73,
-        67
+        67,
+        -1,
+        -1
       ],
       "Locks": [
         {
@@ -2517,21 +2719,24 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 3,
+        "Y": 4,
+        "Z": 0
+      }
     },
     {
       "Name": "Idyllic Glade",
       "Description": "This segment of forest is particularly beautiful; the trees are lush, but sparse, and admit rays of golden light during the day. After the sun sets, the moon reveals a path through the tall grass. ",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 5,
-        "Y": 4
-      },
       "Exits": [
         64,
         70,
         75,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -2555,22 +2760,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 5,
+        "Y": 4,
+        "Z": 0
+      }
     },
     {
       "Name": "Hillside Cave",
       "Description": "This is a new room",
       "Notes": "Half way up a steep hillside there is a a rocky overhang through which you can enter a small cave. It is cooler here, and there is evidence here left by past occuprants escaping the elements.",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 6,
-        "Y": 4
-      },
       "Exits": [
         -1,
         -1,
         76,
-        69
+        69,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -2580,21 +2788,24 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 6,
+        "Y": 4,
+        "Z": 0
+      }
     },
     {
       "Name": "Rocky Hillside",
       "Description": "A path leads up amongst the rocks into the hill itself.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 0,
-        "Y": 5
-      },
       "Exits": [
         -1,
         72,
         77,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -2605,22 +2816,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 0,
+        "Y": 5,
+        "Z": 0
+      }
     },
     {
       "Name": "Abandoned Shack",
       "Description": "You have found a shack in a state of advanced desuetude. ",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 1,
-        "Y": 5
-      },
       "Exits": [
         66,
         -1,
         -1,
-        71
+        71,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -2630,21 +2844,24 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 1,
+        "Y": 5,
+        "Z": 0
+      }
     },
     {
       "Name": "Cistern",
       "Description": "This stone basin below street level stores water after it rains. The water level is low enough right now that you can pass through it.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 3,
-        "Y": 5
-      },
       "Exits": [
         68,
         -1,
         79,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -2655,21 +2872,24 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 3,
+        "Y": 5,
+        "Z": 0
+      }
     },
     {
       "Name": "The Lee of the Cliffs",
       "Description": "Here under the protection of some looming cliffs there is an old fire pit and some simple wooden construction to keep the elements away.",
       "Notes": "NOTE! NPC GOES HERE",
       "IsSafeZone": true,
-      "EditorPosition": {
-        "X": 4,
-        "Y": 5
-      },
       "Exits": [
         -1,
         75,
         80,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -2680,71 +2900,24 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 4,
+        "Y": 5,
+        "Z": 0
+      }
     },
     {
       "Name": "Massive Cairn",
       "Description": "There is a massive cairn here, assembled from rocks that tumbled down from the cliffs that lie to the South.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 5,
-        "Y": 5
-      },
       "Exits": [
         69,
         76,
         -1,
-        74
-      ],
-      "Locks": [],
-      "DropTable": {
-        "Entries": []
-      },
-      "Inventory": {
-        "Items": []
-      },
-      "Chests": [],
-      "Fixtures": []
-    },
-    {
-      "Name": "Claffiside Path",
-      "Description": "Winding along more and more treacherous rocks, this pathway leads up a cliffside into the jagged mountain above. NOTE: THERE IS NO MORE CONTENT IN THiS DIRECTION.",
-      "Notes": "",
-      "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 6,
-        "Y": 5
-      },
-      "Exits": [
-        70,
+        74,
         -1,
-        -1,
-        75
-      ],
-      "Locks": [],
-      "DropTable": {
-        "Entries": []
-      },
-      "Inventory": {
-        "Items": []
-      },
-      "Chests": [],
-      "Fixtures": []
-    },
-    {
-      "Name": "Cave Entrance",
-      "Description": "This is the first segment of series of segment that comprise a larger cave system. The stench of Goblins emanates from deeper into the cave.",
-      "Notes": "",
-      "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 0,
-        "Y": 6
-      },
-      "Exits": [
-        71,
-        -1,
-        81,
         -1
       ],
       "Locks": [],
@@ -2755,20 +2928,79 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 5,
+        "Y": 5,
+        "Z": 0
+      }
+    },
+    {
+      "Name": "Claffiside Path",
+      "Description": "Winding along more and more treacherous rocks, this pathway leads up a cliffside into the jagged mountain above. NOTE: THERE IS NO MORE CONTENT IN THiS DIRECTION.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "Exits": [
+        70,
+        -1,
+        -1,
+        75,
+        -1,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": [],
+      "Fixtures": [],
+      "Position": {
+        "X": 6,
+        "Y": 5,
+        "Z": 0
+      }
+    },
+    {
+      "Name": "Cave Entrance",
+      "Description": "This is the first segment of series of segment that comprise a larger cave system. The stench of Goblins emanates from deeper into the cave.",
+      "Notes": "",
+      "IsSafeZone": false,
+      "Exits": [
+        71,
+        -1,
+        81,
+        -1,
+        -1,
+        -1
+      ],
+      "Locks": [],
+      "DropTable": {
+        "Entries": []
+      },
+      "Inventory": {
+        "Items": []
+      },
+      "Chests": [],
+      "Fixtures": [],
+      "Position": {
+        "X": 0,
+        "Y": 6,
+        "Z": 0
+      }
     },
     {
       "Name": "Explorer's Hideout",
       "Description": "Some prior adventurer has turned this area into a small base of operations, with a cot, a kettle, and some storage space for goods.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 2,
-        "Y": 6
-      },
       "Exits": [
         -1,
         79,
+        -1,
+        -1,
         -1,
         -1
       ],
@@ -2901,22 +3133,25 @@
           }
         }
       ],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 2,
+        "Y": 6,
+        "Z": 0
+      }
     },
     {
       "Name": "Hidden Gulch",
       "Description": "This deep gash in the ground is hidden behind Fulton. It is muddy with water flowing from the cistern to its North.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 3,
-        "Y": 6
-      },
       "Exits": [
         73,
         -1,
         82,
-        78
+        78,
+        -1,
+        -1
       ],
       "Locks": [
         {
@@ -2931,21 +3166,24 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 3,
+        "Y": 6,
+        "Z": 0
+      }
     },
     {
       "Name": "Forgotten Pathway",
       "Description": "This overgrown pathway leads up into the hills behind Fulton.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 4,
-        "Y": 6
-      },
       "Exits": [
         74,
         -1,
         83,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -2956,21 +3194,24 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 4,
+        "Y": 6,
+        "Z": 0
+      }
     },
     {
       "Name": "Goblin Cave",
       "Description": "This room has been covered on all sides by Goblin graffiti. Do Goblins have creative impulses? They are not very good artists...",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 0,
-        "Y": 7
-      },
       "Exits": [
         77,
         -1,
         84,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -2981,20 +3222,23 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 0,
+        "Y": 7,
+        "Z": 0
+      }
     },
     {
       "Name": "Abandoned Construction",
       "Description": "You have found an abandoned work site in carved into the hills beyond Fulton.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 3,
-        "Y": 7
-      },
       "Exits": [
         79,
         83,
+        -1,
+        -1,
         -1,
         -1
       ],
@@ -3055,22 +3299,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 3,
+        "Y": 7,
+        "Z": 0
+      }
     },
     {
       "Name": "Collapsed Tower",
       "Description": "There was a tower of some sort here a long time ago, but it is now just a pile of boulders covered in vines.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 4,
-        "Y": 7
-      },
       "Exits": [
         80,
         -1,
         -1,
-        82
+        82,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -3080,21 +3327,24 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 4,
+        "Y": 7,
+        "Z": 0
+      }
     },
     {
       "Name": "Dining Room",
       "Description": "This room has a firepit at its center, and all along its perimeter is discarded bones from previous meals.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 0,
-        "Y": 8
-      },
       "Exits": [
         81,
         85,
         86,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -3130,22 +3380,25 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 0,
+        "Y": 8,
+        "Z": 0
+      }
     },
     {
       "Name": "Goblin Bunks",
       "Description": "This room has the assorted cots used by the Goblins for sleeping whle they aren't out pillaging or entertaining themselves elsewhere in the cave.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 1,
-        "Y": 8
-      },
       "Exits": [
         -1,
         -1,
         -1,
-        84
+        84,
+        -1,
+        -1
       ],
       "Locks": [],
       "DropTable": {
@@ -3192,21 +3445,24 @@
           }
         }
       ],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 1,
+        "Y": 8,
+        "Z": 0
+      }
     },
     {
       "Name": "Cellar",
       "Description": "This room is where the Goblins keep the food and drink that they have stolen but not yet eaten. They do not keep it well-organized, or hyegnic.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 0,
-        "Y": 9
-      },
       "Exits": [
         84,
         -1,
         87,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -3266,21 +3522,24 @@
           }
         }
       ],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 0,
+        "Y": 9,
+        "Z": 0
+      }
     },
     {
       "Name": "Game Room",
       "Description": "This may appear to most adventurers to just be yet another segment of the cave. Careful observation reveals that it has round river rocks lying on the floor. The reason for this, for those without background knowledge, is that goblins' favorite game is to throw rocks at each other to blow off stress after a long day of pillaging. ",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 0,
-        "Y": 10
-      },
       "Exits": [
         86,
         -1,
         88,
+        -1,
+        -1,
         -1
       ],
       "Locks": [],
@@ -3291,19 +3550,22 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 0,
+        "Y": 10,
+        "Z": 0
+      }
     },
     {
       "Name": "Trophy Room",
       "Description": "This room has numerous crates, scabbards and sacks--some full of the trophies from their raids, and some empty.",
       "Notes": "",
       "IsSafeZone": false,
-      "EditorPosition": {
-        "X": 0,
-        "Y": 11
-      },
       "Exits": [
         87,
+        -1,
+        -1,
         -1,
         -1,
         -1
@@ -3389,7 +3651,12 @@
         "Items": []
       },
       "Chests": [],
-      "Fixtures": []
+      "Fixtures": [],
+      "Position": {
+        "X": 0,
+        "Y": 11,
+        "Z": 0
+      }
     }
   ],
   "Npcs": [

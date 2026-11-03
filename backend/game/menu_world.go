@@ -43,7 +43,7 @@ var MENU_WORLD = MenuCreate(MenuCreateParams {
 			gamestate.messageRoom(playerMob.Data.Room, fmt.Sprintf("<y>%s</y> has left the world.", playerMob.Data.Name))
 
 			// Save player mob data back to their character
-			playerMob.SavePlayerCharacter()
+			gamestate.world.SavePlayerCharacter(playerMob)
 		}
 
 		player.character = nil

@@ -78,7 +78,7 @@ func TestNpcJsonErrors(t *testing.T) {
 		{ "undeclared param", `{ "Id": "goblin", "BehaviorParams": { "Toll": 1 } }`, "no behavior param named 'Toll'" },
 		{ "wrong param type", `{ "Id": "troll", "BehaviorParams": { "Patience": "three" } }`, "behavior param 'Patience'" },
 		{ "unknown item", `{ "Id": "troll", "BehaviorParams": { "Toll": { "Id": "Diamond", "Amount": 1 } } }`, "No item ID matches 'Diamond'" },
-		{ "invalid direction", `{ "Id": "troll", "BehaviorParams": { "ExitToBlock": "up" } }`, "'up' is not a valid direction" },
+		{ "invalid direction", `{ "Id": "troll", "BehaviorParams": { "ExitToBlock": "sideways" } }`, "'sideways' is not a valid direction" },
 	}
 
 	for _, test := range tests {

@@ -15,6 +15,8 @@ var ALL_DIRECTIONS = []struct {
 	{ world.DIRECTION_EAST, "EAST" },
 	{ world.DIRECTION_SOUTH, "SOUTH" },
 	{ world.DIRECTION_WEST, "WEST" },
+	{ world.DIRECTION_UP, "UP" },
+	{ world.DIRECTION_DOWN, "DOWN" },
 	{ world.DIRECTION_COUNT, "COUNT" },
 }
 

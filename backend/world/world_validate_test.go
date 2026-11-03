@@ -8,8 +8,8 @@ import (
 func validateTestRoom(name string, x int, y int) Room {
 	return Room {
 		Name: name,
-		Exits: [DIRECTION_COUNT]int { ROOM_NONE, ROOM_NONE, ROOM_NONE, ROOM_NONE },
-		EditorPosition: RoomEditorPosition{ X: x, Y: y },
+		Exits: [DIRECTION_COUNT]int { ROOM_NONE, ROOM_NONE, ROOM_NONE, ROOM_NONE, ROOM_NONE, ROOM_NONE },
+		Position: RoomPosition { X: x, Y: y },
 	}
 }
 
@@ -81,8 +81,8 @@ func TestValidateProblems(t *testing.T) {
 			world.Rooms[0].Name = ""
 		}, "has no name" },
 		{ "duplicate position", func(world *World) {
-			world.Rooms[1].EditorPosition = RoomEditorPosition{ X: 0, Y: 0 }
-		}, "same editor position" },
+			world.Rooms[1].Position = RoomPosition { X: 0, Y: 0 }
+		}, "same position" },
 		{ "exit out of range", func(world *World) {
 			world.Rooms[0].Exits[DIRECTION_NORTH] = 5
 		}, "does not exist" },
@@ -111,7 +111,7 @@ func TestValidateProblems(t *testing.T) {
 			}
 		}, "invalid direction" },
 		{ "exit not adjacent", func(world *World) {
-			world.Rooms[1].EditorPosition = RoomEditorPosition{ X: 2, Y: 0 }
+			world.Rooms[1].Position = RoomPosition { X: 2, Y: 0 }
 		}, "is not east of it" },
 		{ "invalid npc id", func(world *World) {
 			world.Npcs[0].Id = NpcId(len(NPC_DATA))

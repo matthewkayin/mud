@@ -4,14 +4,14 @@ The minimap is a small map of the rooms around the player, drawn below the termi
 
 ## Room grid
 
-The minimap uses each room's `EditorPosition`. `World.Validate()` (`backend/world/world_validate.go`) already guarantees that positions form a consistent grid:
+The minimap uses each room's `Position` (see [Position](backend/rooms.md#position)). It only shows rooms on the same floor (`Z`) as the player's room. `World.Validate()` (`backend/world/world_validate.go`) already guarantees that positions form a consistent grid:
 
 - No two rooms share a position.
 - Every exit leads to the room one grid step away in that direction.
 
 So the backend can find the rooms around the player by position, without walking exits. North is `Y - 1` and east is `X + 1`, the same as `directionStepFrom`.
 
-`World.initRoomPositionLookup()` (`backend/world/minimap.go`) builds a transient lookup from `RoomEditorPosition` to room index. `WorldLoad` calls it after validating `world.json`, so building a minimap doesn't scan every room.
+The minimap looks up the rooms around the player in `world.roomIndexAtPosition`, the position-to-index map that `World.initRoomPositionLookup()` (`backend/world/room.go`) builds when the world loads, so building a minimap doesn't scan every room.
 
 ## Wire format
 
@@ -32,8 +32,10 @@ The minimap is sent as an optional `map` field on a `SocketMessage`:
 | 1 | 2 | East |
 | 2 | 4 | South |
 | 3 | 8 | West |
+| 4 | 16 | Up |
+| 5 | 32 | Down |
 
-  For example, `3` is a room with exits north and east, and `0` is a room with no exits. The bit for a direction is `1 << direction`, using the `Direction` enum (`DIRECTION_NORTH` = 0, `EAST` = 1, `SOUTH` = 2, `WEST` = 3).
+  For example, `3` is a room with exits north and east, and `0` is a room with no exits. The bit for a direction is `1 << direction`, using the `Direction` enum (`DIRECTION_NORTH` = 0, `EAST` = 1, `SOUTH` = 2, `WEST` = 3, `UP` = 4, `DOWN` = 5). The frontend doesn't draw the up and down bits yet.
 
 - Locked exits are shown as normal exits. The map doesn't show locks or NPC exit blocks.
 - An edge room's exit can lead to a room outside the grid. The exit is still drawn and runs to the edge of the map, so players can see there is an exit without seeing where it leads.
@@ -44,7 +46,7 @@ The minimap is sent as an optional `map` field on a `SocketMessage`:
 
 ## Undiscovered rooms
 
-Characters track the rooms they've visited in `Character.RoomsDiscovered`, a bitset that `Room.MoveOccupant` updates. A room the player hasn't discovered is sent as `-1`, the same as an empty cell.
+Characters track the rooms they've visited in `Character.RoomsDiscovered`, a bitset indexed by room index that `Room.MoveOccupant` updates. Saves store it as a list of room positions. A room the player hasn't discovered is sent as `-1`, the same as an empty cell.
 
 A discovered room's bitfield still has its exits that lead to undiscovered rooms, so those exits are drawn trailing toward the empty cell. As with exits off the edge of the map, the player can see that an exit is there but not what's beyond it. This matches `look`, which lists those exits but hides the name of the room they lead to.
 
@@ -65,7 +67,7 @@ Rooms and exits don't change while the game runs, and a room is only discovered 
 
 ## Where the code lives
 
-- `backend/world/minimap.go`: `MINIMAP_SIZE`, the position lookup and `GetMinimap`. It takes the discovery bitset as a parameter and knows nothing about players or the socket.
+- `backend/world/minimap.go`: `MINIMAP_SIZE` and `GetMinimap`. It takes the discovery bitset as a parameter and knows nothing about players or the socket.
 - `backend/game/`: the dirty flag, setting it on login and in `move`, and adding `map` to the heartbeat. `SocketMessage` has a `Map []int` field tagged `json:"map,omitempty"`, separate from `PlayerStatus`.
 - `frontend/src/game/socket_message.ts`: the optional `map` field, and `getMinimap`, which validates it.
 - `frontend/src/game/minimap/`: the `Minimap` component.

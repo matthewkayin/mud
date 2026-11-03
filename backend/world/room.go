@@ -47,19 +47,20 @@ type Chest struct {
 	Inventory Inventory
 }
 
-// Grid position of the room in the world editor. The editor uses it to lay out the world,
-// and the server uses it to build minimaps.
-type RoomEditorPosition struct {
+// Grid position of the room. It identifies the room across loads (unlike its index), so saves and the editor
+// reference rooms by it. The server also uses it to build minimaps.
+type RoomPosition struct {
 	X int
 	Y int
+	Z int
 }
 
 type Room struct {
 	Name string
 	Description string
 	Notes string
+	Position RoomPosition
 	IsSafeZone bool
-	EditorPosition RoomEditorPosition
 
 	Exits [DIRECTION_COUNT]int
 	Locks []Lock
@@ -453,4 +454,13 @@ func (room *Room) hasPlayerOccupants(world *World) bool {
 	}
 
 	return false
+}
+
+// Maps each room's position to its index. Positions are how saves and the editor identify rooms, since indices
+// are only stable within one load. Validate guarantees that positions are unique.
+func (world *World) initRoomPositionLookup() {
+	world.roomIndexAtPosition = make(map[RoomPosition]int, len(world.Rooms))
+	for roomIndex, room := range world.Rooms {
+		world.roomIndexAtPosition[room.Position] = roomIndex
+	}
 }

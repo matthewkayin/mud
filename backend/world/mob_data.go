@@ -2,8 +2,8 @@ package world
 
 import (
 	"fmt"
+	"log"
 	"slices"
-	"encoding/json"
 )
 
 const MOB_MAX_LEVEL int32 = 3
@@ -43,7 +43,7 @@ type MobData struct {
 
 type MobDataJson struct {
 	Name string
-	Room int
+	Room RoomPosition
 
 	Level int32
 	Experience int32
@@ -80,10 +80,11 @@ func (mobData *MobData) Clone() MobData {
 	return clone
 }
 
-func (mobData *MobData) MarshalJSON() ([]byte, error) {
-	mobDataJson := MobDataJson {
+// Converts the mob data to the form it is saved in, which references rooms by position and script data by name
+func (world *World) mobDataToJson(mobData *MobData) MobDataJson {
+	return MobDataJson {
 		Name: mobData.Name,
-		Room: mobData.Room,
+		Room: world.Rooms[mobData.Room].Position,
 
 		Level: mobData.Level,
 		Experience: mobData.Experience,
@@ -105,18 +106,21 @@ func (mobData *MobData) MarshalJSON() ([]byte, error) {
 		Inventory: mobData.Inventory,
 		Equipment: mobData.Equipment,
 	}
-	return json.Marshal(&mobDataJson)
 }
 
-func (mobData *MobData) UnmarshalJSON(data []byte) error {
-	var mobDataJson MobDataJson
-	err := json.Unmarshal(data, &mobDataJson)
-	if err != nil {
-		return err
-	}
+// Converts saved mob data back into mob data. If the saved room no longer exists, the mob is placed in the start room.
+// Requires the room position lookup, so must be called after initRoomPositionLookup.
+func (world *World) mobDataFromJson(mobDataJson *MobDataJson) (MobData, error) {
+	mobData := MobData{}
 
 	mobData.Name = mobDataJson.Name
-	mobData.Room = mobDataJson.Room
+	roomIndex, roomExists := world.roomIndexAtPosition[mobDataJson.Room]
+	if !roomExists {
+		log.Printf("Warn - %s was saved in a room at (%d, %d, %d), which no longer exists. Moving them to the start room.",
+			mobDataJson.Name, mobDataJson.Room.X, mobDataJson.Room.Y, mobDataJson.Room.Z)
+		roomIndex = WORLD_START_ROOM
+	}
+	mobData.Room = roomIndex
 
 	mobData.Level = mobDataJson.Level
 	mobData.Experience = mobDataJson.Experience
@@ -128,9 +132,9 @@ func (mobData *MobData) UnmarshalJSON(data []byte) error {
 	mobData.BaseDeflection = mobDataJson.BaseDeflection
 	mobData.BaseDamageResistance = mobDataJson.BaseDamageResistance
 
-	err = mobData.setAbilitiesFromStringArray(mobDataJson.Abilities)
+	err := mobData.setAbilitiesFromStringArray(mobDataJson.Abilities)
 	if err != nil {
-		return err
+		return MobData{}, err
 	}
 
 	mobData.Health = mobDataJson.Health
@@ -139,12 +143,12 @@ func (mobData *MobData) UnmarshalJSON(data []byte) error {
 
 	mobData.Spells, err = spellsFromStringArray(mobDataJson.Spells)
 	if err != nil {
-		return err
+		return MobData{}, err
 	}
 	mobData.Inventory = mobDataJson.Inventory
 	mobData.Equipment = mobDataJson.Equipment
 
-	return nil
+	return mobData, nil
 }
 
 func (mobData *MobData) abilitiesToStringArray() []string {

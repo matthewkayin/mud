@@ -2,9 +2,22 @@
 
 Rooms (`backend/world/room.go`) are saved in `data/world.json` and edited in the [world editor](../editor.md). A room has a name, description, notes, safe zone flag, exits, locks, a drop table that fills its floor inventory, chests, and fixtures. Fixtures (`Room.Fixtures`) are scripted objects that players can look at and interact with. Their scripts are in `backend/data/fixtures/`, and each fixture in a room is saved by its script's name along with the values of its behavior params. Fixture scripts, their instances and signals are described in [fixtures.md](fixtures.md). `Room.Notes` is for content developers to record the intent behind a part of the world. It's saved in `world.json` and edited in the world editor, but the game never reads or shows it. Mobs in the room are listed in `Room.Occupants` by `MobHandle`. Occupants are transient, so they aren't saved.
 
+## Position
+
+`Room.Position` is a `RoomPosition { X, Y, Z }` on the world grid. North is `Y - 1`, east is `X + 1` and up is `Z + 1` (`directionStepFrom` in `world_validate.go`). Positions can be negative. `World.Validate()` requires every position to be unique.
+
+A room's position is its identity. Its index in `World.Rooms` is only stable within one load, so anything that is saved, or that must survive a reload, references the room by position:
+
+- `World.initRoomPositionLookup()` (`room.go`) builds `world.roomIndexAtPosition`, the map from position to index. `WorldLoad` builds it right after validating the world, before it loads character saves.
+- Character saves store the character's room (`MobDataJson.Room`) and discovered rooms (`CharacterJson.RoomsDiscovered`) as positions. `world.characterToJson` and `world.characterFromJson` (`character.go`) convert between positions and indices, and `world.SaveCharacter` and `world.loadCharacter` (`world_save.go`) use them.
+- A character whose saved room no longer exists loads in the start room (`WORLD_START_ROOM`, index 0), with a warning in the log. Discovered rooms that no longer exist are dropped. Neither stops the world from loading.
+- `/reload` saves every player, loads the new world and loads the players from their saves, so each player comes back in the room at the same position, even if rooms were added and indices shifted.
+
+At runtime, everything else (`MobData.Room`, `Room.Exits`, events, scripts) uses room indices.
+
 ## Exits
 
-`Room.Exits` is indexed by `Direction` and holds the index of the room in that direction, or `ROOM_NONE`. Exits are always two-way: `World.Validate()` requires that a room's exit leads to a room with an exit back. In the editor, every connection between two rooms becomes a pair of exits when the world is saved.
+`Room.Exits` is indexed by `Direction` (north, east, south, west, up and down) and holds the index of the room in that direction, or `ROOM_NONE`. Exits are always two-way: `World.Validate()` requires that a room's exit leads to a room with an exit back. In the editor, every connection between two rooms becomes a pair of exits when the world is saved.
 
 ## Locks
 

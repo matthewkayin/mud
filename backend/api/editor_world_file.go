@@ -13,27 +13,31 @@ import (
 // EditorWorldRoom is a room the way the editor stores it: keyed by grid position,
 // with its NPCs inside it and its connections stored as adjacent positions.
 type EditorWorldRoom struct {
-	Position world.RoomEditorPosition
+	Position world.RoomPosition
 	Room world.Room
 	Npcs []world.Npc
-	Connections []world.RoomEditorPosition
+	Connections []world.RoomPosition
 }
 
 type EditorWorld struct {
 	Rooms []EditorWorldRoom
-	StartRoom *world.RoomEditorPosition
+	StartRoom *world.RoomPosition
 }
 
-func directionBetween(from world.RoomEditorPosition, to world.RoomEditorPosition) (world.Direction, bool) {
+func directionBetween(from world.RoomPosition, to world.RoomPosition) (world.Direction, bool) {
 	switch {
-		case to.X == from.X && to.Y == from.Y - 1:
+		case to.X == from.X && to.Y == from.Y - 1 && to.Z == from.Z:
 			return world.DIRECTION_NORTH, true
-		case to.X == from.X + 1 && to.Y == from.Y:
+		case to.X == from.X + 1 && to.Y == from.Y && to.Z == from.Z:
 			return world.DIRECTION_EAST, true
-		case to.X == from.X && to.Y == from.Y + 1:
+		case to.X == from.X && to.Y == from.Y + 1 && to.Z == from.Z:
 			return world.DIRECTION_SOUTH, true
-		case to.X == from.X - 1 && to.Y == from.Y:
+		case to.X == from.X - 1 && to.Y == from.Y && to.Z == from.Z:
 			return world.DIRECTION_WEST, true
+		case to.X == from.X && to.Y == from.Y && to.Z == from.Z + 1:
+			return world.DIRECTION_UP, true
+		case to.X == from.X && to.Y == from.Y && to.Z == from.Z - 1:
+			return world.DIRECTION_DOWN, true
 		default:
 			return 0, false
 	}
@@ -63,7 +67,7 @@ func editorWorldToWorld(editorWorld EditorWorld) (*world.World, []string) {
 		return nil, []string{ "The start room does not exist." }
 	}
 
-	roomIndexAtPosition := map[world.RoomEditorPosition]int{}
+	roomIndexAtPosition := map[world.RoomPosition]int{}
 	for roomIndex, editorRoom := range editorRooms {
 		roomIndexAtPosition[editorRoom.Position] = roomIndex
 	}
@@ -75,7 +79,7 @@ func editorWorldToWorld(editorWorld EditorWorld) (*world.World, []string) {
 	}
 	for roomIndex, editorRoom := range editorRooms {
 		room := editorRoom.Room
-		room.EditorPosition = editorRoom.Position
+		room.Position = editorRoom.Position
 
 		isConnected := [world.DIRECTION_COUNT]bool{}
 		for _, connectionPosition := range editorRoom.Connections {
@@ -124,18 +128,18 @@ func worldToEditorWorld(loadedWorld *world.World) (EditorWorld, []string) {
 
 	editorWorld := EditorWorld {
 		Rooms: make([]EditorWorldRoom, 0, len(loadedWorld.Rooms)),
-		StartRoom: &loadedWorld.Rooms[0].EditorPosition,
+		StartRoom: &loadedWorld.Rooms[0].Position,
 	}
 	for _, room := range loadedWorld.Rooms {
 		editorRoom := EditorWorldRoom {
-			Position: room.EditorPosition,
+			Position: room.Position,
 			Room: room,
 			Npcs: []world.Npc{},
-			Connections: []world.RoomEditorPosition{},
+			Connections: []world.RoomPosition{},
 		}
 		for _, exitRoomIndex := range room.Exits {
 			if exitRoomIndex != world.ROOM_NONE {
-				editorRoom.Connections = append(editorRoom.Connections, loadedWorld.Rooms[exitRoomIndex].EditorPosition)
+				editorRoom.Connections = append(editorRoom.Connections, loadedWorld.Rooms[exitRoomIndex].Position)
 			}
 		}
 		editorWorld.Rooms = append(editorWorld.Rooms, editorRoom)

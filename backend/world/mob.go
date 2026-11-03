@@ -251,7 +251,7 @@ func (mob *Mob) GrantExperience(world *World, experience int32) {
 			mob.Data.Abilities = mob.PlayerCharacter.Data.Abilities
 
 			// Save the character to disk
-			mob.SavePlayerCharacter()
+			world.SavePlayerCharacter(mob)
 
 			continue
 		}

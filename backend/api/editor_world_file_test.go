@@ -18,12 +18,12 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func testEditorRoom(name string, x int, y int, connections ...world.RoomEditorPosition) EditorWorldRoom {
+func testEditorRoom(name string, x int, y int, connections ...world.RoomPosition) EditorWorldRoom {
 	return EditorWorldRoom {
-		Position: world.RoomEditorPosition{ X: x, Y: y },
+		Position: world.RoomPosition{ X: x, Y: y },
 		Room: world.Room {
 			Name: name,
-			Exits: [world.DIRECTION_COUNT]int{ world.ROOM_NONE, world.ROOM_NONE, world.ROOM_NONE, world.ROOM_NONE },
+			Exits: [world.DIRECTION_COUNT]int{ world.ROOM_NONE, world.ROOM_NONE, world.ROOM_NONE, world.ROOM_NONE, world.ROOM_NONE, world.ROOM_NONE },
 			Chests: []world.Chest{},
 			Fixtures: []world.Fixture{},
 		},
@@ -35,9 +35,9 @@ func testEditorRoom(name string, x int, y int, connections ...world.RoomEditorPo
 // An L of three rooms: A at (1, 0) is the start room, B at (0, 0) is west of A,
 // and C at (0, 1) is south of B. B's south exit to C is locked and C has an NPC and a fixture.
 func testEditorWorld() EditorWorld {
-	a := world.RoomEditorPosition{ X: 1, Y: 0 }
-	b := world.RoomEditorPosition{ X: 0, Y: 0 }
-	c := world.RoomEditorPosition{ X: 0, Y: 1 }
+	a := world.RoomPosition{ X: 1, Y: 0 }
+	b := world.RoomPosition{ X: 0, Y: 0 }
+	c := world.RoomPosition{ X: 0, Y: 1 }
 
 	roomB := testEditorRoom("B", 0, 0, a, c)
 	roomB.Room.Locks = []world.Lock {
@@ -153,7 +153,7 @@ func TestEditorWorldRoundTrip(t *testing.T) {
 	if !reflect.DeepEqual(expectedWorld, actualWorld) {
 		t.Errorf("World changed after a round trip.\nExpected: %+v\nActual: %+v", expectedWorld, actualWorld)
 	}
-	if *loadedWorld.StartRoom != (world.RoomEditorPosition{ X: 1, Y: 0 }) {
+	if *loadedWorld.StartRoom != (world.RoomPosition{ X: 1, Y: 0 }) {
 		t.Errorf("Expected start room at (1, 0), got %v", *loadedWorld.StartRoom)
 	}
 }
@@ -171,7 +171,7 @@ func TestEditorWorldWithoutStartRoom(t *testing.T) {
 func TestWorldWithDuplicatePositions(t *testing.T) {
 	savedWorld, _ := editorWorldToWorld(testEditorWorld())
 	for roomIndex := range savedWorld.Rooms {
-		savedWorld.Rooms[roomIndex].EditorPosition = world.RoomEditorPosition{}
+		savedWorld.Rooms[roomIndex].Position = world.RoomPosition{}
 	}
 
 	_, problems := worldToEditorWorld(savedWorld)

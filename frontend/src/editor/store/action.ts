@@ -39,7 +39,7 @@ export class EditorActionAddRoom implements EditorAction {
       },
       Chests: [],
       Fixtures: [],
-      EditorPosition: this.data.cell.toPosition(),
+      Position: this.data.cell.toPosition(),
     }), {
       Npcs: [],
     });

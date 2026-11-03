@@ -17,7 +17,7 @@ func (world *World) Validate() []string {
 		addProblem("World has no rooms.")
 	}
 
-	roomIndexAtPosition := map[RoomEditorPosition]int{}
+	roomIndexAtPosition := map[RoomPosition]int{}
 	for roomIndex := range world.Rooms {
 		room := &world.Rooms[roomIndex]
 		roomName := fmt.Sprintf("Room %d (%s)", roomIndex, room.Name)
@@ -26,11 +26,11 @@ func (world *World) Validate() []string {
 			addProblem("Room %d has no name.", roomIndex)
 		}
 
-		if otherRoomIndex, exists := roomIndexAtPosition[room.EditorPosition]; exists {
-			addProblem("%s has the same editor position (%d, %d) as room %d.",
-				roomName, room.EditorPosition.X, room.EditorPosition.Y, otherRoomIndex)
+		if otherRoomIndex, exists := roomIndexAtPosition[room.Position]; exists {
+			addProblem("%s has the same position (%d, %d, %d) as room %d.",
+				roomName, room.Position.X, room.Position.Y, room.Position.Z, otherRoomIndex)
 		} else {
-			roomIndexAtPosition[room.EditorPosition] = roomIndex
+			roomIndexAtPosition[room.Position] = roomIndex
 		}
 
 		for direction := range Direction(DIRECTION_COUNT) {
@@ -51,7 +51,7 @@ func (world *World) Validate() []string {
 					roomName, direction.String(), exitRoomIndex, exitRoomIndex, oppositeDirection.String())
 			}
 
-			if exitRoom.EditorPosition != directionStepFrom(room.EditorPosition, direction) {
+			if exitRoom.Position != directionStepFrom(room.Position, direction) {
 				addProblem("%s has a %s exit to room %d, but room %d is not %s of it in the editor.",
 					roomName, direction.String(), exitRoomIndex, exitRoomIndex, direction.String())
 			}
@@ -109,16 +109,20 @@ func (world *World) Validate() []string {
 	return problems
 }
 
-func directionStepFrom(position RoomEditorPosition, direction Direction) RoomEditorPosition {
+func directionStepFrom(position RoomPosition, direction Direction) RoomPosition {
 	switch direction {
 		case DIRECTION_NORTH:
-			return RoomEditorPosition{ X: position.X, Y: position.Y - 1 }
+			return RoomPosition { X: position.X, Y: position.Y - 1, Z: position.Z }
 		case DIRECTION_EAST:
-			return RoomEditorPosition{ X: position.X + 1, Y: position.Y }
+			return RoomPosition { X: position.X + 1, Y: position.Y, Z: position.Z }
 		case DIRECTION_SOUTH:
-			return RoomEditorPosition{ X: position.X, Y: position.Y + 1 }
+			return RoomPosition { X: position.X, Y: position.Y + 1, Z: position.Z }
 		case DIRECTION_WEST:
-			return RoomEditorPosition{ X: position.X - 1, Y: position.Y }
+			return RoomPosition { X: position.X - 1, Y: position.Y, Z: position.Z }
+		case DIRECTION_UP:
+			return RoomPosition { X: position.X, Y: position.Y, Z: position.Z + 1 }
+		case DIRECTION_DOWN:
+			return RoomPosition { X: position.X, Y: position.Y, Z: position.Z - 1 }
 		default:
 			panic(fmt.Sprintf("%d is not a valid direction.", direction))
 	}

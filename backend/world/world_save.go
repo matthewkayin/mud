@@ -14,7 +14,7 @@ func characterSavePath(character *Character) string {
 		strings.ReplaceAll(character.Data.Name, " ", "_"))
 }
 
-func SaveCharacter(character *Character) {
+func (world *World) SaveCharacter(character *Character) {
 	path := characterSavePath(character)
 	flags := os.O_CREATE | os.O_WRONLY | os.O_TRUNC
 	file, err := os.OpenFile(path, flags, 0644)
@@ -27,7 +27,8 @@ func SaveCharacter(character *Character) {
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
 
-	err = encoder.Encode(character)
+	characterJson := world.characterToJson(character)
+	err = encoder.Encode(&characterJson)
 	if err != nil {
 		log.Printf("Failed to write character JSON: %s.", err.Error())
 		return
@@ -38,14 +39,14 @@ func SaveCharacter(character *Character) {
 
 // Copies the player mob's data into its character and saves the character.
 // While the player is logged in, the mob's data is the live copy.
-func (mob *Mob) SavePlayerCharacter() {
+func (world *World) SavePlayerCharacter(mob *Mob) {
 	if !mob.IsPlayer() {
 		log.Printf("Warn - Tried to save player character of non-player mob %s.", mob.Data.Name)
 		return
 	}
 
 	mob.PlayerCharacter.Data = mob.Data.Clone()
-	SaveCharacter(mob.PlayerCharacter)
+	world.SaveCharacter(mob.PlayerCharacter)
 }
 
 func deleteCharacter(character *Character) {
@@ -79,7 +80,7 @@ func (world *World) loadCharacters() []string {
 			continue
 		}
 
-		character, err := loadCharacter(path)
+		character, err := world.loadCharacter(path)
 		if err != nil {
 			problems = append(problems, fmt.Sprintf("%s: %s", path, err.Error()))
 			continue
@@ -91,17 +92,17 @@ func (world *World) loadCharacters() []string {
 	return problems
 }
 
-func loadCharacter(path string) (*Character, error) {
+func (world *World) loadCharacter(path string) (*Character, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	character := &Character{}
-	err = json.Unmarshal(data, character)
+	var characterJson CharacterJson
+	err = json.Unmarshal(data, &characterJson)
 	if err != nil {
 		return nil, err
 	}
 
-	return character, nil
+	return world.characterFromJson(&characterJson)
 }

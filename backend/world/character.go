@@ -6,7 +6,6 @@ import (
 	"strings"
 	"slices"
 	"mud/bitset"
-	"encoding/json"
 )
 
 type CharacterSheet struct {
@@ -48,9 +47,9 @@ type CharacterJson struct {
 	SpellsKnown []string
 	ClassSpells []string
 	RecipesKnown []string
-	RoomsDiscovered []byte
+	RoomsDiscovered []RoomPosition
 	QuestsComplete []string
-	Data MobData
+	Data MobDataJson
 }
 
 func CharacterInitEmpty(playerId int, characterSheet *CharacterSheet) *Character {
@@ -62,7 +61,7 @@ func CharacterInitEmpty(playerId int, characterSheet *CharacterSheet) *Character
 	character.Job = characterSheet.Job
 
 	character.Data.Name = characterSheet.Name
-	character.Data.Room = 0
+	character.Data.Room = WORLD_START_ROOM
 
 	character.Data.Level = 1
 	character.Data.Experience = 0
@@ -115,7 +114,8 @@ func CharacterInitEmpty(playerId int, characterSheet *CharacterSheet) *Character
 	return character
 }
 
-func (character *Character) MarshalJSON() ([]byte, error) {
+// Converts the character to the form it is saved in, which references rooms by position and script data by name
+func (world *World) characterToJson(character *Character) CharacterJson {
 	characterJson := CharacterJson {
 		PlayerId: character.PlayerId,
 		Race: RACE_DATA[character.Race].Name,
@@ -126,65 +126,82 @@ func (character *Character) MarshalJSON() ([]byte, error) {
 		SpellsKnown: spellsToStringArray(character.SpellsKnown),
 		ClassSpells: spellsToStringArray(character.ClassSpells),
 		RecipesKnown: recipesToStringArray(character.RecipesKnown),
-		RoomsDiscovered: character.RoomsDiscovered,
+		RoomsDiscovered: []RoomPosition{},
 		QuestsComplete: questsToStringArray(character.QuestsComplete),
-		Data: character.Data,
+		Data: world.mobDataToJson(&character.Data),
 	}
-	return json.Marshal(&characterJson)
+	for roomIndex := range world.Rooms {
+		if bitset.Check(character.RoomsDiscovered, roomIndex) {
+			characterJson.RoomsDiscovered = append(characterJson.RoomsDiscovered, world.Rooms[roomIndex].Position)
+		}
+	}
+
+	return characterJson
 }
 
-func (character *Character) UnmarshalJSON(data []byte) error {
-	var characterJson CharacterJson
-	err := json.Unmarshal(data, &characterJson)
-	if err != nil {
-		return err
-	}
+// Converts a saved character back into a character. Discovered rooms that no longer exist are dropped.
+// Requires the room position lookup, so must be called after initRoomPositionLookup.
+func (world *World) characterFromJson(characterJson *CharacterJson) (*Character, error) {
+	character := &Character{}
 
 	character.PlayerId = characterJson.PlayerId
 	var exists bool
 	character.Race, exists = RACE_NAME_TO_ID[characterJson.Race]
 	if !exists {
-		return fmt.Errorf("No race ID matches race '%s'.", characterJson.Race)
+		return nil, fmt.Errorf("No race ID matches race '%s'.", characterJson.Race)
 	}
 	character.Class, exists = CLASS_NAME_TO_ID[characterJson.Class]
 	if !exists {
-		return fmt.Errorf("No class ID matches class '%s'.", characterJson.Class)
+		return nil, fmt.Errorf("No class ID matches class '%s'.", characterJson.Class)
 	}
 	character.Job, exists = JOB_NAME_TO_ID[characterJson.Job]
 	if !exists {
-		return fmt.Errorf("No job ID matches job '%s'.", characterJson.Job)
+		return nil, fmt.Errorf("No job ID matches job '%s'.", characterJson.Job)
 	}
 
 	character.SpellsEquipped = make(map[SpellId]*CharacterEquippedSpell)
 	for spellName, equippedSpell := range characterJson.SpellsEquipped {
 		spellId, exists := SPELL_NAME_TO_ID[spellName]
 		if !exists {
-			return fmt.Errorf("No spell ID matches the spell '%s'.", spellName)
+			return nil, fmt.Errorf("No spell ID matches the spell '%s'.", spellName)
 		}
 
 		character.SpellsEquipped[spellId] = equippedSpell
 	}
 
+	var err error
 	character.SpellsKnown, err = spellsFromStringArray(characterJson.SpellsKnown)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	character.ClassSpells, err = spellsFromStringArray(characterJson.ClassSpells)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	character.RecipesKnown, err = recipesFromStringArray(characterJson.RecipesKnown)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	character.RoomsDiscovered = characterJson.RoomsDiscovered
+
+	character.RoomsDiscovered = bitset.New(WORLD_MAX_ROOMS)
+	for _, position := range characterJson.RoomsDiscovered {
+		roomIndex, roomExists := world.roomIndexAtPosition[position]
+		if !roomExists {
+			continue
+		}
+		bitset.Set(character.RoomsDiscovered, roomIndex, true)
+	}
+
 	character.QuestsComplete, err = questsFromStringArray(characterJson.QuestsComplete)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	character.Data = characterJson.Data
+	character.Data, err = world.mobDataFromJson(&characterJson.Data)
+	if err != nil {
+		return nil, err
+	}
 
-	return nil
+	return character, nil
 }
 
 func spellsToStringArray(spellIds []SpellId) []string {

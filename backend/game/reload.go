@@ -56,8 +56,9 @@ func (gamestate *GameState) reloadWorld() []string {
 	return nil
 }
 
-// Spawns the player's character into the new world after a reload, in the room they were in.
-// If that room no longer exists, they go to room 0.
+// Spawns the player's character into the new world after a reload. Saves reference rooms by position, so the player
+// comes back in the room at the same position, even if room indices changed. If that room no longer exists,
+// loading the save put them in the start room.
 func (gamestate *GameState) respawnPlayerAfterReload(player *Player) {
 	// The player's trade partner is also in the world, and is reset by its own call
 	player.tradeSession = nil
@@ -76,10 +77,6 @@ func (gamestate *GameState) respawnPlayerAfterReload(player *Player) {
 		return
 	}
 	player.character = character
-
-	if character.Data.Room < 0 || character.Data.Room >= len(gamestate.world.Rooms) {
-		character.Data.Room = 0
-	}
 
 	spawnPlayerMob(gamestate, player)
 	describeRoomToPlayer(gamestate, player, &gamestate.world.Rooms[character.Data.Room])

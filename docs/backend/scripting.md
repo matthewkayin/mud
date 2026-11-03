@@ -136,7 +136,7 @@ class.unlocks = {
 return class
 ```
 
-Character saves (`saves/<Name>.json`, `CharacterJson` in `character.go`) store race, class, job, spell, recipe and completed quest names instead of IDs. World files (`data/world.json`) store item names in drop tables (`DropTableEntry` in `drop_table.go`) and inventories (`Item` in `item.go`), and NPC keys in unique NPCs (`Npc` in `npc.go`). Both kinds of file store mob conditions by name (`Condition` in `mob_condition.go`). If a save names something that no longer exists, decoding returns an error and the world fails to load.
+Character saves (`saves/<Name>.json`, `CharacterJson` in `character.go`) store race, class, job, spell, recipe and completed quest names instead of IDs, and store the character's room and discovered rooms as room positions (see [Position](rooms.md#position)). World files (`data/world.json`) store item names in drop tables (`DropTableEntry` in `drop_table.go`) and inventories (`Item` in `item.go`), and NPC keys in unique NPCs (`Npc` in `npc.go`). Both kinds of file store mob conditions by name (`Condition` in `mob_condition.go`). If a save names something that no longer exists, decoding returns an error and the world fails to load. Rooms are the exception: a character whose room no longer exists is moved to the start room, and discovered rooms that no longer exist are dropped.
 
 ### Loading and reloading
 

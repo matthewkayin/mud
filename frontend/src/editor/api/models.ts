@@ -15,10 +15,10 @@ export namespace api {
 	    }
 	}
 	export class EditorWorldRoom {
-	    Position: world.RoomEditorPosition;
+	    Position: world.RoomPosition;
 	    Room: world.Room;
 	    Npcs: world.Npc[];
-	    Connections: world.RoomEditorPosition[];
+	    Connections: world.RoomPosition[];
 	
 	    static createFrom(source: any = {}) {
 	        return new EditorWorldRoom(source);
@@ -26,10 +26,10 @@ export namespace api {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.Position = this.convertValues(source["Position"], world.RoomEditorPosition);
+	        this.Position = this.convertValues(source["Position"], world.RoomPosition);
 	        this.Room = this.convertValues(source["Room"], world.Room);
 	        this.Npcs = this.convertValues(source["Npcs"], world.Npc);
-	        this.Connections = this.convertValues(source["Connections"], world.RoomEditorPosition);
+	        this.Connections = this.convertValues(source["Connections"], world.RoomPosition);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -52,7 +52,7 @@ export namespace api {
 	}
 	export class EditorWorld {
 	    Rooms: EditorWorldRoom[];
-	    StartRoom?: world.RoomEditorPosition;
+	    StartRoom?: world.RoomPosition;
 	
 	    static createFrom(source: any = {}) {
 	        return new EditorWorld(source);
@@ -61,7 +61,7 @@ export namespace api {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Rooms = this.convertValues(source["Rooms"], EditorWorldRoom);
-	        this.StartRoom = this.convertValues(source["StartRoom"], world.RoomEditorPosition);
+	        this.StartRoom = this.convertValues(source["StartRoom"], world.RoomPosition);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -99,10 +99,12 @@ export namespace world {
 	    CORPSE = 1,
 	}
 	export enum Direction {
-	    COUNT = 4,
+	    COUNT = 6,
+	    DOWN = 5,
 	    EAST = 1,
 	    NORTH = 0,
 	    SOUTH = 2,
+	    UP = 4,
 	    WEST = 3,
 	}
 	export enum ItemKind {
@@ -476,26 +478,28 @@ export namespace world {
 	        this.BehaviorParams = source["BehaviorParams"];
 	    }
 	}
-	export class RoomEditorPosition {
+	export class RoomPosition {
 	    X: number;
 	    Y: number;
+	    Z: number;
 	
 	    static createFrom(source: any = {}) {
-	        return new RoomEditorPosition(source);
+	        return new RoomPosition(source);
 	    }
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.X = source["X"];
 	        this.Y = source["Y"];
+	        this.Z = source["Z"];
 	    }
 	}
 	export class Room {
 	    Name: string;
 	    Description: string;
 	    Notes: string;
+	    Position: RoomPosition;
 	    IsSafeZone: boolean;
-	    EditorPosition: RoomEditorPosition;
 	    Exits: number[];
 	    Locks: Lock[];
 	    DropTable: DropTable;
@@ -512,8 +516,8 @@ export namespace world {
 	        this.Name = source["Name"];
 	        this.Description = source["Description"];
 	        this.Notes = source["Notes"];
+	        this.Position = this.convertValues(source["Position"], RoomPosition);
 	        this.IsSafeZone = source["IsSafeZone"];
-	        this.EditorPosition = this.convertValues(source["EditorPosition"], RoomEditorPosition);
 	        this.Exits = source["Exits"];
 	        this.Locks = this.convertValues(source["Locks"], Lock);
 	        this.DropTable = this.convertValues(source["DropTable"], DropTable);

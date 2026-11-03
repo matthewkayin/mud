@@ -14,6 +14,8 @@ const WORLD_JSON_PATH = WORLD_DATA_FOLDER + "/world.json"
 
 const WORLD_SECONDS_PER_UPDATE = 3
 const WORLD_MAX_ROOMS int = 1024
+// New characters spawn in the start room, and so do characters whose saved room no longer exists
+const WORLD_START_ROOM int = 0
 const WORLD_REPLENISH_INTERVAL uint32 = (1 * 60) / WORLD_SECONDS_PER_UPDATE
 const CHEST_REPLENISH_INTERVAL uint32 = (4 * 60) / WORLD_SECONDS_PER_UPDATE
 
@@ -31,11 +33,10 @@ type World struct {
 	PlayerCharacters map[int][]string `json:"-"`
 
 	Mobs MobArray `json:"-"`
-	Rooms []Room
 	Npcs []Npc
 
-	// Room index for each editor position, used to build minimaps
-	roomIndexAtPosition map[RoomEditorPosition]int
+	Rooms []Room
+	roomIndexAtPosition map[RoomPosition]int
 
 	replenishTimer int32
 
@@ -105,6 +106,9 @@ func loadWorld() (*World, []string) {
 		return world, problems
 	}
 
+	// Validate guarantees that room positions are unique. Character saves reference rooms by position, so this must happen before loading them
+	world.initRoomPositionLookup()
+
 	// Load character saves, which also checks that they only reference content that exists
 	problems = world.loadCharacters()
 	if len(problems) != 0 {
@@ -114,7 +118,6 @@ func loadWorld() (*World, []string) {
 	// Init transient data structures
 	world.Events = make([]Event, 0, 64)
 	world.Mobs = MobArrayInit()
-	world.initRoomPositionLookup()
 	world.signalListeners = make(map[string][]*lua.Function)
 
 	// Init rooms
