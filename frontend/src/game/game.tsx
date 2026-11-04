@@ -115,7 +115,7 @@ export function GamePage() {
   }
 
   return (
-    <article>
+    <article className="game">
       <Terminal
         prompt={TERMINAL_PROMPT}
         lines={lines}

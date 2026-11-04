@@ -54,7 +54,10 @@ code {
 /* Page frame */
 
 .page {
-  max-width: 760px;
+  /* The frame fits its content; the content inside main sets the width. */
+  width: fit-content;
+  min-width: min(760px, 100%);
+  max-width: 100%;
   margin: 0 auto;
   background: var(--panel);
   border: 3px double var(--rule);
@@ -121,6 +124,20 @@ code {
 
 .site-main {
   padding: 8px 0 16px;
+}
+
+/* Text pages keep a fixed column: 760px frame minus padding and border. */
+.site-main > article {
+  width: 690px;
+  max-width: 100%;
+}
+
+/* The game page is as wide as its panels (terminal, minimap, status bars). */
+.site-main > article.game {
+  width: auto;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
 }
 
 .site-footer {
@@ -252,16 +269,11 @@ button[type="submit"]:disabled {
 
 /* Game */
 
-/*
-.terminal-slot {
-  width: 100%;
-  min-height: 480px;
-  background: var(--terminal-bg);
-  border: 3px double var(--rule);
-}
-*/
-
 .terminal {
+    /* 100 columns of monospace text plus the horizontal padding */
+    font-family: monospace;
+    width: calc(100ch + 20px);
+    max-width: 100%;
     display: flex;
     flex-direction: column-reverse;
     background-color: #1e1e1e;
@@ -293,6 +305,7 @@ button[type="submit"]:disabled {
     font-family: monospace;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
+    font-size: 12px;
 }
 
 .terminal-prompt-cursor-focused {
@@ -316,6 +329,7 @@ button[type="submit"]:disabled {
   }
 
   .page {
+    min-width: 0;
     border-left: none;
     border-right: none;
     padding: 16px;

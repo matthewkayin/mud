@@ -25,7 +25,9 @@ src/
   auth/auth_context.tsx AuthProvider and useAuth()
   components/layout.tsx header, nav, main, footer
   components/nav.tsx    site links and the signed-in / signed-out links
-  pages/                one component per route
+  pages/                one component per text page
+  game/game.tsx         game page: websocket connection and terminal state
+  game/terminal/        terminal component, color-tag parser and colors
 ```
 
 File names are snake_case; components are PascalCase named exports.
@@ -34,13 +36,13 @@ File names are snake_case; components are PascalCase named exports.
 
 | Path              | Page                                   | Notes                                              |
 |-------------------|----------------------------------------|----------------------------------------------------|
-| `/`               | `home_page.tsx`                        | What the game is, link to play                     |
-| `/signin`         | `sign_in_page.tsx`                     | Redirects to `/game` when already signed in        |
-| `/create-account` | `create_account_page.tsx`              | Redirects to `/game` when already signed in        |
-| `/game`           | `game_page.tsx`                        | Redirects to `/signin` when signed out             |
-| `*`               | `not_found_page.tsx`                   |                                                    |
+| `/`               | `pages/home.tsx`                       | What the game is, link to play                     |
+| `/signin`         | `pages/signin.tsx`                     | Redirects to `/game` when already signed in        |
+| `/create-account` | `pages/create.tsx`                     | Redirects to `/game` when already signed in        |
+| `/game`           | `game/game.tsx`                        | Redirects to `/signin` when signed out             |
+| `*`               | `pages/not_found.tsx`                  |                                                    |
 
-The game page renders an empty `.terminal-slot` div. The terminal component goes inside it.
+The game page renders the terminal inside an `article.game`.
 
 ## Auth
 
@@ -66,4 +68,7 @@ All styling lives in `src/styles.css`. The look is a parchment page with serif t
 - Use the color variables on `:root` rather than new literal colors.
 - Prefer plain HTML elements (`fieldset`, `hr`, links) styled globally over new wrapper components.
 - Don't add a CSS framework or component library.
-- The column is at most 760px wide and must not scroll horizontally at phone width; the `@media (max-width: 600px)` block handles small screens.
+- The `.page` frame sizes to its content, is never narrower than 760px (except on small screens) and never wider than the viewport. Each page's content sets the width:
+  - Text pages render a top-level `<article>`, which the stylesheet fixes at 690px, the width of the old 760px column inside the frame.
+  - The game page's `article.game` is a flex row. Its panels (the terminal, which is 100 columns wide, and later the minimap and status bars) set its width, so a new panel widens the frame.
+- No page may scroll horizontally at phone width; the `@media (max-width: 600px)` block handles small screens.
