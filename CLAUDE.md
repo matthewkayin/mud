@@ -4,74 +4,61 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-RC Disco MUD: a multi-user dungeon with a Go game server (`backend/`, module `mud`) and a React/Vite web client (`frontend/`). The client also contains the world editor (route `/editor`, code in `frontend/src/editor/`), which the server only enables when it runs with `--edit` (see `docs/editor.md`).
+A multi-user dungeon (MUD) with a Go game server (`backend/`, module `mud`) and a React/Vite web client (`frontend/`). The original game is Castle Recurse, built for the Recurse Center.
+
+## Refactor in progress
+
+The branch `kayin/mudkit-refactor` is rebuilding the project from scratch. The goal is server software that other people can configure to run their own MUD, so game-specific values (such as the game's name) come from config instead of the code.
+
+- Commit `ae485c7` ("begin refactor") deleted the old server, client, world editor, data and most of the docs. The old implementation is at `feb5cd1` (also `main`). Read it with `git show feb5cd1:<path>` (e.g. `git show feb5cd1:backend/game/game.go`) or list it with `git ls-tree -r --name-only feb5cd1`. Use it as a reference when rebuilding a feature, not as code to restore wholesale.
+- Only describe and rely on what exists in the working tree. Many things the old code had (game loop, world simulation, Lua scripting, world editor, Disco deployment, `docs/backend/`, `docs/deployment.md`, `docs/editor.md`) don't exist yet on this branch.
+- When you rebuild something from the old code, update this file and `docs/` to cover it.
+
+### Current state
+
+- `backend/main.go` sets up logging to stdout and `logs/<timestamp>.log`, reads `config.json` and logs the startup line. It also contains `corsMiddleware` and `runHttpServer`, which nothing calls yet.
+- `backend/config.json` holds the game's identity (`Name`, `Version`). It is committed and meant to be edited by whoever runs the MUD.
+- `backend/env/env.go` is a stub `Env` struct for deployment settings. Nothing loads it yet.
+- `backend/api/api.go` is a stub `ApiState`. The commented-out fields show what the old `api` package held.
+- `frontend/` is a new, rewritten client (see `docs/frontend.md`). It has home, sign-in, create-account and game pages and expects username/password auth routes (`/api/auth/me`, `register`, `login`, `logout`) that the server doesn't implement yet. The game page has an empty slot for the terminal.
 
 ## Commands
 
-Backend (run from `backend/`, since it reads `./data`, `./banner.txt` and writes `./logs`, `./saves` relative to the working directory):
+Backend (run from `backend/`, since it reads `./config.json` and writes `./logs` relative to the working directory):
 ```
-set -a; . ./.env; set +a      # load config env vars from backend/.env
-go run .                      # start server (port comes from PORT, normally 7272)
-go run . --edit               # start server with the world editor enabled at /editor (gods only; writes data/world.json)
-go test ./...                 # all tests
-go test ./world -run TestName # single test
-go generate                   # regenerates data/world.d.lua (Lua language server defs for the script API) and frontend/src/editor/api/models.ts
+go run .
+go test ./...   # no tests exist yet
 ```
-The server is configured by env vars (`PORT`, `PUBLIC_URL`, `ENABLE_DEBUG_AUTH`, `RC_*` OAuth settings, `GOD_USER_IDS` — see `backend/api/env.go`). `backend/.env` is not in git; copy it from `backend/.env.example`.
 
-Web frontend (run from `frontend/`):
+Frontend (run from `frontend/`):
 ```
 npm install
-npm run dev     # Vite on :5173, proxies /api (including /api/websocket) to :7272
-npm run build   # tsc -b && vite build, writes to backend/web/dist
+npm run dev     # Vite on :5173, proxies /api (including /api/websocket) to MUD_BACKEND_URL, default http://localhost:7272
+npm run build   # tsc -b && vite build, writes frontend/dist
 npm run lint
 ```
-`go build -tags embed` (run after `npm run build`) embeds `backend/web/dist` in the server binary, which then serves the client itself (`backend/web`). Without the tag, the server only serves `/api` and Vite serves the client.
+The frontend uses same-origin URLs (`/api/...`, `ws(s)://<host>/api/websocket`), so it works behind the Vite proxy and when served by the game server.
 
-The frontend uses same-origin URLs (`/api/...`, `ws(s)://<host>/api/websocket`), so it works both behind the Vite proxy and when the Go server serves the built files.
+## Design carried over from the old server
 
-Deployment (Disco): the root `Dockerfile` builds the frontend and backend into one image and `disco.json` defines the `web` service and its volumes. The deployed server never runs with `--edit`. See `docs/deployment.md`.
+These rules came from the old implementation. Follow them when rebuilding the matching parts unless the refactor deliberately changes them, and check the old code at `feb5cd1` for how they were done.
 
-World editor: run the backend with `go run . --edit` and Vite with `npm run dev`, log in as a god, and open `localhost:5173/editor`. It edits `data/world.json` in place. Save writes the file; Reload (or the `/reload` god command) rebuilds the running world from the data folder. See `docs/editor.md`.
-
-## Architecture
-
-### Backend concurrency model
-- `main.go` runs the HTTP server in a goroutine and the game loop (`game.GameState.Run`) on the main thread. The game loop is single-threaded: it `select`s over the `SocketEvents` channel, a 3-second update ticker (`world.WORLD_SECONDS_PER_UPDATE`), and a 15-minute save ticker. All game/world state mutation happens on this goroutine — do not touch `GameState` or `World` from HTTP handlers.
-- Each websocket connection (`api/websocket.go`) has a read loop (the handler goroutine), a write loop draining a per-connection `inbox chan SocketMessage` and a ping loop. The read loop sends `game.SocketEvent`s into `gamestate.SocketEvents`: `SOCKET_EVENT_TYPE_CONNECT` when it opens, `SOCKET_EVENT_TYPE_COMMAND` for each message (the player's command string, dispatched to `handleCommand`), and `SOCKET_EVENT_TYPE_DISCONNECT` when it closes. Player registration and removal therefore happen on the game loop. The game sends output to players only through `player.send(message)`, and sends every player a heartbeat (carrying HP/MP while they are in-game) after each update. The wire format, heartbeats and dead-connection detection are described in `docs/backend/connections.md`.
-- The game loop owns each inbox and closes it in `removePlayer`. The write loop keeps draining until then, even after a write failure, so sends from the game loop never block on a dead socket. The inbox pointer identifies the connection: a new connection for an already-connected user kicks the old one, and the old connection's later DISCONNECT is ignored.
-
-### Layers
-- `api/` — HTTP endpoints, OAuth (Recurse Center) + optional debug auth, token→user ID map
-- `game/` — players and command handling. Each player is in one menu (`PLAYER_MENU_LOGIN`, `_CREATE`, `_WORLD`); a `Menu` is a map of verb → `MenuEntry{usage, description, handler}` plus `onEnter`/`onExit`. Handlers return `false` to print usage. `help` is handled generically. Gods (`GOD_USER_IDS`) run `MENU_GOD` commands from any menu by prefixing them with `/` (e.g. `/shutdown`, `/help`). Most gameplay commands live in `menu_world*.go`. Players queue a `nextAction` that is applied at the next tick (`action.go`).
-- `world/` — pure simulation: rooms, mobs, NPCs, items, spells, recipes. `World.Update()` advances the simulation and appends `world.Event`s; `game` subscribes via `addEventListener(eventType, fn)` and dispatches after each update and after each socket event, then clears events. Keep `world` free of player/networking concerns and communicate outward through events. NPC events (`Npc.FireEvent`) are handled immediately, or deferred until the running script returns, since Lua can't be re-entered (see `docs/backend/npcs.md`).
-
-### World data conventions
-- Static game data that isn't scripted yet is defined as Go tables indexed by enum constants (e.g. `MOB_ABILITY_DATA` in `mob_ability.go`).
-- Mobs live in `MobArray`, a sparse-set with generational `MobHandle{Id, Generation}`. `Get` panics on stale handles; use `GetIfExists` when a handle may be dead. Rooms reference occupants by handle; rooms are referenced by index with `ROOM_NONE` as the sentinel.
-- Item, spell, recipe, race, job, class and NPC data are Lua scripts in `backend/data/` (see `docs/backend/scripting.md` and `docs/backend/npcs.md`), and their IDs are load-order indices. `World.LoadData(dataFolder)` loads them, `WorldLoad` calls it at startup and on `/reload`, and the editor reads the loaded data under `LockScriptDataForReading` (see `docs/backend/scripting.md`).
-- Persistence is JSON: `data/world.json` (fields tagged `json:"-"` are transient) and `saves/<Name>.json` for characters. Since script data IDs are not stable, saved files reference it by name through custom `MarshalJSON`/`UnmarshalJSON` (e.g. `Item`, `DropTableEntry`, `CharacterJson`).
-- While a player is logged in, their mob's `Data` is the live copy and `Character.Data` is only the last saved snapshot. `MobInit` clones the data so the two share no slices. Read and change `playerMob.Data`, not `PlayerCharacter.Data`, and save with `mob.SavePlayerCharacter()`, which copies the mob's data back before writing.
-
-### Go ↔ TypeScript types
-- `frontend/src/editor/api/models.ts` is generated by `go generate` in `backend/` (`backend/models_gen.go`, using a copy of Wails' typescriptify in `backend/internal/typescriptify`) from the types the editor API exposes (`api.EditorWorld`, `world.Room` etc.) and the enum lists in `backend/enums.go`. Rerun it after changing those Go types. `frontend/src/editor/api/editor_api.ts` wraps the server's `/api/editor/*` routes (`backend/api/editor.go`); the server reads and writes `world.json` (`GET`/`PUT /api/editor/world`) and converts between the world file format and the editor's format (`backend/api/editor_world_file.go`).
-
-### Frontends
-- `frontend/` routes: `/` login, `/game` (terminal UI over websocket), `/editor` (world editor; only shown when the server runs with `--edit` and the user is a god, per `GET /api/auth/config`).
-- The editor (`frontend/src/editor/`, MUI) keeps its state in an external store (`store/store.ts`) consumed via subscribe/emitChange; every mutation is an `EditorAction` with `do`/`undo` pushed through `editorStore.doAction` to support undo/redo. Add new edits as new `EditorAction` classes rather than mutating state directly. See `docs/editor.md`.
+- The game loop is single-threaded and owns all game and world state. HTTP handlers and websocket goroutines communicate with it only through channels. Never touch game state from an HTTP handler.
+- Each websocket connection has a read loop that sends events (connect, command, disconnect) to the game loop, and a write loop that drains a per-connection inbox the game loop owns and closes.
+- `world` is a pure simulation that communicates outward through events and knows nothing about players or networking.
+- Persistence is JSON. Saved files reference script-loaded data by name, not by load-order ID.
 
 ## Style
 Go code uses long descriptive camelCase names, `SCREAMING_SNAKE_CASE` constants/enums declared with `iota`, and `log.Printf("Warn - ...")` for recoverable problems. Types should be defined at the top of the file and should not be interleved with function definitions (excepting types which are defined only within the scope of a function).
 
 In Go code, **never** combine statements with if statements (i.e. `if _, value := myFunc(); value == 5 {}`)
 
-## Text colors
-Player-facing messages color parts of their text with tags such as `<y>name</y>`. Follow the rules in @docs/backend/text_colors.md whenever you write or change a message, and add a rule there when you color a new kind of text. Developers can run `/text-color-audit` (whole repo) or `/text-color-audit diff [base-ref]` (current changes) to check for violations.
+Player-facing text colors used tags such as `<y>name</y>`, with rules in the old `docs/backend/text_colors.md` (`git show feb5cd1:docs/backend/text_colors.md`). When player-facing messages come back, restore that doc and follow it.
 
 ## Documentation
 
-Documentation lives in the `docs/` folder of this repo. When making plans, always check if documentation updates should be made as a part of the work. 
+Documentation lives in the `docs/` folder of this repo. When making plans, always check if documentation updates should be made as a part of the work.
 
 All documentation updates should be relevant to the work being done alongside them. If the documentation that would be updated is missing, then that documentation should be added as a part of the work (for example, if you are updating the Lua scripting on the backend but find that there is no documentation for backend Lua scripts at all, then your plan should include creating a baseline set of documentation surrounding scripting).
 
-Documentation should not contain a history or log of decisions and changes made in the repo. Documentation should contain relevant info for developers and agents to update and understand the code in the repo.
+Documentation should not contain a history or log of decisions and changes made in the repo. Documentation should contain relevant info for developers and agents to update and understand the code in the repo. (The "Refactor in progress" section above is a temporary exception and should be removed once the refactor lands.)
