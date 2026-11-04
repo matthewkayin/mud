@@ -45,6 +45,7 @@ func main() {
 	apiState := api.InitState(gamestate)
 	mux := http.NewServeMux()
 	apiState.RegisterAuthRoutes(mux)
+	mux.HandleFunc("/api/websocket", apiState.HandleGetWebSocket)
 	// Unknown API paths shouldn't fall through to the frontend once it is served from here
 	mux.Handle("/api/", http.NotFoundHandler())
 
