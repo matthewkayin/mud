@@ -1,0 +1,277 @@
+/* Castle Recurse: the whole site's look. Parchment, ink and a little early-2000s plainness. */
+
+:root {
+  --parchment: #f3ead3;
+  --panel: #faf4e4;
+  --ink: #2b2118;
+  --ink-muted: #6b5a45;
+  --link: #7a1f1f;
+  --link-visited: #5a2a4a;
+  --rule: #b8a27a;
+  --notice-bg: #f6dfd2;
+  --button-bg: #e8dcbc;
+  --button-border: #d4c49c;
+  --terminal-bg: #1c1712;
+  --serif: Georgia, "Times New Roman", Times, serif;
+  --mono: "Courier New", Courier, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--parchment);
+}
+
+body {
+  margin: 0;
+  padding: 24px 16px;
+  background: var(--parchment);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+a {
+  color: var(--link);
+}
+
+a:visited {
+  color: var(--link-visited);
+}
+
+a:hover {
+  text-decoration-style: double;
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.95em;
+}
+
+/* Page frame */
+
+.page {
+  max-width: 760px;
+  margin: 0 auto;
+  background: var(--panel);
+  border: 3px double var(--rule);
+  padding: 24px 32px;
+}
+
+.site-header {
+  text-align: center;
+  border-bottom: 3px double var(--rule);
+  padding-bottom: 12px;
+}
+
+.site-title,
+.site-title:visited {
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 2.6em;
+  font-variant: small-caps;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+}
+
+.site-tagline {
+  margin: 4px 0 0;
+  font-style: italic;
+  color: var(--ink-muted);
+}
+
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 0.95em;
+}
+
+.nav-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+}
+
+.nav-sep {
+  color: var(--rule);
+}
+
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--link);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link-button:disabled {
+  color: var(--ink-muted);
+  cursor: default;
+}
+
+.site-main {
+  padding: 8px 0 16px;
+}
+
+.site-footer {
+  border-top: 1px solid var(--rule);
+  padding-top: 8px;
+  text-align: center;
+  font-size: 0.85em;
+  font-style: italic;
+  color: var(--ink-muted);
+}
+
+/* Text */
+
+h1,
+h2,
+h3 {
+  font-weight: normal;
+  font-variant: small-caps;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+}
+
+h1 {
+  font-size: 1.8em;
+  margin: 16px 0 12px;
+}
+
+p {
+  margin: 0 0 1em;
+}
+
+.drop-cap {
+  float: left;
+  font-size: 3.4em;
+  line-height: 0.85;
+  padding: 4px 6px 0 0;
+  color: var(--link);
+}
+
+hr {
+  border: none;
+  text-align: center;
+  margin: 24px 0;
+}
+
+hr::before {
+  content: "\2766";
+  color: var(--rule);
+  font-size: 1.4em;
+}
+
+.center {
+  text-align: center;
+}
+
+.big-link {
+  font-size: 1.25em;
+}
+
+/* Forms */
+
+.form fieldset {
+  border: 1px solid var(--rule);
+  padding: 12px 20px 16px;
+  margin: 0 0 16px;
+  max-width: 440px;
+}
+
+.form legend {
+  font-style: italic;
+  color: var(--ink-muted);
+  padding: 0 6px;
+}
+
+.form label {
+  display: block;
+  margin-top: 10px;
+  font-weight: bold;
+  font-size: 0.95em;
+}
+
+.form input {
+  display: block;
+  width: 100%;
+  margin-top: 2px;
+  padding: 4px 6px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--parchment);
+  border: 1px solid var(--ink);
+  border-radius: 0;
+}
+
+.form input:focus {
+  outline: 2px solid var(--rule);
+  outline-offset: 0;
+}
+
+.form-actions {
+  margin-top: 16px;
+}
+
+button[type="submit"] {
+  font: inherit;
+  font-size: 0.95em;
+  padding: 3px 14px;
+  color: var(--ink);
+  background: var(--button-bg);
+  border: 2px outset var(--button-border);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+button[type="submit"]:active {
+  border-style: inset;
+}
+
+button[type="submit"]:disabled {
+  color: var(--ink-muted);
+  cursor: default;
+}
+
+.notice {
+  border: 1px solid var(--link);
+  background: var(--notice-bg);
+  padding: 6px 10px;
+  margin: 8px 0 0;
+}
+
+/* Game */
+
+.terminal-slot {
+  width: 100%;
+  min-height: 480px;
+  background: var(--terminal-bg);
+  border: 3px double var(--rule);
+}
+
+@media (max-width: 600px) {
+  body {
+    padding: 0;
+  }
+
+  .page {
+    border-left: none;
+    border-right: none;
+    padding: 16px;
+  }
+
+  .site-title,
+  .site-title:visited {
+    font-size: 2em;
+  }
+}
