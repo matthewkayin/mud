@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"log"
 	"time"
-	"strings"
+	"context"
+	"syscall"
 	"net/http"
+	"os/signal"
+	"mud/api"
 	"mud/env"
 )
 
@@ -24,6 +27,43 @@ func main() {
 	env.Load()
 	env := env.Get()
 	log.Printf("Starting %s version %s...", env.NAME, version)
+
+	// Create save folders
+	err := os.MkdirAll(api.AccountFolderPath(), 0700)
+	if err != nil {
+		log.Fatalf("Failed to create account save folder: %s", err.Error())
+	}
+
+	// Set server endpoint handlers
+	apiState := api.InitState()
+	mux := http.NewServeMux()
+	apiState.RegisterAuthRoutes(mux)
+	// Unknown API paths shouldn't fall through to the frontend once it is served from here
+	mux.Handle("/api/", http.NotFoundHandler())
+
+	// Begin server
+	log.Printf("Beginning server on port %d...", env.PORT)
+	server := &http.Server {
+		Addr: fmt.Sprintf(":%d", env.PORT),
+		Handler: mux,
+	}
+	go runHttpServer(server)
+
+	// Run until interrupted. The game loop will run here once it exists.
+	shutdownSignalContext, stopListeningForShutdown := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stopListeningForShutdown()
+	<-shutdownSignalContext.Done()
+
+	// Tell the HTTP server to shutdown gracefully
+	shutdownContext, cancelShutdown := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancelShutdown()
+
+	err = server.Shutdown(shutdownContext)
+	if err != nil {
+		log.Fatalf("HTTP server did not shutdown gracefully: %s", err.Error())
+	}
+
+	log.Printf("Server shutdown gracefully.")
 }
 
 func initLogger() *os.File {
@@ -50,29 +90,6 @@ func initLogger() *os.File {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
 	return logfile
-}
-
-func corsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func (writer http.ResponseWriter, request *http.Request) {
-		// The editor's routes write files, so they don't allow other origins
-		if strings.HasPrefix(request.URL.Path, "/api/editor/") {
-			next.ServeHTTP(writer, request)
-			return
-		}
-
-		writer.Header().Set("Access-Control-Allow-Origin", "*")
-		writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		writer.Header().Set("Access-Control-Max-Age", "3600")
-
-		if request.Method == "OPTIONS" {
-			writer.WriteHeader(http.StatusNoContent)
-			return
-		}
-
-		next.ServeHTTP(writer, request)
-	})
 }
 
 func runHttpServer(server *http.Server) {

@@ -13,7 +13,6 @@ export function GamePage() {
 
   return (
     <article>
-      <h1>The Castle</h1>
       <div className="terminal-slot">
         {/* Terminal goes here */}
       </div>

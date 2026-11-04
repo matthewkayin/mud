@@ -11,23 +11,23 @@ A multi-user dungeon (MUD) with a Go game server (`backend/`, module `mud`) and 
 The branch `kayin/mudkit-refactor` is rebuilding the project from scratch. The goal is server software that other people can configure to run their own MUD, so game-specific values (such as the game's name) come from config instead of the code.
 
 - Commit `ae485c7` ("begin refactor") deleted the old server, client, world editor, data and most of the docs. The old implementation is at `feb5cd1` (also `main`). Read it with `git show feb5cd1:<path>` (e.g. `git show feb5cd1:backend/game/game.go`) or list it with `git ls-tree -r --name-only feb5cd1`. Use it as a reference when rebuilding a feature, not as code to restore wholesale.
-- Only describe and rely on what exists in the working tree. Many things the old code had (game loop, world simulation, Lua scripting, world editor, Disco deployment, `docs/backend/`, `docs/deployment.md`, `docs/editor.md`) don't exist yet on this branch.
+- Only describe and rely on what exists in the working tree. Many things the old code had (game loop, world simulation, Lua scripting, world editor, Disco deployment, most of `docs/backend/`, `docs/deployment.md`, `docs/editor.md`) don't exist yet on this branch.
 - When you rebuild something from the old code, update this file and `docs/` to cover it.
 
 ### Current state
 
-- `backend/main.go` sets up logging to stdout and `logs/<timestamp>.log`, reads `config.json` and logs the startup line. It also contains `corsMiddleware` and `runHttpServer`, which nothing calls yet.
-- `backend/config.json` holds the game's identity (`Name`, `Version`). It is committed and meant to be edited by whoever runs the MUD.
-- `backend/env/env.go` is a stub `Env` struct for deployment settings. Nothing loads it yet.
-- `backend/api/api.go` is a stub `ApiState`. The commented-out fields show what the old `api` package held.
-- `frontend/` is a new, rewritten client (see `docs/frontend.md`). It has home, sign-in, create-account and game pages and expects username/password auth routes (`/api/auth/me`, `register`, `login`, `logout`) that the server doesn't implement yet. The game page has an empty slot for the terminal.
+- `backend/main.go` sets up logging to stdout and `logs/<timestamp>.log`, loads env, creates `saves/accounts`, and runs the HTTP server on `PORT` until SIGINT/SIGTERM. There is no game loop yet.
+- `backend/env/env.go` loads `NAME` and `PORT` from `backend/.env` or the OS environment. `NAME` is the game's identity.
+- `backend/api/` holds `ApiState` (in-memory sessions) and username/password accounts with the `/api/auth/me`, `register`, `login` and `logout` routes (see `docs/backend/accounts.md`).
+- `backend/persist/` has `WriteJsonAtomically`, the helper all save files must be written with. Save data lives in `backend/saves/` (gitignored).
+- `frontend/` is a new, rewritten client (see `docs/frontend.md`). It has home, sign-in, create-account and game pages and uses the server's auth routes. The game page has an empty slot for the terminal.
 
 ## Commands
 
-Backend (run from `backend/`, since it reads `./config.json` and writes `./logs` relative to the working directory):
+Backend (run from `backend/`, since it reads `./.env` and writes `./logs` and `./saves` relative to the working directory):
 ```
 go run .
-go test ./...   # no tests exist yet
+go test ./...
 ```
 
 Frontend (run from `frontend/`):

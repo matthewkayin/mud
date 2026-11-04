@@ -1,14 +1,19 @@
 package api
 
+import (
+	"sync"
+)
+
 type ApiState struct {
 	// gamestate *game.GameState
-	// true when server runs with --edit
-	// editMode bool
-	// tokenToIdMutex sync.RWMutex
-	// tokenToIdMap map[string]int
+	sessionMutex sync.RWMutex
+	// Session token to the account's username as stored in the account (its display form).
+	// Sessions are only kept in memory, so restarting the server signs everyone out.
+	sessionTokenToUsername map[string]string
 }
 
-// func InitState(gamestate *game.GameState, editMode bool) *ApiState {}
 func InitState() *ApiState {
-	return &ApiState {}
+	return &ApiState {
+		sessionTokenToUsername: make(map[string]string),
+	}
 }

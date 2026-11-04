@@ -55,7 +55,9 @@ The server must implement these routes. Sessions are carried by a cookie the ser
 | `POST /api/auth/login`    | `{ username, password }` | `200 { "username": string }` + cookie | `4xx { "error": string }` |
 | `POST /api/auth/logout`   |                          | `204`, clears the cookie             | `4xx { "error": string }` |
 
-The `error` string is shown to the user as is.
+The `error` string is shown to the user as is. Register returns `409` when the username is taken.
+
+Usernames are 3–20 characters of ASCII letters, digits and `_`, and are unique regardless of capitalization. Passwords are 8–72 bytes. The server returns the username with the capitalization used at registration, even when the user signs in with different capitalization. Server-side details are in `docs/backend/accounts.md`.
 
 ## Styling
 
