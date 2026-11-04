@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"mud/api"
 	"mud/env"
+	"mud/game"
 )
 
 const MUD_LOG_FOLDER = "logs"
@@ -24,6 +25,7 @@ func main() {
 	logfile := initLogger()
 	defer logfile.Close()
 
+	// Load env
 	env.Load()
 	env := env.Get()
 	log.Printf("Starting %s version %s...", env.NAME, version)
@@ -34,8 +36,13 @@ func main() {
 		log.Fatalf("Failed to create account save folder: %s", err.Error())
 	}
 
+	// Init gamestate
+	gameContext, gameCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	defer gameCancel()
+	gamestate := game.Init(version)
+
 	// Set server endpoint handlers
-	apiState := api.InitState()
+	apiState := api.InitState(gamestate)
 	mux := http.NewServeMux()
 	apiState.RegisterAuthRoutes(mux)
 	// Unknown API paths shouldn't fall through to the frontend once it is served from here
@@ -49,10 +56,8 @@ func main() {
 	}
 	go runHttpServer(server)
 
-	// Run until interrupted. The game loop will run here once it exists.
-	shutdownSignalContext, stopListeningForShutdown := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stopListeningForShutdown()
-	<-shutdownSignalContext.Done()
+	// Kick off game loop on main thread
+	gamestate.Run(gameContext)
 
 	// Tell the HTTP server to shutdown gracefully
 	shutdownContext, cancelShutdown := context.WithTimeout(context.Background(), 5 * time.Second)

@@ -3,6 +3,7 @@ package api
 import (
 	"log"
 	"errors"
+	"strings"
 	"net/http"
 	"crypto/rand"
 	"encoding/json"
@@ -148,6 +149,11 @@ func (apiState *ApiState) getSessionUsername(request *http.Request) (string, boo
 	apiState.sessionMutex.RUnlock()
 
 	return username, authenticated
+}
+
+func (apiState *ApiState) getSessionKey(request *http.Request) (string, bool) {
+	username, ok := apiState.getSessionUsername(request)
+	return strings.ToLower(username), ok
 }
 
 // True when the client reached the server over HTTPS, either directly or through a proxy
