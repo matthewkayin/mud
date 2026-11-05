@@ -67,7 +67,5 @@ func (world *World) RemoveCharacter(character *Character) {
 	}
 
 	delete(world.Characters, character.Name)
-
-	// TODO:
-	// Delete the character from the disk
+	deleteCharacter(character)
 }

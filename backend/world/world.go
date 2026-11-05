@@ -22,9 +22,6 @@ type World struct {
 func NewWorld() (*World, error) {
 	world := &World{}
 
-	world.Characters = make(map[string]*Character)
-	world.PlayerCharacters = make(map[string][]string)
-
 	// Init script state
 	err := world.scriptInit()
 	if err != nil {
@@ -42,6 +39,12 @@ func NewWorld() (*World, error) {
 			world.scriptQuit()
 			return nil, err
 		}
+	}
+
+	// Load characters
+	err = world.loadCharacters()
+	if err != nil {
+		return nil, err
 	}
 
 	return world, nil

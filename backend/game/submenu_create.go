@@ -95,7 +95,7 @@ func (submenu *SubmenuCreate) handleCommand(gamestate *GameState, player *Player
 				// Put the character into the characters list
 				character := world.NewCharacter(player.key, &submenu.characterSheet)
 				gamestate.world.AddCharacter(player.key, character)
-				// TODO: save character
+				gamestate.world.SaveCharacter(character)
 
 				player.send(fmt.Sprintf("Your character has been created. Type 'login %s' to login to them.", character.Name))
 

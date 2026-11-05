@@ -1,18 +1,19 @@
 package main
 
 import (
-	"os"
-	"io"
-	"fmt"
-	"log"
-	"time"
 	"context"
-	"syscall"
-	"net/http"
-	"os/signal"
+	"fmt"
+	"io"
+	"log"
 	"mud/api"
 	"mud/env"
 	"mud/game"
+	"mud/world"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 const MUD_LOG_FOLDER = "logs"
@@ -34,6 +35,11 @@ func main() {
 	err := os.MkdirAll(api.AccountFolderPath(), 0700)
 	if err != nil {
 		log.Fatalf("Failed to create account save folder: %s", err.Error())
+	}
+
+	err = os.MkdirAll(world.CHARACTER_SAVES_FOLDER, 0700)
+	if err != nil {
+		log.Fatalf("Failed to create character save folder: %s", err.Error())
 	}
 
 	// Init gamestate
