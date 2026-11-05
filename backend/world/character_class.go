@@ -66,7 +66,7 @@ func (parser *ScriptParser) parseClass(table *lua.Table) *ClassData {
 	return classData
 }
 
-func (world *World) classIdFromString(name string) (ClassId, error) {
+func (world *World) ClassIdFromString(name string) (ClassId, error) {
 	for classId, classData := range world.ClassData {
 		if strings.EqualFold(name, classData.Name) {
 			return ClassId(classId), nil

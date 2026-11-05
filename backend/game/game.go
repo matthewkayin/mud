@@ -39,7 +39,7 @@ func Init(version string) *GameState {
 	}
 
 	// Load world
-	newWorld, err := world.WorldInit()
+	newWorld, err := world.NewWorld()
 	if err != nil {
 		log.Fatalf("Failed to load world: %s", err.Error())
 	}
@@ -120,15 +120,20 @@ func (gamestate *GameState) registerPlayer(playerKey string, playerInbox *chan S
 		gamestate.removePlayer(playerKey, existingPlayer.inbox)
 	}
 
+	// Init player and add them to the player list
 	player := playerInit(playerKey, playerInbox)
 	playerIndex := len(gamestate.players)
 	gamestate.players = append(gamestate.players, player)
 	gamestate.playerKeyToIndexMap[playerKey] = playerIndex
 
+	// Send welcome banner
 	playerPtr := &gamestate.players[playerIndex]
 	for index := range len(gamestate.welcomeBannerLines) {
 		playerPtr.send(gamestate.welcomeBannerLines[index])
 	}
+
+	// Set them to the login menu
+	playerPtr.setMenuLogin()
 }
 
 func (gamestate *GameState) removePlayer(playerKey string, playerInbox *chan SocketMessage) {

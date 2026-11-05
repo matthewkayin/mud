@@ -16,7 +16,6 @@ import (
 type Account struct {
 	Username string
 	PasswordHash string
-	Characters []string
 }
 
 type accountValidationError struct {
@@ -100,7 +99,6 @@ func createAccount(username string, password string) (*Account, error) {
 	account := &Account {
 		Username: username,
 		PasswordHash: string(passwordHash),
-		Characters: []string{},
 	}
 
 	err = database.WriteJsonAtomically(accountFilePath(username), account, false)

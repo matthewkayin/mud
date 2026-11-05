@@ -9,6 +9,9 @@ const WORLD_SECONDS_PER_UPDATE = 3
 type World struct {
 	luaState *lua.State
 
+	Characters map[string]*Character
+	PlayerCharacters map[string][]string
+
 	RaceData []*RaceData
 	RaceNameToId map[string]RaceId
 
@@ -16,8 +19,11 @@ type World struct {
 	ClassNameToId map[string]ClassId
 }
 
-func WorldInit() (*World, error) {
+func NewWorld() (*World, error) {
 	world := &World{}
+
+	world.Characters = make(map[string]*Character)
+	world.PlayerCharacters = make(map[string][]string)
 
 	// Init script state
 	err := world.scriptInit()

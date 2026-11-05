@@ -17,9 +17,17 @@ const (
 type SubmenuCreate struct {
 	mode SubmenuCreateMode
 
-	characterName string
-	characterRace world.RaceId
-	characterClass world.ClassId
+	characterSheet world.CharacterSheet
+}
+
+func NewSubmenuCreate(gamestate *GameState, player *Player) *SubmenuCreate {
+	submenu := &SubmenuCreate {
+		mode: SUBMENU_CREATE_MODE_NAME,
+		characterSheet: world.CharacterSheet{},
+	}
+
+	submenu.setMode(gamestate, player, submenu.mode)
+	return submenu
 }
 
 func (submenu *SubmenuCreate) handleCommand(gamestate *GameState, player *Player, input string) bool {
@@ -31,11 +39,74 @@ func (submenu *SubmenuCreate) handleCommand(gamestate *GameState, player *Player
 		}
 
 		submenu.setMode(gamestate, player, submenu.mode - 1)
+		return true
 	}
 
 	switch submenu.mode {
 		case SUBMENU_CREATE_MODE_NAME: {
+			// Validate the player's name
+			name, err := world.CharacterNameValidate(gamestate.world, input)
+			if err != nil {
+				player.send(err.Error())
+				return true
+			}
 
+			submenu.characterSheet.Name = name
+			submenu.setMode(gamestate, player, SUBMENU_CREATE_MODE_RACE)
+			return true
+		}
+
+		case SUBMENU_CREATE_MODE_RACE: {
+			// Search for a race matching the input
+			race, err := gamestate.world.RaceIdFromString(input)
+			if err != nil {
+				player.send(err.Error())
+				return true
+			}
+
+			submenu.characterSheet.Race = race
+			submenu.setMode(gamestate, player, SUBMENU_CREATE_MODE_CLASS)
+			return true
+		}
+
+		case SUBMENU_CREATE_MODE_CLASS: {
+			// Search for a class matching the input
+			class, err := gamestate.world.ClassIdFromString(input)
+			if err != nil {
+				player.send(err.Error())
+				return true
+			}
+
+			submenu.characterSheet.Class = class
+			submenu.setMode(gamestate, player, SUBMENU_CREATE_MODE_SUMMARY)
+			return true
+		}
+
+		case SUBMENU_CREATE_MODE_SUMMARY: {
+			if strings.EqualFold(input, "finish") {
+				// Check once more that the character name is available
+				_, nameIsTaken := gamestate.world.GetCharacterIfExists(submenu.characterSheet.Name)
+				if nameIsTaken {
+					player.send(fmt.Sprintf("The character name '%s' has been taken!", submenu.characterSheet.Name))
+					submenu.setMode(gamestate, player, SUBMENU_CREATE_MODE_NAME)
+					return true
+				}
+
+				// Put the character into the characters list
+				character := world.NewCharacter(player.key, &submenu.characterSheet)
+				gamestate.world.AddCharacter(player.key, character)
+				// TODO: save character
+
+				player.send(fmt.Sprintf("Your character has been created. Type 'login %s' to login to them.", character.Name))
+
+				player.submenu = nil
+				player.setMenuLogin()
+
+				return true
+			}
+
+			player.send("'%s' is not a valid command. Type 'finish' or 'back'.")
+			return true
 		}
 	}
 
@@ -53,7 +124,7 @@ func (submenu *SubmenuCreate) setMode(gamestate *GameState, player *Player, mode
 			player.send("What is your character's race?")
 			player.send("The races are:")
 			for _, raceData := range gamestate.world.RaceData {
-				player.send(fmt.Sprintf("<y>%s</y> - %s", raceData.Name, raceData.Description))
+				player.send(fmt.Sprintf("<p>%s</p> - %s", raceData.Name, raceData.Description))
 			}
 		}
 
@@ -61,16 +132,16 @@ func (submenu *SubmenuCreate) setMode(gamestate *GameState, player *Player, mode
 			player.send("What is your character's class?")
 			player.send("The classes are:")
 			for _, classData := range gamestate.world.ClassData {
-				player.send(fmt.Sprintf("<y>%s</y> - %s", classData.Name, classData.Description))
+				player.send(fmt.Sprintf("<p>%s</p> - %s", classData.Name, classData.Description))
 			}
 		}
 
 		case SUBMENU_CREATE_MODE_SUMMARY: {
-			// TODO: replace with pretty tables?
+			// TODO: make this prettier
 			player.send("Here is your character:")
-			player.send(fmt.Sprintf("Name: <y>%s</y>", submenu.characterName))
-			player.send(fmt.Sprintf("Race: <y>%s</y>", submenu.characterRace))
-			player.send(fmt.Sprintf("Class: <y>%s</y>", submenu.characterClass))
+			player.send(fmt.Sprintf("Name: <y>%s</y>", submenu.characterSheet.Name))
+			player.send(fmt.Sprintf("Race: <p>%s</p>", gamestate.world.RaceData[submenu.characterSheet.Race].Name))
+			player.send(fmt.Sprintf("Class: <p>%s</p>", gamestate.world.ClassData[submenu.characterSheet.Class].Name))
 			player.send("")
 			player.send("Type 'finish' to create your character or 'back' to change something.")
 		}

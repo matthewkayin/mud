@@ -66,7 +66,7 @@ func (parser *ScriptParser) parseRace(table *lua.Table) *RaceData {
 	return raceData
 }
 
-func (world *World) raceIdFromString(name string) (RaceId, error) {
+func (world *World) RaceIdFromString(name string) (RaceId, error) {
 	for raceId, raceData := range world.RaceData {
 		if strings.EqualFold(name, raceData.Name) {
 			return RaceId(raceId), nil

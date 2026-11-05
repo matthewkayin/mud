@@ -19,7 +19,7 @@ type MenuHelpTopic struct {
 	lines []string
 }
 
-type MenuCreateParams struct {
+type MenuNewParams struct {
 	entries map[string]MenuEntry
 	topics map[string]MenuHelpTopic
 }
@@ -34,7 +34,7 @@ type Submenu interface {
 	handleCommand(gamestate *GameState, player *Player, input string) bool
 }
 
-func MenuCreate(params MenuCreateParams) Menu {
+func NewMenu(params MenuNewParams) Menu {
 	// Create menu struct
 	menu := Menu {
 		entries: params.entries,
@@ -129,7 +129,7 @@ func (menu *Menu) handleCommand(gamestate *GameState, player *Player, command st
 
 	// Handle submenu command
 	if player.submenu != nil {
-		handled := player.submenu.handleCommand(gamestate, player, strings.Join(args, " "))
+		handled := player.submenu.handleCommand(gamestate, player, command)
 		if handled {
 			return
 		}
