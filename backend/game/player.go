@@ -1,14 +1,21 @@
 package game
 
+type PlayerMenu int
+const (
+	PLAYER_MENU_LOGIN = iota
+)
+
 type Player struct {
 	key string
 	inbox *chan SocketMessage
+	menu *Menu
 }
 
 func playerInit(key string, inbox *chan SocketMessage) Player {
 	return Player {
 		key: key,
 		inbox: inbox,
+		menu: &MENU_LOGIN,
 	}
 }
 

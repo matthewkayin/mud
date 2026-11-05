@@ -2,7 +2,6 @@ package game
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"mud/util"
 	"time"
@@ -165,8 +164,8 @@ func (gamestate *GameState) handleCommand(playerKey string, command string) {
 		log.Printf("Warn: Received command from player %s, but they don't exist.", playerKey)
 	}
 
-	// TODO: player menu handle command
-	player.send(fmt.Sprintf("You sent: %s", command))
+	player.menu.handleCommand(gamestate, player, command)
+	player.sendHeartbeat(gamestate)
 }
 
 func (gamestate *GameState) update() {
