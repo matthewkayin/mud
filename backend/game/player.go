@@ -9,6 +9,7 @@ type Player struct {
 	key string
 	inbox *chan SocketMessage
 	menu *Menu
+	submenu Submenu
 }
 
 func playerInit(key string, inbox *chan SocketMessage) Player {
@@ -16,6 +17,7 @@ func playerInit(key string, inbox *chan SocketMessage) Player {
 		key: key,
 		inbox: inbox,
 		menu: &MENU_LOGIN,
+		submenu: nil,
 	}
 }
 
@@ -32,4 +34,10 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 		case *player.inbox <- heartbeat:
 		default:
 	}
+}
+
+func (player *Player) setMenuLogin() {
+	player.menu = &MENU_LOGIN
+	player.send("You are in the login screen.")
+	player.send("Type 'help' to see a list of options.")
 }

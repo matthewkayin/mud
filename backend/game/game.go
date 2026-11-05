@@ -4,10 +4,11 @@ import (
 	"context"
 	"log"
 	"mud/util"
+	"mud/world"
 	"time"
 )
 
-const GAME_UPDATE_INTERVAL = 3 * time.Second
+const GAME_UPDATE_INTERVAL = world.WORLD_SECONDS_PER_UPDATE * time.Second
 const GAME_SAVE_INTERVAL = 5 * time.Minute
 
 type ServerMode int
@@ -26,12 +27,21 @@ type GameState struct {
 
 	players []Player
 	playerKeyToIndexMap map[string]int
+
+	world *world.World
 }
 
 func Init(version string) *GameState {
+	// Load welcome banner
 	welcomeBannerLines, err := util.ReadFileLines("./banner.txt")
 	if err != nil {
 		log.Fatalf("Error loading welcome banner: %s", err.Error())
+	}
+
+	// Load world
+	newWorld, err := world.WorldInit()
+	if err != nil {
+		log.Fatalf("Failed to load world: %s", err.Error())
 	}
 
 	gamestate := &GameState {
@@ -43,6 +53,8 @@ func Init(version string) *GameState {
 
 		players: make([]Player, 0, 64),
 		playerKeyToIndexMap: make(map[string]int),
+
+		world: newWorld,
 	}
 
 	return gamestate
@@ -88,6 +100,7 @@ func (gamestate *GameState) Run(ctx context.Context) {
 	}
 
 	log.Printf("Shutdown signal received. Shutting down server...")
+	gamestate.world.Quit()
 }
 
 func (gamestate *GameState) registerPlayer(playerKey string, playerInbox *chan SocketMessage) {

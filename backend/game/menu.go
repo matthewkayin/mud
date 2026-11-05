@@ -30,6 +30,10 @@ type Menu struct {
 	categories map[string][]string
 }
 
+type Submenu interface {
+	handleCommand(gamestate *GameState, player *Player, input string) bool
+}
+
 func MenuCreate(params MenuCreateParams) Menu {
 	// Create menu struct
 	menu := Menu {
@@ -122,6 +126,14 @@ func (menu *Menu) handleCommand(gamestate *GameState, player *Player, command st
 	}
 	verb := strings.ToLower(words[0])
 	args := words[1:]
+
+	// Handle submenu command
+	if player.submenu != nil {
+		handled := player.submenu.handleCommand(gamestate, player, strings.Join(args, " "))
+		if handled {
+			return
+		}
+	}
 
 	// Handle help
 	if verb == "help" {
