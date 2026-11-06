@@ -132,8 +132,8 @@ code {
   max-width: 100%;
 }
 
-/* The game page is as wide as its panels. The terminal and the sidebar share the top row, so the sidebar is
-   as tall as the terminal, and the status bar sits below the terminal. */
+/* The game page is as wide as its panels. It has two columns in one row: the terminal with the status bar
+   below it, and the sidebar. The sidebar stretches to the height of the first column. */
 .site-main > article.game {
   width: auto;
   display: grid;
@@ -141,15 +141,18 @@ code {
   gap: 8px;
 }
 
+.game-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
 .game-sidebar {
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-height: 0;
-}
-
-.site-main > article.game > .status-bar {
-  grid-column: 1;
 }
 
 .site-footer {
@@ -402,7 +405,7 @@ button[type="submit"]:disabled {
 
 /* Inventory */
 
-/* Fills the rest of the sidebar, so its bottom edge lines up with the terminal's */
+/* Fills the rest of the sidebar, so its bottom edge lines up with the status bar's */
 .inventory {
     flex: 1;
     min-height: 0;
@@ -435,13 +438,9 @@ button[type="submit"]:disabled {
     font-size: 2em;
   }
 
-  /* Stack the game panels in one column: terminal, sidebar, status bar */
+  /* Stack the game panels in one column: terminal and status bar, then the sidebar */
   .site-main > article.game {
     grid-template-columns: 100%;
-  }
-
-  .game-sidebar {
-    grid-column: 1;
   }
 
   .inventory {

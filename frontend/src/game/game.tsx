@@ -142,19 +142,21 @@ export function GamePage() {
 
   return (
     <article className="game">
-      <Terminal
-        prompt={TERMINAL_PROMPT}
-        lines={lines}
-        command={command}
-        setCommand={setCommand}
-        pendingAction={false}
-        onSubmit={onSubmit}
-      />
+      <div className="game-main">
+        <Terminal
+          prompt={TERMINAL_PROMPT}
+          lines={lines}
+          command={command}
+          setCommand={setCommand}
+          pendingAction={false}
+          onSubmit={onSubmit}
+        />
+        <StatusBar status={playerStatus} />
+      </div>
       <div className="game-sidebar">
         <Minimap map={minimap} />
         <Inventory isInWorld={playerStatus !== null} />
       </div>
-      <StatusBar status={playerStatus} />
     </article>
   );
 }
