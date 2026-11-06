@@ -3,6 +3,8 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../auth/auth_context.tsx';
 import { Terminal } from './terminal.tsx';
 import { StatusBar } from './status_bar.tsx';
+import { Minimap } from './minimap.tsx';
+import { Inventory } from './inventory.tsx';
 import { type PlayerStatus, type SocketMessage } from './socket_message';
 
 const TERMINAL_PROMPT = ">";
@@ -18,6 +20,7 @@ export function GamePage() {
 
   // Status
   const [playerStatus, setPlayerStatus] = useState<PlayerStatus | null>(null);
+  const [minimap, setMinimap] = useState<number[] | null>(null);
 
   // Websocket
   const websocketRef = useRef<WebSocket | null>(null);
@@ -79,11 +82,16 @@ export function GamePage() {
       } else if (socketMessage.message === null) {
         // If we receive no status and message is null, then this is a status-less heartbeat,
         // which means the player is receiving a heartbeat but they aren't in game, so clear
-        // their status (which hides the status bar)
+        // their status and minimap (which hides the status bar, minimap and inventory)
         setPlayerStatus(null);
+        setMinimap(null);
       }
 
-      // TODO: update player minimap
+      // Get minimap from socketMessage
+      // The server only sends the minimap when it changes
+      if (socketMessage.map) {
+        setMinimap(socketMessage.map);
+      }
     };
 
     // Web socket close listener
@@ -109,7 +117,8 @@ export function GamePage() {
       removeListeners();
       websocket.close();
       websocketRef.current = null;
-      // TODO: clear player status and minimap
+      setPlayerStatus(null);
+      setMinimap(null);
       terminalWriteLine('The server has disconnected.');
     };
 
@@ -141,6 +150,10 @@ export function GamePage() {
         pendingAction={false}
         onSubmit={onSubmit}
       />
+      <div className="game-sidebar">
+        <Minimap map={minimap} />
+        {playerStatus !== null && <Inventory />}
+      </div>
       <StatusBar status={playerStatus} />
     </article>
   );

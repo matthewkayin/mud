@@ -132,12 +132,24 @@ code {
   max-width: 100%;
 }
 
-/* The game page is as wide as its panels (terminal, minimap, status bars). */
+/* The game page is as wide as its panels. The terminal and the sidebar share the top row, so the sidebar is
+   as tall as the terminal, and the status bar sits below the terminal. */
 .site-main > article.game {
   width: auto;
+  display: grid;
+  grid-template-columns: max-content 140px;
+  gap: 8px;
+}
+
+.game-sidebar {
   display: flex;
-  gap: 16px;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.site-main > article.game > .status-bar {
+  grid-column: 1;
 }
 
 .site-footer {
@@ -353,6 +365,48 @@ button[type="submit"]:disabled {
     transition: width 0.3s ease;
 }
 
+/* Minimap */
+
+.minimap {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    box-sizing: border-box;
+    padding: 10px;
+    border-radius: 4px;
+    background-color: #1e1e1e;
+}
+
+/* Strokes are set in screen pixels so they stay crisp at any size */
+.minimap-room {
+    fill: #3a3a3a;
+    stroke: #ffffff;
+    stroke-width: 1px;
+    vector-effect: non-scaling-stroke;
+}
+
+.minimap-room.current {
+    fill: #ffffff;
+}
+
+.minimap-exit {
+    stroke: #ffffff;
+    stroke-width: 1px;
+    vector-effect: non-scaling-stroke;
+}
+
+/* Inventory */
+
+/* Fills the rest of the sidebar, so its bottom edge lines up with the terminal's */
+.inventory {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 10px;
+    border-radius: 4px;
+    background-color: #1e1e1e;
+}
+
 @keyframes blink {
     from, to { color: #00000000 }
     50% { color: #ffffffff }
@@ -374,5 +428,22 @@ button[type="submit"]:disabled {
   .site-title,
   .site-title:visited {
     font-size: 2em;
+  }
+
+  /* Stack the game panels in one column: terminal, sidebar, status bar */
+  .site-main > article.game {
+    grid-template-columns: 100%;
+  }
+
+  .game-sidebar {
+    grid-column: 1;
+  }
+
+  .minimap {
+    width: 140px;
+  }
+
+  .inventory {
+    min-height: 4em;
   }
 }

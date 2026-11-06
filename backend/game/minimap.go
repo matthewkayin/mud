@@ -19,8 +19,8 @@ func (gamestate *GameState) GetMinimap(centerRoomIndex int, roomsDiscovered []by
 
 			cellPosition := world.RoomPosition {
 				X: centerPosition.X + col - (MINIMAP_SIZE / 2),
-				Y: centerPosition.X + row - (MINIMAP_SIZE / 2),
-				Z: centerPosition.X,
+				Y: centerPosition.Y + row - (MINIMAP_SIZE / 2),
+				Z: centerPosition.Z,
 			}
 			roomIndex, exists := gamestate.world.RoomPositionToIndex[cellPosition]
 			if !exists || !bitset.Check(roomsDiscovered, roomIndex) {
