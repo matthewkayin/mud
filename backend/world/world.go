@@ -7,6 +7,8 @@ import (
 const WORLD_SECONDS_PER_UPDATE = 3
 
 type World struct {
+	Mobs MobArray
+	MessagePlayer func(playerKey string, message string)
 	luaState *lua.State
 
 	Characters map[string]*Character
@@ -17,6 +19,9 @@ type World struct {
 
 	ClassData []*ClassData
 	ClassNameToId map[string]ClassId
+
+	Rooms []Room
+	RoomPositionToIndex map[RoomPosition]int
 }
 
 func NewWorld() (*World, error) {
@@ -32,6 +37,7 @@ func NewWorld() (*World, error) {
 	loaders := []func() error {
 		world.loadRaceData,
 		world.loadClassData,
+		world.loadRoomData,
 	}
 	for _, loader := range loaders {
 		err := loader()
@@ -47,9 +53,26 @@ func NewWorld() (*World, error) {
 		return nil, err
 	}
 
+	// Init mob array
+	world.Mobs = NewMobArray()
+
 	return world, nil
 }
 
 func (world *World) Quit() {
 	world.scriptQuit()
+}
+
+func (world *World) MessageRoom(roomIndex int, message string) {
+	room := &world.Rooms[roomIndex]
+	for _, handle := range room.Occupants {
+		mob := world.Mobs.Get(handle)
+		if mob.IsPlayer() {
+			world.MessagePlayer(mob.PlayerCharacter.PlayerKey, message)
+		}
+	}
+}
+
+func (world *World) Update() {
+
 }

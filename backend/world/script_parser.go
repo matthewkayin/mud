@@ -2,6 +2,7 @@ package world
 
 import (
 	"fmt"
+	"math"
 	"errors"
 	"github.com/mmcdole/lunar"
 )
@@ -40,4 +41,13 @@ func (parser *ScriptParser) getString(table *lua.Table, key string) string {
 	value := parser.getTypedValue(table, key, lua.StringKind)
 	result, _ := value.AsString()
 	return result
+}
+
+func (parser *ScriptParser) getInt(table *lua.Table, key string) int {
+	value := parser.getTypedValue(table, key, lua.NumberKind)
+	result, _ := value.AsNumber()
+	if result != math.Trunc(result) {
+		parser.addProblem(fmt.Errorf("field '%s' must be an integer, got %v", key, result))
+	}
+	return int(result)
 }

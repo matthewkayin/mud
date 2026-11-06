@@ -33,7 +33,7 @@ func NewSubmenuCreate(gamestate *GameState, player *Player) *SubmenuCreate {
 func (submenu *SubmenuCreate) handleCommand(gamestate *GameState, player *Player, input string) bool {
 	if strings.EqualFold(input, "back") {
 		if submenu.mode == 0 {
-			player.setMenuLogin()
+			player.setMenuLogin(gamestate)
 			player.submenu = nil
 			return true
 		}
@@ -100,7 +100,7 @@ func (submenu *SubmenuCreate) handleCommand(gamestate *GameState, player *Player
 				player.send(fmt.Sprintf("Your character has been created. Type 'login %s' to login to them.", character.Name))
 
 				player.submenu = nil
-				player.setMenuLogin()
+				player.setMenuLogin(gamestate)
 
 				return true
 			}

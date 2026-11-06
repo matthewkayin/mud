@@ -2,9 +2,10 @@ package game
 
 import (
 	"fmt"
+	"strings"
 )
 
-var MENU_LOGIN = NewMenu(MenuNewParams {
+var MENU_LOGIN_PARAMS = MenuNewParams {
 	entries: map[string]MenuEntry {
 		"list": {
 			usage: "list",
@@ -47,6 +48,52 @@ var MENU_LOGIN = NewMenu(MenuNewParams {
 				return true
 			},
 		},
+
+		"login": {
+			usage: "login",
+			description: "Login to an existing character",
+			categories: []string { "info" },
+			handler: func(gamestate *GameState, player *Player, args []string) bool {
+				if len(args) == 0 {
+					return false
+				}
+
+				input := strings.Join(args, " ")
+				character, exists := gamestate.world.GetCharacterIfExists(input)
+				if !exists || character.PlayerKey != player.key {
+					player.send(fmt.Sprintf("You have no character named '%s'.", input))
+					return true
+				}
+
+				player.character = character
+				player.setMenuWorld(gamestate)
+
+				return true
+			},
+		},
+
+		"delete": {
+			usage: "delete",
+			description: "Delete an existing character",
+			categories: []string { "info" },
+			handler: func(gamestate *GameState, player *Player, args []string) bool {
+				if len(args) == 0 {
+					return false
+				}
+
+				input := strings.Join(args, " ")
+				character, exists := gamestate.world.GetCharacterIfExists(input)
+				if !exists || character.PlayerKey != player.key {
+					player.send(fmt.Sprintf("You have no character named '%s'.", input))
+					return true
+				}
+
+				player.send(fmt.Sprintf("You deleted %s.", character.Name))
+				gamestate.world.RemoveCharacter(character)
+				return true
+			},
+		},
 	},
+
 	topics: map[string]MenuHelpTopic {},
-})
+}

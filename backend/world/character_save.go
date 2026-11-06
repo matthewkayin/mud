@@ -15,9 +15,19 @@ type CharacterJson struct {
 	PlayerKey string
 
 	Name string
+	Room RoomPosition
 
 	Race string
 	Class string
+
+	Level int32
+	Experience int32
+	ExperienceToNextLevel int32
+
+	Stats map[string]int32
+
+	Health int32
+	Mana int32
 }
 
 var CHARACTER_SAVES_FOLDER = filepath.Join(database.SAVES_FOLDER, "characters")
@@ -66,7 +76,7 @@ func (world *World) loadCharacters() error {
 			continue
 		}
 
-		world.AddCharacter(character.playerKey, character)
+		world.AddCharacter(character.PlayerKey, character)
 	}
 
 	return errors.Join(problems...)
@@ -103,22 +113,45 @@ func deleteCharacter(character *Character) {
 }
 
 func (world *World) characterToJson(character *Character) CharacterJson {
-	return CharacterJson {
-		PlayerKey: character.playerKey,
+	characterJson := CharacterJson {
+		PlayerKey: character.PlayerKey,
 		Name: character.Name,
+		Room: world.Rooms[character.Room].Position,
+
 		Race: world.RaceData[character.Race].Name,
 		Class: world.ClassData[character.Class].Name,
+
+		Level: character.Level,
+		Experience: character.Experience,
+		ExperienceToNextLevel: character.ExperienceToNextLevel,
+
+		Stats: make(map[string]int32),
+
+		Health: character.Health,
+		Mana: character.Mana,
 	}
+
+	for index := range STAT_COUNT {
+		characterJson.Stats[STAT_DATA[index].Abbreviation] = character.Stats.Values[index]
+	}
+
+	return characterJson
 }
 
 func (world *World) characterFromJson(characterJson *CharacterJson) (*Character, error) {
 	character := &Character{}
 
-	character.playerKey = characterJson.PlayerKey
+	character.PlayerKey = characterJson.PlayerKey
 	character.Name = characterJson.Name
 
-	// Race
+	// Room
 	var exists bool
+	character.Room, exists = world.RoomPositionToIndex[characterJson.Room]
+	if !exists {
+		return nil, fmt.Errorf("No room exists with position %s", characterJson.Room.String())
+	}
+
+	// Race
 	character.Race, exists = world.RaceNameToId[characterJson.Race]
 	if !exists {
 		return nil, fmt.Errorf("No race ID matches the race '%s'.", characterJson.Race)
@@ -129,6 +162,21 @@ func (world *World) characterFromJson(characterJson *CharacterJson) (*Character,
 	if !exists {
 		return nil, fmt.Errorf("No race ID matches the race '%s'.", characterJson.Class)
 	}
+
+	character.Level = characterJson.Level
+	character.Experience = characterJson.Experience
+	character.ExperienceToNextLevel = characterJson.ExperienceToNextLevel
+
+	// Stats
+	for index := range STAT_COUNT {
+		character.Stats.Values[index], exists = characterJson.Stats[STAT_DATA[index].Abbreviation]
+		if !exists {
+			return nil, fmt.Errorf("Character is missing stat %s.", STAT_DATA[index].Abbreviation)
+		}
+	}
+
+	character.Health = characterJson.Health
+	character.Mana = characterJson.Mana
 
 	return character, nil
 }

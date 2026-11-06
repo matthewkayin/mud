@@ -306,6 +306,7 @@ button[type="submit"]:disabled {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
     font-size: 12px;
+    line-height: 14px;
 }
 
 .terminal-prompt-cursor-focused {

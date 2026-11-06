@@ -23,6 +23,9 @@ type GameState struct {
 	version string
 	welcomeBannerLines []string
 
+	menuLogin Menu
+	menuWorld Menu
+
 	SocketEvents chan SocketEvent
 
 	players []Player
@@ -57,8 +60,19 @@ func Init(version string) *GameState {
 		world: newWorld,
 	}
 
+	gamestate.world.MessagePlayer = gamestate.messagePlayer
+
+	gamestate.initMenus()
+
 	return gamestate
 }
+
+func (gamestate *GameState) initMenus() {
+	gamestate.menuLogin = NewMenu(MENU_LOGIN_PARAMS)
+	gamestate.menuWorld = NewMenu(MENU_WORLD_PARAMS)
+}
+
+// RUN
 
 func (gamestate *GameState) Run(ctx context.Context) {
 	ticker := time.NewTicker(GAME_UPDATE_INTERVAL)
@@ -89,8 +103,6 @@ func (gamestate *GameState) Run(ctx context.Context) {
 						log.Printf("Warn: Socket event type %d not handled!", event.Type)
 					}
 				}
-
-				// TODO: gamestate.handleWorldEvents()
 			}
 
 			case <- ticker.C: {
@@ -102,6 +114,8 @@ func (gamestate *GameState) Run(ctx context.Context) {
 	log.Printf("Shutdown signal received. Shutting down server...")
 	gamestate.world.Quit()
 }
+
+// PLAYERS
 
 func (gamestate *GameState) registerPlayer(playerKey string, playerInbox *chan SocketMessage) {
 	// Refuse connections during maintenance
@@ -133,7 +147,7 @@ func (gamestate *GameState) registerPlayer(playerKey string, playerInbox *chan S
 	}
 
 	// Set them to the login menu
-	playerPtr.setMenuLogin()
+	playerPtr.setMenuLogin(gamestate)
 }
 
 func (gamestate *GameState) removePlayer(playerKey string, playerInbox *chan SocketMessage) {
@@ -175,6 +189,24 @@ func (gamestate *GameState) getPlayerByKey(playerKey string) *Player {
 	return &gamestate.players[playerIndex]
 }
 
+func (gamestate *GameState) spawnPlayerMob(player *Player) {
+	playerMob := world.NewMobFromCharacter(player.character)
+	player.mobHandle = gamestate.world.Mobs.Push(playerMob)
+	playerRoom := &gamestate.world.Rooms[playerMob.Room]
+	playerRoom.AddOccupant(player.mobHandle)
+}
+
+func (gamestate *GameState) messagePlayer(playerKey string, message string) {
+	player := gamestate.getPlayerByKey(playerKey)
+	if player == nil {
+		return
+	}
+
+	player.send(message)
+}
+
+// HANDLE COMMAND
+
 func (gamestate *GameState) handleCommand(playerKey string, command string) {
 	// Lookup player index
 	player := gamestate.getPlayerByKey(playerKey)
@@ -186,6 +218,13 @@ func (gamestate *GameState) handleCommand(playerKey string, command string) {
 	player.sendHeartbeat(gamestate)
 }
 
-func (gamestate *GameState) update() {
+// UPDATE
 
+func (gamestate *GameState) update() {
+	gamestate.world.Update()
+
+	// Send heartbeats to players
+	for index := range len(gamestate.players) {
+		gamestate.players[index].sendHeartbeat(gamestate)
+	}
 }
