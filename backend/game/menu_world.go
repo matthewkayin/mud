@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"mud/util"
 	"mud/world"
+	"mud/bitset"
 )
 
 var MenuWorld Menu
@@ -89,6 +90,10 @@ func handleMove(gamestate *GameState, player *Player, direction world.Direction)
 
 	// Move player
 	playerMob.Move(gamestate.world, newRoomIndex)
+
+	// Set room as discovered
+	bitset.Set(player.character.RoomsDiscovered, newRoomIndex, true)
+	player.isMinimapDirty = true
 
 	// Narrate movement
 	playerRoom = &gamestate.world.Rooms[playerMob.Room]

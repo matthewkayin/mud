@@ -93,7 +93,7 @@ func (submenu *SubmenuCreate) handleCommand(gamestate *GameState, player *Player
 				}
 
 				// Put the character into the characters list
-				character := world.NewCharacter(player.key, &submenu.characterSheet)
+				character := gamestate.world.NewCharacter(player.key, &submenu.characterSheet)
 				gamestate.world.AddCharacter(player.key, character)
 				gamestate.world.SaveCharacter(character)
 

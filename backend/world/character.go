@@ -4,6 +4,7 @@ import (
 	"log"
 	"slices"
 	"strings"
+	"mud/bitset"
 )
 
 type Character struct {
@@ -11,6 +12,8 @@ type Character struct {
 
 	Race RaceId
 	Class ClassId
+
+	RoomsDiscovered []byte
 
 	MobData
 }
@@ -22,13 +25,24 @@ type CharacterSheet struct {
 	Class ClassId
 }
 
-func NewCharacter(playerKey string, characterSheet *CharacterSheet) *Character {
+func (world *World) NewCharacter(playerKey string, characterSheet *CharacterSheet) *Character {
 	character := &Character{}
 
 	character.PlayerKey = playerKey
 	character.Name = characterSheet.Name
 	character.Race = characterSheet.Race
 	character.Class = characterSheet.Class
+
+	character.RoomsDiscovered = bitset.New(len(world.Rooms))
+
+	// Set the character's room to the start room
+	origin := RoomPosition { X: 0, Y: 0, Z: 0 }
+	character.Room = world.RoomPositionToIndex[origin]
+	bitset.Set(character.RoomsDiscovered, character.Room, true)
+
+	// TODO set based on stats and such
+	character.Health = 20
+	character.Mana = 20
 
 	return character
 }
@@ -39,10 +53,6 @@ func (world *World) GetCharacterIfExists(name string) (*Character, bool) {
 }
 
 func (world *World) AddCharacter(playerKey string, character *Character) {
-	// Set the character's room to the start room
-	origin := RoomPosition { X: 0, Y: 0, Z: 0 }
-	character.Room = world.RoomPositionToIndex[origin]
-
 	world.Characters[strings.ToLower(character.Name)] = character
 
 	// Alloc a characters list for this player if it does not exist

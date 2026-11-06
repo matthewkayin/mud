@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"mud/database"
+	"mud/bitset"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,6 +17,7 @@ type CharacterJson struct {
 
 	Name string
 	Room RoomPosition
+	RoomsDiscovered []RoomPosition
 
 	Race string
 	Class string
@@ -117,6 +119,7 @@ func (world *World) characterToJson(character *Character) CharacterJson {
 		PlayerKey: character.PlayerKey,
 		Name: character.Name,
 		Room: world.Rooms[character.Room].Position,
+		RoomsDiscovered: make([]RoomPosition, 0, len(world.Rooms)),
 
 		Race: world.RaceData[character.Race].Name,
 		Class: world.ClassData[character.Class].Name,
@@ -131,6 +134,14 @@ func (world *World) characterToJson(character *Character) CharacterJson {
 		Mana: character.Mana,
 	}
 
+	// Rooms discovered
+	for index := range len(world.Rooms) {
+		if bitset.Check(character.RoomsDiscovered, index) {
+			characterJson.RoomsDiscovered = append(characterJson.RoomsDiscovered, world.Rooms[index].Position)
+		}
+	}
+
+	// Stats
 	for index := range STAT_COUNT {
 		characterJson.Stats[STAT_DATA[index].Abbreviation] = character.Stats.Values[index]
 	}
@@ -149,6 +160,17 @@ func (world *World) characterFromJson(characterJson *CharacterJson) (*Character,
 	character.Room, exists = world.RoomPositionToIndex[characterJson.Room]
 	if !exists {
 		return nil, fmt.Errorf("No room exists with position %s", characterJson.Room.String())
+	}
+
+	// Rooms discovered
+	character.RoomsDiscovered = bitset.New(len(world.Rooms))
+	for _, roomPosition := range characterJson.RoomsDiscovered {
+		index, exists := world.RoomPositionToIndex[roomPosition]
+		if !exists {
+			return nil, fmt.Errorf("Character has discovered room with position %s, but no room at that position exists.", roomPosition.String())
+		}
+
+		bitset.Set(character.RoomsDiscovered, index, true)
 	}
 
 	// Race

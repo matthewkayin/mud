@@ -19,6 +19,7 @@ type Player struct {
 
 	character *world.Character
 	mobHandle world.MobHandle
+	isMinimapDirty bool
 }
 
 func playerInit(key string, inbox *chan SocketMessage) Player {
@@ -42,6 +43,23 @@ func (player *Player) send(message string) {
 func (player *Player) sendHeartbeat(gamestate *GameState) {
 	heartbeat := SocketMessage { Message: nil }
 
+	if player.isLoggedIn() {
+		playerMob, exists := gamestate.world.Mobs.GetIfExists(player.mobHandle)
+		if exists {
+			heartbeat.Status = &SocketPlayerStatus {
+				Health: playerMob.Health,
+				MaxHealth: playerMob.MaxHealth(),
+				Mana: playerMob.Mana,
+				MaxMana: playerMob.MaxMana(),
+				PendingAction: false,
+			}
+			if player.isMinimapDirty {
+				heartbeat.Map = gamestate.GetMinimap(player.character.Room, player.character.RoomsDiscovered)
+				player.isMinimapDirty = false
+			}
+		}
+	}
+
 	// Send the heartbeat, but if the player's inbox is full, don't send it
 	// This prevents a stalled connection from blocking the game loop
 	select {
@@ -51,6 +69,7 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 }
 
 func (player *Player) setMenuLogin(gamestate *GameState) {
+	player.character = nil
 	player.menu = &gamestate.menuLogin
 	player.send("You are in the login screen.")
 	player.send("Type 'help' to see a list of options.")

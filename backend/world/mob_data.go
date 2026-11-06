@@ -13,3 +13,11 @@ type MobData struct {
 	Health int32
 	Mana int32
 }
+
+func (data *MobData) MaxHealth() int32 {
+	return data.Health
+}
+
+func (data *MobData) MaxMana() int32 {
+	return data.Mana
+}

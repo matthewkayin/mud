@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../auth/auth_context.tsx';
-import { Terminal } from './terminal/terminal.tsx';
-import { parseSocketMessage } from './socket_message';
+import { Terminal } from './terminal.tsx';
+import { StatusBar } from './status_bar.tsx';
+import { type PlayerStatus, type SocketMessage } from './socket_message';
 
 const TERMINAL_PROMPT = ">";
 const HEARTBEAT_TIMEOUT_MS = 10000;
@@ -14,6 +15,9 @@ export function GamePage() {
   // Terminal state
   const [command, setCommand] = useState('');
   const [lines, setLines] = useState<string[]>([]);
+
+  // Status
+  const [playerStatus, setPlayerStatus] = useState<PlayerStatus | null>(null);
 
   // Websocket
   const websocketRef = useRef<WebSocket | null>(null);
@@ -54,18 +58,31 @@ export function GamePage() {
 
     // Web socket message listener
     const onMessage = (messageEvent: MessageEvent) => {
-      const socketMessage = parseSocketMessage(messageEvent.data);
+      const socketMessage = JSON.parse(messageEvent.data) as SocketMessage;
       if (socketMessage === null) {
         console.warn('Received an invalid message from the server.', messageEvent.data);
         return;
       }
 
       resetHeartbeatTimeout();
+
+      // Get message from socketMessage
       if (socketMessage.message !== null) {
         terminalWriteLine(socketMessage.message);
       }
 
-      // TODO: update player status
+      console.log(socketMessage);
+
+      // Get status from socketMessage
+      if (socketMessage.status) {
+        setPlayerStatus(socketMessage.status);
+      } else if (socketMessage.message === null) {
+        // If we receive no status and message is null, then this is a status-less heartbeat,
+        // which means the player is receiving a heartbeat but they aren't in game, so clear
+        // their status (which hides the status bar)
+        setPlayerStatus(null);
+      }
+
       // TODO: update player minimap
     };
 
@@ -124,6 +141,7 @@ export function GamePage() {
         pendingAction={false}
         onSubmit={onSubmit}
       />
+      <StatusBar status={playerStatus} />
     </article>
   );
 }

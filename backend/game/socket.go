@@ -16,7 +16,17 @@ type SocketEvent struct {
 	Command string
 }
 
+type SocketPlayerStatus struct {
+	Health int32 `json:"hp"`
+	MaxHealth int32 `json:"maxHp"`
+	Mana int32 `json:"mp"`
+	MaxMana int32 `json:"maxMp"`
+	PendingAction bool `json:"action"`
+}
+
 // A message sent to the client
 type SocketMessage struct {
 	Message *string `json:"message"`
+	Status *SocketPlayerStatus `json:"status,omitempty"`
+	Map []int `json:"map,omitempty"`
 }
