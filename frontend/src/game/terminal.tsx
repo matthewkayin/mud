@@ -20,17 +20,18 @@ export const Terminal = ({ prompt, lines, command, setCommand, pendingAction, on
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
   const [promptFrame, setPromptFrame] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
-  const terminalBottomElementRef = useRef<HTMLDivElement>(null);
+  const contentsContainerRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom
   useEffect(() => {
-    if (terminalBottomElementRef.current === null) {
+    const contentsContainer = contentsContainerRef.current;
+    if (contentsContainer === null) {
       return;
     }
 
-    // Instead of keeping state, just check the scroll height here?
+    // Set scrollTop directly rather than using scrollIntoView, which would also scroll the page
     if (shouldScrollToBottom) {
-      terminalBottomElementRef.current.scrollIntoView();
+      contentsContainer.scrollTop = contentsContainer.scrollHeight;
     }
   }, [lines, shouldScrollToBottom]);
 
@@ -87,9 +88,9 @@ export const Terminal = ({ prompt, lines, command, setCommand, pendingAction, on
 
   const onScroll = (event: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;
-    const lowestPossibleScrollTop = scrollHeight - clientHeight;
-    const isScrolledToBottom = scrollTop == lowestPossibleScrollTop;
-    setShouldScrollToBottom(isScrolledToBottom);
+    // scrollTop can be fractional on displays with a non-integer pixel ratio, so allow a small tolerance
+    const distanceFromBottom = scrollHeight - clientHeight - scrollTop;
+    setShouldScrollToBottom(distanceFromBottom < 2);
   };
 
   return (
@@ -109,10 +110,10 @@ export const Terminal = ({ prompt, lines, command, setCommand, pendingAction, on
       <div
         className="terminal-contents-container"
         id="terminal-contents"
+        ref={contentsContainerRef}
         onScroll={onScroll}
       >
         {lines.map(terminalLineToSpan)}
-        <div ref={terminalBottomElementRef}></div>
       </div>
     </div>
   )
