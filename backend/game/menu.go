@@ -7,11 +7,14 @@ import (
 	"strings"
 )
 
+type MenuHandler func(gamestate *GameState, player *Player, args []string) bool
+
 type MenuEntry struct {
 	usage string
 	description string
+	synonyms []string
 	categories []string
-	handler func(gamestate *GameState, player *Player, args []string) bool
+	handler MenuHandler
 }
 
 type MenuHelpTopic struct {
@@ -37,7 +40,7 @@ type Submenu interface {
 func NewMenu(params MenuNewParams) Menu {
 	// Create menu struct
 	menu := Menu {
-		entries: params.entries,
+		entries: make(map[string]MenuEntry),
 		topics: make(map[string][]string),
 		categories: make(map[string][]string),
 	}
@@ -103,6 +106,26 @@ func NewMenu(params MenuNewParams) Menu {
 		_, exists := menu.topics[category]
 		if exists {
 			log.Fatalf("Failed to build menu. Menu category %s is also a topic.", category)
+		}
+	}
+
+	// Build menu entries
+	for entryVerb, entry := range params.entries {
+		var verbs []string
+		if len(entry.synonyms) == 0 {
+			verbs = []string { entryVerb }
+		} else {
+			verbs = append(entry.synonyms, entryVerb)
+		}
+		log.Printf("Entry verb: %s, verbs %v", entryVerb, verbs)
+
+		for _, verb := range verbs {
+			_, exists := menu.entries[verb]
+			if exists {
+				log.Fatalf("Tries to create menu entry %s, but there is already a command with that verb.", verb)
+			}
+
+			menu.entries[verb] = entry
 		}
 	}
 
