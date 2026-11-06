@@ -48,7 +48,7 @@ File names are snake_case; components are PascalCase named exports.
 | `/game`           | `game/game.tsx`                        | Redirects to `/signin` when signed out             |
 | `*`               | `pages/not_found.tsx`                  |                                                    |
 
-The game page renders its panels inside an `article.game`: the terminal, a sidebar to its right holding the minimap and inventory, and the status bar below the terminal. The panels are always on the page. The status bar and inventory are empty until the player is in the world (the server is sending a status), and the minimap is empty until the server sends one.
+The game page renders its panels inside an `article.game`: the terminal, a sidebar to its right holding the minimap and inventory, and the status bar below the terminal. The panels are always on the page. The status bar and inventory are empty until the player is in the world (the server is sending a status), and the minimap is empty until the server sends one. The minimap draws each discovered room as a box with lines for its north, east, south and west exits, and carets in the gap east of the room for up and down exits: a `^` near the top of its east side for up and a `v` near the bottom for down.
 
 ## Auth
 

@@ -370,12 +370,13 @@ button[type="submit"]:disabled {
 /* Minimap */
 
 /* The panel fills the sidebar's width, and its height sets the room size: the square map is fit to the height
-   and centered horizontally. 236px minus padding is 216px, or 24px per cell for a 9x9 map. */
+   and centered horizontally. 272px minus padding is 252px, or 28px per cell for a 9x9 map, so one SVG unit is one
+   pixel. Overflow is visible so the carets of rooms in the last column can draw into the padding. */
 .minimap {
     display: block;
     width: 100%;
-    height: 236px;
-    padding: 10px;
+    height: 272px;
+    overflow: visible;
     border-radius: 4px;
     background-color: #1e1e1e;
 }
@@ -393,6 +394,7 @@ button[type="submit"]:disabled {
 }
 
 .minimap-exit {
+    fill: none;
     stroke: #ffffff;
     stroke-width: 1px;
     vector-effect: non-scaling-stroke;
