@@ -1,5 +1,6 @@
 frontend/secrets.json
 frontend/node_modules
+frontend/dist
 frontend/.env
 
 backend/node_modules
@@ -14,3 +15,5 @@ backend/.DS_Store
 
 __debug_bin
 *__debug_bin
+
+ascii/

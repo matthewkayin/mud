@@ -2,253 +2,181 @@ package api
 
 import (
 	"log"
-	"fmt"
-	"bytes"
-	"io"
-	"time"
-	"strconv"
+	"errors"
 	"strings"
-	"crypto/rand"
 	"net/http"
+	"crypto/rand"
 	"encoding/json"
-	"encoding/base64"
 )
 
-type rcTokenRequestBody struct {
-	GrantType string `json:"grant_type"`
-	Code string `json:"code"`
-	ClientId string `json:"client_id"`
-	ClientSecret string `json:"client_secret"`
-	RedirectUri string `json:"redirect_uri"`
+type authCredentialsRequestBody struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
-type rcTokenResponseBody struct {
-	AccessToken string `json:"access_token"`
+type authUserResponseBody struct {
+	Username string `json:"username"`
 }
 
-type rcGetProfilesResponseBody struct {
-	Id int `json:"id"`
-}
-
-type authConfigResponseBody struct {
-	DebugAuth bool `json:"debugAuth"`
-	// Whether the server runs with --edit
-	Editor bool `json:"editor"`
-	// Whether the logged in user is a god
-	God bool `json:"god"`
+type authErrorResponseBody struct {
+	Error string `json:"error"`
 }
 
 const MUD_SESSION_COOKIE_NAME = "mud_session"
+const AUTH_REQUEST_BODY_MAX_BYTES = 4096
 
-func (apiState *ApiState) HandleAuthConfig(writer http.ResponseWriter, request *http.Request) {
-	env := GetEnv()
-	userId, authenticated := apiState.getAuthenticatedUserId(request)
+func (apiState *ApiState) RegisterAuthRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("GET /api/auth/me", apiState.HandleAuthMe)
+	mux.HandleFunc("POST /api/auth/register", apiState.HandleAuthRegister)
+	mux.HandleFunc("POST /api/auth/login", apiState.HandleAuthLogin)
+	mux.HandleFunc("POST /api/auth/logout", apiState.HandleAuthLogout)
+}
 
-	writer.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(writer).Encode(authConfigResponseBody {
-		DebugAuth: env.ENABLE_DEBUG_AUTH,
-		Editor: apiState.editorEnabled,
-		God: authenticated && isGod(userId),
-	})
-	if err != nil {
-		log.Printf("Warn - failed to write auth config response: %s", err.Error())
+func (apiState *ApiState) HandleAuthMe(writer http.ResponseWriter, request *http.Request) {
+	username, authenticated := apiState.getSessionUsername(request)
+	if !authenticated {
+		writeAuthError(writer, http.StatusUnauthorized, "You are not signed in.")
+		return
 	}
+
+	writeJson(writer, http.StatusOK, authUserResponseBody { Username: username })
+}
+
+func (apiState *ApiState) HandleAuthRegister(writer http.ResponseWriter, request *http.Request) {
+	credentials, err := readCredentials(writer, request)
+	if err != nil {
+		writeAuthError(writer, http.StatusBadRequest, "The request was not valid.")
+		return
+	}
+
+	account, err := createAccount(credentials.Username, credentials.Password)
+	var validationError *accountValidationError
+	if errors.As(err, &validationError) {
+		writeAuthError(writer, http.StatusBadRequest, validationError.message)
+		return
+	}
+	if errors.Is(err, errAccountUsernameTaken) {
+		writeAuthError(writer, http.StatusConflict, "That username is taken.")
+		return
+	}
+	if err != nil {
+		log.Printf("Warn - failed to create account %s: %s", credentials.Username, err.Error())
+		writeAuthError(writer, http.StatusInternalServerError, "Could not create the account.")
+		return
+	}
+
+	log.Printf("Created account %s.", account.Username)
+	apiState.createSession(writer, request, account.Username)
+	writeJson(writer, http.StatusOK, authUserResponseBody { Username: account.Username })
 }
 
 func (apiState *ApiState) HandleAuthLogin(writer http.ResponseWriter, request *http.Request) {
-	log.Printf("Invoked /api/auth/login")
-	env := GetEnv()
-
-	// TODO: state for CSRF
-	// Generate state for CSRF prevention
-	// stateBytes := make([]byte, 16)
-	// rand.Read(stateBytes)
-
-	redirectUrl := fmt.Sprintf("%s/api/auth/callback", env.PUBLIC_URL)
-	log.Printf("Redirect URL %s", redirectUrl)
-
-	url := fmt.Sprintf(
-		"%s?client_id=%s&redirect_uri=%s&response_type=code&state=%s",
-		env.RC_AUTH_URL,
-		env.RC_CLIENT_ID,
-		redirectUrl,
-		redirectUrl)
-
-	http.Redirect(writer, request, url, http.StatusTemporaryRedirect)
-}
-
-func (apiState *ApiState) HandleAuthCallback(writer http.ResponseWriter, request *http.Request) {
-	log.Printf("Invoked /api/auth/callback")
-	env := GetEnv()
-
-	// Get auth code from URL
-	authCode := request.URL.Query().Get("code")
-	if authCode == "" {
-		http.Error(writer, "Missing authorization code.", http.StatusBadRequest)
+	credentials, err := readCredentials(writer, request)
+	if err != nil {
+		writeAuthError(writer, http.StatusBadRequest, "The request was not valid.")
 		return
 	}
 
-	// Get redirect URL from URL
-	state := request.FormValue("state")
-	log.Printf("Callback redirect URL %s", state)
+	account, err := loadAccount(credentials.Username)
+	if errors.Is(err, errAccountNotFound) {
+		writeAuthError(writer, http.StatusUnauthorized, "Incorrect username or password.")
+		return
+	}
+	if err != nil {
+		writeAuthError(writer, http.StatusInternalServerError, "Could not sign in.")
+		return
+	}
 
-	// Make token request body
-	tokenRequestBody, error := json.Marshal(rcTokenRequestBody {
-		GrantType: "authorization_code",
-		ClientId: env.RC_CLIENT_ID,
-		ClientSecret: env.RC_CLIENT_SECRET,
-		Code: authCode,
-		RedirectUri: state,
+	passwordMatches := checkAccountPassword(account, credentials.Password)
+	if !passwordMatches {
+		writeAuthError(writer, http.StatusUnauthorized, "Incorrect username or password.")
+		return
+	}
+
+	// Respond with the stored username so the display capitalization doesn't depend on how it was typed at login
+	apiState.createSession(writer, request, account.Username)
+	writeJson(writer, http.StatusOK, authUserResponseBody { Username: account.Username })
+}
+
+func (apiState *ApiState) HandleAuthLogout(writer http.ResponseWriter, request *http.Request) {
+	sessionCookie, err := request.Cookie(MUD_SESSION_COOKIE_NAME)
+	if err == nil {
+		apiState.sessionMutex.Lock()
+		delete(apiState.sessionTokenToUsername, sessionCookie.Value)
+		apiState.sessionMutex.Unlock()
+	}
+
+	http.SetCookie(writer, &http.Cookie {
+		Name: MUD_SESSION_COOKIE_NAME,
+		Value: "",
+		Path: "/",
+		MaxAge: -1,
+		HttpOnly: true,
+		Secure: isSecureRequest(request),
+		SameSite: http.SameSiteLaxMode,
 	})
-	if error != nil {
-		http.Error(writer, error.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Make token request to RC API
-	tokenResponse, error := http.Post(env.RC_TOKEN_URL, "application/json", bytes.NewBuffer(tokenRequestBody))
-	if error != nil {
-		http.Error(writer, error.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer func() {
-		io.Copy(io.Discard, tokenResponse.Body)
-		tokenResponse.Body.Close()
-	}()
-
-	// Get token response bytes
-	tokenResponseBytes, error := io.ReadAll(tokenResponse.Body)
-	if error != nil {
-		http.Error(writer, error.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Parse token response bytes into body
-	var tokenResponseBody rcTokenResponseBody
-	error = json.Unmarshal(tokenResponseBytes, &tokenResponseBody)
-	if error != nil {
-		http.Error(writer, error.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Get user ID from RC API
-	userId, error := getUserIdFromRcApi(tokenResponseBody.AccessToken)
-	if error != nil {
-		http.Error(writer, error.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	apiState.createSessionForUser(writer, request, userId)
+	writer.WriteHeader(http.StatusNoContent)
 }
 
-func (apiState *ApiState) HandleDebugLogin(writer http.ResponseWriter, request *http.Request) {
-	log.Printf("Invoked /api/auth/debug")
+func (apiState *ApiState) createSession(writer http.ResponseWriter, request *http.Request, username string) {
+	sessionToken := rand.Text()
 
-	// Get user ID from query params
-	userIdString := request.URL.Query().Get("user")
-	if userIdString == "" {
-		http.Error(writer, "Missing debug user ID.", http.StatusBadRequest)
-		return
-	}
+	apiState.sessionMutex.Lock()
+	apiState.sessionTokenToUsername[sessionToken] = username
+	apiState.sessionMutex.Unlock()
 
-	// Convert user ID to int
-	userId, err := strconv.Atoi(userIdString)
-	if err != nil {
-		http.Error(writer, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	apiState.createSessionForUser(writer, request, userId)
-}
-
-func getUserIdFromRcApi(token string) (int, error) {
-	env := GetEnv()
-
-	// Build a GET request to the RC API
-	recurseRequest, err := http.NewRequest("GET", fmt.Sprintf("%s/profiles/me", env.RC_API_URL), nil)
-	if err != nil {
-		return -1, err
-	}
-
-	recurseRequest.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-
-	// Make the GET request
-	httpClient := &http.Client{}
-	recurseResponse, err := httpClient.Do(recurseRequest)
-	if err != nil {
-		return -1, err
-	}
-	defer func() {
-		io.Copy(io.Discard, recurseResponse.Body)
-		recurseResponse.Body.Close()
-	}()
-
-	// For some reason RC returns 404 when you don't provide an auth token
-	if recurseResponse.StatusCode == http.StatusNotFound || recurseResponse.StatusCode == http.StatusUnauthorized {
-		return -1, nil
-	}
-
-	// Get the contents of the response body
-	recurseResponseBodyBytes, err := io.ReadAll(recurseResponse.Body)
-	if err != nil {
-		return -1, err
-	}
-
-	// Convert the response from JSON
-	var recurseResponseBody rcGetProfilesResponseBody
-	err = json.Unmarshal(recurseResponseBodyBytes, &recurseResponseBody)
-	if err != nil {
-		return -1, err
-	}
-
-	return recurseResponseBody.Id, nil
-}
-
-func (apiState *ApiState) createSessionForUser(writer http.ResponseWriter, request *http.Request, userId int) {
-	env := GetEnv()
-
-	// Generate a secure session ID
-	sessionTokenBytes := make([]byte, 32)
-	rand.Read(sessionTokenBytes)
-	sessionToken := base64.URLEncoding.EncodeToString(sessionTokenBytes)
-
-	// Save session state
-	apiState.tokenToIdMutex.Lock()
-	apiState.tokenToIdMap[sessionToken] = userId
-	apiState.tokenToIdMutex.Unlock()
-
-	// Store session state in user's browser
+	// No expiry, so the cookie lasts as long as the browser session.
+	// The server forgets sessions when it restarts anyway.
 	http.SetCookie(writer, &http.Cookie {
 		Name: MUD_SESSION_COOKIE_NAME,
 		Value: sessionToken,
 		Path: "/",
-		Expires: time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
-		Secure: strings.HasPrefix(env.PUBLIC_URL, "https://"),
+		Secure: isSecureRequest(request),
 		SameSite: http.SameSiteLaxMode,
 	})
-
-	// Redirect user back to home page
-	http.Redirect(writer, request, fmt.Sprintf("%s/game", env.PUBLIC_URL), http.StatusSeeOther)
 }
 
-func (apiState *ApiState) getAuthenticatedUserId(request *http.Request) (int, bool) {
-	// Get the auth token from cookies param
-	sessionToken, err := request.Cookie(MUD_SESSION_COOKIE_NAME)
+// Returns the signed-in account's username in its display form
+func (apiState *ApiState) getSessionUsername(request *http.Request) (string, bool) {
+	sessionCookie, err := request.Cookie(MUD_SESSION_COOKIE_NAME)
 	if err != nil {
-		return 0, false
+		return "", false
 	}
 
-	// Check the list of active auth tokens
-	// TODO: handle token expiration and clear the cache?
-	apiState.tokenToIdMutex.RLock()
-	userId, authenticated := apiState.tokenToIdMap[sessionToken.Value]
-	apiState.tokenToIdMutex.RUnlock()
+	apiState.sessionMutex.RLock()
+	username, authenticated := apiState.sessionTokenToUsername[sessionCookie.Value]
+	apiState.sessionMutex.RUnlock()
 
-	if !authenticated {
-		return 0, false
+	return username, authenticated
+}
+
+func (apiState *ApiState) getSessionKey(request *http.Request) (string, bool) {
+	username, ok := apiState.getSessionUsername(request)
+	return strings.ToLower(username), ok
+}
+
+// True when the client reached the server over HTTPS, either directly or through a proxy
+func isSecureRequest(request *http.Request) bool {
+	return request.TLS != nil || request.Header.Get("X-Forwarded-Proto") == "https"
+}
+
+func readCredentials(writer http.ResponseWriter, request *http.Request) (authCredentialsRequestBody, error) {
+	var credentials authCredentialsRequestBody
+	request.Body = http.MaxBytesReader(writer, request.Body, AUTH_REQUEST_BODY_MAX_BYTES)
+	err := json.NewDecoder(request.Body).Decode(&credentials)
+	return credentials, err
+}
+
+func writeAuthError(writer http.ResponseWriter, status int, message string) {
+	writeJson(writer, status, authErrorResponseBody { Error: message })
+}
+
+func writeJson(writer http.ResponseWriter, status int, value any) {
+	writer.Header().Set("Content-Type", "application/json")
+	writer.WriteHeader(status)
+	err := json.NewEncoder(writer).Encode(value)
+	if err != nil {
+		log.Printf("Warn - failed to write JSON response: %s", err.Error())
 	}
-
-	log.Printf("Authenticated user %d", userId)
-	return userId, true
 }

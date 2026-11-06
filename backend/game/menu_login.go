@@ -3,40 +3,31 @@ package game
 import (
 	"fmt"
 	"strings"
-	"mud/world"
 )
 
-var MENU_LOGIN = MenuCreate(MenuCreateParams {
-	onEnter: func(gamestate *GameState, player *Player) {
-		player.send("You are in the login screen.")
-		player.send("Type 'help' to see a list of options.")
-	},
-	onExit: func(gamestate *GameState, player *Player) {
-	},
-	fallbackHandler: nil,
-	groups: map[string]string {
-		"root": "",
-	},
+var MENU_LOGIN_PARAMS = MenuNewParams {
 	entries: map[string]MenuEntry {
 		"list": {
 			usage: "list",
 			description: "Show a list of your characters",
-			groups: []string { "root" },
-			handler: func (gamestate *GameState, player *Player, args []string) bool {
-				characterList, characterListExists := gamestate.world.PlayerCharacters[player.id]
-				if !characterListExists || len(characterList) == 0 {
+			categories: []string { "info" },
+			handler: func(gamestate *GameState, player *Player, args []string) bool {
+				if len(args) != 0 {
+					return false
+				}
+
+				characters, exists := gamestate.world.PlayerCharacters[player.key]
+				if !exists || len(characters) == 0 {
 					player.send("You don't have any characters. Type 'create' to make a new one.")
 					return true
 				}
 
-				for _, characterName := range characterList {
-					character, _ := gamestate.world.GetCharacterIfExists(characterName)
-					player.send(fmt.Sprintf("%s - Level %d %s %s %s",
-						characterName,
-						character.Data.Level,
-						world.RACE_DATA[character.Race].Name,
-						world.CLASS_DATA[character.Class].Name,
-						world.JOB_DATA[character.Job].Name))
+				for _, name := range characters {
+					character, _ := gamestate.world.GetCharacterIfExists(name)
+					player.send(fmt.Sprintf("<y>%s</y> - <p>%s %s</p>",
+						name,
+						gamestate.world.RaceData[character.Race].Name,
+						gamestate.world.ClassData[character.Class].Name))
 				}
 
 				return true
@@ -44,126 +35,65 @@ var MENU_LOGIN = MenuCreate(MenuCreateParams {
 		},
 
 		"create": {
-			usage: "create [<name>, <race> <class> <job>]",
-			description: "Create a new character. You may specify name, race, class as arguments to this command in order to skip the character creation menu.",
-			groups: []string { "root" },
-			handler: func (gamestate *GameState, player *Player, args []string) bool {
-				// If no arguments provided, send them to the character create menu
-				if len(args) == 0 {
-					player.setMenu(gamestate, PLAYER_MENU_CREATE)
-					return true
-				}
-
-				argsJoined := strings.Join(args, " ")
-				nameInput, raceClassInput, commaFound := strings.Cut(argsJoined, ",")
-				if !commaFound {
-					player.send("Invalid usage. You must include a comma. Example: 'create Bufo the Wise, Gremlin Wizard Alchemist'")
-					return true
-				}
-
-				// Get name from input and validate name
-				name, err := world.CharacterNameValidate(gamestate.world, nameInput)
-				if err != nil {
-					player.send(err.Error())
-					return true
-				}
-
-				// Ensure both race, class and job are specified
-				raceClassJobArgs := strings.Fields(raceClassInput)
-				if len(raceClassJobArgs) != 3 {
+			usage: "create",
+			description: "Create a new character",
+			categories: []string { "info" },
+			handler: func(gamestate *GameState, player *Player, args []string) bool {
+				if len(args) != 0 {
 					return false
 				}
 
-				// Get race from input
-				race, err := world.RaceIdFromString(raceClassJobArgs[0])
-				if err != nil {
-					player.send(err.Error())
-					return true
-				}
-
-				// Get class from input
-				class, err := world.ClassIdFromString(raceClassJobArgs[1])
-				if err != nil {
-					player.send(err.Error())
-					return true
-				}
-
-				//get job from input
-				job, err := world.JobIdFromString(raceClassJobArgs[2])
-				if err != nil {
-					player.send(err.Error())
-					return true
-				}
-
-				// Create the character
-				gamestate.createCharacter(player.id, &world.CharacterSheet {
-					Name: name,
-					Race: race,
-					Class: class,
-					Job: job,
-				})
-
-				player.send(fmt.Sprintf("Your character has been created! Type 'login %s' to login to them.", name))
+				player.submenu = NewSubmenuCreate(gamestate, player)
 
 				return true
 			},
 		},
 
 		"login": {
-			usage: "login <character>",
+			usage: "login",
 			description: "Login to an existing character",
-			groups: []string { "root" },
-			handler: func (gamestate *GameState, player *Player, args []string) bool {
-				if len(args) < 1 {
+			categories: []string { "info" },
+			handler: func(gamestate *GameState, player *Player, args []string) bool {
+				if len(args) == 0 {
 					return false
 				}
 
-				nameInput := strings.Join(args, " ")
-
-				character, characterExists := gamestate.world.GetCharacterIfExists(nameInput)
-				if !characterExists {
-					player.send(fmt.Sprintf("A character named '%s' does not exist.", nameInput))
-					return true
-				}
-
-				if character.PlayerId != player.id {
-					player.send(fmt.Sprintf("'%s' is not a character that you own.", nameInput))
+				input := strings.Join(args, " ")
+				character, exists := gamestate.world.GetCharacterIfExists(input)
+				if !exists || character.PlayerKey != player.key {
+					player.send(fmt.Sprintf("You have no character named '%s'.", input))
 					return true
 				}
 
 				player.character = character
-				player.setMenu(gamestate, PLAYER_MENU_WORLD)
+				player.setMenuWorld(gamestate)
 
 				return true
 			},
 		},
 
 		"delete": {
-			usage: "delete <character>",
-			description: "Delete a character",
-			groups: []string { "root" },
-			handler: func (gamestate *GameState, player *Player, args []string) bool {
+			usage: "delete",
+			description: "Delete an existing character",
+			categories: []string { "info" },
+			handler: func(gamestate *GameState, player *Player, args []string) bool {
 				if len(args) == 0 {
 					return false
 				}
 
-				nameInput := strings.ToLower(strings.Join(args, " "))
-
-				character, characterExists := gamestate.world.GetCharacterIfExists(nameInput)
-				if !characterExists {
-					player.send(fmt.Sprintf("A character named '%s' does not exist.", nameInput))
+				input := strings.Join(args, " ")
+				character, exists := gamestate.world.GetCharacterIfExists(input)
+				if !exists || character.PlayerKey != player.key {
+					player.send(fmt.Sprintf("You have no character named '%s'.", input))
 					return true
 				}
 
-				if character.PlayerId != player.id {
-					player.send(fmt.Sprintf("'%s' is not a character that you own.", nameInput))
-					return true
-				}
-
-				player.send(fmt.Sprintf("You deleted '%s'.", character.Data.Name))
+				player.send(fmt.Sprintf("You deleted %s.", character.Name))
 				gamestate.world.RemoveCharacter(character)
 				return true
 			},
 		},
 	},
-})
+
+	topics: map[string]MenuHelpTopic {},
+}

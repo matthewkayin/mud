@@ -1,96 +1,65 @@
 package main
 
-//go:generate go run . -generate-lua-defs data/world.d.lua
-//go:generate go run . -generate-editor-models ../frontend/src/editor/api/models.ts
-
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
+	"mud/api"
+	"mud/env"
+	"mud/game"
+	"mud/world"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	"context"
-	"flag"
 	"time"
-	"net/http"
-	"mud/api"
-	"mud/game"
-	"mud/web"
-	"mud/world"
-	"strings"
 )
 
-const MUD_LOG_FOLDER = "./logs"
+const MUD_LOG_FOLDER = "logs"
 
-// Set at build time with -ldflags "-X main.version=..." (see the Dockerfile)
+// Set at build time with -ldflags "-X main.version=..."
 var version = "dev"
 
 func main() {
-	// Handle lua def run path
-	generateLuaDefsPath := flag.String("generate-lua-defs", "", "write the Lua language server definitions for the world script API to this path and exit")
-	generateEditorModelsPath := flag.String("generate-editor-models", "", "write the editor's TypeScript models to this path and exit")
-	editorEnabled := flag.Bool("edit", false, "enable the world editor at /editor, which writes to the files in the data folder")
-	flag.Parse()
-
-	if *generateLuaDefsPath != "" {
-		err := generateLuaDefs(*generateLuaDefsPath)
-		if err != nil {
-			log.Fatalf("Error generating Lua definitions: %s", err.Error())
-		}
-		return
-	}
-
-	if *generateEditorModelsPath != "" {
-		err := generateModels(*generateEditorModelsPath)
-		if err != nil {
-			log.Fatalf("Error generating editor TypeScript models: %s", err.Error())
-		}
-		return
-	}
-
 	// Init logger
 	logfile := initLogger()
 	defer logfile.Close()
-	log.Printf("Starting Castle Recurse version %s...", version)
 
 	// Load env
-	api.LoadEnv()
-	env := api.GetEnv()
+	env.Load()
+	env := env.Get()
+	log.Printf("Starting %s version %s...", env.NAME, version)
+
+	// Create save folders
+	err := os.MkdirAll(api.AccountFolderPath(), 0700)
+	if err != nil {
+		log.Fatalf("Failed to create account save folder: %s", err.Error())
+	}
+
+	err = os.MkdirAll(world.CHARACTER_SAVES_FOLDER, 0700)
+	if err != nil {
+		log.Fatalf("Failed to create character save folder: %s", err.Error())
+	}
 
 	// Init gamestate
 	gameContext, gameCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	defer gameCancel()
+	gamestate := game.Init(version)
 
 	// Set server endpoint handlers
-	gamestate := game.GameStateInit(env.GOD_USER_IDS, version)
-	apiState := api.InitState(gamestate, *editorEnabled)
+	apiState := api.InitState(gamestate)
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/auth/config", apiState.HandleAuthConfig)
-	mux.HandleFunc("/api/auth/login", apiState.HandleAuthLogin)
-	mux.HandleFunc("/api/auth/callback", apiState.HandleAuthCallback)
-	if env.ENABLE_DEBUG_AUTH {
-		mux.HandleFunc("/api/auth/debug", apiState.HandleDebugLogin)
-	}
+	apiState.RegisterAuthRoutes(mux)
 	mux.HandleFunc("/api/websocket", apiState.HandleGetWebSocket)
-	if *editorEnabled {
-		log.Printf("Editor enabled, editing %s", world.WORLD_JSON_PATH)
-		apiState.RegisterEditorRoutes(mux)
-	}
-	// Unknown API paths (e.g. the editor's routes without --edit) shouldn't fall through to the frontend's index.html
+	// Unknown API paths shouldn't fall through to the frontend once it is served from here
 	mux.Handle("/api/", http.NotFoundHandler())
-	frontendHandler := web.Handler()
-	if frontendHandler != nil {
-		log.Printf("Serving the embedded frontend.")
-		mux.Handle("/", frontendHandler)
-	}
 
-	// Kick off server in a separate goroutine
 	// Begin server
 	log.Printf("Beginning server on port %d...", env.PORT)
 	server := &http.Server {
 		Addr: fmt.Sprintf(":%d", env.PORT),
-		Handler: corsMiddleware(mux),
+		Handler: mux,
 	}
 	go runHttpServer(server)
 
@@ -98,10 +67,10 @@ func main() {
 	gamestate.Run(gameContext)
 
 	// Tell the HTTP server to shutdown gracefully
-	shutdownContext, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
-	defer cancel()
+	shutdownContext, cancelShutdown := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancelShutdown()
 
-	err := server.Shutdown(shutdownContext)
+	err = server.Shutdown(shutdownContext)
 	if err != nil {
 		log.Fatalf("HTTP server did not shutdown gracefully: %s", err.Error())
 	}
@@ -117,8 +86,7 @@ func initLogger() *os.File {
 	}
 
 	// Determine logfile path
-	// (I don't know why that's the correct format string to use, but it is)
-	timestamp := time.Now().Format("2006-01-02T15:04:05")
+	timestamp := time.Now().Format("2006-01-02T150405")
 	logfilePath := fmt.Sprintf("%s/%s.log", MUD_LOG_FOLDER, timestamp)
 
 	// Open logfile
@@ -134,29 +102,6 @@ func initLogger() *os.File {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
 	return logfile
-}
-
-func corsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func (writer http.ResponseWriter, request *http.Request) {
-		// The editor's routes write files, so they don't allow other origins
-		if strings.HasPrefix(request.URL.Path, "/api/editor/") {
-			next.ServeHTTP(writer, request)
-			return
-		}
-
-		writer.Header().Set("Access-Control-Allow-Origin", "*")
-		writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		writer.Header().Set("Access-Control-Max-Age", "3600")
-
-		if request.Method == "OPTIONS" {
-			writer.WriteHeader(http.StatusNoContent)
-			return
-		}
-
-		next.ServeHTTP(writer, request)
-	})
 }
 
 func runHttpServer(server *http.Server) {

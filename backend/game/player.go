@@ -8,44 +8,26 @@ import (
 type PlayerMenu int
 const (
 	PLAYER_MENU_LOGIN = iota
-	PLAYER_MENU_CREATE
-	PLAYER_MENU_WORLD
 )
 
-var PLAYER_MENUS []*Menu
-
 type Player struct {
-	id int
+	key string
 	inbox *chan SocketMessage
-	menu PlayerMenu
 
-	characterSheet *world.CharacterSheet
+	menu *Menu
+	submenu Submenu
+
 	character *world.Character
-	nextAction Action
 	mobHandle world.MobHandle
-	tradeSession *TradeSession
-
-	isTalking bool
-	talkingToHandle world.MobHandle
-
-	// True when the player's minimap has changed and must be sent with the next heartbeat
 	isMinimapDirty bool
 }
 
-func playerMenusInit() {
-	PLAYER_MENUS = []*Menu {
-		PLAYER_MENU_LOGIN: &MENU_LOGIN,
-		PLAYER_MENU_CREATE: &MENU_CREATE,
-		PLAYER_MENU_WORLD: &MENU_WORLD,
-	}
-}
-
-func playerInit(id int, inbox *chan SocketMessage) Player {
+func playerInit(key string, inbox *chan SocketMessage) Player {
 	return Player {
-		id: id,
+		key: key,
 		inbox: inbox,
-		menu: PLAYER_MENU_LOGIN,
-		characterSheet: nil,
+		menu: nil,
+		submenu: nil,
 		character: nil,
 	}
 }
@@ -58,57 +40,51 @@ func (player *Player) send(message string) {
 	*player.inbox <- SocketMessage { Message: &message }
 }
 
-// Sends a message with no text. While the player is in-game, it carries their current status.
 func (player *Player) sendHeartbeat(gamestate *GameState) {
 	heartbeat := SocketMessage { Message: nil }
+
 	if player.isLoggedIn() {
-		playerMob, mobExists := gamestate.world.Mobs.GetIfExists(player.mobHandle)
-		if mobExists {
-			heartbeat.PlayerStatus = &PlayerStatus {
-				Health: playerMob.Data.Health,
-				MaxHealth: playerMob.Data.MaxHealth(),
-				Mana: playerMob.Data.Mana,
-				MaxMana: playerMob.Data.MaxMana(),
-				PendingAction: player.nextAction.actionType != ACTION_TYPE_NONE,
+		playerMob, exists := gamestate.world.Mobs.GetIfExists(player.mobHandle)
+		if exists {
+			heartbeat.Status = &SocketPlayerStatus {
+				Health: playerMob.Health,
+				MaxHealth: playerMob.MaxHealth(),
+				Mana: playerMob.Mana,
+				MaxMana: playerMob.MaxMana(),
+				PendingAction: false,
 			}
 			if player.isMinimapDirty {
-				heartbeat.Map = gamestate.world.GetMinimap(playerMob.Data.Room, playerMob.PlayerCharacter.RoomsDiscovered)
+				heartbeat.Map = gamestate.GetMinimap(player.character.Room, player.character.RoomsDiscovered)
+				player.isMinimapDirty = false
 			}
 		}
 	}
 
-	// Send the heartbeat, but if the player's inbox is full, then don't send it
+	// Send the heartbeat, but if the player's inbox is full, don't send it
 	// This prevents a stalled connection from blocking the game loop
 	select {
 		case *player.inbox <- heartbeat:
-			// The minimap stays dirty if the heartbeat was dropped, so that it's sent again next time
-			if heartbeat.Map != nil {
-				player.isMinimapDirty = false
-			}
 		default:
 	}
 }
 
-func (player *Player) getMenu() *Menu {
-	return PLAYER_MENUS[player.menu]
+func (player *Player) setMenuLogin(gamestate *GameState) {
+	player.character = nil
+	player.menu = &gamestate.menuLogin
+	player.send("You are in the login screen.")
+	player.send("Type 'help' to see a list of options.")
 }
 
-func (player *Player) setMenu(gamestate *GameState, menu PlayerMenu) {
-	player.getMenu().onExit(gamestate, player)
-	player.menu = menu
-	player.getMenu().onEnter(gamestate, player)
-}
+func (player *Player) setMenuWorld(gamestate *GameState) {
+	// Send a message to the room announcing the player's login
+	gamestate.world.MessageRoom(player.character.Room, fmt.Sprintf("<y>%s</y> has joined the room.", player.character.Name))
 
-func playerOnMobDeath(gamestate *GameState, event *world.Event) {
-	eventData := event.Data.(world.EventMobDeath)
+	// Spawn player mob
+	gamestate.spawnPlayerMob(player)
 
-	if eventData.PlayerId == world.MOB_PLAYER_NONE {
-		return
-	}
-
-	player := gamestate.getPlayerById(eventData.PlayerId)
-	player.send(fmt.Sprintf("Your character %s has died, and death is forever. RIP", player.character.Data.Name))
-
-	gamestate.world.RemoveCharacter(player.character)
-	player.setMenu(gamestate, PLAYER_MENU_LOGIN)
+	// Enter world menu
+	player.menu = &gamestate.menuWorld
+	player.send(fmt.Sprintf("You have logged in. Welcome, <y>%s</y>.", player.character.Name))
+	room := &gamestate.world.Rooms[player.character.Room]
+	describeRoomToPlayer(gamestate, player, room)
 }

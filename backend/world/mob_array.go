@@ -22,7 +22,11 @@ type MobArray struct {
 	data []Mob // Dense set, data
 }
 
-func MobArrayInit() MobArray {
+func (handle MobHandle) String() string {
+	return fmt.Sprintf("<ID: %d Gen: %d>", handle.Id, handle.Generation)
+}
+
+func NewMobArray() MobArray {
 	return MobArray {
 		freeHandles: make([]MobHandle, 0, 1),
 		idToIndex: make([]MobIndex, 0, 1),
@@ -33,7 +37,7 @@ func MobArrayInit() MobArray {
 
 func (array *MobArray) GetIfExists(handle MobHandle) (*Mob, bool) {
 	if int(handle.Id) > len(array.idToIndex) - 1 {
-		log.Printf("Warm - Tried to get Mob with ID %d which is greater than the list of IDs which has length %d", handle.Id, len(array.idToIndex))
+		log.Printf("Warn: Tried to get Mob with ID %d which is greater than the list of IDs which has length %d", handle.Id, len(array.idToIndex))
 		return nil, false
 	}
 	if array.idToIndex[handle.Id].generation != handle.Generation {
@@ -47,7 +51,7 @@ func (array *MobArray) GetIfExists(handle MobHandle) (*Mob, bool) {
 func (array *MobArray) Get(handle MobHandle) *Mob {
 	mob, exists := array.GetIfExists(handle)
 	if !exists {
-		panic(fmt.Sprintf("Tried to get Mob with handle %d:%d, but it does not exist.", handle.Id, handle.Generation))
+		panic(fmt.Sprintf("Tried to get Mob with handle %s, but it does not exist.", handle.String()))
 	}
 
 	return mob
@@ -90,9 +94,8 @@ func (array *MobArray) Remove(handle MobHandle) {
 		panic(fmt.Sprintf("Tried to remove Mob with ID %d which is greater than the lsit of IDs which has length %d", handle.Id, len(array.idToIndex)))
 	}
 	if array.idToIndex[handle.Id].generation != handle.Generation {
-		panic(fmt.Sprintf("Tried to move Mob with handle %d:%d but the generation does not match the current generation %d",
-			handle.Id,
-			handle.Generation,
+		panic(fmt.Sprintf("Tried to move Mob with handle %s but the generation does not match the current generation %d",
+			handle.String(),
 			array.idToIndex[handle.Id].generation),
 		)
 	}

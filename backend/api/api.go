@@ -1,25 +1,21 @@
 package api
 
 import (
-	"mud/game"
 	"sync"
+	"mud/game"
 )
 
 type ApiState struct {
 	gamestate *game.GameState
-
-	// True when the server runs with --edit, which registers the editor's routes
-	editorEnabled bool
-
-	tokenToIdMutex sync.RWMutex
-	tokenToIdMap map[string]int
+	sessionMutex sync.RWMutex
+	// Session token to the account's username as stored in the account (its display form).
+	// Sessions are only kept in memory, so restarting the server signs everyone out.
+	sessionTokenToUsername map[string]string
 }
 
-func InitState(gamestate *game.GameState, editorEnabled bool) *ApiState {
+func InitState(gamestate *game.GameState) *ApiState {
 	return &ApiState {
 		gamestate: gamestate,
-		editorEnabled: editorEnabled,
-		tokenToIdMutex: sync.RWMutex{},
-		tokenToIdMap: make(map[string]int),
+		sessionTokenToUsername: make(map[string]string),
 	}
 }

@@ -1,54 +1,57 @@
 import { useState, useEffect, useRef } from 'react';
-import './game.css';
-import { Terminal } from './terminal/terminal';
-import { StatusBar } from './status_bar/status_bar';
-import { Minimap } from './minimap/minimap';
-import { getMinimap, getPlayerStatus, parseSocketMessage, type PlayerStatus } from './socket_message';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../auth/auth_context.tsx';
+import { Terminal } from './terminal.tsx';
+import { StatusBar } from './status_bar.tsx';
+import { Minimap } from './minimap.tsx';
+import { Inventory } from './inventory.tsx';
+import { type PlayerStatus, type SocketMessage } from './socket_message';
 
-const terminalPrompt = ">";
-
-// The server sends a heartbeat every 3 seconds, so this allows for a few missed heartbeats
+const TERMINAL_PROMPT = ">";
 const HEARTBEAT_TIMEOUT_MS = 10000;
 
-export const GamePage = () => {
+export function GamePage() {
+  // Auth
+  const { user, loading } = useAuth();
+
   // Terminal state
   const [command, setCommand] = useState('');
   const [lines, setLines] = useState<string[]>([]);
+
+  // Status
   const [playerStatus, setPlayerStatus] = useState<PlayerStatus | null>(null);
   const [minimap, setMinimap] = useState<number[] | null>(null);
 
-  // Web socket
-  const webSocketRef = useRef<WebSocket | null>(null);
+  // Websocket
+  const websocketRef = useRef<WebSocket | null>(null);
 
   const terminalWriteLine = (line: string) => setLines((previous) => [...previous, line]);
   const onSubmit = (command: string) => {
-    if (webSocketRef.current === null) {
+    if (websocketRef.current === null) {
       return;
     }
 
-    terminalWriteLine(`\n${terminalPrompt} ${command}`);
-    webSocketRef.current.send(command.trim());
-  };
+    terminalWriteLine(`\n${TERMINAL_PROMPT} ${command}`)
+    websocketRef.current.send(command.trim());
+  }
 
-  // Init web socket
+  // Init websocket
   useEffect(() => {
-    // Create web socket
-    const webSocketProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const webSocket = new WebSocket(`${webSocketProtocol}://${window.location.host}/api/websocket`);
-    webSocketRef.current = webSocket;
+    // Create websocket timeout
+    const websocketProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const websocket = new WebSocket(`${websocketProtocol}://${window.location.host}/api/websocket`);
+    websocketRef.current = websocket;
     console.log('Created web socket.');
 
-    // TODO: set onerror listener and log to terminal on error (likely error is unauthorized)
-
+    // Check for heartbeat timeout
     // If nothing arrives from the server for too long, the connection is treated as dead
     let heartbeatTimeout: ReturnType<typeof setTimeout> | undefined;
     const resetHeartbeatTimeout = () => {
       clearTimeout(heartbeatTimeout);
       heartbeatTimeout = setTimeout(() => {
         console.log('Web socket heartbeat timed out.');
-        handleDisconnect();
       }, HEARTBEAT_TIMEOUT_MS);
-    };
+    }
 
     // Web socket open listener
     const onOpen = () => {
@@ -58,30 +61,36 @@ export const GamePage = () => {
 
     // Web socket message listener
     const onMessage = (messageEvent: MessageEvent) => {
-      const socketMessage = parseSocketMessage(messageEvent.data);
+      const socketMessage = JSON.parse(messageEvent.data) as SocketMessage;
       if (socketMessage === null) {
         console.warn('Received an invalid message from the server.', messageEvent.data);
         return;
       }
 
       resetHeartbeatTimeout();
+
+      // Get message from socketMessage
       if (socketMessage.message !== null) {
         terminalWriteLine(socketMessage.message);
       }
 
-      // A heartbeat without a status means the player isn't in-game
-      const status = getPlayerStatus(socketMessage);
-      if (status !== null || socketMessage.message === null) {
-        setPlayerStatus(status);
-      }
-      if (status === null && socketMessage.message === null) {
+      console.log(socketMessage);
+
+      // Get status from socketMessage
+      if (socketMessage.status) {
+        setPlayerStatus(socketMessage.status);
+      } else if (socketMessage.message === null) {
+        // If we receive no status and message is null, then this is a status-less heartbeat,
+        // which means the player is receiving a heartbeat but they aren't in game, so clear
+        // their status and minimap (which hides the status bar, minimap and inventory)
+        setPlayerStatus(null);
         setMinimap(null);
       }
 
-      // The minimap is only sent when it changes, so a message without one leaves it as it is
-      const newMinimap = getMinimap(socketMessage);
-      if (newMinimap !== null) {
-        setMinimap(newMinimap);
+      // Get minimap from socketMessage
+      // The server only sends the minimap when it changes
+      if (socketMessage.map) {
+        setMinimap(socketMessage.map);
       }
     };
 
@@ -91,13 +100,12 @@ export const GamePage = () => {
     };
 
     const removeListeners = () => {
-      webSocket.removeEventListener('open', onOpen);
-      webSocket.removeEventListener('message', onMessage);
-      webSocket.removeEventListener('close', onClose);
+      websocket.removeEventListener('open', onOpen);
+      websocket.removeEventListener('message', onMessage);
+      websocket.removeEventListener('close', onClose);
     };
 
-    // Called both when the socket closes and when the heartbeat times out,
-    // since closing a dead socket can take a long time to fire the close event
+    // Handle disconnect is called both when the web socket closes and when the heartbeat times out
     let isDisconnected = false;
     const handleDisconnect = () => {
       if (isDisconnected) {
@@ -107,32 +115,48 @@ export const GamePage = () => {
 
       clearTimeout(heartbeatTimeout);
       removeListeners();
-      webSocket.close();
-      webSocketRef.current = null;
+      websocket.close();
+      websocketRef.current = null;
       setPlayerStatus(null);
       setMinimap(null);
       terminalWriteLine('The server has disconnected.');
     };
 
-    webSocket.addEventListener('open', onOpen);
-    webSocket.addEventListener('message', onMessage);
-    webSocket.addEventListener('close', onClose);
+    websocket.addEventListener('open', onOpen);
+    websocket.addEventListener('message', onMessage);
+    websocket.addEventListener('close', onClose);
 
     return () => {
       clearTimeout(heartbeatTimeout);
       removeListeners();
-      webSocket.close();
+      websocket.close();
     };
   }, []);
 
+  if (loading) {
+    return null;
+  }
+  if (!user) {
+    return <Navigate to="/signin" replace />;
+  }
+
   return (
-    <div>
-      <h1>Castle Recurse</h1>
-      <Terminal prompt={terminalPrompt} lines={lines} command={command} setCommand={setCommand} pendingAction={playerStatus?.action ?? false} onSubmit={onSubmit} />
-      <div className="game-hud">
+    <article className="game">
+      <div className="game-main">
+        <Terminal
+          prompt={TERMINAL_PROMPT}
+          lines={lines}
+          command={command}
+          setCommand={setCommand}
+          pendingAction={false}
+          onSubmit={onSubmit}
+        />
         <StatusBar status={playerStatus} />
-        <Minimap map={minimap} />
       </div>
-    </div>
+      <div className="game-sidebar">
+        <Minimap map={minimap} />
+        <Inventory isInWorld={playerStatus !== null} />
+      </div>
+    </article>
   );
-};
+}
