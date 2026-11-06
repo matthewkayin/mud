@@ -152,7 +152,7 @@ export function GamePage() {
       />
       <div className="game-sidebar">
         <Minimap map={minimap} />
-        {playerStatus !== null && <Inventory />}
+        <Inventory isInWorld={playerStatus !== null} />
       </div>
       <StatusBar status={playerStatus} />
     </article>

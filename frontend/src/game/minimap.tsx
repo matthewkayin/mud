@@ -21,8 +21,9 @@ export type MinimapProps = {
 };
 
 export const Minimap = ({ map }: MinimapProps) => {
+  // With no map (the player isn't in the world), show the empty panel
   if (map === null) {
-    return null;
+    return <svg className="minimap" />;
   }
 
   const width = Math.sqrt(map.length);

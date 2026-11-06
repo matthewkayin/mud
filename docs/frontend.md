@@ -48,7 +48,7 @@ File names are snake_case; components are PascalCase named exports.
 | `/game`           | `game/game.tsx`                        | Redirects to `/signin` when signed out             |
 | `*`               | `pages/not_found.tsx`                  |                                                    |
 
-The game page renders its panels inside an `article.game`: the terminal, a sidebar to its right holding the minimap and inventory, and the status bar below the terminal. The status bar and inventory only show while the player is in the world (the server is sending a status), and the minimap only once the server has sent one.
+The game page renders its panels inside an `article.game`: the terminal, a sidebar to its right holding the minimap and inventory, and the status bar below the terminal. The panels are always on the page. The status bar and inventory are empty until the player is in the world (the server is sending a status), and the minimap is empty until the server sends one.
 
 ## Auth
 
@@ -76,5 +76,5 @@ All styling lives in `src/styles.css`. The look is a parchment page with serif t
 - Don't add a CSS framework or component library.
 - The `.page` frame sizes to its content, is never narrower than 760px (except on small screens) and never wider than the viewport. Each page's content sets the width:
   - Text pages render a top-level `<article>`, which the stylesheet fixes at 690px, the width of the old 760px column inside the frame.
-  - The game page's `article.game` is a two-column grid. The terminal (100 columns wide) takes the first column and the `.game-sidebar` takes the fixed-width second column, so together they set the frame's width. They share the first row, so the sidebar is as tall as the terminal: the minimap sits at its top and the inventory grows to fill the rest, lining its bottom edge up with the terminal's. The status bar sits in the second row under the terminal. On small screens the grid becomes one column.
+  - The game page's `article.game` is a two-column grid. The terminal (100 columns wide) takes the first column and the `.game-sidebar` takes the fixed-width second column, so together they set the frame's width. They share the first row, so the sidebar is as tall as the terminal: the minimap sits at its top and the inventory grows to fill the rest, lining its bottom edge up with the terminal's. The status bar sits in the second row under the terminal. The minimap has a fixed height, which sets the size of its rooms; the map is centered in the panel's width. On small screens the grid becomes one column.
 - No page may scroll horizontally at phone width; the `@media (max-width: 600px)` block handles small screens.

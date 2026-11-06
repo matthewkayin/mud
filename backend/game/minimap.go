@@ -5,7 +5,7 @@ import (
 	"mud/world"
 )
 
-const MINIMAP_SIZE int = 5
+const MINIMAP_SIZE int = 9
 const MINIMAP_ROOM_NONE int = -1
 
 func (gamestate *GameState) GetMinimap(centerRoomIndex int, roomsDiscovered []byte) []int {

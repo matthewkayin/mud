@@ -137,7 +137,7 @@ code {
 .site-main > article.game {
   width: auto;
   display: grid;
-  grid-template-columns: max-content 140px;
+  grid-template-columns: max-content 280px;
   gap: 8px;
 }
 
@@ -291,7 +291,7 @@ button[type="submit"]:disabled {
     background-color: #1e1e1e;
     padding: 10px;
     border-radius: 4px;
-    height: 400px;
+    height: 460px;
 }
 
 .terminal-prompt-container {
@@ -337,7 +337,7 @@ button[type="submit"]:disabled {
     display: grid;
     grid-template-columns: max-content 1fr;
     align-items: center;
-    row-gap: 6px;
+    row-gap: 2px;
     column-gap: 8px;
     padding: 10px;
     border-radius: 4px;
@@ -352,6 +352,8 @@ button[type="submit"]:disabled {
     color: #ffffff;
     font-family: monospace;
     white-space: nowrap;
+    font-size: 12px;
+    line-height: 14px;
 }
 
 .status-meter-track {
@@ -367,11 +369,12 @@ button[type="submit"]:disabled {
 
 /* Minimap */
 
+/* The panel fills the sidebar's width, and its height sets the room size: the square map is fit to the height
+   and centered horizontally. 236px minus padding is 216px, or 24px per cell for a 9x9 map. */
 .minimap {
     display: block;
     width: 100%;
-    aspect-ratio: 1;
-    box-sizing: border-box;
+    height: 236px;
     padding: 10px;
     border-radius: 4px;
     background-color: #1e1e1e;
@@ -437,10 +440,6 @@ button[type="submit"]:disabled {
 
   .game-sidebar {
     grid-column: 1;
-  }
-
-  .minimap {
-    width: 140px;
   }
 
   .inventory {
