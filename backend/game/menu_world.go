@@ -2,9 +2,11 @@ package game
 
 import (
 	"fmt"
+	"strings"
 	"mud/util"
 	"mud/world"
 	"mud/bitset"
+	"github.com/mmcdole/lunar"
 )
 
 var MenuWorld Menu
@@ -12,9 +14,11 @@ var MenuWorld Menu
 var MENU_WORLD_PARAMS = MenuNewParams {
 	entries: mergeMenuEntries(
 		MENU_WORLD_ENTRIES_GENERAL,
+		MENU_WORLD_ENTRIES_LOOK,
 		makeMoveEntries(),
 	),
 	topics: map[string]MenuHelpTopic {},
+	interceptCommand: menuWorldInterceptCommand,
 }
 
 var MENU_WORLD_ENTRIES_GENERAL = map[string]MenuEntry {
@@ -51,6 +55,25 @@ var MENU_WORLD_ENTRIES_GENERAL = map[string]MenuEntry {
 			return true
 		},
 	},
+}
+
+func menuWorldInterceptCommand(gamestate *GameState, player *Player, verb string, args []string) bool {
+	room := &gamestate.world.Rooms[player.character.Room]
+	interactFunction, exists := room.Interactions[verb]
+	if !exists {
+		return false
+	}
+
+	playerLuaHandle, ok := gamestate.world.GetMobLuaHandle(player.mobHandle)
+	if !ok {
+		player.send("Something went wrong. Try again?")
+		return true
+	}
+
+	arg := strings.ToLower(strings.Join(args, " "))
+
+	gamestate.world.ScriptCall(interactFunction.Value(), verb, room.State, playerLuaHandle, lua.String(arg))
+	return true
 }
 
 func makeMoveEntries() map[string]MenuEntry {
@@ -98,7 +121,7 @@ func handleMove(gamestate *GameState, player *Player, direction world.Direction)
 
 	// Narrate movement
 	playerRoom = &gamestate.world.Rooms[playerMob.Room]
-	player.send(fmt.Sprintf("You moved into %s.", playerRoom.Name))
+	player.send(fmt.Sprintf("You moved into <y>%s</y>.", playerRoom.Name))
 	describeRoomToPlayer(gamestate, player, playerRoom)
 }
 

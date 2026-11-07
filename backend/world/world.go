@@ -9,7 +9,10 @@ const WORLD_SECONDS_PER_UPDATE = 3
 type World struct {
 	Mobs MobArray
 	MessagePlayer func(playerKey string, message string)
+	tick uint32
+
 	luaState *lua.State
+	mobHandleType *lua.UserDataType[MobHandle]
 
 	Characters map[string]*Character
 	PlayerCharacters map[string][]string
@@ -74,5 +77,12 @@ func (world *World) MessageRoom(roomIndex int, message string) {
 }
 
 func (world *World) Update() {
+	// Reset rooms, writing this check here means that we only need to check the tick once for all rooms
+	if world.tick % ROOM_RESET_FREQUENCY == 0 {
+		for index := range len(world.Rooms) {
+			world.Rooms[index].Reset(world)
+		}
+	}
 
+	world.tick++
 }

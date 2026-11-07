@@ -25,12 +25,14 @@ type MenuHelpTopic struct {
 type MenuNewParams struct {
 	entries map[string]MenuEntry
 	topics map[string]MenuHelpTopic
+	interceptCommand func(gamestate *GameState, player *Player, verb string, args []string) bool
 }
 
 type Menu struct {
 	entries map[string]MenuEntry
 	topics map[string][]string
 	categories map[string][]string
+	interceptCommand func(gamestate *GameState, player *Player, verb string, args []string) bool
 }
 
 type Submenu interface {
@@ -43,6 +45,7 @@ func NewMenu(params MenuNewParams) Menu {
 		entries: make(map[string]MenuEntry),
 		topics: make(map[string][]string),
 		categories: make(map[string][]string),
+		interceptCommand: params.interceptCommand,
 	}
 
 	// Init topics
@@ -149,6 +152,14 @@ func (menu *Menu) handleCommand(gamestate *GameState, player *Player, command st
 	}
 	verb := strings.ToLower(words[0])
 	args := words[1:]
+
+	// Handle intercept command
+	if menu.interceptCommand != nil {
+		handled := menu.interceptCommand(gamestate, player, verb, args)
+		if handled {
+			return
+		}
+	}
 
 	// Handle submenu command
 	if player.submenu != nil {

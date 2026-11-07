@@ -86,5 +86,6 @@ func (player *Player) setMenuWorld(gamestate *GameState) {
 	player.menu = &gamestate.menuWorld
 	player.send(fmt.Sprintf("You have logged in. Welcome, <y>%s</y>.", player.character.Name))
 	room := &gamestate.world.Rooms[player.character.Room]
+	player.send(fmt.Sprintf("You are in <y>%s</y>.", room.Name))
 	describeRoomToPlayer(gamestate, player, room)
 }

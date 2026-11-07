@@ -2,6 +2,7 @@ package world
 
 import (
 	"fmt"
+	"github.com/mmcdole/lunar"
 )
 
 type Mob struct {
@@ -9,6 +10,9 @@ type Mob struct {
 	Handle MobHandle
 
 	*MobData
+
+	// Created on first use by getLuaHandle so that each mob has one handle userdata
+	luaHandle *lua.UserData
 }
 
 func NewMob(data *MobData) Mob {
