@@ -24,10 +24,10 @@ type Room struct {
 
 	Details map[string]string
 	reset *lua.Function
-	interactions map[string]*lua.Function
+	Interactions map[string]*lua.Function
 	Exits [DIRECTION_COUNT]int
 
-	state *lua.Table
+	State lua.Value
 	Occupants []MobHandle
 }
 
@@ -42,6 +42,7 @@ func (room *Room) RemoveOccupant(handle MobHandle) {
 	if occupantIndex == -1 {
 		log.Printf("Warn: Tried to remove occupant with handle %s from %s, but no such occupant was found.",
 			handle.String(), room.Name)
+		return
 	}
 
 	room.removeOccupantByIndex(occupantIndex)
@@ -55,6 +56,6 @@ func (room *Room) removeOccupantByIndex(index int) {
 
 func (room *Room) Reset(world *World) {
 	if room.reset != nil {
-		world.scriptCall(room.reset.Value(), "reset")
+		world.ScriptCall(room.reset.Value(), "reset")
 	}
 }

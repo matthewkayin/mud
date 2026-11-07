@@ -1,14 +1,18 @@
 package main
 
+//go:generate go run . -generate-lua-defs data/world.d.lua
+
 import (
 	"context"
 	"fmt"
 	"io"
 	"log"
+	"flag"
 	"mud/api"
 	"mud/env"
 	"mud/game"
 	"mud/world"
+	"mud/generate"
 	"net/http"
 	"os"
 	"os/signal"
@@ -22,6 +26,18 @@ const MUD_LOG_FOLDER = "logs"
 var version = "dev"
 
 func main() {
+	// Handle generate run path
+	generateLuaDefsPath := flag.String("generate-lua-defs", "", "write the Lua language server definitions for the world script API to this path and exit")
+	flag.Parse()
+
+	if *generateLuaDefsPath != "" {
+		err := generate.LuaDefs(*generateLuaDefsPath)
+		if err != nil {
+			log.Fatalf("Error generating Lua definitions: %s", err.Error())
+		}
+		return
+	}
+
 	// Init logger
 	logfile := initLogger()
 	defer logfile.Close()
@@ -46,6 +62,7 @@ func main() {
 	gameContext, gameCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	defer gameCancel()
 	gamestate := game.Init(version)
+	log.Printf("Initialized game state.")
 
 	// Set server endpoint handlers
 	apiState := api.InitState(gamestate)

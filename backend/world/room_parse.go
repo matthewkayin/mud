@@ -88,11 +88,14 @@ func (world *World) loadRoomData() error {
 	// Alloc state for any rooms which have a reset function
 	for index := range len(world.Rooms) {
 		room := &world.Rooms[index]
-		if !room.reset.Value().IsNil() {
-			room.state, err = world.luaState.NewTable()
+		if room.reset != nil {
+			stateTable, err := world.luaState.NewTable()
 			if err != nil {
 				return fmt.Errorf("Error allocting room state: %s", err.Error())
 			}
+			room.State = stateTable.Value()
+		} else {
+			room.State = lua.Nil()
 		}
 	}
 
@@ -180,7 +183,7 @@ func (parser *ScriptParser) parseRoom(table *lua.Table) (*Room, []Direction) {
 	room.reset = parser.getOptionalFunction(table, "reset")
 
 	// Interactions
-	room.interactions = make(map[string]*lua.Function)
+	room.Interactions = make(map[string]*lua.Function)
 	interactionsTableValue := table.RawGetString("interactions")
 	interactionsTable, ok := interactionsTableValue.AsTable()
 	if ok {
@@ -218,7 +221,9 @@ func (parser *ScriptParser) parseRoom(table *lua.Table) (*Room, []Direction) {
 				parser.addProblem(fmt.Errorf("Interaction table value of '%s' is not a function, but it should be.", interactionKey))
 			}
 
-			room.interactions[interactionVerb] = interaction
+			room.Interactions[interactionVerb] = interaction
+
+			key = interactionKey
 		}
 	}
 

@@ -29,7 +29,61 @@ func (world *World) scriptInit() error {
 	}
 
 	// Hacky world pointer so that script library functions have access to the world
-	// __world = world
+	__world = world
+
+	// Register mob handle userdata type
+	world.mobHandleType, err = lua.NewUserDataType[MobHandle](world.luaState, "MobHandle")
+	if err != nil {
+		return fmt.Errorf("Error registering MobHandle userdata type: %s", err.Error())
+	}
+	err = world.luaState.SetFunctions(world.mobHandleType.Metatable(), map[string]lua.NativeFunc {
+		"__eq": func(frame lua.Frame) lua.Outcome {
+			a, aOk := world.mobHandleType.FromArgument(frame, 0)
+			b, bOk := world.mobHandleType.FromArgument(frame, 1)
+			return frame.ReturnBool(aOk && bOk && a == b)
+		},
+		"__tostring": func(frame lua.Frame) lua.Outcome {
+			handle := frameGetMobHandleArg(&frame, 0)
+			return frame.ReturnString(handle.String())
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("Error registering MobHandle metamethods: %s", err.Error())
+	}
+
+	// Create world table
+	worldTable, err := world.luaState.NewTableWithCapacity(0, len(SCRIPT_LIBRARY))
+	if err != nil {
+		return fmt.Errorf("Error creating lua world table: %s", err.Error())
+	}
+
+	// Register library functions
+	for key, handler := range SCRIPT_LIBRARY {
+		luaFunc, err := world.luaState.NewNativeFunction(handler)
+		if err != nil {
+			return fmt.Errorf("Error registering function '%s': %s", key, err.Error())
+		}
+
+		worldTable.RawSet(lua.String(key), luaFunc.Value())
+	}
+
+	// Register world constants
+	for _, constantTable := range ScriptConstantTables() {
+		luaTable, err := world.luaState.NewTableWithCapacity(0, len(constantTable.Constants))
+		if err != nil {
+			return fmt.Errorf("Error creating constant table '%s': %s", constantTable.Name, err.Error())
+		}
+		for _, constant := range constantTable.Constants {
+			luaTable.RawSetString(constant.Name, constant.Value)
+		}
+		worldTable.RawSetString(constantTable.Name, luaTable.Value())
+	}
+	for _, constant := range ScriptFreeConstants() {
+		worldTable.RawSetString(constant.Name, constant.Value)
+	}
+
+	// Add world table to global state
+	world.luaState.SetGlobal("world", worldTable.Value())
 
 	// Disallow creating or reading undefined globals so that a missing "local" or a typo errors instead of silently working
 	globalTable, err := world.luaState.RawGlobal("_G")
@@ -73,7 +127,7 @@ func (world *World) scriptQuit() {
 }
 
 // Calls a lua function and prints a stack trace of the error if there was an error
-func (world *World) scriptCall(function lua.Value, description string, args ...lua.Value) (lua.Value, bool) {
+func (world *World) ScriptCall(function lua.Value, description string, args ...lua.Value) (lua.Value, bool) {
 	result, err := world.luaState.CallOne(function, args...)
 	if err != nil {
 		log.Printf("Script call %s failed: %s", description, scriptFormatError(err))
@@ -157,4 +211,27 @@ func scriptGetFilesFrom(subfolder string) ([]string, error) {
 	})
 
 	return paths, err
+}
+
+func (world *World) GetMobLuaHandle(handle MobHandle) (lua.Value, bool) {
+	mob, exists := world.Mobs.GetIfExists(handle)
+
+	// If a cached value already exists, return it
+	if exists && mob.luaHandle != nil {
+		return mob.luaHandle.Value(), true
+	}
+
+	// Otherwise, alloc a new one
+	luaHandle, err := world.mobHandleType.New(handle)
+	if err != nil {
+		log.Printf("Error while allocing mob lua handle: %s", err.Error())
+		return lua.Nil(), false
+	}
+
+	// And if the mob exists, cache the new lua handle onto the mob
+	if exists {
+		mob.luaHandle = luaHandle
+	}
+
+	return luaHandle.Value(), true
 }

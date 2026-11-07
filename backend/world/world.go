@@ -9,8 +9,10 @@ const WORLD_SECONDS_PER_UPDATE = 3
 type World struct {
 	Mobs MobArray
 	MessagePlayer func(playerKey string, message string)
-	luaState *lua.State
 	tick uint32
+
+	luaState *lua.State
+	mobHandleType *lua.UserDataType[MobHandle]
 
 	Characters map[string]*Character
 	PlayerCharacters map[string][]string

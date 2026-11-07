@@ -9,4 +9,15 @@ room.details = {
 room.position = { x = -1, y = 0, z = 0 }
 room.exits = { "east", "west" }
 
+room.interactions = {}
+
+function room.interactions.touch(state, player, arg)
+    if arg == "coffee maker" then
+        world.message_player(player, "You touched the coffee maker.")
+        return
+    end
+
+    world.message_player(player, string.format("There is no '%s' here that you can touch.", arg))
+end
+
 return room
