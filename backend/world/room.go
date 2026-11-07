@@ -3,10 +3,13 @@ package world
 import (
 	"log"
 	"slices"
+
+	"github.com/mmcdole/lunar"
 )
 
 const ROOM_NONE int = -1
 const ROOM_DATA_FOLDER = "rooms"
+const ROOM_RESET_FREQUENCY = (5 * 60) / WORLD_SECONDS_PER_UPDATE
 
 type RoomPosition struct {
 	X int
@@ -19,7 +22,12 @@ type Room struct {
 	Description string
 	Position RoomPosition
 
+	Details map[string]string
+	reset *lua.Function
+	interactions map[string]*lua.Function
 	Exits [DIRECTION_COUNT]int
+
+	state *lua.Table
 	Occupants []MobHandle
 }
 
@@ -43,4 +51,10 @@ func (room *Room) removeOccupantByIndex(index int) {
 	lastIndex := len(room.Occupants) - 1
 	room.Occupants[index] = room.Occupants[lastIndex]
 	room.Occupants = room.Occupants[:lastIndex]
+}
+
+func (room *Room) Reset(world *World) {
+	if room.reset != nil {
+		world.scriptCall(room.reset.Value(), "reset")
+	}
 }

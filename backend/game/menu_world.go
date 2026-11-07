@@ -12,6 +12,7 @@ var MenuWorld Menu
 var MENU_WORLD_PARAMS = MenuNewParams {
 	entries: mergeMenuEntries(
 		MENU_WORLD_ENTRIES_GENERAL,
+		MENU_WORLD_ENTRIES_LOOK,
 		makeMoveEntries(),
 	),
 	topics: map[string]MenuHelpTopic {},
@@ -97,7 +98,7 @@ func handleMove(gamestate *GameState, player *Player, direction world.Direction)
 
 	// Narrate movement
 	playerRoom = &gamestate.world.Rooms[playerMob.Room]
-	player.send(fmt.Sprintf("You moved into %s.", playerRoom.Name))
+	player.send(fmt.Sprintf("You moved into <y>%s</y>.", playerRoom.Name))
 	describeRoomToPlayer(gamestate, player, playerRoom)
 }
 

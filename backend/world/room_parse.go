@@ -37,7 +37,7 @@ func (world *World) loadRoomData() error {
 		// Check for duplicates
 		_, duplicateRoomPosition := world.RoomPositionToIndex[room.Position]
 		if duplicateRoomPosition {
-			return fmt.Errorf("Room %s has position <%d, %d, %d> which is a duplicate of another room.", path, room.Position.X, room.Position.Y, room.Position.Z)
+			return fmt.Errorf("Room %s has position %s which is a duplicate of another room.", path, room.Position.String())
 		}
 
 		world.RoomPositionToIndex[room.Position] = len(world.Rooms)
@@ -85,6 +85,17 @@ func (world *World) loadRoomData() error {
 		}
 	}
 
+	// Alloc state for any rooms which have a reset function
+	for index := range len(world.Rooms) {
+		room := &world.Rooms[index]
+		if !room.reset.Value().IsNil() {
+			room.state, err = world.luaState.NewTable()
+			if err != nil {
+				return fmt.Errorf("Error allocting room state: %s", err.Error())
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -125,6 +136,89 @@ func (parser *ScriptParser) parseRoom(table *lua.Table) (*Room, []Direction) {
 			}
 
 			exits = append(exits, direction)
+		}
+	}
+
+	// Room details
+	room.Details = make(map[string]string)
+	detailsTableValue := table.RawGetString("details")
+	detailsTable, ok := detailsTableValue.AsTable()
+	if ok {
+		key := lua.Nil()
+		for {
+			// Get next key / value from the table
+			detailKey, detailValue, ok, err := detailsTable.Next(key)
+			if err != nil {
+				parser.addProblem(fmt.Errorf("Error while iterating through details table: %s", err.Error()))
+				break
+			}
+			if !ok {
+				break
+			}
+
+			// Validate that key is a string
+			detailName, ok := detailKey.AsString()
+			if !ok {
+				parser.addProblem(fmt.Errorf("Keys in the details table must be strings."))
+				break
+			}
+
+			// Validate that the value is a string
+			detail, ok := detailValue.AsString()
+			if !ok {
+				parser.addProblem(fmt.Errorf("Details table value of '%s' is not a string, but it should be.", detailName))
+			}
+
+			// Add detail to room
+			room.Details[detailName] = detail
+
+			key = detailKey
+		}
+	}
+
+	// Reset function and interactions
+	room.reset = parser.getOptionalFunction(table, "reset")
+
+	// Interactions
+	room.interactions = make(map[string]*lua.Function)
+	interactionsTableValue := table.RawGetString("interactions")
+	interactionsTable, ok := interactionsTableValue.AsTable()
+	if ok {
+		key := lua.Nil()
+		for {
+			// Get next key / value from the table
+			interactionKey, interactionValue, ok, err := interactionsTable.Next(key)
+			if err != nil {
+				parser.addProblem(fmt.Errorf("Error while iterating through interactions table: %s", err.Error()))
+				break
+			}
+			if !ok {
+				break
+			}
+
+			// Validate that key is a string
+			interactionVerb, ok := interactionKey.AsString()
+			if !ok {
+				parser.addProblem(fmt.Errorf("Keys in the interactions table must be strings."))
+				break
+			}
+
+			// Validate that verb is lowercase and alphabetic
+			for index := range len(interactionVerb) {
+				c := interactionVerb[index]
+				if c < 'a' || c > 'z' {
+					parser.addProblem(fmt.Errorf("Unexpected char '%c' in interaction verb %s.", c, interactionVerb))
+					break
+				}
+			}
+
+			// Validate that the value is a string
+			interaction, ok := interactionValue.AsFunction()
+			if !ok {
+				parser.addProblem(fmt.Errorf("Interaction table value of '%s' is not a function, but it should be.", interactionKey))
+			}
+
+			room.interactions[interactionVerb] = interaction
 		}
 	}
 

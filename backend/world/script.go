@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"io/fs"
+	"errors"
 	"strings"
 	"github.com/mmcdole/lunar"
 )
@@ -70,6 +71,40 @@ func (world *World) scriptQuit() {
 
 	world.luaState.Close()
 }
+
+// Calls a lua function and prints a stack trace of the error if there was an error
+func (world *World) scriptCall(function lua.Value, description string, args ...lua.Value) (lua.Value, bool) {
+	result, err := world.luaState.CallOne(function, args...)
+	if err != nil {
+		log.Printf("Script call %s failed: %s", description, scriptFormatError(err))
+		return lua.Nil(), false
+	}
+
+	return result, true
+}
+
+// Returns the error message followed by its stack traceback, if it has one
+func scriptFormatError(err error) string {
+	var luaError *lua.Error
+	if !errors.As(err, &luaError) {
+		return err.Error()
+	}
+	traceback := luaError.Traceback()
+	if len(traceback) == 0 {
+		return err.Error()
+	}
+
+	var builder strings.Builder
+	builder.WriteString(err.Error())
+	builder.WriteString("\nstack traceback:")
+	for _, frame := range traceback {
+		builder.WriteString("\n\t")
+		builder.WriteString(frame.String())
+	}
+
+	return builder.String()
+}
+
 
 // Loads a table from a script. The path is relative to the data folder, e.g. "spells/firebolt.lua"
 func (world *World) scriptLoadTable(path string) (*lua.Table, error) {

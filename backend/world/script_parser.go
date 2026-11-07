@@ -51,3 +51,25 @@ func (parser *ScriptParser) getInt(table *lua.Table, key string) int {
 	}
 	return int(result)
 }
+
+func (parser *ScriptParser) getFunction(table *lua.Table, key string) *lua.Function {
+	value := parser.getTypedValue(table, key, lua.FunctionKind)
+	result, _ := value.AsFunction()
+	return result
+}
+
+// Returns nil if the field is missing
+func (parser *ScriptParser) getOptionalFunction(table *lua.Table, key string) *lua.Function {
+	value := table.RawGetString(key)
+	if value.IsNil() {
+		return nil
+	}
+
+	result, ok := value.AsFunction()
+	if !ok {
+		parser.addProblem(fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, lua.FunctionKind, value.Kind().String()))
+		return nil
+	}
+
+	return result
+}

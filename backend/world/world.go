@@ -10,6 +10,7 @@ type World struct {
 	Mobs MobArray
 	MessagePlayer func(playerKey string, message string)
 	luaState *lua.State
+	tick uint32
 
 	Characters map[string]*Character
 	PlayerCharacters map[string][]string
@@ -74,5 +75,12 @@ func (world *World) MessageRoom(roomIndex int, message string) {
 }
 
 func (world *World) Update() {
+	// Reset rooms, writing this check here means that we only need to check the tick once for all rooms
+	if world.tick % ROOM_RESET_FREQUENCY == 0 {
+		for index := range len(world.Rooms) {
+			world.Rooms[index].Reset(world)
+		}
+	}
 
+	world.tick++
 }
