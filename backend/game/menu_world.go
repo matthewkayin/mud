@@ -61,6 +61,7 @@ func makeMoveEntries() map[string]MenuEntry {
 		entries[direction.String()] = MenuEntry {
 			usage: direction.String(),
 			description: fmt.Sprintf("Walk to the %s", direction.String()),
+			synonyms: []string { direction.String()[:1] },
 			categories: []string { "exploration" },
 			handler: func (gamestate *GameState, player *Player, args []string) bool {
 				if len(args) != 0 {
