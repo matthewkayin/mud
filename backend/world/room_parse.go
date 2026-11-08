@@ -27,9 +27,9 @@ func (world *World) loadRoomData() error {
 			return err
 		}
 
-		// Parse class data
+		// Parse room data
 		parser := ScriptParser{}
-		room, exits := parser.parseRoom(table)
+		room, exits := parser.parseRoom(world, table)
 		if room == nil {
 			return fmt.Errorf("%s: %s", path, parser.getError().Error())
 		}
@@ -102,7 +102,7 @@ func (world *World) loadRoomData() error {
 	return nil
 }
 
-func (parser *ScriptParser) parseRoom(table *lua.Table) (*Room, []Direction) {
+func (parser *ScriptParser) parseRoom(world *World, table *lua.Table) (*Room, []Direction) {
 	room := &Room{}
 	exits := make([]Direction, 0, DIRECTION_COUNT)
 
@@ -226,6 +226,9 @@ func (parser *ScriptParser) parseRoom(table *lua.Table) (*Room, []Direction) {
 			key = interactionKey
 		}
 	}
+
+	// Room loot table
+	room.lootTable = parser.getOptionalLootTable(world, table, "loot")
 
 	if len(parser.problems) != 0 {
 		return nil, nil

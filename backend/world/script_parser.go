@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"errors"
+	"mud/util"
 	"github.com/mmcdole/lunar"
 )
 
@@ -88,4 +89,58 @@ func (parser *ScriptParser) getOptionalFunction(table *lua.Table, key string) *l
 	}
 
 	return result
+}
+
+func (parser *ScriptParser) getTable(table *lua.Table, key string) *lua.Table {
+	value := parser.getTypedValue(table, key, lua.TableKind)
+	result, ok := value.AsTable()
+	if !ok {
+		return nil
+	}
+	return result
+}
+
+func (parser *ScriptParser) getInt32Range(table *lua.Table, key string) util.Int32Range {
+	value := table.RawGetString(key)
+	if value.IsNil() {
+		parser.addProblem(fmt.Errorf("missing required field '%s'", key))
+		return util.Int32Range{}
+	}
+
+	if value.Kind() == lua.NumberKind {
+		number, _ := value.AsNumber()
+		parser.checkNumberIsInt32(number, key)
+		return util.Int32Range {
+			Min: int32(number),
+			Max: int32(number),
+		}
+	}
+
+	if value.Kind() == lua.TableKind {
+		valueTable, _ := value.AsTable()
+		return util.Int32Range {
+			Min: parser.getInt32(valueTable, "min"),
+			Max: parser.getInt32(valueTable, "max"),
+		}
+	}
+
+	parser.addProblem(fmt.Errorf("invalid type for '%s'. expected number or table, got %s", key, value.Kind().String()))
+	return util.Int32Range{}
+}
+
+func (parser *ScriptParser) checkInt32Positive(value int32, key string) {
+	if value <= 0 {
+		parser.addProblem(fmt.Errorf("field '%s' must be greater than 0, got %d", key, value))
+	}
+}
+
+func (parser *ScriptParser) checkInt32IsPercent(number int32, key string) {
+	if number < 0 || number > 100 {
+		parser.addProblem(fmt.Errorf("field '%s' must be a percent value from 0 to 100, got %d", key, number))
+	}
+}
+
+func (parser *ScriptParser) checkInt32IsPositivePercent(number int32, key string) {
+	parser.checkInt32IsPercent(number, key)
+	parser.checkInt32Positive(number, key)
 }

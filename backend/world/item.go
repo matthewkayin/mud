@@ -6,13 +6,11 @@ import (
 
 type ItemId uint64
 
-type ItemType int
-
 type Item struct {
 	// A unique ID for this item instance.
 	// When a spell or item targets another item, they use this ID to refer to their target.
 	Id ItemId
-	*ItemData
+	*ItemType
 	Amount int32
 	Durability int32
 }
@@ -41,7 +39,7 @@ func (kind ItemKind) toScriptEnum() string {
 	}
 }
 
-type ItemData struct {
+type ItemType struct {
 	Name string
 	Description string
 
@@ -52,14 +50,13 @@ type ItemData struct {
 }
 
 // Creates a new item and assigns it a unique ID. All Item instances should be created this way
-func (world *World) createItem(itemType ItemType, amount int32, durabilityPercent int32) Item {
+func (world *World) createItem(itemType *ItemType, amount int32, durabilityPercent int32) Item {
 	itemId := world.NextItemId
 	world.NextItemId++
 
-	itemData := world.ItemData[itemType]
 	return Item {
 		Id: itemId,
-		ItemData: itemData,
+		ItemType: itemType,
 		Amount: amount,
 		// TODO:
 		// Durability: (durabilityPercent * itemData.GetMaxDurability()) / 100,
@@ -71,8 +68,8 @@ func (item *Item) Size() int32 {
 	return item.size * item.Amount
 }
 
-func (itemData *ItemData) CanStack() bool {
-	switch itemData.kind {
+func (itemType *ItemType) CanStack() bool {
+	switch itemType.kind {
 		case ITEM_KIND_CONSUMABLE:
 			return true
 		default:
