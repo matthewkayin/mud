@@ -52,6 +52,22 @@ func (parser *ScriptParser) getInt(table *lua.Table, key string) int {
 	return int(result)
 }
 
+func (parser *ScriptParser) getInt32(table *lua.Table, key string) int32 {
+	value := parser.getTypedValue(table, key, lua.NumberKind)
+	result, _ := value.AsNumber()
+	parser.checkNumberIsInt32(result, key)
+	return int32(result)
+}
+
+func (parser *ScriptParser) checkNumberIsInt32(number float64, key string) {
+	if number != math.Trunc(number) {
+		parser.addProblem(fmt.Errorf("field '%s' must be an integer, got %v", key, number))
+	}
+	if number < math.MinInt32 || number > math.MaxInt32 {
+		parser.addProblem(fmt.Errorf("field '%s' must be between %d and %d, got %v", key, math.MinInt32, math.MaxInt32, number))
+	}
+}
+
 func (parser *ScriptParser) getFunction(table *lua.Table, key string) *lua.Function {
 	value := parser.getTypedValue(table, key, lua.FunctionKind)
 	result, _ := value.AsFunction()
