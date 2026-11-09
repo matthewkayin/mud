@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"errors"
+	"mud/util"
 	"github.com/mmcdole/lunar"
 )
 
@@ -52,6 +53,22 @@ func (parser *ScriptParser) getInt(table *lua.Table, key string) int {
 	return int(result)
 }
 
+func (parser *ScriptParser) getInt32(table *lua.Table, key string) int32 {
+	value := parser.getTypedValue(table, key, lua.NumberKind)
+	result, _ := value.AsNumber()
+	parser.checkNumberIsInt32(result, key)
+	return int32(result)
+}
+
+func (parser *ScriptParser) checkNumberIsInt32(number float64, key string) {
+	if number != math.Trunc(number) {
+		parser.addProblem(fmt.Errorf("field '%s' must be an integer, got %v", key, number))
+	}
+	if number < math.MinInt32 || number > math.MaxInt32 {
+		parser.addProblem(fmt.Errorf("field '%s' must be between %d and %d, got %v", key, math.MinInt32, math.MaxInt32, number))
+	}
+}
+
 func (parser *ScriptParser) getFunction(table *lua.Table, key string) *lua.Function {
 	value := parser.getTypedValue(table, key, lua.FunctionKind)
 	result, _ := value.AsFunction()
@@ -72,4 +89,70 @@ func (parser *ScriptParser) getOptionalFunction(table *lua.Table, key string) *l
 	}
 
 	return result
+}
+
+func (parser *ScriptParser) getTable(table *lua.Table, key string) *lua.Table {
+	value := parser.getTypedValue(table, key, lua.TableKind)
+	result, ok := value.AsTable()
+	if !ok {
+		return nil
+	}
+	return result
+}
+
+func (parser *ScriptParser) getOptionalInt32Range(table *lua.Table, key string, fallback int32) util.Int32Range {
+	value := table.RawGetString(key)
+	if value.IsNil() {
+		return util.Int32Range {
+			Min: fallback,
+			Max: fallback,
+		}
+	}
+
+	return parser.getInt32Range(table, key)
+}
+
+func (parser *ScriptParser) getInt32Range(table *lua.Table, key string) util.Int32Range {
+	value := table.RawGetString(key)
+	if value.IsNil() {
+		parser.addProblem(fmt.Errorf("missing required field '%s'", key))
+		return util.Int32Range{}
+	}
+
+	if value.Kind() == lua.NumberKind {
+		number, _ := value.AsNumber()
+		parser.checkNumberIsInt32(number, key)
+		return util.Int32Range {
+			Min: int32(number),
+			Max: int32(number),
+		}
+	}
+
+	if value.Kind() == lua.TableKind {
+		valueTable, _ := value.AsTable()
+		return util.Int32Range {
+			Min: parser.getInt32(valueTable, "min"),
+			Max: parser.getInt32(valueTable, "max"),
+		}
+	}
+
+	parser.addProblem(fmt.Errorf("invalid type for '%s'. expected number or table, got %s", key, value.Kind().String()))
+	return util.Int32Range{}
+}
+
+func (parser *ScriptParser) checkInt32Positive(value int32, key string) {
+	if value <= 0 {
+		parser.addProblem(fmt.Errorf("field '%s' must be greater than 0, got %d", key, value))
+	}
+}
+
+func (parser *ScriptParser) checkInt32IsPercent(number int32, key string) {
+	if number < 0 || number > 100 {
+		parser.addProblem(fmt.Errorf("field '%s' must be a percent value from 0 to 100, got %d", key, number))
+	}
+}
+
+func (parser *ScriptParser) checkInt32IsPositivePercent(number int32, key string) {
+	parser.checkInt32IsPercent(number, key)
+	parser.checkInt32Positive(number, key)
 }

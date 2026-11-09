@@ -12,9 +12,10 @@ import (
 var MenuWorld Menu
 
 var MENU_WORLD_PARAMS = MenuNewParams {
-	entries: mergeMenuEntries(
+	entries: util.MergeMaps(
 		MENU_WORLD_ENTRIES_GENERAL,
 		MENU_WORLD_ENTRIES_LOOK,
+		MENU_WORLD_ENTRIES_ITEM,
 		makeMoveEntries(),
 	),
 	topics: map[string]MenuHelpTopic {},
@@ -27,11 +28,7 @@ var MENU_WORLD_ENTRIES_GENERAL = map[string]MenuEntry {
 		description: "Logout of the world",
 		categories: []string { "general" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
-			room := &gamestate.world.Rooms[player.character.Room]
-			room.RemoveOccupant(player.mobHandle)
-			gamestate.world.MessageRoom(player.character.Room, fmt.Sprintf("<y>%s</y> has left the world.", player.character.Name))
-
-			gamestate.world.SaveCharacter(player.character)
+			player.logout(gamestate)
 			player.setMenuLogin(gamestate)
 			return true
 		},

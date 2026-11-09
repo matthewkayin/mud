@@ -33,3 +33,111 @@ This is a guide explaining what has changed in the refactor, or at least some of
   - This may prove inconvenient later when we want to have items reference something in ITEM_DATA, we'll see how it shakes out as I add more features
   - One of the reasons this is done is to make it easier to support hot-reloading of Lua scripts when using the editor
 - Mob movement is now on the mob itself instead of the room
+
+## Items
+One problem that we had perviously was that when a spell or item targets another item, it was technically possible for the item to shift around in the player's inventory, to be dropped or added. Granted, this is a really fringe bug, but I decided to do something about it during the refactor. So here's where we are at:
+
+There are four key concepts related to items: Item, ItemId, ItemKind, and ItemType
+
+An Item is the same as before, it's an instance of an Item. It goes into a player's inventory or a chest or the room inventory.
+An ItemKind is also the same as before. It tells you if the Item is a ONE_HANDED_WEAPON, a SPELLBOOK, or a CONSUMABLE
+
+An ItemId is not the same as before. This time, an ItemId is a unique identifier for a particular Item instance. It is used for targeting. When a repair kit targets an item, it targets the ItemId (rather than targeting an item's inventory index, which might change). 
+
+All items must be created via world.createItem(). This function automatically assigns the next available ItemId onto the newly created Item.
+
+An ItemType is what ItemData used to be. It tells us what the canonical form of the item is (i.e. an Iron Sword), but it also is the canonical form of the item itself. This is where things get weird.
+
+An item is defined sort of like this:
+
+```
+type Item struct {
+  Id ItemId // new: unique item instance identifier
+  *ItemType // new: ItemType (fka ItemData) embedded into the struct
+  Amount int32 // as before
+  Durability int32 // as before
+  // TODO: infusion
+}
+```
+
+Since the ItemType is embedded into the struct, this means that just like with MobData, all properties of ItemType are now accessible on Item. So before, we used to have to do something like this:
+
+```
+var item Item // suppose we have an item
+itemData := ITEM_DATA[item.Id] // we must first get the item data
+itemName := itemData.Name // then we can access the name
+itemCanStack := itemData.ItemCanStack() // and other properties
+```
+
+But now we can just do this instead:
+
+```
+var item Item // suppose we have an item
+itemName := item.Name // we can access all of the "item data" properties directly
+itemCanStack := item.CanStack() // and this includes functions
+```
+
+In Go, the way that struct embedding works is that an embedded struct is just syntactic sugar for having an instance of the struct or a pointer to the struct. So when I say
+
+```
+type ItemType struct {
+  Name string
+}
+
+type Item struct {
+  *ItemType
+}
+
+var item Item
+itemName := item.Name
+```
+
+This is equivalent to saying:
+
+```
+type ItemType struct {
+  Name string
+}
+
+type Item struct {
+  ItemType *ItemType
+}
+
+var item Item
+itemName := item.ItemType.Name
+```
+
+This means that in our code, Go implements the struct embedding by giving each Item a pointer to the ItemType (fka the ItemData). Since the world.ItemType array (fka the ITEM_DATA array) does not change, this means the memory address of these pointers also does not change, so we can actually use these pointer values to compare two items to see if they are the same type.
+
+So previously, we used to do this:
+
+```
+var a Item
+var b Item
+if a.Id == b.Id {
+  // these items use the same ItemData
+}
+```
+
+Now we do this to compare items
+
+```
+var a Item
+var b Item
+if a.ItemType == b.ItemType {
+  // these items use the same ItemType struct (the same ItemData)
+}
+```
+
+This comparison is cheap to do because a pointer is just a number. We're not actually comparing the whole ItemType struct. This also means that you can use *ItemType pointers to check the inventory for how much of a certain item a player has.
+
+```
+goldItemType := world.ItemNameToType["Gold"] // Returns *ItemType
+playerGoldCount := player.Inventory.AmountOf(goldItemType) // Passes in *ItemType
+
+// you can also say
+var item Item
+existingItemCount := player.Inventory.AmountOf(item.ItemType) // Passes in *ItemType
+```
+
+Hopefully this makes sense! Let me know if you have any questions.

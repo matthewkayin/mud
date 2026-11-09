@@ -10,4 +10,5 @@ export type SocketMessage = {
   message: string | null;
   status?: PlayerStatus;
   map?: number[];
+  inv?: string[];
 };

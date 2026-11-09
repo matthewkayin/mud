@@ -23,6 +23,11 @@ type World struct {
 	ClassData []*ClassData
 	ClassNameToId map[string]ClassId
 
+	ItemTypes []*ItemType
+	ItemNameToType map[string]*ItemType
+	NextItemId ItemId
+	ItemGold *ItemType
+
 	Rooms []Room
 	RoomPositionToIndex map[RoomPosition]int
 }
@@ -38,6 +43,7 @@ func NewWorld() (*World, error) {
 
 	// Load script data
 	loaders := []func() error {
+		world.loadItemTypes,
 		world.loadRaceData,
 		world.loadClassData,
 		world.loadRoomData,

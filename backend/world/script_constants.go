@@ -21,6 +21,19 @@ func ScriptFreeConstants() []ScriptConstant {
 }
 
 func ScriptConstantTables() []ScriptConstantTable {
+	// Item Kind
+	itemKindTable := ScriptConstantTable {
+		Name: "ItemKind",
+		Constants: make([]ScriptConstant, 0, ITEM_KIND_COUNT),
+	}
+	for index := range ITEM_KIND_COUNT {
+		kind := ItemKind(index)
+		itemKindTable.Constants = append(itemKindTable.Constants, ScriptConstant {
+			Name: kind.toScriptEnum(),
+			Value: lua.String(kind.String()),
+		})
+	}
+
 	// Direction
 	directionTable := ScriptConstantTable {
 		Name: "Direction",
@@ -47,6 +60,7 @@ func ScriptConstantTables() []ScriptConstantTable {
 	}
 
 	return []ScriptConstantTable {
+		itemKindTable,
 		directionTable,
 		statTable,
 	}

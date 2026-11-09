@@ -27,6 +27,9 @@ type Room struct {
 	Interactions map[string]*lua.Function
 	Exits [DIRECTION_COUNT]int
 
+	Inventory Inventory
+	lootTable LootTable
+
 	State lua.Value
 	Occupants []MobHandle
 }
@@ -55,6 +58,8 @@ func (room *Room) removeOccupantByIndex(index int) {
 }
 
 func (room *Room) Reset(world *World) {
+	room.lootTable.replenish(world, &room.Inventory)
+
 	if room.reset != nil {
 		world.ScriptCall(room.reset.Value(), "reset")
 	}

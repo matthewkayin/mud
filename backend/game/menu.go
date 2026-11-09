@@ -120,7 +120,6 @@ func NewMenu(params MenuNewParams) Menu {
 		} else {
 			verbs = append(entry.synonyms, entryVerb)
 		}
-		log.Printf("Entry verb: %s, verbs %v", entryVerb, verbs)
 
 		for _, verb := range verbs {
 			_, exists := menu.entries[verb]
@@ -236,21 +235,4 @@ func (menu *Menu) handleHelpCommand(player *Player, args []string) {
 	}
 
 	player.send(fmt.Sprintf("There is no help topic or category called '%s'.", input))
-}
-
-func mergeMenuEntries(entryMaps ...map[string]MenuEntry) map[string]MenuEntry {
-	result := make(map[string]MenuEntry)
-
-	for _, entries := range entryMaps {
-		for verb, entry := range entries {
-			_, alreadyExists := result[verb]
-			if alreadyExists {
-				log.Fatalf("Duplicate menu entry %s", verb)
-			}
-
-			result[verb] = entry
-		}
-	}
-
-	return result
 }

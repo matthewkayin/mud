@@ -16,6 +16,12 @@ world = {}
 ---@field amount integer
 ---@field durability integer
 
+---@enum ItemKind
+world.ItemKind = {
+	CONSUMABLE = "Consumable",
+	MISC = "Misc",
+}
+
 ---@enum Direction
 world.Direction = {
 	NORTH = "north",

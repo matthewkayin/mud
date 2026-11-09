@@ -20,6 +20,7 @@ type Player struct {
 	character *world.Character
 	mobHandle world.MobHandle
 	isMinimapDirty bool
+	isInventoryDirty bool
 }
 
 func playerInit(key string, inbox *chan SocketMessage) Player {
@@ -57,6 +58,17 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 				heartbeat.Map = gamestate.GetMinimap(player.character.Room, player.character.RoomsDiscovered)
 				player.isMinimapDirty = false
 			}
+			if player.isInventoryDirty {
+				heartbeat.Inventory = make([]string, 0, 1 + len(player.character.Inventory.Items))
+				heartbeat.Inventory = append(heartbeat.Inventory, "Inventory:")
+
+				for index := range len(player.character.Inventory.Items) {
+					item := &player.character.Inventory.Items[index]
+					heartbeat.Inventory = append(heartbeat.Inventory, fmt.Sprintf("  %s", item.NameWithAmount()))
+				}
+
+				player.isInventoryDirty = false
+			}
 		}
 	}
 
@@ -88,4 +100,12 @@ func (player *Player) setMenuWorld(gamestate *GameState) {
 	room := &gamestate.world.Rooms[player.character.Room]
 	player.send(fmt.Sprintf("You are in <y>%s</y>.", room.Name))
 	describeRoomToPlayer(gamestate, player, room)
+}
+
+// Removes the player from the world and saves their character
+func (player *Player) logout(gamestate *GameState) {
+	room := &gamestate.world.Rooms[player.character.Room]
+	room.RemoveOccupant(player.mobHandle)
+	gamestate.world.MessageRoom(player.character.Room, fmt.Sprintf("<y>%s</y> has left the world.", player.character.Name))
+	gamestate.world.SaveCharacter(player.character)
 }

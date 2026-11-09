@@ -48,4 +48,33 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 			return true
 		},
 	},
+
+	"search": {
+		usage: "search [container]",
+		description: "Search the room for items, or type 'search <container>' to search a specific container such as a chest or a corpse.",
+		categories: []string { "exploration", "items" },
+		handler: func (gamestate *GameState, player *Player, args []string) bool {
+			// TODO: make this do a 'search' role so that some players are better at searching than others
+
+			room := &gamestate.world.Rooms[player.character.Room]
+			targetInventory := &room.Inventory
+
+			// TODO: check for target inventory
+
+			// Handle no items case
+			if len(targetInventory.Items) == 0 {
+				player.send("You see nothing.")
+				return true
+			}
+
+			// Build a list of item names
+			itemNames := make([]string, 0, len(targetInventory.Items))
+			for index := range len(targetInventory.Items) {
+				itemNames = append(itemNames, fmt.Sprintf("<g>%s</g>", targetInventory.Items[index].NameWithAmount()))
+			}
+
+			player.send(fmt.Sprintf("You see %s.", util.CombineNames(itemNames)))
+			return true
+		},
+	},
 }

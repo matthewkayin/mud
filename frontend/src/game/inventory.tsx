@@ -1,11 +1,14 @@
 type InventoryProps = {
   isInWorld: boolean;
+  lines: string[];
 };
 
-export const Inventory = ({ isInWorld }: InventoryProps) => {
+export const Inventory = ({ isInWorld, lines }: InventoryProps) => {
   return (
     <div className="inventory">
-      {isInWorld && <p className="terminal-text">Your inventory is empty.</p>}
+      {isInWorld && lines && lines.map((line) => (
+        <p className="terminal-text">{line}</p>
+      ))}
     </div>
   );
 };

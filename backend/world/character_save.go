@@ -30,6 +30,14 @@ type CharacterJson struct {
 
 	Health int32
 	Mana int32
+
+	Inventory []ItemJson
+}
+
+type ItemJson struct {
+	Name string
+	Amount int32
+	Durability int32
 }
 
 var CHARACTER_SAVES_FOLDER = filepath.Join(database.SAVES_FOLDER, "characters")
@@ -132,6 +140,8 @@ func (world *World) characterToJson(character *Character) CharacterJson {
 
 		Health: character.Health,
 		Mana: character.Mana,
+
+		Inventory: make([]ItemJson, 0, len(character.Inventory.Items)),
 	}
 
 	// Rooms discovered
@@ -144,6 +154,16 @@ func (world *World) characterToJson(character *Character) CharacterJson {
 	// Stats
 	for index := range STAT_COUNT {
 		characterJson.Stats[STAT_DATA[index].Abbreviation] = character.Stats.Values[index]
+	}
+
+	// Inventory
+	for index := range len(character.Inventory.Items) {
+		item := &character.Inventory.Items[index]
+		characterJson.Inventory = append(characterJson.Inventory, ItemJson {
+			Name: item.Name,
+			Amount: item.Amount,
+			Durability: item.Durability,
+		})
 	}
 
 	return characterJson
@@ -199,6 +219,22 @@ func (world *World) characterFromJson(characterJson *CharacterJson) (*Character,
 
 	character.Health = characterJson.Health
 	character.Mana = characterJson.Mana
+
+	// Inventory
+	character.Inventory = NewInventory()
+	for _, itemJson := range characterJson.Inventory {
+		itemType, exists := world.ItemNameToType[itemJson.Name]
+		if !exists {
+			return nil, fmt.Errorf("Character has item %s which does not exist.", itemJson.Name)
+		}
+
+		item := world.createItem(CreateItemParams {
+			itemType: itemType,
+			amount: itemJson.Amount,
+			durability: itemJson.Durability,
+		})
+		character.Inventory.AddItem(item)
+	}
 
 	return character, nil
 }

@@ -7,17 +7,30 @@ room.details = {
     ["espresso machine"] = "It's a Breville Barista Express. You didn't expect a commercial one, did you?"
 }
 room.position = { x = -1, y = 0, z = 0 }
-room.exits = { "east", "west" }
+room.exits = { "east" }
 
-room.interactions = {}
+room.loot = {
+    {
+        item = "Apple",
+        amount = 1,
+        drop_chance_percent = 100,
+    },
+    {
+        item = "Potion",
+        amount = 1,
+        drop_chance_percent = 100,
+    }
+}
 
-function room.interactions.touch(state, player, arg)
-    if arg == "coffee maker" then
-        world.message_player(player, "You touched the coffee maker.")
-        return
+room.interactions = {
+    touch = function (state, player, arg)
+        if arg == "coffee maker" then
+            world.message_player(player, "You touched the coffee maker.")
+            return
+        end
+
+        world.message_player(player, string.format("There is no '%s' here that you can touch.", arg))
     end
-
-    world.message_player(player, string.format("There is no '%s' here that you can touch.", arg))
-end
+}
 
 return room
