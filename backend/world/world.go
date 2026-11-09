@@ -26,6 +26,7 @@ type World struct {
 	ItemTypes []*ItemType
 	ItemNameToType map[string]*ItemType
 	NextItemId ItemId
+	ItemGold *ItemType
 
 	Rooms []Room
 	RoomPositionToIndex map[RoomPosition]int

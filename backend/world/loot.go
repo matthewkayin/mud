@@ -41,11 +41,19 @@ func (table *LootTable) getLoot(world *World) Inventory {
 		}
 
 		if entry.itemType.CanStack() {
-			item := world.createItem(entry.itemType, amount, 0)
+			item := world.createItem(CreateItemParams {
+				itemType: entry.itemType,
+				amount: amount,
+				durabilityPercent: 0,
+			})
 			inventory.AddItem(item)
 		} else {
 			for _ = range amount {
-				item := world.createItem(entry.itemType, 1, entry.durabilityPercentRange.ChooseRandom())
+				item := world.createItem(CreateItemParams {
+					itemType: entry.itemType,
+					amount: 1,
+					durabilityPercent: entry.durabilityPercentRange.ChooseRandom(),
+				})
 				inventory.AddItem(item)
 			}
 		}
@@ -111,7 +119,7 @@ func (parser *ScriptParser) getOptionalLootTable(world *World, table *lua.Table,
 		entry := LootTableEntry {
 			itemType: itemType,
 			amountRange: parser.getInt32Range(entryTable, "amount"),
-			durabilityPercentRange: parser.getInt32Range(entryTable, "durability_percent"),
+			durabilityPercentRange: parser.getOptionalInt32Range(entryTable, "durability_percent", 100),
 			dropChancePercent: parser.getInt32(entryTable, "drop_chance_percent"),
 		}
 

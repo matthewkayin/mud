@@ -12,6 +12,8 @@ type MobData struct {
 
 	Health int32
 	Mana int32
+
+	Inventory Inventory
 }
 
 func (data *MobData) MaxHealth() int32 {

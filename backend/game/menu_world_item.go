@@ -1,5 +1,10 @@
 package game
 
+import (
+	"fmt"
+	"mud/world"
+)
+
 var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 	"take": {
 		usage: "take <item> [from <container>]",
@@ -15,11 +20,36 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 			// Determine target inventory
 			room := &gamestate.world.Rooms[player.character.Room]
 			targetInventory := &room.Inventory
+			containerName := "the room"
 			if userSpecifiedContainer {
 				// TODO: fuzzy find container
 			}
 
 			// Inventory transfer
+			result, err := gamestate.inventoryTransfer(InventoryTransferParams {
+				from: InventoryTransferLocation {
+					inventory: targetInventory,
+					name: containerName,
+					capacity: world.INVENTORY_CAPACITY_UNLIMITED,
+				},
+				to: InventoryTransferLocation {
+					inventory: &player.character.Inventory,
+					name: "your inventory",
+					capacity: world.INVENTORY_CAPACITY_PLAYER,
+				},
+				verb: "take",
+				itemWords: itemWords,
+			})
+			if err != nil {
+				player.send(err.Error())
+				return true
+			}
+			if result.notice != "" {
+				player.send(result.notice)
+			}
+
+			player.send(fmt.Sprintf("You took <g>%s</g> from %s.", result.item.NameWithAmount(), containerName))
+			return true
 		},
 	},
 }

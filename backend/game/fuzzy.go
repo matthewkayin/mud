@@ -181,7 +181,7 @@ func fuzzyFindInventoryItemResultString(result FuzzyResult, inventoryName string
 		case FUZZY_RESULT_NUMBER_OUT_OF_RANGE:
 			return fmt.Sprintf("There is no '%s' matching that number in %s.", strings.Join(searchWords, " "), inventoryName)
 		case FUZZY_RESULT_OK:
-			return "You shouldn't call this function on an OK result."
+			panic("You shouldn't call this function on an OK result.")
 		default:
 			panic(fmt.Sprintf("Fuzzy result type %d not handled", result))
 	}

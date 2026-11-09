@@ -120,7 +120,6 @@ func NewMenu(params MenuNewParams) Menu {
 		} else {
 			verbs = append(entry.synonyms, entryVerb)
 		}
-		log.Printf("Entry verb: %s, verbs %v", entryVerb, verbs)
 
 		for _, verb := range verbs {
 			_, exists := menu.entries[verb]

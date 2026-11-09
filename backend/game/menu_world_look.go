@@ -70,7 +70,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 			// Build a list of item names
 			itemNames := make([]string, 0, len(targetInventory.Items))
 			for index := range len(targetInventory.Items) {
-				itemNames = append(itemNames, fmt.Sprintf("<g>%s</g>", targetInventory.Items[index].Name))
+				itemNames = append(itemNames, fmt.Sprintf("<g>%s</g>", targetInventory.Items[index].NameWithAmount()))
 			}
 
 			player.send(fmt.Sprintf("You see %s.", util.CombineNames(itemNames)))

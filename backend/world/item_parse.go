@@ -17,6 +17,7 @@ func (world *World) loadItemTypes() error {
 	}
 
 	world.ItemTypes = make([]*ItemType, 0, len(paths))
+	world.ItemNameToType = make(map[string]*ItemType)
 
 	for _, path := range paths {
 		// Open script
@@ -35,10 +36,20 @@ func (world *World) loadItemTypes() error {
 		world.ItemTypes = append(world.ItemTypes, itemType)
 	}
 
+	// Add a custom item for gold
+	world.ItemGold = &ItemType {
+		Name: "Gold",
+		Description: "Gold coins, currency of the land.",
+
+		kind: ITEM_KIND_MISC,
+		price: 1,
+		size: 0,
+	}
+	world.ItemNameToType[world.ItemGold.Name] = world.ItemGold
+
 	// Set the item name to type mapping
 	// This happens after we add all the item types, since the mapping directs to ItemType pointers and
 	// the append() function shouldn't, but might, change the underlying memory of world.ItemTypes
-	world.ItemNameToType = make(map[string]*ItemType)
 	for index := range len(world.ItemTypes) {
 		itemType := world.ItemTypes[index]
 

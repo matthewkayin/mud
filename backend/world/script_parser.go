@@ -100,6 +100,18 @@ func (parser *ScriptParser) getTable(table *lua.Table, key string) *lua.Table {
 	return result
 }
 
+func (parser *ScriptParser) getOptionalInt32Range(table *lua.Table, key string, fallback int32) util.Int32Range {
+	value := table.RawGetString(key)
+	if value.IsNil() {
+		return util.Int32Range {
+			Min: fallback,
+			Max: fallback,
+		}
+	}
+
+	return parser.getInt32Range(table, key)
+}
+
 func (parser *ScriptParser) getInt32Range(table *lua.Table, key string) util.Int32Range {
 	value := table.RawGetString(key)
 	if value.IsNil() {
