@@ -28,5 +28,6 @@ type SocketPlayerStatus struct {
 type SocketMessage struct {
 	Message *string `json:"message"`
 	Status *SocketPlayerStatus `json:"status,omitempty"`
+	Inventory []string `json:"inv,omitempty"`
 	Map []int `json:"map,omitempty"`
 }

@@ -195,6 +195,7 @@ func (gamestate *GameState) spawnPlayerMob(player *Player) {
 	playerRoom := &gamestate.world.Rooms[playerMob.Room]
 	playerRoom.AddOccupant(player.mobHandle)
 	player.isMinimapDirty = true
+	player.isInventoryDirty = true
 }
 
 func (gamestate *GameState) messagePlayer(playerKey string, message string) {

@@ -49,6 +49,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 			}
 
 			player.send(fmt.Sprintf("You took <g>%s</g> from %s.", result.item.NameWithAmount(), containerName))
+			player.isInventoryDirty = true
 			return true
 		},
 	},

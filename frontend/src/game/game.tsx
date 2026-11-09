@@ -21,6 +21,7 @@ export function GamePage() {
   // Status
   const [playerStatus, setPlayerStatus] = useState<PlayerStatus | null>(null);
   const [minimap, setMinimap] = useState<number[] | null>(null);
+  const [inventoryLines, setInventoryLines] = useState<string[] | null>(null);
 
   // Websocket
   const websocketRef = useRef<WebSocket | null>(null);
@@ -74,7 +75,7 @@ export function GamePage() {
         terminalWriteLine(socketMessage.message);
       }
 
-      console.log(socketMessage);
+      // console.log(socketMessage);
 
       // Get status from socketMessage
       if (socketMessage.status) {
@@ -85,12 +86,17 @@ export function GamePage() {
         // their status and minimap (which hides the status bar, minimap and inventory)
         setPlayerStatus(null);
         setMinimap(null);
+        setInventoryLines(null);
       }
 
       // Get minimap from socketMessage
       // The server only sends the minimap when it changes
       if (socketMessage.map) {
         setMinimap(socketMessage.map);
+      }
+
+      if (socketMessage.inv) {
+        setInventoryLines(socketMessage.inv);
       }
     };
 
@@ -155,7 +161,7 @@ export function GamePage() {
       </div>
       <div className="game-sidebar">
         <Minimap map={minimap} />
-        <Inventory isInWorld={playerStatus !== null} />
+        <Inventory isInWorld={playerStatus !== null} lines={inventoryLines} />
       </div>
     </article>
   );

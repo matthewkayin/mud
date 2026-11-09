@@ -15,6 +15,7 @@ var MENU_WORLD_PARAMS = MenuNewParams {
 	entries: mergeMenuEntries(
 		MENU_WORLD_ENTRIES_GENERAL,
 		MENU_WORLD_ENTRIES_LOOK,
+		MENU_WORLD_ENTRIES_ITEM,
 		makeMoveEntries(),
 	),
 	topics: map[string]MenuHelpTopic {},

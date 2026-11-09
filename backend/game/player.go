@@ -20,6 +20,7 @@ type Player struct {
 	character *world.Character
 	mobHandle world.MobHandle
 	isMinimapDirty bool
+	isInventoryDirty bool
 }
 
 func playerInit(key string, inbox *chan SocketMessage) Player {
@@ -56,6 +57,17 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 			if player.isMinimapDirty {
 				heartbeat.Map = gamestate.GetMinimap(player.character.Room, player.character.RoomsDiscovered)
 				player.isMinimapDirty = false
+			}
+			if player.isInventoryDirty {
+				heartbeat.Inventory = make([]string, 0, 1 + len(player.character.Inventory.Items))
+				heartbeat.Inventory = append(heartbeat.Inventory, "Inventory:")
+
+				for index := range len(player.character.Inventory.Items) {
+					item := &player.character.Inventory.Items[index]
+					heartbeat.Inventory = append(heartbeat.Inventory, fmt.Sprintf("  %s", item.NameWithAmount()))
+				}
+
+				player.isInventoryDirty = false
 			}
 		}
 	}
