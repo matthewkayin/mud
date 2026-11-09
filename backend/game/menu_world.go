@@ -12,7 +12,7 @@ import (
 var MenuWorld Menu
 
 var MENU_WORLD_PARAMS = MenuNewParams {
-	entries: mergeMenuEntries(
+	entries: util.MergeMaps(
 		MENU_WORLD_ENTRIES_GENERAL,
 		MENU_WORLD_ENTRIES_LOOK,
 		MENU_WORLD_ENTRIES_ITEM,

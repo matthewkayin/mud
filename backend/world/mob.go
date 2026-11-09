@@ -32,6 +32,14 @@ func (mob *Mob) IsPlayer() bool {
 	return mob.PlayerCharacter != nil
 }
 
+func (mob *Mob) InventoryCapacity() int32 {
+	if mob.IsPlayer() {
+		return INVENTORY_CAPACITY_PLAYER
+	}
+
+	return INVENTORY_CAPACITY_UNLIMITED
+}
+
 func (mob *Mob) Move(world *World, newRoomIndex int) {
 	oldRoom := &world.Rooms[mob.Room]
 	oldRoom.RemoveOccupant(mob.Handle)

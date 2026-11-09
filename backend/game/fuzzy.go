@@ -1,6 +1,7 @@
 package game
 
 import (
+	"log"
 	"fmt"
 	"slices"
 	"strings"
@@ -160,6 +161,11 @@ func fuzzyFindInventoryItem(inventory *world.Inventory, searchWords []string) (i
 	var fuzzyNumber int
 	fuzzyNumber, searchWords = getFuzzyNumberFromArgs(searchWords)
 
+	// Re-check search words length after getting fuzzy number
+	if len(searchWords) == 0 {
+		return 0, FUZZY_RESULT_TARGET_NOT_SPECIFIED
+	}
+
 	// Put all item names into an array
 	itemNames := make([]string, len(inventory.Items))
 	for index := range len(inventory.Items) {
@@ -181,8 +187,59 @@ func fuzzyFindInventoryItemResultString(result FuzzyResult, inventoryName string
 		case FUZZY_RESULT_NUMBER_OUT_OF_RANGE:
 			return fmt.Sprintf("There is no '%s' matching that number in %s.", strings.Join(searchWords, " "), inventoryName)
 		case FUZZY_RESULT_OK:
-			panic("You shouldn't call this function on an OK result.")
+			log.Printf("Warn: You should not call fuzzyFindInventoryItemResultString() on FUZZY_RESULT_OK.")
+			return "Something strange happened."
 		default:
-			panic(fmt.Sprintf("Fuzzy result type %d not handled", result))
+			log.Printf("Warn: Fuzzy result type %d not handled in fuzzyFindInventoryItemResultString().", result)
+			return "Something strange happened."
+	}
+}
+
+func fuzzyFindMob(gamestate *GameState, player *Player, searchWords []string) (world.MobHandle, error) {
+	// Check that there are any arguments
+	if len(searchWords) == 0 {
+		return world.MobHandle{}, fmt.Errorf("You must specify a target.")
+	}
+
+	// Handle when user targets "self"
+	if len(searchWords) == 1 && strings.EqualFold(searchWords[0], "self") {
+		return player.mobHandle, nil
+	}
+
+	// Get fuzzy number
+	var fuzzyNumber int
+	fuzzyNumber, searchWords = getFuzzyNumberFromArgs(searchWords)
+
+	// Re-check search words length after getting fuzzy number
+	if len(searchWords) == 0 {
+		return world.MobHandle{}, fmt.Errorf("You must specify a target.")
+	}
+
+	// Put all room occupants in an array
+	room := &gamestate.world.Rooms[player.character.Room]
+	mobNames := make([]string, 0, len(room.Occupants))
+	for _, handle := range room.Occupants {
+		occupant := gamestate.world.Mobs.Get(handle)
+
+		// TODO: check hidden occupants
+		mobNames = append(mobNames, occupant.Name)
+	}
+
+	// Fuzzy find the mob
+	index, result := fuzzyFind(mobNames, searchWords, fuzzyNumber)
+
+	// Handle result
+	switch result {
+		case FUZZY_RESULT_OK:
+			return room.Occupants[index], nil
+		case FUZZY_RESULT_NOT_FOUND:
+			return world.MobHandle{}, fmt.Errorf("No target in the room matches the name '%s'.", strings.Join(searchWords, " "))
+		case FUZZY_RESULT_AMBIGUOUS:
+			return world.MobHandle{}, fmt.Errorf("There are multiple targets in the room matching the name '%s'.", strings.Join(searchWords, " "))
+		case FUZZY_RESULT_NUMBER_OUT_OF_RANGE:
+			return world.MobHandle{}, fmt.Errorf("There is no '%s' matching that number in the room.", strings.Join(searchWords, " "))
+		default:
+			log.Printf("Warn: Fuzzy result %d not handled in fuzzyFindMob().", result)
+			return world.MobHandle{}, fmt.Errorf("Something strange happened.")
 	}
 }
