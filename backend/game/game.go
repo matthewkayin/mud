@@ -78,6 +78,9 @@ func (gamestate *GameState) Run(ctx context.Context) {
 	ticker := time.NewTicker(GAME_UPDATE_INTERVAL)
 	defer ticker.Stop()
 
+	saveTicker := time.NewTicker(GAME_SAVE_INTERVAL)
+	defer saveTicker.Stop()
+
 	gameloop:
 	for {
 		select {
@@ -108,10 +111,15 @@ func (gamestate *GameState) Run(ctx context.Context) {
 			case <- ticker.C: {
 				gamestate.update()
 			}
+
+			case <- saveTicker.C: {
+				gamestate.savePlayers()
+			}
 		}
 	}
 
 	log.Printf("Shutdown signal received. Shutting down server...")
+	gamestate.savePlayers()
 	gamestate.world.Quit()
 }
 
@@ -163,8 +171,10 @@ func (gamestate *GameState) removePlayer(playerKey string, playerInbox *chan Soc
 		return
 	}
 
-	// Check if they are logged in
-	// TODO: if player logged in, log them out and save character
+	// Logout the player if they are logged in
+	if player.isLoggedIn() {
+		player.logout(gamestate)
+	}
 
 	close(*player.inbox)
 
@@ -205,6 +215,19 @@ func (gamestate *GameState) messagePlayer(playerKey string, message string) {
 	}
 
 	player.send(message)
+}
+
+func (gamestate *GameState) savePlayers() {
+	for index := range len(gamestate.players) {
+		player := &gamestate.players[index]
+		if !player.isLoggedIn() {
+			continue
+		}
+
+		gamestate.world.SaveCharacter(player.character)
+	}
+
+	log.Printf("Saved all logged in player characters.")
 }
 
 // HANDLE COMMAND
