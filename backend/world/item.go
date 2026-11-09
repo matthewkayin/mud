@@ -58,20 +58,26 @@ type CreateItemParams struct {
 	itemType *ItemType
 	amount int32
 	durabilityPercent int32
+	durability int32
 }
 
 // Creates a new item and assigns it a unique ID. All Item instances should be created this way
+// When specifying the item's durability, you should use the durability field or the durabilityPercent field, not both
 func (world *World) createItem(params CreateItemParams) Item {
 	itemId := world.NextItemId
 	world.NextItemId++
+
+	durability := params.durability
+	if durability == 0 && params.durabilityPercent != 0 {
+		// TODO:
+		// durability = (durabilityPercent * itemType.MaxDurability()) / 100
+	}
 
 	return Item {
 		Id: itemId,
 		ItemType: params.itemType,
 		Amount: params.amount,
-		// TODO:
-		// Durability: (durabilityPercent * itemData.GetMaxDurability()) / 100,
-		Durability: 0,
+		Durability: durability,
 	}
 }
 
