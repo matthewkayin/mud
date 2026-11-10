@@ -9,6 +9,8 @@ import { type PlayerStatus, type SocketMessage } from './socket_message';
 
 const TERMINAL_PROMPT = ">";
 const HEARTBEAT_TIMEOUT_MS = 10000;
+const TERMINAL_MAX_LINE_COUNT = 1024;
+const TERMINAL_MAX_HISTORY = 32;
 
 export function GamePage() {
   // Auth
@@ -17,6 +19,8 @@ export function GamePage() {
   // Terminal state
   const [command, setCommand] = useState('');
   const [lines, setLines] = useState<string[]>([]);
+  const [history, setHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
 
   // Status
   const [playerStatus, setPlayerStatus] = useState<PlayerStatus | null>(null);
@@ -26,13 +30,23 @@ export function GamePage() {
   // Websocket
   const websocketRef = useRef<WebSocket | null>(null);
 
-  const terminalWriteLine = (line: string) => setLines((previous) => [...previous, line]);
+  const terminalWriteLine = (line: string) => setLines((previous) => {
+    const startIndex = previous.length === TERMINAL_MAX_LINE_COUNT ? 1 : 0;
+    const previousLines = previous.slice(startIndex);
+    return [...previousLines, line];
+  });
   const onSubmit = (command: string) => {
     if (websocketRef.current === null) {
       return;
     }
 
     terminalWriteLine(`\n${TERMINAL_PROMPT} ${command}`)
+    setHistory((previous) => {
+      const startIndex = previous.length == TERMINAL_MAX_HISTORY ? 1 : 0;
+      const previousHistory = previous.slice(startIndex);
+      return [command, ...previousHistory];
+    });
+    setHistoryIndex(-1);
     websocketRef.current.send(command.trim());
   }
 
@@ -74,8 +88,6 @@ export function GamePage() {
       if (socketMessage.message !== null) {
         terminalWriteLine(socketMessage.message);
       }
-
-      // console.log(socketMessage);
 
       // Get status from socketMessage
       if (socketMessage.status) {
@@ -154,6 +166,9 @@ export function GamePage() {
           lines={lines}
           command={command}
           setCommand={setCommand}
+          history={history}
+          historyIndex={historyIndex}
+          setHistoryIndex={setHistoryIndex}
           pendingAction={false}
           onSubmit={onSubmit}
         />

@@ -7,6 +7,9 @@ type TerminalProps = {
   lines: string[];
   command: string;
   setCommand: (value: string) => void;
+  history: string[];
+  historyIndex: number;
+  setHistoryIndex: (value: number) => void;
   pendingAction: boolean;
   onSubmit: (command: string) => void;
 }
@@ -15,7 +18,7 @@ type TerminalProps = {
 const PENDING_ACTION_PROMPT_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 const PENDING_ACTION_PROMPT_FRAME_MS = 100;
 
-export const Terminal = ({ prompt, lines, command, setCommand, pendingAction, onSubmit }: TerminalProps) => {
+export const Terminal = ({ prompt, lines, command, setCommand, history, historyIndex, setHistoryIndex, pendingAction, onSubmit }: TerminalProps) => {
   const [isFocused, setIsFocused] = useState(false);
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
   const [promptFrame, setPromptFrame] = useState(0);
@@ -62,6 +65,36 @@ export const Terminal = ({ prompt, lines, command, setCommand, pendingAction, on
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (!isFocused) {
+      return;
+    }
+
+    // Handle clear on Ctrl+C
+    if (event.ctrlKey && event.key === 'c') {
+      setCommand('');
+      setHistoryIndex(-1);
+      return;
+    }
+
+    // Ignore modifier keys
+    if (event.ctrlKey || event.altKey) {
+      return;
+    }
+
+    // Hand up/down arrow for history
+    if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+      const direction = event.key === 'ArrowUp' ? 1 : -1;
+      const newHistoryIndex = historyIndex + direction;
+      // Don't allow the history to move out of range
+      if (newHistoryIndex < -1 || newHistoryIndex > history.length - 1) {
+        return;
+      }
+
+      setHistoryIndex(newHistoryIndex);
+      if (newHistoryIndex !== -1) {
+        setCommand(history[newHistoryIndex]);
+      } else {
+        setCommand('');
+      }
       return;
     }
 
