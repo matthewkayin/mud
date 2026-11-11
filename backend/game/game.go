@@ -30,6 +30,10 @@ type GameState struct {
 
 	players []Player
 	playerKeyToIndexMap map[string]int
+	// A list of logged in player names, which is cached here so that we don't have to re-allocate it every 'tell'
+	playerCharacterNames []string
+	// A list of logged in player keys. This list is parallel to playerCharacterNames and is used so that we know which player to 'tell' to
+	playerCharacterKeys []string
 
 	world *world.World
 }
@@ -56,6 +60,8 @@ func Init(version string) *GameState {
 
 		players: make([]Player, 0, 64),
 		playerKeyToIndexMap: make(map[string]int),
+		playerCharacterNames: make([]string, 0, 64),
+		playerCharacterKeys: make([]string, 0, 64),
 
 		world: newWorld,
 	}
@@ -215,6 +221,16 @@ func (gamestate *GameState) messagePlayer(playerKey string, message string) {
 	}
 
 	player.send(message)
+}
+
+// Sends a message to all logged in players
+func (gamestate *GameState) messageWorld(message string) {
+	for index := range len(gamestate.players) {
+		player := &gamestate.players[index]
+		if player.isLoggedIn() {
+			player.send(message)
+		}
+	}
 }
 
 func (gamestate *GameState) savePlayers() {

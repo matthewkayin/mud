@@ -1,5 +1,7 @@
 package world
 
+import "mud/util"
+
 const INVENTORY_CAPACITY_PLAYER int32 = 100
 const INVENTORY_CAPACITY_UNLIMITED int32 = -1
 
@@ -8,8 +10,8 @@ type Inventory struct {
 }
 
 func NewInventory() Inventory {
-	return Inventory {
-		Items: []Item {},
+	return Inventory{
+		Items: []Item{},
 	}
 }
 
@@ -27,7 +29,7 @@ func (inventory *Inventory) HasSpaceFor(sizeDelta int32, capacity int32) bool {
 		return true
 	}
 
-	return inventory.Size() + sizeDelta <= capacity
+	return inventory.Size()+sizeDelta <= capacity
 }
 
 func (inventory *Inventory) AmountThatFits(itemType *ItemType, amount int32, capacity int32) int32 {
@@ -35,8 +37,8 @@ func (inventory *Inventory) AmountThatFits(itemType *ItemType, amount int32, cap
 		return amount
 	}
 
-	spaceRemaining := max(capacity - inventory.Size(), 0)
-	return min(amount, spaceRemaining / itemType.size)
+	spaceRemaining := max(capacity-inventory.Size(), 0)
+	return min(amount, spaceRemaining/itemType.size)
 }
 
 func (inventory *Inventory) FindItem(itemType *ItemType) (int, bool) {
@@ -95,16 +97,14 @@ func (inventory *Inventory) RemoveItems(world *World, index int, amount int32) I
 		// If we're removing all of the item, then use the exact item from the Items array, and remove the entry from Items
 		removedItem = inventory.Items[index]
 
-		lastIndex := len(inventory.Items) - 1
-		inventory.Items[index] = inventory.Items[lastIndex]
-		inventory.Items = inventory.Items[:lastIndex]
+		inventory.Items = util.RemoveAtUnordered(inventory.Items, index)
 	} else {
 		// If we're not removing all of the item, then decrement the amount
 		// and create a new item (with a new ItemId) to return
 		inventory.Items[index].Amount -= amountRemoved
-		removedItem = world.createItem(CreateItemParams {
-			itemType: inventory.Items[index].ItemType,
-			amount: amountRemoved,
+		removedItem = world.createItem(CreateItemParams{
+			itemType:          inventory.Items[index].ItemType,
+			amount:            amountRemoved,
 			durabilityPercent: inventory.Items[index].Durability,
 		})
 	}
