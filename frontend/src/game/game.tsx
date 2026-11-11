@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../auth/auth_context.tsx';
+import { getDebugUsername } from '../auth/auth_api.ts';
 import { Terminal } from './terminal.tsx';
 import { StatusBar } from './status_bar.tsx';
 import { Minimap } from './minimap.tsx';
@@ -54,7 +55,10 @@ export function GamePage() {
   useEffect(() => {
     // Create websocket timeout
     const websocketProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const websocket = new WebSocket(`${websocketProtocol}://${window.location.host}/api/websocket`);
+    // A debug sign-in has no session cookie, so the username goes in the URL
+    const debugUsername = getDebugUsername();
+    const websocketQuery = debugUsername === null ? '' : `?debugUser=${encodeURIComponent(debugUsername)}`;
+    const websocket = new WebSocket(`${websocketProtocol}://${window.location.host}/api/websocket${websocketQuery}`);
     websocketRef.current = websocket;
     console.log('Created web socket.');
 

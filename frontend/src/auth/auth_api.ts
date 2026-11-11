@@ -59,3 +59,53 @@ export async function createAccount(username: string, password: string): Promise
 export async function signOut(): Promise<void> {
   await request('POST', '/api/auth/logout');
 }
+
+export interface AuthConfig {
+  debugAuth: boolean;
+}
+
+export async function getAuthConfig(): Promise<AuthConfig> {
+  try {
+    const response = await fetch('/api/auth/config', { credentials: 'same-origin' });
+    if (!response.ok) {
+      return { debugAuth: false };
+    }
+    const json = await response.json();
+    return { debugAuth: json?.debugAuth === true };
+  } catch {
+    return { debugAuth: false };
+  }
+}
+
+// Debug sign-in only validates the username. The server keeps no session for it,
+// so the username is stored per tab and sent when the websocket opens.
+export async function debugSignIn(username: string): Promise<User> {
+  const response = await request('POST', '/api/auth/debug-login', { username });
+  return await response.json() as User;
+}
+
+const DEBUG_USERNAME_STORAGE_KEY = 'mud_debug_username';
+
+export function getDebugUsername(): string | null {
+  try {
+    return sessionStorage.getItem(DEBUG_USERNAME_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setDebugUsername(username: string): void {
+  try {
+    sessionStorage.setItem(DEBUG_USERNAME_STORAGE_KEY, username);
+  } catch {
+    // Without sessionStorage the debug sign-in only lasts until the page reloads.
+  }
+}
+
+export function clearDebugUsername(): void {
+  try {
+    sessionStorage.removeItem(DEBUG_USERNAME_STORAGE_KEY);
+  } catch {
+    // Nothing to clear.
+  }
+}

@@ -52,7 +52,7 @@ The game page renders its panels inside an `article.game` in two columns: the te
 
 ## Auth
 
-`AuthProvider` asks `GET /api/auth/me` once on load and exposes `{ user, loading, signIn, createAccount, signOut }` through `useAuth()`. Pages that depend on login state render nothing while `loading` is true, so they don't redirect before the check finishes. Errors thrown by `auth_api.ts` carry a message meant to be shown to the user.
+`AuthProvider` asks `GET /api/auth/config` and then `GET /api/auth/me` once on load, and exposes `{ user, loading, debugAuth, signIn, createAccount, debugSignIn, signOut }` through `useAuth()`. Pages that depend on login state render nothing while `loading` is true, so they don't redirect before the check finishes. Errors thrown by `auth_api.ts` carry a message meant to be shown to the user.
 
 The server must implement these routes. Sessions are carried by a cookie the server sets; the client never handles tokens.
 
@@ -62,8 +62,14 @@ The server must implement these routes. Sessions are carried by a cookie the ser
 | `POST /api/auth/register` | `{ username, password }` | `200 { "username": string }` + cookie | `4xx { "error": string }` |
 | `POST /api/auth/login`    | `{ username, password }` | `200 { "username": string }` + cookie | `4xx { "error": string }` |
 | `POST /api/auth/logout`   |                          | `204`, clears the cookie             | `4xx { "error": string }` |
+| `GET /api/auth/config`    |                          | `200 { "debugAuth": boolean }`       |                    |
+| `POST /api/auth/debug-login` | `{ username }`        | `200 { "username": string }`, no cookie | `4xx { "error": string }` |
 
 The `error` string is shown to the user as is. Register returns `409` when the username is taken.
+
+### Debug auth
+
+When the server has debug auth enabled (see `docs/backend/accounts.md`), `debugAuth` is true and the sign-in page asks only for a username, calling `debugSignIn`. The returned username is kept in `sessionStorage` under `mud_debug_username`, which is per tab, so each tab can be a different player. On load, a stored debug username is used instead of `/api/auth/me`. The game page adds `?debugUser=<name>` to the websocket URL when one is stored. Signing out of a debug sign-in clears it from `sessionStorage` without calling `/api/auth/logout`, which would clear the cookie other tabs share.
 
 Usernames are 3–20 characters of ASCII letters, digits and `_`, and are unique regardless of capitalization. Passwords are 8–72 bytes. The server returns the username with the capitalization used at registration, even when the user signs in with different capitalization. Server-side details are in `docs/backend/accounts.md`.
 

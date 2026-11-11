@@ -17,7 +17,7 @@ The branch `kayin/mudkit-refactor` is rebuilding the project from scratch. The g
 ### Current state
 
 - `backend/main.go` sets up logging to stdout and `logs/<timestamp>.log`, loads env, creates `saves/accounts`, and runs the HTTP server on `PORT` until SIGINT/SIGTERM. There is no game loop yet.
-- `backend/env/env.go` loads `NAME` and `PORT` from `backend/.env` or the OS environment. `NAME` is the game's identity.
+- `backend/env/env.go` loads `NAME`, `PORT` and the optional `ENABLE_DEBUG_AUTH` from `backend/.env` or the OS environment. `NAME` is the game's identity. `ENABLE_DEBUG_AUTH=true` allows password-less, per-tab sign-in for testing (see `docs/backend/accounts.md`).
 - `backend/api/` holds `ApiState` (in-memory sessions) and username/password accounts with the `/api/auth/me`, `register`, `login` and `logout` routes (see `docs/backend/accounts.md`).
 - `backend/persist/` has `WriteJsonAtomically`, the helper all save files must be written with. Save data lives in `backend/saves/` (gitignored).
 - `frontend/` is a new, rewritten client (see `docs/frontend.md`). It has home, sign-in, create-account and game pages and uses the server's auth routes. The game page has an empty slot for the terminal.

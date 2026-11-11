@@ -11,6 +11,8 @@ import (
 type Env struct {
 	NAME string
 	PORT int
+	// Lets anyone sign in as any username without a password or session. Never enable in production.
+	ENABLE_DEBUG_AUTH bool
 }
 
 var env Env
@@ -56,10 +58,22 @@ func Load() {
 
 	env.NAME = getRequiredEnvVar("NAME", envFileLines)
 
+	env.ENABLE_DEBUG_AUTH = getOptionalEnvVar("ENABLE_DEBUG_AUTH", envFileLines) == "true"
+
 	log.Printf("Loaded env.")
 }
 
 func getRequiredEnvVar(name string, fileLines map[string]string) string {
+	value := getOptionalEnvVar(name, fileLines)
+	if value == "" {
+		log.Fatalf("Missing required env var %s", name)
+	}
+
+	return value
+}
+
+// Returns an empty string when the var is not set
+func getOptionalEnvVar(name string, fileLines map[string]string) string {
 	// First try to get from file
 	value, exists := fileLines[name]
 	if exists {
@@ -67,10 +81,5 @@ func getRequiredEnvVar(name string, fileLines map[string]string) string {
 	}
 
 	// Then fallback to OS env var
-	value = os.Getenv(name)
-	if value == "" {
-		log.Fatalf("Missing required env var %s", name)
-	}
-
-	return value
+	return os.Getenv(name)
 }
