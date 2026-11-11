@@ -80,6 +80,9 @@ var MENU_WORLD_ENTRIES_SOCIAL = map[string]MenuEntry {
 				return false
 			}
 
+			// Trim leading or trailing spaces off of the message and player inputs
+			playerInput = strings.TrimSpace(playerInput)
+			messageInput = strings.TrimSpace(messageInput)
 			if len(playerInput) == 0 || len(messageInput) == 0 {
 				return false
 			}
