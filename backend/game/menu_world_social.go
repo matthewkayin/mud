@@ -10,7 +10,7 @@ var MENU_WORLD_TOPICS_SOCIAL = map[string]MenuHelpTopic {
 	"emotes": {
 		categories: []string { "social" },
 		lines: []string {
-			"-- Emotes --",
+			"=== Emotes ===",
 			"The commands 'chat', 'say', and 'tell' allow you to send emotes by putting a '/' at the front of your message.",
 			"For example, typing 'say /waves hello to everyone.' will send the message '<y><your name></y> waves hello to everyone.'",
 		},
@@ -24,7 +24,7 @@ var MENU_WORLD_ENTRIES_SOCIAL = map[string]MenuEntry {
 		categories: []string { "social" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			// TODO: embelish this list by adding player level and guild, maybe a leaderboard, maybe put gods at the top of the leaderboard?
-			player.send("-- Player List --")
+			player.send("=== Player List ===")
 			for index := range len(gamestate.playerCharacterNames) {
 				player.send(fmt.Sprintf("<y>%s</y>", gamestate.playerCharacterNames[index]))
 			}

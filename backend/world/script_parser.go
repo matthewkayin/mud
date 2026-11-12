@@ -156,3 +156,109 @@ func (parser *ScriptParser) checkInt32IsPositivePercent(number int32, key string
 	parser.checkInt32IsPercent(number, key)
 	parser.checkInt32Positive(number, key)
 }
+
+func (parser *ScriptParser) getAttributeBlock(table *lua.Table, key string) AttributeBlock {
+	attributes := AttributeBlock{}
+
+	value := table.RawGetString(key)
+	if value.IsNil() {
+		return attributes
+	}
+
+	attribTable, ok := value.AsTable()
+	if !ok {
+		parser.addProblem(fmt.Errorf("field '%s' must be a table.", key))
+		return attributes
+	}
+
+	nextKey := lua.Nil()
+	for {
+		attribKey, attribValue, ok, err := attribTable.Next(nextKey)
+		nextKey = attribKey
+		if err != nil {
+			parser.addProblem(fmt.Errorf("Error while iterating through attribute block table: %s", err.Error()))
+			break
+		}
+		if !ok {
+			break
+		}
+
+		// Validate that key is a string
+		abbreviation, ok := attribKey.AsString()
+		if !ok {
+			parser.addProblem(fmt.Errorf("Keys in the attribute block table must be strings."))
+			break
+		}
+
+		// Validate that the key is a skill
+		attribute, err := attributeAbbreviationToEnum(abbreviation)
+		if err != nil {
+			parser.addProblem(err)
+			break
+		}
+
+		value, ok := attribValue.AsNumber()
+		if !ok {
+			parser.addProblem(fmt.Errorf("Values in the attribute block table must be numbers."))
+			break
+		}
+
+		parser.checkNumberIsInt32(value, abbreviation)
+		attributes.Values[attribute] = int32(value)
+	}
+
+	return attributes
+}
+
+func (parser *ScriptParser) getSkillBlock(table *lua.Table, key string) SkillBlock {
+	skills := SkillBlock{}
+
+	value := table.RawGetString(key)
+	if value.IsNil() {
+		return skills
+	}
+
+	skillTable, ok := value.AsTable()
+	if !ok {
+		parser.addProblem(fmt.Errorf("field '%s' must be a table.", key))
+		return skills
+	}
+
+	nextKey := lua.Nil()
+	for {
+		skillKey, skillValue, ok, err := skillTable.Next(nextKey)
+		nextKey = skillKey
+		if err != nil {
+			parser.addProblem(fmt.Errorf("Error while iterating through skill block table: %s", err.Error()))
+			break
+		}
+		if !ok {
+			break
+		}
+
+		// Validate that key is a string
+		skillName, ok := skillKey.AsString()
+		if !ok {
+			parser.addProblem(fmt.Errorf("Keys in the skill block table must be strings."))
+			break
+		}
+
+		// Validate that the key is a skill
+		skill, err := skillNameToEnum(skillName)
+		if err != nil {
+			parser.addProblem(err)
+			break
+		}
+
+		value, ok := skillValue.AsNumber()
+		if !ok {
+			parser.addProblem(fmt.Errorf("Values in the skill block table must be numbers."))
+			break
+		}
+
+		parser.checkNumberIsInt32(value, skillName)
+		skills.Values[skill] = int32(value)
+	}
+
+	return skills
+}

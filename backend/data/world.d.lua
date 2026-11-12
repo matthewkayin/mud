@@ -32,13 +32,46 @@ world.Direction = {
 	DOWN = "down",
 }
 
----@enum Stat
-world.Stat = {
+---@enum Attribute
+world.Attribute = {
 	VIT = "VIT",
 	STR = "STR",
 	AGI = "AGI",
 	INT = "INT",
 	FTH = "FTH",
+}
+
+---@enum Skill
+world.Skill = {
+	FORTITUDE = "Fortitude",
+	HEAVY_ARMOR = "Heavy Armor",
+	SURVIVAL = "Survival",
+	TAUNT = "Taunt",
+	SWORDS = "Swords",
+	AXES = "Axes",
+	BLUDGEONING = "Bludgeoning",
+	SHIELDS = "Shields",
+	BLACKSMITHING = "Blacksmithing",
+	POWER_ATTACK = "Power Attack",
+	MARKSMANSHIP = "Marksmanship",
+	DAGGERS = "Daggers",
+	DUAL_WIELD = "Dual Wield",
+	SNEAK = "Sneak",
+	EVADE = "Evade",
+	LIGHT_ARMOR = "Light Armor",
+	SECURITY = "Security",
+	KEEN = "Keen",
+	SPELLCRAFT = "Spellcraft",
+	SCRIBE = "Scribe",
+	ALCHEMY = "Alchemy",
+	ENCHANTING = "Enchanting",
+	PSIONICS = "Psionics",
+	CANTRIPS = "Cantrips",
+	MEDITATION = "Meditation",
+	WILLPOWER = "Willpower",
+	EVOCATION = "Evocation",
+	DRUIDRY = "Druidry",
+	CONJURATION = "Conjuration",
 }
 
 --- Logs a message to the game

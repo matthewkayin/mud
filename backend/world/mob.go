@@ -6,7 +6,7 @@ import (
 )
 
 type Mob struct {
-	PlayerCharacter *Character
+	Character *Character
 	Handle MobHandle
 
 	*MobData
@@ -23,13 +23,13 @@ func NewMob(data *MobData) Mob {
 
 func NewMobFromCharacter(character *Character) Mob {
 	mob := NewMob(&character.MobData)
-	mob.PlayerCharacter = character
+	mob.Character = character
 
 	return mob
 }
 
 func (mob *Mob) IsPlayer() bool {
-	return mob.PlayerCharacter != nil
+	return mob.Character != nil
 }
 
 func (mob *Mob) InventoryCapacity() int32 {
@@ -38,6 +38,22 @@ func (mob *Mob) InventoryCapacity() int32 {
 	}
 
 	return INVENTORY_CAPACITY_UNLIMITED
+}
+
+func (mob *Mob) MaxHealth() int32 {
+	if mob.IsPlayer() {
+		return mob.Character.MaxHealth()
+	}
+
+	return 0
+}
+
+func (mob *Mob) MaxMana() int32 {
+	if mob.IsPlayer() {
+		return mob.Character.MaxMana()
+	}
+
+	return 0
 }
 
 func (mob *Mob) Move(world *World, newRoomIndex int) {

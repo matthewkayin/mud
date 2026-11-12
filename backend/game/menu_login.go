@@ -27,7 +27,7 @@ var MENU_LOGIN_PARAMS = MenuNewParams {
 					player.send(fmt.Sprintf("<y>%s</y> - <p>%s %s</p>",
 						name,
 						gamestate.world.RaceData[character.Race].Name,
-						gamestate.world.ClassData[character.Class].Name))
+						gamestate.world.BackgroundData[character.Background].Name))
 				}
 
 				return true

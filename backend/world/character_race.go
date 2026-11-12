@@ -12,6 +12,8 @@ type RaceId int
 type RaceData struct {
 	Name string
 	Description string
+	Attributes AttributeBlock
+	Skills SkillBlock
 }
 
 const RACE_DATA_FOLDER = "races"
@@ -41,7 +43,7 @@ func (world *World) loadRaceData() error {
 		}
 
 		// Check for duplicates
-		_, duplicateClassName := world.ClassNameToId[raceData.Name]
+		_, duplicateClassName := world.BackgroundNameToId[raceData.Name]
 		if duplicateClassName {
 			return fmt.Errorf("Class %s has name '%s' which is a duplicate of another class.", path, raceData.Name)
 		}
@@ -58,6 +60,8 @@ func (parser *ScriptParser) parseRace(table *lua.Table) *RaceData {
 
 	raceData.Name = parser.getString(table, "name")
 	raceData.Description = parser.getString(table, "description")
+	raceData.Attributes = parser.getAttributeBlock(table, "attributes")
+	raceData.Skills = parser.getSkillBlock(table, "skills")
 
 	if len(parser.problems) != 0 {
 		return nil

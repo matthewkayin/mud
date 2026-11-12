@@ -1,9 +1,8 @@
 package world
 
 import (
-	"log"
-	"slices"
-	"strings"
+	"fmt"
+	"math"
 	"mud/bitset"
 )
 
@@ -11,7 +10,14 @@ type Character struct {
 	PlayerKey string
 
 	Race RaceId
-	Class ClassId
+	Background BackgroundId
+
+	Level int32
+	Experience int32
+	ExpTotal int32
+
+	Attributes AttributeBlock
+	Skills SkillBlock
 
 	RoomsDiscovered []byte
 
@@ -22,7 +28,7 @@ type CharacterSheet struct {
 	Name string
 
 	Race RaceId
-	Class ClassId
+	Background BackgroundId
 }
 
 func (world *World) NewCharacter(playerKey string, characterSheet *CharacterSheet) *Character {
@@ -31,7 +37,13 @@ func (world *World) NewCharacter(playerKey string, characterSheet *CharacterShee
 	character.PlayerKey = playerKey
 	character.Name = characterSheet.Name
 	character.Race = characterSheet.Race
-	character.Class = characterSheet.Class
+	character.Background = characterSheet.Background
+
+	// Set attributes and skills
+	raceData := world.RaceData[character.Race]
+	backgroundData := world.BackgroundData[character.Background]
+	character.Attributes = raceData.Attributes.Add(&backgroundData.Attributes)
+	character.Skills = raceData.Skills.Add(&backgroundData.Skills)
 
 	character.RoomsDiscovered = bitset.New(len(world.Rooms))
 
@@ -41,45 +53,45 @@ func (world *World) NewCharacter(playerKey string, characterSheet *CharacterShee
 	bitset.Set(character.RoomsDiscovered, character.Room, true)
 
 	// TODO set based on stats and such
-	character.Health = 20
-	character.Mana = 20
+	character.Health = character.MaxHealth()
+	character.Mana = character.MaxMana()
 
 	return character
 }
 
-func (world *World) GetCharacterIfExists(name string) (*Character, bool) {
-	character, exists := world.Characters[strings.ToLower(name)]
-	return character, exists
+func ExpToNextLevel(level int32) int32 {
+	return int32(756.0 * math.Pow(1.26, float64(level - 1)))
 }
 
-func (world *World) AddCharacter(playerKey string, character *Character) {
-	world.Characters[strings.ToLower(character.Name)] = character
-
-	// Alloc a characters list for this player if it does not exist
-	_, exists := world.PlayerCharacters[playerKey]
-	if !exists {
-		world.PlayerCharacters[playerKey] = make([]string, 0, 1)
+func LevelFromExpTotal(expTotal int32) int32 {
+	level := int32(1)
+	for expTotal > ExpToNextLevel(level) {
+		level++
 	}
-
-	// Add the character to the player's characters list
-	oldCharacterList := world.PlayerCharacters[playerKey]
-	world.PlayerCharacters[playerKey] = append(oldCharacterList, character.Name)
+	return level
 }
 
-func (world *World) RemoveCharacter(character *Character) {
-	// Find the index of the character's name in the PlayerCharacters[playerKey] array
-	playerCharacters := world.PlayerCharacters[character.PlayerKey]
-	index := slices.IndexFunc(playerCharacters, func (characterName string) bool {
-		return characterName == character.Name
-	})
+func MaxAttributeAtLevel(level int32) int32 {
+	return level + 4
+}
 
-	// Remove the character's name at the index we just found, using ordered removal
-	if index < len(world.PlayerCharacters[character.PlayerKey]) {
-		world.PlayerCharacters[character.PlayerKey] = append(playerCharacters[:index], playerCharacters[index + 1:]...)
-	} else {
-		log.Printf("Warn: Character %s is being removed but does not exist in playerCharacters list for player %s.", character.Name, character.PlayerKey)
+func (character *Character) MaxHealth() int32 {
+	return 40 + (character.Level * 10) + (character.Skills.Values[SKILL_FORTITUDE] * 25)
+}
+
+func (character *Character) MaxMana() int32 {
+	return 40 + (character.Skills.Values[SKILL_SPELLCRAFT] * 10)
+}
+
+func (character *Character) MaxSpellSlots() int32 {
+	return 2 + character.Skills.Values[SKILL_SPELLCRAFT]
+}
+
+func (character *Character) grantExperience(world *World, amount int32) {
+	character.Experience += amount
+	character.ExpTotal += amount
+	for character.ExpTotal > ExpToNextLevel(character.Level) {
+		character.Level++
+		world.MessagePlayer(character.PlayerKey, fmt.Sprintf("Level up! You are now level %d.", character.Level))
 	}
-
-	delete(world.Characters, character.Name)
-	deleteCharacter(character)
 }
