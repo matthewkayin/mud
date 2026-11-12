@@ -10,6 +10,8 @@ import (
 	"time"
 	"encoding/json"
 
+	"mud/env"
+
 	"github.com/coder/websocket"
 )
 
@@ -20,7 +22,7 @@ const SOCKET_PING_TIMEOUT = 10 * time.Second
 var SOCKET_COMMAND_FORBIDDEN_CHARS = regexp.MustCompile(`[^\x20-\x7E]|[<>\[\]{}\\]`)
 
 func (apiState *ApiState) HandleGetWebSocket(writer http.ResponseWriter, request *http.Request) {
-	playerKey, authenticated := apiState.getSessionKey(request)
+	playerKey, authenticated := apiState.getWebSocketPlayerKey(request)
 	if !authenticated {
 		http.Error(writer, "User unauthorized.", http.StatusUnauthorized)
 		return
@@ -146,4 +148,21 @@ func sanitizeCommand(command string) string {
 	command = SOCKET_COMMAND_FORBIDDEN_CHARS.ReplaceAllString(command, "")
 
 	return command
+}
+
+// With debug auth enabled, a debugUser query param names the player directly, with no session.
+// Otherwise the player comes from the session cookie.
+func (apiState *ApiState) getWebSocketPlayerKey(request *http.Request) (string, bool) {
+	debugUsername := request.URL.Query().Get("debugUser")
+	if !env.Get().ENABLE_DEBUG_AUTH || debugUsername == "" {
+		return apiState.getSessionKey(request)
+	}
+
+	// The player key is used in save file paths, so it must be a valid username
+	err := validateUsername(debugUsername)
+	if err != nil {
+		return "", false
+	}
+
+	return strings.ToLower(debugUsername), true
 }

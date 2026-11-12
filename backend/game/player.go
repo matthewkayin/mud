@@ -1,7 +1,10 @@
 package game
 
 import (
+	"log"
 	"fmt"
+	"slices"
+	"mud/util"
 	"mud/world"
 )
 
@@ -88,6 +91,10 @@ func (player *Player) setMenuLogin(gamestate *GameState) {
 }
 
 func (player *Player) setMenuWorld(gamestate *GameState) {
+	// Add player character name to the list of logged in character names
+	gamestate.playerCharacterNames = append(gamestate.playerCharacterNames, player.character.Name)
+	gamestate.playerCharacterKeys = append(gamestate.playerCharacterKeys, player.key)
+
 	// Send a message to the room announcing the player's login
 	gamestate.world.MessageRoom(player.character.Room, fmt.Sprintf("<y>%s</y> has joined the room.", player.character.Name))
 
@@ -104,6 +111,15 @@ func (player *Player) setMenuWorld(gamestate *GameState) {
 
 // Removes the player from the world and saves their character
 func (player *Player) logout(gamestate *GameState) {
+	// Remove player character name from the list of logged in character names
+	index := slices.Index(gamestate.playerCharacterKeys, player.key)
+	if index != -1 {
+		gamestate.playerCharacterNames = util.RemoveAtUnordered(gamestate.playerCharacterNames, index)
+		gamestate.playerCharacterKeys = util.RemoveAtUnordered(gamestate.playerCharacterKeys, index)
+	} else {
+		log.Printf("Warn: On logout, player key %s not found in playerCharacterKeys.", player.key)
+	}
+
 	room := &gamestate.world.Rooms[player.character.Room]
 	room.RemoveOccupant(player.mobHandle)
 	gamestate.world.MessageRoom(player.character.Room, fmt.Sprintf("<y>%s</y> has left the world.", player.character.Name))

@@ -59,5 +59,17 @@ The request and response shapes are in the Auth section of `docs/frontend.md`. T
 | `POST /api/auth/register` | `200` + cookie; `400` bad body or rule broken; `409` username taken; `500`     |
 | `POST /api/auth/login`    | `200` + cookie; `400` bad body; `401` unknown user or wrong password; `500`    |
 | `POST /api/auth/logout`   | `204`, always; clears the cookie                                              |
+| `GET /api/auth/config`    | `200 { "debugAuth": bool }`                                                    |
+| `POST /api/auth/debug-login` | Debug auth only (`404` otherwise). `200`, no cookie; `400` bad body or invalid username |
 
 Login gives the same `401` message for an unknown username and a wrong password. Request bodies are limited to 4 KB.
+
+## Debug auth
+
+Sessions live in a cookie, which every tab on the same host shares, so one browser can only be signed in as one account. Debug auth lets developers run several players from one browser, one per tab.
+
+It is enabled with `ENABLE_DEBUG_AUTH=true` in `.env` or the OS environment (`backend/env/env.go`). The server logs a `Warn -` line at startup when it is on. **Never enable it in production**: anyone can play as any username, including existing accounts.
+
+- `GET /api/auth/config` always exists and tells the client whether debug auth is on.
+- `POST /api/auth/debug-login` takes `{ username }`, checks it with `validateUsername`, and returns `{ username }`. It creates no session, sets no cookie and reads or writes no account file. It only exists so the sign-in form can show validation errors.
+- `HandleGetWebSocket` gets the player key from `getWebSocketPlayerKey` (`backend/api/websocket.go`). With debug auth on and a `debugUser` query param present, the player key is that username lowercased, after `validateUsername` (the key is used in save file paths). An invalid name gets the usual `401`. Without the param, the session cookie is used as normal, so password logins keep working while debug auth is on.

@@ -14,11 +14,15 @@ var MenuWorld Menu
 var MENU_WORLD_PARAMS = MenuNewParams {
 	entries: util.MergeMaps(
 		MENU_WORLD_ENTRIES_GENERAL,
+		MENU_WORLD_ENTRIES_SOCIAL,
 		MENU_WORLD_ENTRIES_LOOK,
 		MENU_WORLD_ENTRIES_ITEM,
 		makeMoveEntries(),
 	),
-	topics: map[string]MenuHelpTopic {},
+	topics: util.MergeMaps(
+		MENU_WORLD_TOPICS_SOCIAL,
+		MENU_WORLD_TOPICS_ITEM,
+	),
 	interceptCommand: menuWorldInterceptCommand,
 }
 
@@ -34,24 +38,6 @@ var MENU_WORLD_ENTRIES_GENERAL = map[string]MenuEntry {
 		},
 	},
 
-	"who": {
-		usage: "who",
-		description: "Get a list of everyone who is online",
-		categories: []string { "social" },
-		handler: func (gamestate *GameState, player *Player, args []string) bool {
-			names := make([]string, 0, len(gamestate.players))
-			for index := range len(gamestate.players) {
-				if !gamestate.players[index].isLoggedIn() {
-					continue
-				}
-
-				names = append(names, fmt.Sprintf("<y>%s</y>", gamestate.players[index].character.Name))
-			}
-
-			player.send(fmt.Sprintf("The players in the world are: %s.", util.CombineNames(names)))
-			return true
-		},
-	},
 }
 
 func menuWorldInterceptCommand(gamestate *GameState, player *Player, verb string, args []string) bool {

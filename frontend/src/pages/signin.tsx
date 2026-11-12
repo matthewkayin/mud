@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/auth_context.tsx';
 
 export function SignInPage() {
-  const { user, loading, signIn } = useAuth();
+  const { user, loading, debugAuth, signIn, debugSignIn } = useAuth();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -22,7 +22,11 @@ export function SignInPage() {
     setError(null);
     setPending(true);
     try {
-      await signIn(username, password);
+      if (debugAuth) {
+        await debugSignIn(username);
+      } else {
+        await signIn(username, password);
+      }
       navigate('/game');
     } catch (submitError) {
       setError((submitError as Error).message);
@@ -37,6 +41,7 @@ export function SignInPage() {
       <form className="form" onSubmit={handleSubmit}>
         <fieldset>
           <legend>Your credentials</legend>
+          {debugAuth && <p className="notice">Debug sign-in: no password needed.</p>}
           {error && <p className="notice">{error}</p>}
           <label htmlFor="username">Username</label>
           <input
@@ -46,15 +51,19 @@ export function SignInPage() {
             value={username}
             onChange={(event) => setUsername(event.target.value)}
           />
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
+          {!debugAuth && (
+            <>
+              <label htmlFor="password">Password</label>
+              <input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </>
+          )}
           <div className="form-actions">
             <button type="submit" disabled={pending}>{pending ? 'Signing in…' : 'Sign in'}</button>
           </div>

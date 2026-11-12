@@ -4,6 +4,7 @@ import (
 	"log"
 	"slices"
 
+	"mud/util"
 	"github.com/mmcdole/lunar"
 )
 
@@ -52,9 +53,7 @@ func (room *Room) RemoveOccupant(handle MobHandle) {
 }
 
 func (room *Room) removeOccupantByIndex(index int) {
-	lastIndex := len(room.Occupants) - 1
-	room.Occupants[index] = room.Occupants[lastIndex]
-	room.Occupants = room.Occupants[:lastIndex]
+	room.Occupants = util.RemoveAtUnordered(room.Occupants, index)
 }
 
 func (room *Room) Reset(world *World) {

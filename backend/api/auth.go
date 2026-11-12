@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"crypto/rand"
 	"encoding/json"
+	"mud/env"
 )
 
 type authCredentialsRequestBody struct {
@@ -22,6 +23,14 @@ type authErrorResponseBody struct {
 	Error string `json:"error"`
 }
 
+type authConfigResponseBody struct {
+	DebugAuth bool `json:"debugAuth"`
+}
+
+type authDebugLoginRequestBody struct {
+	Username string `json:"username"`
+}
+
 const MUD_SESSION_COOKIE_NAME = "mud_session"
 const AUTH_REQUEST_BODY_MAX_BYTES = 4096
 
@@ -30,6 +39,34 @@ func (apiState *ApiState) RegisterAuthRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/auth/register", apiState.HandleAuthRegister)
 	mux.HandleFunc("POST /api/auth/login", apiState.HandleAuthLogin)
 	mux.HandleFunc("POST /api/auth/logout", apiState.HandleAuthLogout)
+	mux.HandleFunc("GET /api/auth/config", apiState.HandleAuthConfig)
+	if env.Get().ENABLE_DEBUG_AUTH {
+		mux.HandleFunc("POST /api/auth/debug-login", apiState.HandleAuthDebugLogin)
+	}
+}
+
+func (apiState *ApiState) HandleAuthConfig(writer http.ResponseWriter, request *http.Request) {
+	writeJson(writer, http.StatusOK, authConfigResponseBody { DebugAuth: env.Get().ENABLE_DEBUG_AUTH })
+}
+
+// Only checks that the username is valid. Debug logins have no session or cookie:
+// the client keeps the username itself and sends it when opening the websocket.
+func (apiState *ApiState) HandleAuthDebugLogin(writer http.ResponseWriter, request *http.Request) {
+	var requestBody authDebugLoginRequestBody
+	request.Body = http.MaxBytesReader(writer, request.Body, AUTH_REQUEST_BODY_MAX_BYTES)
+	err := json.NewDecoder(request.Body).Decode(&requestBody)
+	if err != nil {
+		writeAuthError(writer, http.StatusBadRequest, "The request was not valid.")
+		return
+	}
+
+	err = validateUsername(requestBody.Username)
+	if err != nil {
+		writeAuthError(writer, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	writeJson(writer, http.StatusOK, authUserResponseBody { Username: requestBody.Username })
 }
 
 func (apiState *ApiState) HandleAuthMe(writer http.ResponseWriter, request *http.Request) {

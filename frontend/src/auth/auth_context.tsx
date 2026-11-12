@@ -6,8 +6,11 @@ interface AuthContextValue {
   user: User | null;
   // True until the initial /api/auth/me check finishes.
   loading: boolean;
+  // True when the server allows debug sign-in (a username with no password or session).
+  debugAuth: boolean;
   signIn: (username: string, password: string) => Promise<void>;
   createAccount: (username: string, password: string) => Promise<void>;
+  debugSignIn: (username: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -16,9 +19,21 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [debugAuth, setDebugAuth] = useState(false);
 
   useEffect(() => {
-    authApi.getCurrentUser()
+    async function loadUser(): Promise<User | null> {
+      const config = await authApi.getAuthConfig();
+      setDebugAuth(config.debugAuth);
+
+      const debugUsername = authApi.getDebugUsername();
+      if (config.debugAuth && debugUsername !== null) {
+        return { username: debugUsername };
+      }
+      return await authApi.getCurrentUser();
+    }
+
+    loadUser()
       .then(setUser)
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
@@ -32,14 +47,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(await authApi.createAccount(username, password));
   }, []);
 
+  const debugSignIn = useCallback(async (username: string) => {
+    const debugUser = await authApi.debugSignIn(username);
+    authApi.setDebugUsername(debugUser.username);
+    setUser(debugUser);
+  }, []);
+
   const signOut = useCallback(async () => {
-    await authApi.signOut();
+    // A debug sign-in has no session. Calling logout would clear the cookie other tabs share.
+    if (authApi.getDebugUsername() !== null) {
+      authApi.clearDebugUsername();
+    } else {
+      await authApi.signOut();
+    }
     setUser(null);
   }, []);
 
   const value = useMemo(
-    () => ({ user, loading, signIn, createAccount, signOut }),
-    [user, loading, signIn, createAccount, signOut],
+    () => ({ user, loading, debugAuth, signIn, createAccount, debugSignIn, signOut }),
+    [user, loading, debugAuth, signIn, createAccount, debugSignIn, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
