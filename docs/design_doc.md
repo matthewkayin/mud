@@ -97,7 +97,7 @@ Intelligence (INT)
 
 Faith (FTH)
 - Meditation - Higher ranks increase the mana you recover while meditating
-- Willpower - Higher ranks increase your spell resist and make you better at maintaining concentration
+- Willpower - Higher ranks increase your chance to deflect spells (see Spell Deflection) and make you better at maintaining concentration
 - Evocation - Higher ranks let you learn higher-level spells related to blasting things with magic
 - Druidry - Higher ranks let you learn higher-level spells related to healing and nature magic
 - Conjuration - Higher ranks let you learn higher-level spells related to summoning friends and monsters
@@ -185,6 +185,8 @@ A successful deflection reduces the damage of the attack by 40%. Armor and shiel
 
 For example, a character wearing high-level heavy armor and a shield would reduce the damage of a deflected attack by 55%.
 
+Spells use a similar roll against the target's Willpower (see Spell Deflection).
+
 Heavy armor comes with penalties: -2 to Evade for dodging, and -4 to Sneak and to Evade for escaping. Penalties cannot reduce a skill below 0. Light armor has no penalties and some high-level light armor gives bonuses to Sneak or Evade, but it has lower damage resistance than heavy armor.
 
 Bosses and most dungeon mobs have around 10 more deflection than other mobs of their level. This means a dedicated martial is needed to deal real damage in a dungeon, while a pure caster can still damage regular mobs with their meagar weapons in the overworld.
@@ -213,7 +215,6 @@ chance = clamp(K * (rank / (rank + difficulty)), min_chance, max_chance)
 | Taunt         | Taunt                      | Target's level                                  |                                                              |
 | Concentration | Willpower                  | Damage taken                                    | Weapon interrupt factor (for power attacks)                  |
 | Security      | Security                   | Lock or trap difficulty                         |                                                              |
-| Spell resist  | level + (Willpower * 2)    | Caster's spell power                            |                                                              |
 
 Concentration is rolled whenever a character is hit while charging a spell or a power attack. On a failure, the spell or power attack is interrupted.
 
@@ -239,7 +240,7 @@ Weapons are varied in their form and function, making them better in different c
 2. Speed - How many attack rolls does the weapon make per round
 3. Penetration - How much the weapon reduces the target's deflection chance
 
-Magical weapons, especially swords, can also give stat bonuses to the wielder, such as spell resist, evade chance, Fortitude, or mana.
+Magical weapons, especially swords, can also give stat bonuses to the wielder, such as Willpower, evade chance, Fortitude, or mana.
 
 ### Weapon Techniques
 
@@ -290,6 +291,16 @@ Each school of magic has a spread of things it is better and worse at. A caster 
 Casters reach their peak by mixing INT and FTH schools. Guild requirements are what break this up, so that not every caster can have it all.
 
 Metamagic spells, like dispel and doublecast, require ranks in Spellcraft.
+
+### Spell Deflection
+
+Damaging spells have a spell penetration value, which is rolled against the target's Willpower:
+
+```
+spell_deflection_chance = (Willpower - spell_penetration) * 5%
+```
+
+Each spell that targets a mob decides in its implementation whether it rolls for deflection, and what happens when it is deflected. Some spells, like Mind Control, fizzle and fail to take effect. Others, like Firebolt, deal reduced damage. By default, a deflected damaging spell has its damage reduced by 60% (the `SPELL_DEFLECTION` constant).
 
 ### Meditation
 
