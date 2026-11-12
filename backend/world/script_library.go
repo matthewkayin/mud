@@ -58,7 +58,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 			frame.ThrowArgTypeError(1, lua.StringKind)
 		}
 
-		__world.MessagePlayer(playerMob.PlayerCharacter.PlayerKey, message)
+		__world.MessagePlayer(playerMob.Character.PlayerKey, message)
 		return frame.Return()
 	},
 }

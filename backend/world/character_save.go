@@ -20,13 +20,13 @@ type CharacterJson struct {
 	RoomsDiscovered []RoomPosition
 
 	Race string
-	Class string
+	Background string
 
-	Level int32
 	Experience int32
-	ExperienceToNextLevel int32
+	ExpTotal int32
 
-	Stats map[string]int32
+	Attributes map[string]int32
+	Skills map[string]int32
 
 	Health int32
 	Mana int32
@@ -130,13 +130,13 @@ func (world *World) characterToJson(character *Character) CharacterJson {
 		RoomsDiscovered: make([]RoomPosition, 0, len(world.Rooms)),
 
 		Race: world.RaceData[character.Race].Name,
-		Class: world.ClassData[character.Class].Name,
+		Background: world.BackgroundData[character.Background].Name,
 
-		Level: character.Level,
 		Experience: character.Experience,
-		ExperienceToNextLevel: character.ExperienceToNextLevel,
+		ExpTotal: character.ExpTotal,
 
-		Stats: make(map[string]int32),
+		Attributes: make(map[string]int32),
+		Skills: make(map[string]int32),
 
 		Health: character.Health,
 		Mana: character.Mana,
@@ -151,9 +151,14 @@ func (world *World) characterToJson(character *Character) CharacterJson {
 		}
 	}
 
-	// Stats
-	for index := range STAT_COUNT {
-		characterJson.Stats[STAT_DATA[index].Abbreviation] = character.Stats.Values[index]
+	// Attributes
+	for index := range ATTRIBUTE_COUNT {
+		characterJson.Attributes[ATTRIBUTE_DATA[index].Abbreviation] = character.Attributes.Values[index]
+	}
+
+	// Skills
+	for index := range SKILL_COUNT {
+		characterJson.Skills[SKILL_DATA[index].Name] = character.Skills.Values[index]
 	}
 
 	// Inventory
@@ -199,21 +204,32 @@ func (world *World) characterFromJson(characterJson *CharacterJson) (*Character,
 		return nil, fmt.Errorf("No race ID matches the race '%s'.", characterJson.Race)
 	}
 
-	// Class
-	character.Class, exists = world.ClassNameToId[characterJson.Class]
+	// Background
+	character.Background, exists = world.BackgroundNameToId[characterJson.Background]
 	if !exists {
-		return nil, fmt.Errorf("No race ID matches the race '%s'.", characterJson.Class)
+		return nil, fmt.Errorf("No background ID matches the background '%s'.", characterJson.Background)
 	}
 
-	character.Level = characterJson.Level
+	// Character level is cached on the Character struct but is not saved in Json
+	// We re-calculate their level when we load their character file
+	// If we change the level scaling, character levels will automatically update to match
+	character.Level = LevelFromExpTotal(characterJson.ExpTotal)
 	character.Experience = characterJson.Experience
-	character.ExperienceToNextLevel = characterJson.ExperienceToNextLevel
+	character.ExpTotal = characterJson.ExpTotal
 
-	// Stats
-	for index := range STAT_COUNT {
-		character.Stats.Values[index], exists = characterJson.Stats[STAT_DATA[index].Abbreviation]
+	// Attributes
+	for index := range ATTRIBUTE_COUNT {
+		character.Attributes.Values[index], exists = characterJson.Attributes[ATTRIBUTE_DATA[index].Abbreviation]
 		if !exists {
-			return nil, fmt.Errorf("Character is missing stat %s.", STAT_DATA[index].Abbreviation)
+			return nil, fmt.Errorf("Character is missing attribute %s.", ATTRIBUTE_DATA[index].Abbreviation)
+		}
+	}
+
+	// Skills
+	for index := range SKILL_COUNT {
+		character.Skills.Values[index], exists = characterJson.Skills[SKILL_DATA[index].Name]
+		if !exists {
+			return nil, fmt.Errorf("Character is missing skill %s.", SKILL_DATA[index].Name)
 		}
 	}
 

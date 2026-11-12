@@ -11,7 +11,7 @@ var MENU_WORLD_TOPICS_ITEM = map[string]MenuHelpTopic {
 	"transfers": {
 		categories: []string { "items" },
 		lines: []string {
-			"-- Item Transfers --",
+			"=== Item Transfers ===",
 			"The commands 'take', 'put', 'drop', and 'give' all allow you to transfer items from one place to another. These commands all use the same syntax for referring to items. That syntax is described here.",
 			"1. Item names may contain multiple words. To refer to such items, you can type the name out in full, spaces included. For example 'drop potion of health'.",
 			"2. If a command requires two pieces of information, then a delimeter keyword is used. For example, to take a potion from a chest you can say 'take potion of health from chest'. In this case, the 'from' keyword is a delimeter that divides up your input between 'item words' and 'chest words'.",
@@ -191,7 +191,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 				player.character.Name, result.item.NameWithAmount(), targetMob.Name))
 			player.isInventoryDirty = true
 			if targetMob.IsPlayer() {
-				targetPlayerIndex := gamestate.playerKeyToIndexMap[targetMob.PlayerCharacter.PlayerKey]
+				targetPlayerIndex := gamestate.playerKeyToIndexMap[targetMob.Character.PlayerKey]
 				gamestate.players[targetPlayerIndex].isInventoryDirty = true
 			}
 			return true
