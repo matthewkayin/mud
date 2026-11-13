@@ -31,6 +31,7 @@ func (disposition NpcDisposition) String() string {
 }
 
 type NpcData struct {
+	id string
 	name string
 	description string
 
@@ -69,7 +70,6 @@ func (world *World) loadNpcData() error {
 		return fmt.Errorf("Error opening NPC data folder: %s", err.Error())
 	}
 
-	npcIds := make([]string, 0, len(paths))
 	world.NpcData = make([]*NpcData, 0, len(paths))
 	world.NpcIdToData = make(map[string]*NpcData)
 
@@ -82,36 +82,34 @@ func (world *World) loadNpcData() error {
 
 		// Parse NPC data
 		parser := ScriptParser{}
-		npcId, npcData := parser.parserNpc(world, table)
+		npcData := parser.parserNpc(world, table)
 		if npcData == nil {
 			return fmt.Errorf("%s: %s", path, parser.getError().Error())
 		}
 
-		npcIds = append(npcIds, npcId)
 		world.NpcData = append(world.NpcData, npcData)
 	}
 
 	// Set the NPC ID to type mapping
 	for index := range len(world.NpcData) {
-		npcId := npcIds[index]
+		npcData := world.NpcData[index]
 
 		// Check for duplicate IDs
-		_, duplicateNpcId := world.NpcIdToData[npcId]
+		_, duplicateNpcId := world.NpcIdToData[npcData.id]
 		if duplicateNpcId {
-			return fmt.Errorf("NPC has ID '%s' which is a duplicate of another NPC.", npcId)
+			return fmt.Errorf("NPC has ID '%s' which is a duplicate of another NPC.", npcData.id)
 		}
 
-		world.NpcIdToData[npcId] = world.NpcData[index]
+		world.NpcIdToData[npcData.id] = npcData
 	}
 
 	return nil
 }
 
-// Returns NPC ID, data
-func (parser *ScriptParser) parserNpc(world *World, table *lua.Table) (string, *NpcData) {
+func (parser *ScriptParser) parserNpc(world *World, table *lua.Table) *NpcData {
 	npcData := &NpcData{}
 
-	id := parser.getString(table, "id")
+	npcData. id = parser.getString(table, "id")
 	npcData.name = parser.getString(table, "name")
 	npcData.description = parser.getString(table, "description")
 
@@ -180,8 +178,8 @@ func (parser *ScriptParser) parserNpc(world *World, table *lua.Table) (string, *
 	npcData.update = parser.getOptionalFunction(table, "update")
 
 	if len(parser.problems) != 0 {
-		return "", nil
+		return nil
 	}
 
-	return id, npcData
+	return npcData
 }

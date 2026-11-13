@@ -5,8 +5,22 @@ import (
 	"github.com/mmcdole/lunar"
 )
 
+type MobOwner interface {
+	IsPlayer() bool
+	IsNpc() bool
+	GetPlayerKey() string
+	getMobData() *MobData
+
+	MaxHealth() int32
+	MaxMana() int32
+	InventoryCapacity() int32
+
+	Message(world *World, message string)
+	update(world *World)
+}
+
 type Mob struct {
-	Character *Character
+	Owner MobOwner
 	Handle MobHandle
 
 	*MobData
@@ -15,45 +29,19 @@ type Mob struct {
 	luaHandle *lua.UserData
 }
 
-func NewMob(data *MobData) Mob {
+func NewMob(owner MobOwner) Mob {
 	return Mob {
-		MobData: data,
+		Owner: owner,
+		MobData: owner.getMobData(),
 	}
-}
-
-func NewMobFromCharacter(character *Character) Mob {
-	mob := NewMob(&character.MobData)
-	mob.Character = character
-
-	return mob
-}
-
-func (mob *Mob) IsPlayer() bool {
-	return mob.Character != nil
-}
-
-func (mob *Mob) InventoryCapacity() int32 {
-	if mob.IsPlayer() {
-		return INVENTORY_CAPACITY_PLAYER
-	}
-
-	return INVENTORY_CAPACITY_UNLIMITED
 }
 
 func (mob *Mob) MaxHealth() int32 {
-	if mob.IsPlayer() {
-		return mob.Character.MaxHealth()
-	}
-
-	return 0
+	return mob.Owner.MaxHealth()
 }
 
 func (mob *Mob) MaxMana() int32 {
-	if mob.IsPlayer() {
-		return mob.Character.MaxMana()
-	}
-
-	return 0
+	return mob.Owner.MaxMana()
 }
 
 func (mob *Mob) Move(world *World, newRoomIndex int) {
@@ -67,4 +55,8 @@ func (mob *Mob) Move(world *World, newRoomIndex int) {
 	newRoom.AddOccupant(mob.Handle)
 
 	world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> entered the room.", mob.Name))
+}
+
+func (mob *Mob) update(world *World) {
+	mob.Owner.update(world)
 }

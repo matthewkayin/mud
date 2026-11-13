@@ -48,7 +48,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	// @param message string
 	"message_player": func(frame lua.Frame) lua.Outcome {
 		playerMob := frameGetMobArg(&frame, 0)
-		if !playerMob.IsPlayer() {
+		if !playerMob.Owner.IsPlayer() {
 			frame.ThrowArgError(0, fmt.Sprintf("Tried to message_player %s who is not a player.", playerMob.Name))
 		}
 
@@ -58,7 +58,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 			frame.ThrowArgTypeError(1, lua.StringKind)
 		}
 
-		__world.MessagePlayer(playerMob.Character.PlayerKey, message)
+		playerMob.Owner.Message(__world, message)
 		return frame.Return()
 	},
 }
