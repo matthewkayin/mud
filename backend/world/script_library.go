@@ -61,6 +61,150 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		playerMob.Owner.Message(__world, message)
 		return frame.Return()
 	},
+
+	// Sends a dialog message to the speaker's room.
+	// Dialog messages are prefixed with the speakers name:
+	// i.e. "Troll: 'This is a message'"
+	//
+	// @param speaker MobHandle
+	// @param message string
+	"say_to_room": func(frame lua.Frame) lua.Outcome {
+		speaker := frameGetMobArg(&frame, 0)
+
+		// Get message from args
+		message, ok := frame.String(1)
+		if !ok {
+			frame.ThrowArgTypeError(1, lua.StringKind)
+		}
+
+		__world.MessageRoom(speaker.Room, fmt.Sprintf("<y>%s</y>: '%s'", speaker.Name, message))
+		return frame.Return()
+	},
+
+	// Sends a dialog message to a specified player.
+	// Dialog messages are prefixed with the speakers name:
+	// i.e. "Troll: 'This is a message'"
+	//
+	// @param speaker MobHandle
+	// @param player MobHandle
+	// @param message string
+	"say_to_player": func(frame lua.Frame) lua.Outcome {
+		speaker := frameGetMobArg(&frame, 0)
+		playerMob := frameGetPlayerArg(&frame, 1)
+
+		// Get message from args
+		message, ok := frame.String(2)
+		if !ok {
+			frame.ThrowArgTypeError(2, lua.StringKind)
+		}
+
+		playerMob.Owner.Message(__world, fmt.Sprintf("<y>%s</y>: '%s'", speaker.Name, message))
+		return frame.Return()
+	},
+
+	// Returns the number of ticks that will occur in X minutes
+	//
+	// @param minutes integer
+	// @return integer
+	"time_minutes": func(frame lua.Frame) lua.Outcome {
+		minutes := frameGetIntegerArg(&frame, 0, "minutes")
+		return frame.ReturnNumber(float64((minutes * 60) / WORLD_SECONDS_PER_UPDATE))
+	},
+
+	// Return the number of ticks that will occur in X seconds
+	//
+	// @param seconds integer
+	// @return integer
+	"time_seconds": func(frame lua.Frame) lua.Outcome {
+		seconds := frameGetIntegerArg(&frame, 0, "seconds")
+		if seconds < WORLD_SECONDS_PER_UPDATE {
+			frame.ThrowArgError(0, "time_seconds must be at least 1 turn long")
+		}
+		if seconds % WORLD_SECONDS_PER_UPDATE != 0 {
+			frame.ThrowArgError(0, "time_seconds must be divisible by WORLD_SECONDS_PER_UPDATE")
+		}
+		return frame.ReturnNumber(float64(seconds / WORLD_SECONDS_PER_UPDATE))
+	},
+
+	// Returns the current world tick
+	//
+	// @return integer
+	"get_ticks": func(frame lua.Frame) lua.Outcome {
+		return frame.ReturnNumber(float64(__world.tick))
+	},
+
+	// Returns true if the mob exists
+	//
+	// @param handle MobHandle
+	// @return boolean
+	"mob_exists": func(frame lua.Frame) lua.Outcome {
+		handle := frameGetMobHandleArg(&frame, 0)
+		_, exists := __world.Mobs.GetIfExists(handle)
+		return frame.ReturnBool(exists)
+	},
+
+	// Returns true if the mob is dead
+	//
+	// @param handle MobHandle
+	// @return boolean
+	"mob_is_dead": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		return frame.ReturnBool(mob.isDead())
+	},
+
+	// Returns the mob's name
+	//
+	// @param handle MobHandle
+	// @return string
+	"mob_get_name": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		return frame.ReturnString(mob.Name)
+	},
+
+	// Returns the room the mob is in
+	//
+	// @param handle MobHandle
+	// @return integer
+	"mob_get_room": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		return frame.ReturnNumber(float64(mob.Room))
+	},
+
+	// Returns the mob's current health
+	//
+	// @param handle MobHandle
+	// @return integer
+	"mob_get_health": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		return frame.ReturnNumber(float64(mob.Health))
+	},
+
+	// Returns the mob's max health
+	//
+	// @param handle MobHandle
+	// @return integer
+	"mob_get_max_health": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		return frame.ReturnNumber(float64(mob.MaxHealth()))
+	},
+
+	// Returns the mob's current mana
+	//
+	// @param handle MobHandle
+	// @return integer
+	"mob_get_mana": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		return frame.ReturnNumber(float64(mob.Mana))
+	},
+
+	// Returns the mob's max mana
+	//
+	// @param handle MobHandle
+	// @return integer
+	"mob_get_max_mana": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+		return frame.ReturnNumber(float64(mob.MaxMana()))
+	},
 }
 
 // HELPERS
@@ -84,6 +228,15 @@ func frameGetMobArg(frame *lua.Frame, index int) *Mob {
 	mob, exists := __world.Mobs.GetIfExists(handle)
 	if !exists {
 		frame.ThrowArgError(index, fmt.Sprintf("Mob with handle %d:%d does not exist.", handle.Id, handle.Generation))
+	}
+
+	return mob
+}
+
+func frameGetPlayerArg(frame *lua.Frame, index int) *Mob {
+	mob := frameGetMobArg(frame, index)
+	if !mob.Owner.IsPlayer() {
+		frame.ThrowArgError(index, fmt.Sprintf("Mob %s is not a Player.", mob.Name))
 	}
 
 	return mob

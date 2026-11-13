@@ -186,5 +186,5 @@ func (npc *Npc) callUpdate(world *World) {
 
 	// Call hook
 	functionDesc := npc.getFunctionDesc("update")
-	world.ScriptCall(npc.data.init.Value(), functionDesc, selfLuaHandle, npc.instance)
+	world.ScriptCall(npc.data.update.Value(), functionDesc, selfLuaHandle, npc.instance)
 }
