@@ -31,6 +31,9 @@ type World struct {
 	NextItemId ItemId
 	ItemGold *ItemType
 
+	NpcData []*NpcData
+	NpcIdToData map[string]*NpcData
+
 	Rooms []Room
 	RoomPositionToIndex map[RoomPosition]int
 }
@@ -47,6 +50,7 @@ func NewWorld() (*World, error) {
 	// Load script data
 	loaders := []func() error {
 		world.loadItemTypes,
+		world.loadNpcData,
 		world.loadRaceData,
 		world.loadBackgroundData,
 		world.loadRoomData,

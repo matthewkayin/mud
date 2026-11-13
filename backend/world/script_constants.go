@@ -71,10 +71,24 @@ func ScriptConstantTables() []ScriptConstantTable {
 		})
 	}
 
+	// NPC disposition
+	npcDispositionTable := ScriptConstantTable {
+		Name: "NpcDisposition",
+		Constants: make([]ScriptConstant, 0, NPC_DISPOSITION_COUNT),
+	}
+	for index := range NPC_DISPOSITION_COUNT {
+		disposition := NpcDisposition(index)
+		npcDispositionTable.Constants = append(npcDispositionTable.Constants, ScriptConstant {
+			Name: strings.ToUpper(disposition.String()),
+			Value: lua.String(disposition.String()),
+		})
+	}
+
 	return []ScriptConstantTable {
 		itemKindTable,
 		directionTable,
 		attributeTable,
 		skillTable,
+		npcDispositionTable,
 	}
 }
