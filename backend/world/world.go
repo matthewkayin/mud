@@ -31,6 +31,9 @@ type World struct {
 	NextItemId ItemId
 	ItemGold *ItemType
 
+	NpcData []*NpcData
+	NpcIdToData map[string]*NpcData
+
 	Rooms []Room
 	RoomPositionToIndex map[RoomPosition]int
 }
@@ -47,6 +50,7 @@ func NewWorld() (*World, error) {
 	// Load script data
 	loaders := []func() error {
 		world.loadItemTypes,
+		world.loadNpcData,
 		world.loadRaceData,
 		world.loadBackgroundData,
 		world.loadRoomData,
@@ -118,9 +122,7 @@ func (world *World) MessageRoom(roomIndex int, message string) {
 	room := &world.Rooms[roomIndex]
 	for _, handle := range room.Occupants {
 		mob := world.Mobs.Get(handle)
-		if mob.IsPlayer() {
-			world.MessagePlayer(mob.Character.PlayerKey, message)
-		}
+		mob.Owner.Message(__world, message)
 	}
 }
 
@@ -130,6 +132,10 @@ func (world *World) Update() {
 		for index := range len(world.Rooms) {
 			world.Rooms[index].Reset(world)
 		}
+	}
+
+	for index := range len(world.Rooms) {
+		world.Rooms[index].update(world)
 	}
 
 	world.tick++

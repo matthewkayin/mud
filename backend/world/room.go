@@ -10,7 +10,7 @@ import (
 
 const ROOM_NONE int = -1
 const ROOM_DATA_FOLDER = "rooms"
-const ROOM_RESET_FREQUENCY = (5 * 60) / WORLD_SECONDS_PER_UPDATE
+const ROOM_RESET_FREQUENCY uint32 = (5 * 60) / WORLD_SECONDS_PER_UPDATE
 
 type RoomPosition struct {
 	X int
@@ -19,6 +19,7 @@ type RoomPosition struct {
 }
 
 type Room struct {
+	index int
 	Name string
 	Description string
 	Position RoomPosition
@@ -30,6 +31,7 @@ type Room struct {
 
 	Inventory Inventory
 	lootTable LootTable
+	npcSpawners []NpcSpawner
 
 	State lua.Value
 	Occupants []MobHandle
@@ -61,5 +63,33 @@ func (room *Room) Reset(world *World) {
 
 	if room.reset != nil {
 		world.ScriptCall(room.reset.Value(), "reset")
+	}
+}
+
+func (room *Room) update(world *World) {
+	// Update NPC spawners
+	for index := range len(room.npcSpawners) {
+		room.npcSpawners[index].update(world, room.index)
+	}
+
+	// Update occupants
+	for index := range len(room.Occupants) {
+		occupant := world.Mobs.Get(room.Occupants[index])
+		if occupant.isDead() {
+			continue
+		}
+
+		occupant.update(world)
+	}
+
+	// Remove dead occupants
+	index := 0
+	for index < len(room.Occupants) {
+		occupant := world.Mobs.Get(room.Occupants[index])
+		if occupant.isDead() {
+			util.RemoveAtUnordered(room.Occupants, index)
+		} else {
+			index++
+		}
 	}
 }

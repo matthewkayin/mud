@@ -26,19 +26,28 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				return false
 			}
 
-			searchWords := strings.ToLower(strings.Join(args[1:], " "))
+			searchWords := args[1:]
+			searchWordsJoined := strings.ToLower(strings.Join(searchWords, " "))
 
-			// TODO: check for target mob or item
+			// Check for a target
+			targetHandle, err := fuzzyFindMob(gamestate, player, searchWords)
+			if err == nil {
+				target := gamestate.world.Mobs.Get(targetHandle)
+				target.Owner.DescribeToPlayer(gamestate.world, player.key)
+				return true
+			}
+
+			// TODO: check for an item
 
 			// Check for room detail
-			description, descriptionFound := room.Details[searchWords]
+			description, descriptionFound := room.Details[searchWordsJoined]
 			if descriptionFound {
 				player.send(description)
 				return true
 			}
 
 			// Fallback to matching on the room description
-			sentence, found := util.FindSentenceContainingSubstr(room.Description, searchWords)
+			sentence, found := util.FindSentenceContainingSubstr(room.Description, searchWordsJoined)
 			if found {
 				player.send(sentence)
 				return true

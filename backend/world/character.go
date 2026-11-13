@@ -52,11 +52,66 @@ func (world *World) NewCharacter(playerKey string, characterSheet *CharacterShee
 	character.Room = world.RoomPositionToIndex[origin]
 	bitset.Set(character.RoomsDiscovered, character.Room, true)
 
-	// TODO set based on stats and such
+	// Set health and mana
 	character.Health = character.MaxHealth()
 	character.Mana = character.MaxMana()
 
 	return character
+}
+
+// MOB OWNER FUNCTIONS
+
+func (character *Character) IsPlayer() bool {
+	return true
+}
+
+func (character *Character) IsNpc() bool {
+	return false
+}
+
+func (character *Character) GetPlayerKey() string {
+	return character.PlayerKey
+}
+
+func (character *Character) getMobData() *MobData {
+	return &character.MobData
+}
+
+func (character *Character) getFaction() MobFaction {
+	return MOB_FACTION_ALLIANCE
+}
+
+func (character *Character) DescribeToPlayer(world *World, playerKey string) {
+	raceData := world.RaceData[character.Race]
+	guild := "Adventurer"
+	world.MessagePlayer(playerKey, fmt.Sprintf("<y>%s</y> is a level %d %s %s.",
+		character.Name, character.Level, raceData.Name, guild))
+}
+
+func (character *Character) MaxHealth() int32 {
+	return 40 + (character.Level * 10) + (character.Skills.Values[SKILL_FORTITUDE] * 25)
+}
+
+func (character *Character) MaxMana() int32 {
+	return 40 + (character.Skills.Values[SKILL_SPELLCRAFT] * 10)
+}
+
+func (character *Character) InventoryCapacity() int32 {
+	return INVENTORY_CAPACITY_PLAYER
+}
+
+func (character *Character) Message(world *World, message string) {
+	world.MessagePlayer(character.PlayerKey, message)
+}
+
+func (character *Character) update(world *World) {
+	// npc-only function, does nothing
+}
+
+// CHARACTER FUNCTIONS
+
+func (character *Character) MaxSpellSlots() int32 {
+	return 2 + character.Skills.Values[SKILL_SPELLCRAFT]
 }
 
 func ExpToNextLevel(level int32) int32 {
@@ -73,18 +128,6 @@ func LevelFromExpTotal(expTotal int32) int32 {
 
 func MaxAttributeAtLevel(level int32) int32 {
 	return level + 4
-}
-
-func (character *Character) MaxHealth() int32 {
-	return 40 + (character.Level * 10) + (character.Skills.Values[SKILL_FORTITUDE] * 25)
-}
-
-func (character *Character) MaxMana() int32 {
-	return 40 + (character.Skills.Values[SKILL_SPELLCRAFT] * 10)
-}
-
-func (character *Character) MaxSpellSlots() int32 {
-	return 2 + character.Skills.Values[SKILL_SPELLCRAFT]
 }
 
 func (character *Character) grantExperience(world *World, amount int32) {
