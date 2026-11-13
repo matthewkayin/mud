@@ -53,6 +53,21 @@ func (parser *ScriptParser) getInt(table *lua.Table, key string) int {
 	return int(result)
 }
 
+func (parser *ScriptParser) getOptionalInt(table *lua.Table, key string, fallback int) int {
+	value := table.RawGetString(key)
+	if value.IsNil() {
+		return fallback
+	}
+	if value.Kind() != lua.NumberKind {
+		parser.addProblem(fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, lua.NumberKind.String(), value.Kind().String()))
+	}
+	result, _ := value.AsNumber()
+	if math.Trunc(result) != result {
+		parser.addProblem(fmt.Errorf("invalid type for '%s'. expected integer, got %f", key, result))
+	}
+	return int(result)
+}
+
 func (parser *ScriptParser) getInt32(table *lua.Table, key string) int32 {
 	value := parser.getTypedValue(table, key, lua.NumberKind)
 	result, _ := value.AsNumber()

@@ -3,6 +3,7 @@ package world
 import (
 	"log"
 	"fmt"
+	"slices"
 	"github.com/mmcdole/lunar"
 )
 
@@ -29,7 +30,7 @@ type NpcSpawnParams struct {
 	movementType NpcMovementType
 }
 
-func (world *World) spawnNpc(params NpcSpawnParams) {
+func (world *World) spawnNpc(params NpcSpawnParams) MobHandle {
 	// Init NPC
 	npc := &Npc {
 		data: params.data,
@@ -59,6 +60,7 @@ func (world *World) spawnNpc(params NpcSpawnParams) {
 	npc.instance = npc.callInit(world)
 
 	log.Printf("Spawned NPC %s in room %s.", npc.data.id, world.Rooms[npc.Room].Name)
+	return npc.mobHandle
 }
 
 // MOB OWNER FUNCTIONS
@@ -80,6 +82,13 @@ func (npc *Npc) getMobData() *MobData {
 	return &npc.MobData
 }
 
+func (npc *Npc) getFaction() MobFaction {
+	if npc.disposition == NPC_DISPOSITION_FRIENDLY {
+		return MOB_FACTION_ALLIANCE
+	}
+	return MOB_FACTION_HORDE
+}
+
 func (npc *Npc) MaxHealth() int32 {
 	return npc.data.maxHealth
 }
@@ -96,8 +105,28 @@ func (npc *Npc) Message(world *World, message string) {
 	// player-only function, does nothing for NPCs
 }
 
+// UPDATE
+
 func (npc *Npc) update(world *World) {
 	npc.callUpdate(world)
+
+	npcMob := world.Mobs.Get(npc.mobHandle)
+
+	// If hostile, find a target to attack
+	if npc.disposition == NPC_DISPOSITION_HOSTILE && npcMob.Target.Type == MOB_TARGET_NONE {
+		room := &world.Rooms[npc.Room]
+
+		// Find a target enemy
+		targetIndex := slices.IndexFunc(room.Occupants, func (handle MobHandle) bool {
+			occupant := world.Mobs.Get(handle)
+			return !occupant.isDead() && occupant.Owner.getFaction() != npc.getFaction()
+		})
+
+		// If target enemy found, set mode to attack
+		if targetIndex != -1 {
+			npcMob.SetModeAttack(room.Occupants[targetIndex])
+		}
+	}
 }
 
 // SCRIPT

@@ -52,7 +52,7 @@ func (world *World) NewCharacter(playerKey string, characterSheet *CharacterShee
 	character.Room = world.RoomPositionToIndex[origin]
 	bitset.Set(character.RoomsDiscovered, character.Room, true)
 
-	// TODO set based on stats and such
+	// Set health and mana
 	character.Health = character.MaxHealth()
 	character.Mana = character.MaxMana()
 
@@ -75,6 +75,10 @@ func (character *Character) GetPlayerKey() string {
 
 func (character *Character) getMobData() *MobData {
 	return &character.MobData
+}
+
+func (character *Character) getFaction() MobFaction {
+	return MOB_FACTION_ALLIANCE
 }
 
 func (character *Character) MaxHealth() int32 {
