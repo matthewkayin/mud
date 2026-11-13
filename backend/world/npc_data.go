@@ -119,27 +119,27 @@ func (parser *ScriptParser) parserNpc(world *World, table *lua.Table) *NpcData {
 	parser.checkInt32Positive(npcData.maxHealth, "max_health")
 
 	npcData.maxMana = parser.getOptionalInt32(table, "max_mana", 0)
-	parser.checkInt32Positive(npcData.maxMana, "max_mana")
+	parser.checkInt32NonNegative(npcData.maxMana, "max_mana")
 
-	npcData.damage = parser.getOptionalInt32(table, "damage", 0)
-	parser.checkInt32Positive(npcData.damage, "damage")
+	npcData.damage = parser.getOptionalInt32(table, "damage", 1)
+	parser.checkInt32NonNegative(npcData.damage, "damage")
 
 	npcData.penetration = parser.getOptionalInt32(table, "penetration", 0)
-	parser.checkInt32Positive(npcData.penetration, "penetration")
+	parser.checkInt32NonNegative(npcData.penetration, "penetration")
 
 	npcData.resistance = parser.getOptionalInt32(table, "resistance", 0)
-	parser.checkInt32Positive(npcData.resistance, "resistance")
+	parser.checkInt32NonNegative(npcData.resistance, "resistance")
 
 	npcData.deflection = parser.getOptionalInt32(table, "deflection", 0)
-	parser.checkInt32Positive(npcData.deflection, "deflection")
+	parser.checkInt32NonNegative(npcData.deflection, "deflection")
 
 	npcData.deflectionAmount = parser.getOptionalInt32(table, "deflection_amount", 60)
 	parser.checkInt32IsPositivePercent(npcData.deflectionAmount, "deflection_amount")
 
 	// Loot
 
-	npcData.experienceWorth = parser.getInt32(table, "experience_worth")
-	parser.checkInt32Positive(npcData.experienceWorth, "experience_worth")
+	npcData.experienceWorth = parser.getOptionalInt32(table, "experience_worth", 0)
+	parser.checkInt32NonNegative(npcData.experienceWorth, "experience_worth")
 
 	npcData.loot = parser.getOptionalLootTable(world, table, "loot")
 

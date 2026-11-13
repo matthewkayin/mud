@@ -81,6 +81,13 @@ func (character *Character) getFaction() MobFaction {
 	return MOB_FACTION_ALLIANCE
 }
 
+func (character *Character) DescribeToPlayer(world *World, playerKey string) {
+	raceData := world.RaceData[character.Race]
+	guild := "Adventurer"
+	world.MessagePlayer(playerKey, fmt.Sprintf("<y>%s</y> is a level %d %s %s.",
+		character.Name, character.Level, raceData.Name, guild))
+}
+
 func (character *Character) MaxHealth() int32 {
 	return 40 + (character.Level * 10) + (character.Skills.Values[SKILL_FORTITUDE] * 25)
 }

@@ -74,6 +74,13 @@ world.Skill = {
 	CONJURATION = "Conjuration",
 }
 
+---@enum NpcDisposition
+world.NpcDisposition = {
+	NEUTRAL = "Neutral",
+	FRIENDLY = "Friendly",
+	HOSTILE = "Hostile",
+}
+
 --- Logs a message to the game
 ---
 ---@param message string

@@ -187,6 +187,12 @@ func (parser *ScriptParser) getInt32Range(table *lua.Table, key string) util.Int
 	return util.Int32Range{}
 }
 
+func (parser *ScriptParser) checkInt32NonNegative(value int32, key string) {
+	if value < 0 {
+		parser.addProblem(fmt.Errorf("field '%s' must be greater than or equal to 0, got %d", key, value))
+	}
+}
+
 func (parser *ScriptParser) checkInt32Positive(value int32, key string) {
 	if value <= 0 {
 		parser.addProblem(fmt.Errorf("field '%s' must be greater than 0, got %d", key, value))

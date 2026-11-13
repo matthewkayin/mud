@@ -89,6 +89,18 @@ func (npc *Npc) getFaction() MobFaction {
 	return MOB_FACTION_HORDE
 }
 
+func (npc *Npc) DescribeToPlayer(world *World, playerKey string) {
+	world.MessagePlayer(playerKey, npc.data.description)
+	switch npc.disposition {
+		case NPC_DISPOSITION_FRIENDLY:
+			world.MessagePlayer(playerKey, "They appear <g>friendly</g>.")
+		case NPC_DISPOSITION_NEUTRAL:
+			world.MessagePlayer(playerKey, "They appear <y>neutral</y>.")
+		case NPC_DISPOSITION_HOSTILE:
+			world.MessagePlayer(playerKey, "They appear <r>hostile</r>.")
+	}
+}
+
 func (npc *Npc) MaxHealth() int32 {
 	return npc.data.maxHealth
 }

@@ -134,5 +134,9 @@ func (world *World) Update() {
 		}
 	}
 
+	for index := range len(world.Rooms) {
+		world.Rooms[index].update(world)
+	}
+
 	world.tick++
 }

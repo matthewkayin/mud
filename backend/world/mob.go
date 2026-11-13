@@ -36,6 +36,7 @@ type MobOwner interface {
 	GetPlayerKey() string
 	getMobData() *MobData
 	getFaction() MobFaction
+	DescribeToPlayer(world *World, playerKey string)
 
 	MaxHealth() int32
 	MaxMana() int32

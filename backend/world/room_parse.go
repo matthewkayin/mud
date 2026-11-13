@@ -236,11 +236,11 @@ func (parser *ScriptParser) parseRoom(world *World, table *lua.Table) (*Room, []
 	room.lootTable = parser.getOptionalLootTable(world, table, "loot")
 
 	// Room NPC spawners
-	room.npcSpawners = make([]RoomNpcSpawner, 0, 1)
+	room.npcSpawners = make([]NpcSpawner, 0, 1)
 	npcTable := parser.getOptionalTable(table, "npcs")
 	if npcTable != nil {
 		npcCount := npcTable.RawLen()
-		room.npcSpawners = make([]RoomNpcSpawner, 0, npcCount)
+		room.npcSpawners = make([]NpcSpawner, 0, npcCount)
 
 		for index := 1; index <= npcCount; index++ {
 			// Get NPC table
@@ -257,9 +257,9 @@ func (parser *ScriptParser) parseRoom(world *World, table *lua.Table) (*Room, []
 				continue
 			}
 
-			respawnDuration := parser.getOptionalInt(npc, "respawn_duration", ROOM_NPC_RESPAWN_DURATION)
+			respawnDuration := parser.getOptionalInt(npc, "respawn_duration", NPC_RESPAWN_DURATION)
 
-			room.npcSpawners = append(room.npcSpawners, RoomNpcSpawner {
+			room.npcSpawners = append(room.npcSpawners, NpcSpawner {
 				npcData: npcData,
 				respawnDuration: respawnDuration,
 				// Respawn timer being 0 triggers the initial NPC spawn on server startup
