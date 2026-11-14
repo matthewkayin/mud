@@ -3,6 +3,7 @@ package game
 import (
 	"context"
 	"log"
+	"os"
 	"mud/util"
 	"mud/world"
 	"time"
@@ -46,9 +47,13 @@ func Init(version string) *GameState {
 	}
 
 	// Load world
-	newWorld, err := world.NewWorld()
+	newWorld, err := world.NewWorld(os.DirFS(world.SCRIPT_DATA_FOLDER))
 	if err != nil {
 		log.Fatalf("Failed to load world: %s", err.Error())
+	}
+	err = newWorld.LoadCharacters()
+	if err != nil {
+		log.Fatalf("Failed to load characters: %s", err.Error())
 	}
 
 	gamestate := &GameState {

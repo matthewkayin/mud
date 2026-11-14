@@ -20,7 +20,7 @@ const BACKGROUND_DATA_FOLDER = "backgrounds"
 
 func (world *World) loadBackgroundData() error {
 	// Read class folder
-	paths, err := scriptGetFilesFrom(BACKGROUND_DATA_FOLDER)
+	paths, err := world.scriptGetFilesFrom(BACKGROUND_DATA_FOLDER)
 	if err != nil {
 		return fmt.Errorf("Error opening background data folder: %s", err.Error())
 	}

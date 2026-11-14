@@ -20,7 +20,7 @@ const RACE_DATA_FOLDER = "races"
 
 func (world *World) loadRaceData() error {
 	// Read race folder
-	paths, err := scriptGetFilesFrom(RACE_DATA_FOLDER)
+	paths, err := world.scriptGetFilesFrom(RACE_DATA_FOLDER)
 	if err != nil {
 		return fmt.Errorf("Error opening race data folder: %s", err.Error())
 	}

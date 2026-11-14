@@ -2,6 +2,7 @@ package world
 
 import (
 	"log"
+	"io/fs"
 	"slices"
 	"strings"
 	"github.com/mmcdole/lunar"
@@ -14,6 +15,7 @@ type World struct {
 	MessagePlayer func(playerKey string, message string)
 	tick uint32
 
+	dataFolder fs.FS
 	luaState *lua.State
 	mobHandleType *lua.UserDataType[MobHandle]
 
@@ -36,8 +38,11 @@ type World struct {
 	StartRoom int
 }
 
-func NewWorld() (*World, error) {
-	world := &World{}
+// Loads the world's script data from the data folder. Characters are loaded separately with LoadCharacters
+func NewWorld(dataFolder fs.FS) (*World, error) {
+	world := &World{
+		dataFolder: dataFolder,
+	}
 
 	// Init script state
 	err := world.scriptInit()
@@ -58,12 +63,6 @@ func NewWorld() (*World, error) {
 			world.scriptQuit()
 			return nil, err
 		}
-	}
-
-	// Load characters
-	err = world.loadCharacters()
-	if err != nil {
-		return nil, err
 	}
 
 	// Init mob array

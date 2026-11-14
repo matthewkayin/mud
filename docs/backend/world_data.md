@@ -4,6 +4,8 @@ The game's content is loaded from the data folder, `backend/data/`, when the ser
 
 If any file fails to load, the server refuses to start and logs the error. Each error names the file it came from.
 
+`world.NewWorld` reads the data folder through the `fs.FS` it is given, so the same loader can run over files that aren't on disk. The server passes `os.DirFS("data")`. `NewWorld` loads only the script data; the server then loads saved characters from `saves/` with `World.LoadCharacters`.
+
 ## Data folder
 
 ```

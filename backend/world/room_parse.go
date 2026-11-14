@@ -1,7 +1,6 @@
 package world
 
 import (
-	"os"
 	"fmt"
 	"log"
 	"io/fs"
@@ -12,7 +11,7 @@ import (
 
 func (world *World) loadRoomData() error {
 	// Read room folder
-	paths, err := scriptGetFilesFrom(ROOM_DATA_FOLDER)
+	paths, err := world.scriptGetFilesFrom(ROOM_DATA_FOLDER)
 	if err != nil {
 		return fmt.Errorf("Error opening room data folder: %s", err.Error())
 	}
@@ -37,7 +36,7 @@ func (world *World) loadRoomData() error {
 	}
 
 	// Read layout
-	layoutData, err := fs.ReadFile(os.DirFS(SCRIPT_DATA_FOLDER), LAYOUT_FILE)
+	layoutData, err := fs.ReadFile(world.dataFolder, LAYOUT_FILE)
 	if err != nil {
 		return fmt.Errorf("Error reading %s: %s", LAYOUT_FILE, err.Error())
 	}

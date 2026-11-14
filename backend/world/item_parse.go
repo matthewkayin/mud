@@ -11,7 +11,7 @@ const ITEM_DATA_FOLDER = "items"
 
 func (world *World) loadItemTypes() error {
 	// Read item folder
-	paths, err := scriptGetFilesFrom(ITEM_DATA_FOLDER)
+	paths, err := world.scriptGetFilesFrom(ITEM_DATA_FOLDER)
 	if err != nil {
 		return fmt.Errorf("Error opening item types folder: %s", err.Error())
 	}

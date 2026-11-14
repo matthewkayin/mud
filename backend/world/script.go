@@ -1,7 +1,6 @@
 package world
 
 import (
-	"os"
 	"fmt"
 	"log"
 	"io/fs"
@@ -22,7 +21,7 @@ func (world *World) scriptInit() error {
 			lua.StringLibrary,
 			lua.TableLibrary,
 		},
-		ScriptLoader: lua.FSLoader(os.DirFS(SCRIPT_DATA_FOLDER)),
+		ScriptLoader: lua.FSLoader(world.dataFolder),
 	})
 	if err != nil {
 		return fmt.Errorf("Error initializing lua state: %s", err.Error())
@@ -187,10 +186,10 @@ func (world *World) scriptLoadTable(path string) (*lua.Table, error) {
 }
 
 // Returns the paths of the scripts in a subfolder of the data folder, relative to the data folder
-func scriptGetFilesFrom(subfolder string) ([]string, error) {
+func (world *World) scriptGetFilesFrom(subfolder string) ([]string, error) {
 	paths := make([]string, 0, 1)
 
-	err := fs.WalkDir(os.DirFS(SCRIPT_DATA_FOLDER), subfolder, func (path string, entry fs.DirEntry, err error) error {
+	err := fs.WalkDir(world.dataFolder, subfolder, func (path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
