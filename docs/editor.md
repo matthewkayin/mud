@@ -92,6 +92,7 @@ Creating a room in the editor does not create a new Lua file, instead it creates
 In this view, each room shows the `name` from its Lua file. A room whose file is missing or fails to load shows its file name instead, and an unassigned room shows as empty.
 In this view, I can drag a room to an empty cell on the same Z-level to move it. Moving a room removes all of its connections, since its neighbors are different at the new position.
 In this view, I can double-click a room that has a Lua file to open that file in a code editor tab.
+In this view, I can see which room is the start room, and I can set any room as the start room.
 In this view, I can create a Lua file for an unassigned room. The editor asks for a file name, creates `rooms/<name>.lua` from a room template, and assigns it to the room.
 When a room is deleted, its Lua file is left alone. Only the room's layout entry and its connections are removed, and the file can be assigned to another room.
 As an author, I can undo and redo any edit made in the map view. Creating a Lua file for a room is not undone by the map view's undo; undo only removes the room's assignment.
@@ -107,7 +108,12 @@ Implementation notes:
 
 Room position and exits are stored in `layout.json` at the root of the data folder rather than in the room Lua files, so that the editor never has to surgically edit Lua. Room Lua files no longer have `position` or `exits` fields.
 
-`layout.json` contains an array of rooms. Each room has:
+`layout.json` has two required fields:
+
+- `start`: the position of the room new characters start in. It must be the position of a room in the layout.
+- `rooms`: the array of rooms.
+
+Each room has:
 
 - `position`: an XYZ coordinate. A room's position is its identity, so no two rooms may share one.
 - `path`: the path to the room's Lua file, relative to the `rooms` folder. Empty for a room that hasn't been assigned a file yet.
@@ -115,6 +121,7 @@ Room position and exits are stored in `layout.json` at the root of the data fold
 
 ```json
 {
+    "start": { "x": 0, "y": 0, "z": 0 },
     "rooms": [
         { "position": { "x": 0, "y": 0, "z": 0 }, "path": "presentation_space.lua", "exits": ["west", "up"] },
         { "position": { "x": -1, "y": 0, "z": 0 }, "path": "kitchen.lua", "exits": ["east"] }
@@ -130,6 +137,127 @@ When an author creates a new room in the editor, it creates a new room entry in 
 - Dragging a room Lua file from the file explorer onto the room. (VS Code requires the author to hold Shift while dropping into a webview, so this is a secondary way to assign a path.)
 
 Part of the validation step on the world's data should be that all rooms in the layout are associated with valid Room Lua files. A room with an empty path, or a path to a file that doesn't exist or isn't a valid room, is an error. The game server refuses to start while any such error exists, the same as for any other invalid world data. It is ok for the same Room Lua to be used on multiple cells, though this is perhaps strange, and a warning should be issued to users when this happens in case this was a mistake.
+
+## Implementation Plan
+
+The work is split into three phases, done in order. Each numbered step is meant to be a single PR that leaves the game server working.
+
+### Phase 1: layout.json
+
+Moves room position and exits out of room Lua files and into `layout.json`. At the end of this phase the game server loads its rooms from the layout, and nothing about the editor exists yet.
+
+**1.1 Load rooms from the layout**
+
+- Add `backend/world/layout.go` with the JSON types for the layout (`layoutJson`, `layoutRoomJson`) and a `LAYOUT_FILE = "layout.json"` constant. The file is read from the data folder.
+- Split layout handling into pure functions that don't need a Lua state, so they can be unit tested:
+  - Parsing: decode with `DisallowUnknownFields`. `position`, `path` and `exits` are all required; a missing field is an error, with no default.
+  - Validation: positions are unique, `start` is the position of a room, every exit is a valid direction that appears at most once on its room, every exit leads to a room, and every exit has a matching exit back.
+- Add a start room index to `World`, set from `start`. New characters start there (replacing the hardcoded `(0, 0, 0)` in `backend/world/character.go`).
+- Change `loadRoomData` in `backend/world/room_parse.go`:
+  - Still load and parse every `.lua` file under `rooms/`, keyed by its path relative to `rooms/`. This means a broken room file is reported even if no layout entry uses it yet.
+  - Then build `world.Rooms` from the layout: one `Room` per layout entry, copied from its parsed room file, with the entry's position and exits. Rooms are placed in layout order, so room indexes follow `layout.json`.
+  - A layout entry with an empty path, or a path that isn't a loaded room file, is an error.
+  - Two entries with the same path log one `Warn` line naming the path.
+  - The bidirectional exit check and the per-room state allocation stay as they are, run after the layout is applied.
+- Remove `position` and `exits` from `parseRoom`, and delete `getRoomPosition`. Room files that still set those fields aren't specially rejected; they're just ignored like any other unknown field.
+
+**1.2 Move the existing data**
+
+- Write `backend/data/layout.json` from the five existing rooms' current positions and exits, with `start` at `(0, 0, 0)`.
+- Remove `room.position` and `room.exits` from every file in `backend/data/rooms/`.
+- Check that the game starts, the minimap draws the same rooms, and walking between rooms works.
+
+**1.3 Tests and docs**
+
+- `backend/world/layout_test.go` covers parsing and validation: missing fields, unknown fields, a `start` with no room, duplicate positions, invalid and duplicate directions, exits into empty cells, and one-way exits.
+- There is no documentation for world data yet. Add `docs/backend/world_data.md` covering the data folder, the core folders (`backgrounds`, `items`, `races`, `rooms`, `npcs`), room files and `layout.json`.
+- Update CLAUDE.md's "Current state" to mention the layout file.
+
+### Phase 2: Validation language server
+
+At the end of this phase `mud lsp` works in any LSP-capable editor. Each step can be tried with a generic LSP client (for example, Neovim or Helix pointed at `mud lsp`) before the extension exists.
+
+**2.1 Load world data from any `fs.FS`**
+
+- Give `World` an `fs.FS` for the data folder, passed into `NewWorld`. Use it for the Lua `ScriptLoader`, in `scriptGetFilesFrom`, and when reading `layout.json`. The game server passes `os.DirFS("data")`.
+- Split script-data loading (items, races, backgrounds, rooms, layout) from character loading, so the language server can load script data without touching `saves/`.
+- The `__world` global set in `scriptInit` stays as it is. The language server only ever has one `World` alive at a time.
+
+**2.2 Collect every problem instead of stopping at the first**
+
+- Add a `ScriptProblem` type with the file path (relative to the data folder), the field key it's about (may be empty), a message, and a severity (error or warning).
+- `ScriptParser.addProblem` takes the field key. Each `parser.getX(table, key)` helper already knows it, so most call sites don't change.
+- Each loader keeps going after a file fails. A failed file is left out of the world, so later loaders see it as missing; for example, rooms whose loot names an item from a broken item file get "unknown item" errors.
+- Lua errors from `DoFile` already start with `<path>:<line>:`. Keep that line number on the problem so syntax and runtime errors in the top level of a script land on the right line.
+- Layout problems carry the index of the room entry they're about.
+- A missing core folder is an error.
+- Two layout entries with the same path become a warning problem on `layout.json`, instead of the log line from step 1.1.
+- Loading returns the full list of problems. The game server prints every problem and refuses to start if any of them is an error. This is useful on its own: a broken data folder reports everything at once.
+
+**2.3 `mud lsp`**
+
+- `main.go` checks for an `lsp` subcommand before running the server, the same way it checks for `-generate-lua-defs`. In LSP mode, stdout carries the protocol stream, so nothing else may write to it:
+  - `log` writes to stderr instead of stdout and a log file. VS Code shows the server's stderr in the extension's output channel, so logging still works.
+  - The Lua state's `Stdout` option is set to stderr, so a script calling `print` while loading doesn't corrupt the stream.
+  - LSP mode doesn't load `.env` or create the `logs/` or `saves/` folders.
+- The data folder is passed as an argument (`mud lsp <data folder>`).
+- New package `backend/lsp`. The server only needs a handful of messages (`initialize`, `initialized`, `shutdown`, `exit`, `textDocument/didOpen`, `didChange`, `didClose`, `didSave`, `workspace/didChangeWatchedFiles`, and `textDocument/publishDiagnostics`), so it implements JSON-RPC over stdio itself rather than pulling in an LSP framework. It uses full-document sync.
+- An overlay `fs.FS` serves the text of open documents in place of their files on disk, and falls back to `os.DirFS` for everything else, including directory listings.
+- On any change, after a short debounce (around 300ms), the server builds a new world from the overlay, closes the old one, and publishes diagnostics. It publishes an empty list for files that had problems last time and don't now, so stale squiggles clear.
+- Line finding:
+  - Lua problems with a line number from Lua use it.
+  - Lua problems with a field key use the first line in the file where that key is written as a table key (`key =` or `["key"] =`).
+  - Layout problems use the line of the room entry, found by walking `layout.json`'s tokens with `json.Decoder` and `InputOffset`.
+  - Anything else goes on line 1.
+
+**2.4 Room names request**
+
+- Add a custom `mud/roomNames` request that returns the `name` of every room file that loaded, keyed by its path relative to `rooms/`. The map view uses it for labels.
+
+**2.5 Tests and docs**
+
+- Test the overlay filesystem and line finding as pure functions.
+- Add a `backend/lsp/testdata/` data folder with deliberate errors, and test that validating it produces the expected problems in the expected files and lines.
+- Add `docs/backend/lsp.md` covering how to run `mud lsp`, what it validates, and how to point a non-VS Code editor at it. Update CLAUDE.md.
+
+### Phase 3: VS Code extension
+
+At the end of this phase authors can install the `.vsix` and get validation and the map view.
+
+**3.1 Scaffold the extension**
+
+- Create `editor/` with `package.json`, TypeScript and an esbuild bundle. `npm run package` builds the `.vsix` with `vsce`.
+- Contribute the `mud.serverPath` and `mud.dataFolder` settings.
+- Activate when the workspace contains a `layout.json` (`workspaceContains:**/layout.json`).
+- Start `mud lsp <data folder>` with `vscode-languageclient` for Lua files and `layout.json` inside the data folder, and watch the data folder so file creates, deletes and renames trigger revalidation.
+- Check that LuaLS picks up `data/world.d.lua` when authors open `backend/`. If it doesn't, add a `.luarc.json` next to the data folder pointing at it.
+
+**3.2 Read-only map view**
+
+- Register a `CustomTextEditorProvider` for `**/layout.json`.
+- Build the webview as a separate bundle in `editor/webview/`. It receives the parsed layout and room names over `postMessage`.
+- Draw the grid at the current Z-level, with rooms, room names, connections, up/down arrows and a marker on the start room. Add right-drag panning, scroll-wheel zoom, and the +/- elevation controls.
+- When the document changes, or the server republishes diagnostics, send the new layout or names to the webview.
+- If `layout.json` doesn't parse, show the parse error in the map view instead of the map.
+
+**3.3 Map editing**
+
+- The webview sends edit intents (create room, delete room, toggle connection, move room, set path) to the extension. The extension applies each one to the layout and replaces the document's text with one `WorkspaceEdit`, which gives undo and redo through VS Code.
+- The extension always writes `layout.json` in the same fixed format (one room per line), so map edits make small, readable git diffs.
+- Connections are added and removed on both rooms at once. Deleting or moving a room removes all of its connections.
+- "Set as start room" on a room sets `start` to its position. Moving the start room moves `start` with it. Deleting the start room is allowed and leaves `start` pointing at an empty cell, which the validation server reports as an error.
+- Add hover previews: a dotted line between cells, and a dotted up/down arrow on rooms with an unconnected room above or below.
+
+**3.4 Room files**
+
+- Assign a path to a room by choosing from a quick-pick of the files in `rooms/`, or by Shift-dropping a file from the explorer onto the room.
+- "Create room file" on an unassigned room asks for a name, writes `rooms/<name>.lua` with only `name` and `description`, and assigns it.
+- Double-clicking an assigned room opens its file in a code editor tab.
+
+**3.5 Docs**
+
+- Add `editor/README.md` covering building, installing the `.vsix`, and the settings. Add the extension's commands to CLAUDE.md.
+- Rework this document so it describes the editor as built, instead of as a plan.
 
 ## Out of Scope
 
