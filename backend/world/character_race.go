@@ -18,41 +18,34 @@ type RaceData struct {
 
 const RACE_DATA_FOLDER = "races"
 
-func (world *World) loadRaceData() error {
-	// Read race folder
-	paths, err := world.scriptGetFilesFrom(RACE_DATA_FOLDER)
-	if err != nil {
-		return fmt.Errorf("Error opening race data folder: %s", err.Error())
-	}
+func (world *World) loadRaceData() []ScriptProblem {
+	files, problems := world.scriptLoadFolder(RACE_DATA_FOLDER)
 
-	world.RaceData = make([]*RaceData, 0, len(paths))
+	world.RaceData = make([]*RaceData, 0, len(files))
 	world.RaceNameToId = make(map[string]RaceId)
 
-	for _, path := range paths {
-		// Open script
-		table, err := world.scriptLoadTable(path)
-		if err != nil {
-			return err
-		}
-
-		// Parse class data
-		parser := ScriptParser{}
-		raceData := parser.parseRace(table)
+	for _, file := range files {
+		// Parse race data
+		parser := ScriptParser{ path: file.path }
+		raceData := parser.parseRace(file.table)
 		if raceData == nil {
-			return fmt.Errorf("%s: %s", path, parser.getError().Error())
+			problems = append(problems, parser.problems...)
+			continue
 		}
 
 		// Check for duplicates
-		_, duplicateClassName := world.BackgroundNameToId[raceData.Name]
-		if duplicateClassName {
-			return fmt.Errorf("Class %s has name '%s' which is a duplicate of another class.", path, raceData.Name)
+		_, duplicateName := world.RaceNameToId[raceData.Name]
+		if duplicateName {
+			parser.addProblem("name", fmt.Errorf("Race has name '%s' which is a duplicate of another race.", raceData.Name))
+			problems = append(problems, parser.problems...)
+			continue
 		}
 
 		world.RaceNameToId[raceData.Name] = RaceId(len(world.RaceData))
 		world.RaceData = append(world.RaceData, raceData)
 	}
 
-	return nil
+	return problems
 }
 
 func (parser *ScriptParser) parseRace(table *lua.Table) *RaceData {

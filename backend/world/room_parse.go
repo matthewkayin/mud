@@ -2,73 +2,52 @@ package world
 
 import (
 	"fmt"
-	"log"
 	"io/fs"
 	"strings"
 
 	"github.com/mmcdole/lunar"
 )
 
-func (world *World) loadRoomData() error {
-	// Read room folder
-	paths, err := world.scriptGetFilesFrom(ROOM_DATA_FOLDER)
-	if err != nil {
-		return fmt.Errorf("Error opening room data folder: %s", err.Error())
-	}
+func (world *World) loadRoomData() []ScriptProblem {
+	files, problems := world.scriptLoadFolder(ROOM_DATA_FOLDER)
 
 	// Parse every room file, keyed by its path relative to the rooms folder
-	roomFiles := make(map[string]*Room, len(paths))
-	for _, path := range paths {
-		// Open script
-		table, err := world.scriptLoadTable(path)
-		if err != nil {
-			return err
-		}
-
-		// Parse room data
-		parser := ScriptParser{}
-		room := parser.parseRoom(world, table)
+	roomFiles := make(map[string]*Room, len(files))
+	for _, file := range files {
+		parser := ScriptParser{ path: file.path }
+		room := parser.parseRoom(world, file.table)
 		if room == nil {
-			return fmt.Errorf("%s: %s", path, parser.getError().Error())
+			problems = append(problems, parser.problems...)
+			continue
 		}
 
-		roomFiles[strings.TrimPrefix(path, ROOM_DATA_FOLDER + "/")] = room
+		roomFiles[strings.TrimPrefix(file.path, ROOM_DATA_FOLDER + "/")] = room
 	}
 
 	// Read layout
 	layoutData, err := fs.ReadFile(world.dataFolder, LAYOUT_FILE)
 	if err != nil {
-		return fmt.Errorf("Error reading %s: %s", LAYOUT_FILE, err.Error())
+		problems = append(problems, layoutProblem(-1, "Error reading %s: %s", LAYOUT_FILE, err.Error()))
+		return problems
 	}
-	layout, err := parseLayout(layoutData)
-	if err != nil {
-		return fmt.Errorf("%s: %w", LAYOUT_FILE, err)
+	layout, layoutProblems := parseLayout(layoutData)
+	problems = append(problems, layoutProblems...)
+	if layout == nil {
+		return problems
 	}
-	err = validateLayout(layout)
-	if err != nil {
-		return fmt.Errorf("%s: %w", LAYOUT_FILE, err)
+	problems = append(problems, validateLayout(layout)...)
+	problems = append(problems, validateLayoutPaths(layout, roomFiles)...)
+
+	// Don't build rooms from an invalid layout
+	if ScriptProblemsHaveError(problems) {
+		return problems
 	}
 
 	// Build rooms from the layout
 	world.Rooms = make([]Room, 0, len(layout.Rooms))
 	world.RoomPositionToIndex = make(map[RoomPosition]int)
-	pathUseCount := make(map[string]int)
-	for index, layoutRoom := range layout.Rooms {
-		if layoutRoom.Path == "" {
-			return fmt.Errorf("%s: rooms[%d] at %s has no room file assigned", LAYOUT_FILE, index, layoutRoom.Position.String())
-		}
-		roomFile, exists := roomFiles[layoutRoom.Path]
-		if !exists {
-			return fmt.Errorf("%s: rooms[%d] at %s has path '%s', which is not a room file",
-				LAYOUT_FILE, index, layoutRoom.Position.String(), layoutRoom.Path)
-		}
-
-		pathUseCount[layoutRoom.Path]++
-		if pathUseCount[layoutRoom.Path] == 2 {
-			log.Printf("Warn - %s: room file '%s' is used by more than one room.", LAYOUT_FILE, layoutRoom.Path)
-		}
-
-		room := *roomFile
+	for _, layoutRoom := range layout.Rooms {
+		room := *roomFiles[layoutRoom.Path]
 		room.Position = layoutRoom.Position
 		world.RoomPositionToIndex[room.Position] = len(world.Rooms)
 		world.Rooms = append(world.Rooms, room)
@@ -87,8 +66,9 @@ func (world *World) loadRoomData() error {
 			exitPosition := world.Rooms[index].Position.PlusDirection(exitDirection)
 			exitRoomIndex, exists := world.RoomPositionToIndex[exitPosition]
 			if !exists {
-				return fmt.Errorf("Room %s has %s exit with position %s, but there is no room at that position.",
-					world.Rooms[index].Name, exitDirection.String(), exitPosition.String())
+				problems = append(problems, layoutProblem(index, "%s exit leads to %s, but there is no room at that position",
+					exitDirection.String(), exitPosition.String()))
+				continue
 			}
 
 			world.Rooms[index].Exits[exitDirection] = exitRoomIndex
@@ -109,8 +89,8 @@ func (world *World) loadRoomData() error {
 			oppositeExitIndex := exitRoom.Exits[direction.Opposite()]
 
 			if index != oppositeExitIndex {
-				return fmt.Errorf("Room %s has %s exit leading to room %s, but the exit doesn't go the other way.",
-					world.Rooms[index].Name, direction.String(), exitRoom.Name)
+				problems = append(problems, layoutProblem(index, "%s exit leads to rooms[%d], but the exit doesn't go the other way",
+					direction.String(), exitRoomIndex))
 			}
 		}
 	}
@@ -121,7 +101,9 @@ func (world *World) loadRoomData() error {
 		if room.reset != nil {
 			stateTable, err := world.luaState.NewTable()
 			if err != nil {
-				return fmt.Errorf("Error allocting room state: %s", err.Error())
+				problems = append(problems, layoutProblem(index, "Error allocating room state: %s", err.Error()))
+				room.State = lua.Nil()
+				continue
 			}
 			room.State = stateTable.Value()
 		} else {
@@ -129,7 +111,7 @@ func (world *World) loadRoomData() error {
 		}
 	}
 
-	return nil
+	return problems
 }
 
 func (parser *ScriptParser) parseRoom(world *World, table *lua.Table) *Room {
@@ -148,7 +130,7 @@ func (parser *ScriptParser) parseRoom(world *World, table *lua.Table) *Room {
 			// Get next key / value from the table
 			detailKey, detailValue, ok, err := detailsTable.Next(key)
 			if err != nil {
-				parser.addProblem(fmt.Errorf("Error while iterating through details table: %s", err.Error()))
+				parser.addProblem("details", fmt.Errorf("Error while iterating through details table: %s", err.Error()))
 				break
 			}
 			if !ok {
@@ -158,14 +140,14 @@ func (parser *ScriptParser) parseRoom(world *World, table *lua.Table) *Room {
 			// Validate that key is a string
 			detailName, ok := detailKey.AsString()
 			if !ok {
-				parser.addProblem(fmt.Errorf("Keys in the details table must be strings."))
+				parser.addProblem("details", fmt.Errorf("Keys in the details table must be strings."))
 				break
 			}
 
 			// Validate that the value is a string
 			detail, ok := detailValue.AsString()
 			if !ok {
-				parser.addProblem(fmt.Errorf("Details table value of '%s' is not a string, but it should be.", detailName))
+				parser.addProblem("details", fmt.Errorf("Details table value of '%s' is not a string, but it should be.", detailName))
 			}
 
 			// Add detail to room
@@ -188,7 +170,7 @@ func (parser *ScriptParser) parseRoom(world *World, table *lua.Table) *Room {
 			// Get next key / value from the table
 			interactionKey, interactionValue, ok, err := interactionsTable.Next(key)
 			if err != nil {
-				parser.addProblem(fmt.Errorf("Error while iterating through interactions table: %s", err.Error()))
+				parser.addProblem("interactions", fmt.Errorf("Error while iterating through interactions table: %s", err.Error()))
 				break
 			}
 			if !ok {
@@ -198,7 +180,7 @@ func (parser *ScriptParser) parseRoom(world *World, table *lua.Table) *Room {
 			// Validate that key is a string
 			interactionVerb, ok := interactionKey.AsString()
 			if !ok {
-				parser.addProblem(fmt.Errorf("Keys in the interactions table must be strings."))
+				parser.addProblem("interactions", fmt.Errorf("Keys in the interactions table must be strings."))
 				break
 			}
 
@@ -206,7 +188,7 @@ func (parser *ScriptParser) parseRoom(world *World, table *lua.Table) *Room {
 			for index := range len(interactionVerb) {
 				c := interactionVerb[index]
 				if c < 'a' || c > 'z' {
-					parser.addProblem(fmt.Errorf("Unexpected char '%c' in interaction verb %s.", c, interactionVerb))
+					parser.addProblem("interactions", fmt.Errorf("Unexpected char '%c' in interaction verb %s.", c, interactionVerb))
 					break
 				}
 			}
@@ -214,7 +196,7 @@ func (parser *ScriptParser) parseRoom(world *World, table *lua.Table) *Room {
 			// Validate that the value is a string
 			interaction, ok := interactionValue.AsFunction()
 			if !ok {
-				parser.addProblem(fmt.Errorf("Interaction table value of '%s' is not a function, but it should be.", interactionKey))
+				parser.addProblem("interactions", fmt.Errorf("Interaction table value of '%s' is not a function, but it should be.", interactionKey))
 			}
 
 			room.Interactions[interactionVerb] = interaction

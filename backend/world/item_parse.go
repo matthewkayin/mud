@@ -9,32 +9,11 @@ import (
 
 const ITEM_DATA_FOLDER = "items"
 
-func (world *World) loadItemTypes() error {
-	// Read item folder
-	paths, err := world.scriptGetFilesFrom(ITEM_DATA_FOLDER)
-	if err != nil {
-		return fmt.Errorf("Error opening item types folder: %s", err.Error())
-	}
+func (world *World) loadItemTypes() []ScriptProblem {
+	files, problems := world.scriptLoadFolder(ITEM_DATA_FOLDER)
 
-	world.ItemTypes = make([]*ItemType, 0, len(paths))
+	world.ItemTypes = make([]*ItemType, 0, len(files))
 	world.ItemNameToType = make(map[string]*ItemType)
-
-	for _, path := range paths {
-		// Open script
-		table, err := world.scriptLoadTable(path)
-		if err != nil {
-			return err
-		}
-
-		// Parse item type
-		parser := ScriptParser{}
-		itemType := parser.parseItemType(table)
-		if itemType == nil {
-			return fmt.Errorf("%s: %s", path, parser.getError().Error())
-		}
-
-		world.ItemTypes = append(world.ItemTypes, itemType)
-	}
 
 	// Add a custom item for gold
 	world.ItemGold = &ItemType {
@@ -47,22 +26,28 @@ func (world *World) loadItemTypes() error {
 	}
 	world.ItemNameToType[world.ItemGold.Name] = world.ItemGold
 
-	// Set the item name to type mapping
-	// This happens after we add all the item types, since the mapping directs to ItemType pointers and
-	// the append() function shouldn't, but might, change the underlying memory of world.ItemTypes
-	for index := range len(world.ItemTypes) {
-		itemType := world.ItemTypes[index]
+	for _, file := range files {
+		// Parse item type
+		parser := ScriptParser{ path: file.path }
+		itemType := parser.parseItemType(file.table)
+		if itemType == nil {
+			problems = append(problems, parser.problems...)
+			continue
+		}
 
 		// Check for duplicates
 		_, duplicateItemName := world.ItemNameToType[itemType.Name]
 		if duplicateItemName {
-			return fmt.Errorf("Item has name '%s' which is a duplicate of another item.", itemType.Name)
+			parser.addProblem("name", fmt.Errorf("Item has name '%s' which is a duplicate of another item.", itemType.Name))
+			problems = append(problems, parser.problems...)
+			continue
 		}
 
 		world.ItemNameToType[itemType.Name] = itemType
+		world.ItemTypes = append(world.ItemTypes, itemType)
 	}
 
-	return nil
+	return problems
 }
 
 func (parser *ScriptParser) parseItemType(table *lua.Table) *ItemType {
@@ -72,18 +57,18 @@ func (parser *ScriptParser) parseItemType(table *lua.Table) *ItemType {
 	itemType.Description = parser.getString(table, "description")
 	itemType.price = parser.getInt32(table, "price")
 	if itemType.price < 0 {
-		parser.addProblem(fmt.Errorf("Item price cannot be negative."))
+		parser.addProblem("price", fmt.Errorf("Item price cannot be negative."))
 	}
 	itemType.size = parser.getInt32(table, "size")
 	if itemType.size < 0 {
-		parser.addProblem(fmt.Errorf("Item size cannot be negative."))
+		parser.addProblem("size", fmt.Errorf("Item size cannot be negative."))
 	}
 
 	var ok bool
 	kindString := parser.getString(table, "kind")
 	itemType.kind, ok = util.EnumFromString[ItemKind](kindString, ITEM_KIND_COUNT)
 	if !ok {
-		parser.addProblem(fmt.Errorf("Invalid item kind '%s'.", kindString))
+		parser.addProblem("kind", fmt.Errorf("Invalid item kind '%s'.", kindString))
 	}
 
 	if len(parser.problems) != 0 {

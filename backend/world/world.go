@@ -38,8 +38,10 @@ type World struct {
 	StartRoom int
 }
 
-// Loads the world's script data from the data folder. Characters are loaded separately with LoadCharacters
-func NewWorld(dataFolder fs.FS) (*World, error) {
+// Loads the world's script data from the data folder. Characters are loaded separately with LoadCharacters.
+// Every problem found in the data is returned. The world is returned even if some of those problems are errors,
+// in which case the files with errors are left out of it. The error is only for failures unrelated to the data
+func NewWorld(dataFolder fs.FS) (*World, []ScriptProblem, error) {
 	world := &World{
 		dataFolder: dataFolder,
 	}
@@ -47,28 +49,26 @@ func NewWorld(dataFolder fs.FS) (*World, error) {
 	// Init script state
 	err := world.scriptInit()
 	if err != nil {
-		return nil, err
+		world.scriptQuit()
+		return nil, nil, err
 	}
 
 	// Load script data
-	loaders := []func() error {
+	problems := make([]ScriptProblem, 0)
+	loaders := []func() []ScriptProblem {
 		world.loadItemTypes,
 		world.loadRaceData,
 		world.loadBackgroundData,
 		world.loadRoomData,
 	}
 	for _, loader := range loaders {
-		err := loader()
-		if err != nil {
-			world.scriptQuit()
-			return nil, err
-		}
+		problems = append(problems, loader()...)
 	}
 
 	// Init mob array
 	world.Mobs = NewMobArray()
 
-	return world, nil
+	return world, problems, nil
 }
 
 func (world *World) Quit() {

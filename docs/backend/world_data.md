@@ -2,9 +2,21 @@
 
 The game's content is loaded from the data folder, `backend/data/`, when the server starts. Most of it is Lua scripts, each returning one table. Room positions and exits are stored in `layout.json` instead.
 
-If any file fails to load, the server refuses to start and logs the error. Each error names the file it came from.
-
 `world.NewWorld` reads the data folder through the `fs.FS` it is given, so the same loader can run over files that aren't on disk. The server passes `os.DirFS("data")`. `NewWorld` loads only the script data; the server then loads saved characters from `saves/` with `World.LoadCharacters`.
+
+## Problems
+
+Loading doesn't stop at the first bad file. `NewWorld` returns every problem it finds as a list of `ScriptProblem`s (`backend/world/script_problem.go`), along with the world. Each problem has:
+
+- `Path`: the file it is about, relative to the data folder (or the core folder, if the folder is missing).
+- `Key`: the field it is about, if any (for example `item` in a loot entry). Problems inside `attributes`, `skills`, `details`, `interactions` and `loot` use that table's key.
+- `Line`: the line Lua reported, for syntax errors and errors raised while the script runs. 0 otherwise.
+- `RoomIndex`: for `layout.json` problems, the index of the room entry. -1 otherwise.
+- `Severity`: error or warning.
+
+A file with an error is left out of the world, so later loaders see it as missing. For example, a room whose loot names an item from a broken item file gets an "unknown item" error too. A file whose name duplicates an earlier file's is also left out. If the layout has any errors, no rooms are built.
+
+The server logs every problem. It refuses to start if any of them is an error. Warnings don't stop it.
 
 ## Data folder
 
@@ -18,7 +30,7 @@ data/
     world.d.lua     generated LuaLS definitions for the `world` script API
 ```
 
-Files load in this order: items, races, backgrounds, rooms (including the layout). A loader can refer to data loaded before it. For example, room loot tables name items. Every `.lua` file under a core folder is loaded, including files in subfolders. Other files are skipped.
+Files load in this order: items, races, backgrounds, rooms (including the layout). Each of these core folders must exist, or it's an error. A loader can refer to data loaded before it. For example, room loot tables name items. Every `.lua` file under a core folder is loaded, including files in subfolders. Other files are skipped.
 
 Scripts run in a restricted Lua state. The base, math, string and table libraries are available, along with the `world` table (see `backend/world/script_library.go` and the generated `world.d.lua`). Reading or creating an undefined global is an error, so declare variables `local`.
 
@@ -91,7 +103,7 @@ All fields are required, and unknown fields are an error. The layout is also inv
 - an exit has no matching exit back. Exits are two-way, so a room's `east` exit needs a `west` exit on the room to its east,
 - a room's `path` is empty, or isn't a room file that loaded.
 
-The same room file can be used by more than one room. Each copy gets its own inventory and state. Because this is usually a mistake, the server logs a warning when it happens.
+The same room file can be used by more than one room. Each copy gets its own inventory and state. Because this is usually a mistake, it is reported as a warning.
 
 Rooms are indexed in the order they appear in `rooms`.
 

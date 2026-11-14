@@ -40,36 +40,46 @@ type Layout struct {
 	Rooms []LayoutRoom
 }
 
+// Creates an error problem on layout.json. roomIndex is the index of the room entry the problem is about, or -1
+func layoutProblem(roomIndex int, format string, args ...any) ScriptProblem {
+	return ScriptProblem {
+		Path: LAYOUT_FILE,
+		RoomIndex: roomIndex,
+		Message: fmt.Sprintf(format, args...),
+		Severity: SCRIPT_PROBLEM_SEVERITY_ERROR,
+	}
+}
+
 // Decodes layout.json and checks that every required field is present and every exit is a direction.
-// It does not check how rooms relate to each other, see validateLayout
-func parseLayout(data []byte) (*Layout, error) {
+// It does not check how rooms relate to each other, see validateLayout. The layout is nil if there are any problems
+func parseLayout(data []byte) (*Layout, []ScriptProblem) {
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
 
 	var parsedJson layoutJson
 	err := decoder.Decode(&parsedJson)
 	if err != nil {
-		return nil, err
+		return nil, []ScriptProblem { layoutProblem(-1, "%s", err.Error()) }
 	}
 
-	problems := make([]error, 0)
+	problems := make([]ScriptProblem, 0)
 	layout := &Layout{}
 
 	// Start
 	if parsedJson.Start == nil {
-		problems = append(problems, fmt.Errorf("missing required field 'start'"))
+		problems = append(problems, layoutProblem(-1, "missing required field 'start'"))
 	} else {
 		position, err := layoutPositionFromJson(parsedJson.Start)
 		if err != nil {
-			problems = append(problems, fmt.Errorf("start: %w", err))
+			problems = append(problems, layoutProblem(-1, "start: %s", err.Error()))
 		}
 		layout.Start = position
 	}
 
 	// Rooms
 	if parsedJson.Rooms == nil {
-		problems = append(problems, fmt.Errorf("missing required field 'rooms'"))
-		return nil, errors.Join(problems...)
+		problems = append(problems, layoutProblem(-1, "missing required field 'rooms'"))
+		return nil, problems
 	}
 
 	layout.Rooms = make([]LayoutRoom, 0, len(*parsedJson.Rooms))
@@ -77,33 +87,33 @@ func parseLayout(data []byte) (*Layout, error) {
 		room := LayoutRoom{}
 
 		if roomJson.Position == nil {
-			problems = append(problems, fmt.Errorf("rooms[%d]: missing required field 'position'", index))
+			problems = append(problems, layoutProblem(index, "missing required field 'position'"))
 		} else {
 			position, err := layoutPositionFromJson(roomJson.Position)
 			if err != nil {
-				problems = append(problems, fmt.Errorf("rooms[%d]: position: %w", index, err))
+				problems = append(problems, layoutProblem(index, "position: %s", err.Error()))
 			}
 			room.Position = position
 		}
 
 		if roomJson.Path == nil {
-			problems = append(problems, fmt.Errorf("rooms[%d]: missing required field 'path'", index))
+			problems = append(problems, layoutProblem(index, "missing required field 'path'"))
 		} else {
 			room.Path = *roomJson.Path
 		}
 
 		if roomJson.Exits == nil {
-			problems = append(problems, fmt.Errorf("rooms[%d]: missing required field 'exits'", index))
+			problems = append(problems, layoutProblem(index, "missing required field 'exits'"))
 		} else {
 			room.Exits = make([]Direction, 0, len(*roomJson.Exits))
 			for _, exitString := range *roomJson.Exits {
 				direction, ok := util.EnumFromString[Direction](exitString, DIRECTION_COUNT)
 				if !ok {
-					problems = append(problems, fmt.Errorf("rooms[%d]: exit '%s' is not a valid direction", index, exitString))
+					problems = append(problems, layoutProblem(index, "exit '%s' is not a valid direction", exitString))
 					continue
 				}
 				if slices.Contains(room.Exits, direction) {
-					problems = append(problems, fmt.Errorf("rooms[%d]: exit '%s' is listed more than once", index, exitString))
+					problems = append(problems, layoutProblem(index, "exit '%s' is listed more than once", exitString))
 					continue
 				}
 				room.Exits = append(room.Exits, direction)
@@ -114,7 +124,7 @@ func parseLayout(data []byte) (*Layout, error) {
 	}
 
 	if len(problems) != 0 {
-		return nil, errors.Join(problems...)
+		return nil, problems
 	}
 
 	return layout, nil
@@ -139,16 +149,16 @@ func layoutPositionFromJson(positionJson *layoutPositionJson) (RoomPosition, err
 }
 
 // Checks that positions are unique, that start is a room, and that every exit leads to a room with an exit back
-func validateLayout(layout *Layout) error {
-	problems := make([]error, 0)
+func validateLayout(layout *Layout) []ScriptProblem {
+	problems := make([]ScriptProblem, 0)
 
 	// Positions are unique
 	positionToIndex := make(map[RoomPosition]int)
 	for index, room := range layout.Rooms {
 		otherIndex, duplicate := positionToIndex[room.Position]
 		if duplicate {
-			problems = append(problems, fmt.Errorf("rooms[%d]: position %s is already used by rooms[%d]",
-				index, room.Position.String(), otherIndex))
+			problems = append(problems, layoutProblem(index, "position %s is already used by rooms[%d]",
+				room.Position.String(), otherIndex))
 			continue
 		}
 		positionToIndex[room.Position] = index
@@ -157,7 +167,7 @@ func validateLayout(layout *Layout) error {
 	// Start is a room
 	_, startExists := positionToIndex[layout.Start]
 	if !startExists {
-		problems = append(problems, fmt.Errorf("start position %s has no room", layout.Start.String()))
+		problems = append(problems, layoutProblem(-1, "start position %s has no room", layout.Start.String()))
 	}
 
 	// Exits lead to rooms which have an exit back
@@ -166,16 +176,44 @@ func validateLayout(layout *Layout) error {
 			exitPosition := room.Position.PlusDirection(direction)
 			exitIndex, exists := positionToIndex[exitPosition]
 			if !exists {
-				problems = append(problems, fmt.Errorf("rooms[%d]: %s exit leads to %s, which has no room",
-					index, direction.String(), exitPosition.String()))
+				problems = append(problems, layoutProblem(index, "%s exit leads to %s, which has no room",
+					direction.String(), exitPosition.String()))
 				continue
 			}
 			if !slices.Contains(layout.Rooms[exitIndex].Exits, direction.Opposite()) {
-				problems = append(problems, fmt.Errorf("rooms[%d]: %s exit leads to rooms[%d], which has no %s exit back",
-					index, direction.String(), exitIndex, direction.Opposite().String()))
+				problems = append(problems, layoutProblem(index, "%s exit leads to rooms[%d], which has no %s exit back",
+					direction.String(), exitIndex, direction.Opposite().String()))
 			}
 		}
 	}
 
-	return errors.Join(problems...)
+	return problems
+}
+
+// Checks that every room entry has a path to a room file that loaded. A room file used by more than one entry is a warning
+func validateLayoutPaths(layout *Layout, roomFiles map[string]*Room) []ScriptProblem {
+	problems := make([]ScriptProblem, 0)
+
+	pathUseCount := make(map[string]int)
+	for index, room := range layout.Rooms {
+		if room.Path == "" {
+			problems = append(problems, layoutProblem(index, "room at %s has no room file assigned", room.Position.String()))
+			continue
+		}
+		_, exists := roomFiles[room.Path]
+		if !exists {
+			problems = append(problems, layoutProblem(index, "room at %s has path '%s', which is not a room file that loaded",
+				room.Position.String(), room.Path))
+			continue
+		}
+
+		pathUseCount[room.Path]++
+		if pathUseCount[room.Path] == 2 {
+			problem := layoutProblem(index, "room file '%s' is used by more than one room", room.Path)
+			problem.Severity = SCRIPT_PROBLEM_SEVERITY_WARNING
+			problems = append(problems, problem)
+		}
+	}
+
+	return problems
 }

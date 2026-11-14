@@ -47,9 +47,15 @@ func Init(version string) *GameState {
 	}
 
 	// Load world
-	newWorld, err := world.NewWorld(os.DirFS(world.SCRIPT_DATA_FOLDER))
+	newWorld, problems, err := world.NewWorld(os.DirFS(world.SCRIPT_DATA_FOLDER))
 	if err != nil {
 		log.Fatalf("Failed to load world: %s", err.Error())
+	}
+	for _, problem := range problems {
+		log.Printf("%s - %s", problem.Severity.String(), problem.String())
+	}
+	if world.ScriptProblemsHaveError(problems) {
+		log.Fatalf("Failed to load world: the data folder has errors.")
 	}
 	err = newWorld.LoadCharacters()
 	if err != nil {
