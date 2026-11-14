@@ -33,6 +33,7 @@ type World struct {
 
 	Rooms []Room
 	RoomPositionToIndex map[RoomPosition]int
+	StartRoom int
 }
 
 func NewWorld() (*World, error) {
