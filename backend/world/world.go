@@ -1,6 +1,7 @@
 package world
 
 import (
+	"io"
 	"log"
 	"io/fs"
 	"slices"
@@ -16,6 +17,8 @@ type World struct {
 	tick uint32
 
 	dataFolder fs.FS
+	// Where scripts that call print write to
+	scriptStdout io.Writer
 	luaState *lua.State
 	mobHandleType *lua.UserDataType[MobHandle]
 
@@ -40,10 +43,12 @@ type World struct {
 
 // Loads the world's script data from the data folder. Characters are loaded separately with LoadCharacters.
 // Every problem found in the data is returned. The world is returned even if some of those problems are errors,
-// in which case the files with errors are left out of it. The error is only for failures unrelated to the data
-func NewWorld(dataFolder fs.FS) (*World, []ScriptProblem, error) {
+// in which case the files with errors are left out of it. The error is only for failures unrelated to the data.
+// scriptStdout is where scripts that call print write to
+func NewWorld(dataFolder fs.FS, scriptStdout io.Writer) (*World, []ScriptProblem, error) {
 	world := &World{
 		dataFolder: dataFolder,
+		scriptStdout: scriptStdout,
 	}
 
 	// Init script state

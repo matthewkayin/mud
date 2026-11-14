@@ -47,7 +47,7 @@ func Init(version string) *GameState {
 	}
 
 	// Load world
-	newWorld, problems, err := world.NewWorld(os.DirFS(world.SCRIPT_DATA_FOLDER))
+	newWorld, problems, err := world.NewWorld(os.DirFS(world.SCRIPT_DATA_FOLDER), os.Stdout)
 	if err != nil {
 		log.Fatalf("Failed to load world: %s", err.Error())
 	}

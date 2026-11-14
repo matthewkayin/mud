@@ -29,6 +29,7 @@ func (world *World) scriptInit() error {
 			lua.TableLibrary,
 		},
 		ScriptLoader: lua.FSLoader(world.dataFolder),
+		Stdout: world.scriptStdout,
 	})
 	if err != nil {
 		return fmt.Errorf("Error initializing lua state: %s", err.Error())
