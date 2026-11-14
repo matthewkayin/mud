@@ -26,6 +26,10 @@ type server struct {
 
 	shutdownRequested bool
 	validateTimer *time.Timer
+	// Set while a change is waiting out the debounce
+	validatePending bool
+	// From the last validation, see world.World.RoomFileNames
+	roomNames map[string]string
 	// URIs that had diagnostics in the last publish, so they can be cleared when their problems are fixed
 	publishedUris map[string]bool
 }
@@ -52,6 +56,10 @@ type serverInfo struct {
 
 // Runs the language server over stdin and stdout until the client exits. Returns the process exit code
 func Run(dataFolder string) int {
+	return serve(dataFolder, os.Stdin, os.Stdout)
+}
+
+func serve(dataFolder string, input io.Reader, output io.Writer) int {
 	absoluteDataFolder, err := filepath.Abs(dataFolder)
 	if err != nil {
 		log.Printf("Error resolving data folder %s: %s", dataFolder, err.Error())
@@ -61,8 +69,9 @@ func Run(dataFolder string) int {
 	lspServer := &server {
 		dataFolder: absoluteDataFolder,
 		overlay: newOverlayFS(os.DirFS(absoluteDataFolder)),
-		output: os.Stdout,
+		output: output,
 		publishedUris: make(map[string]bool),
+		roomNames: make(map[string]string),
 	}
 
 	// Stopped until the first change
@@ -70,7 +79,7 @@ func Run(dataFolder string) int {
 	lspServer.validateTimer.Stop()
 
 	messages := make(chan *rpcMessage, 64)
-	go readMessages(os.Stdin, messages)
+	go readMessages(input, messages)
 
 	log.Printf("Language server started for data folder %s.", absoluteDataFolder)
 	return lspServer.run(messages)
@@ -168,6 +177,12 @@ func (lspServer *server) handleMessage(message *rpcMessage) {
 		lspServer.scheduleValidate()
 	case "textDocument/didSave", "workspace/didChangeWatchedFiles":
 		lspServer.scheduleValidate()
+	case "mud/roomNames":
+		// Answer with names that match the current buffers
+		if lspServer.validatePending {
+			lspServer.validate()
+		}
+		lspServer.respond(message.Id, lspServer.roomNames)
 	default:
 		if isRequest {
 			lspServer.write(rpcErrorResponse {
@@ -194,28 +209,56 @@ func (lspServer *server) setDocument(uri string, text string) {
 
 // Validates after the debounce time, restarting the wait if validation was already scheduled
 func (lspServer *server) scheduleValidate() {
+	lspServer.validatePending = true
 	lspServer.validateTimer.Reset(VALIDATE_DEBOUNCE)
 }
 
 // Loads the world from the overlay and publishes diagnostics for every problem
 func (lspServer *server) validate() {
 	lspServer.validateTimer.Stop()
+	lspServer.validatePending = false
 
-	loadedWorld, problems, err := world.NewWorld(lspServer.overlay, os.Stderr)
+	pathToDiagnostics, roomNames, err := diagnose(lspServer.overlay)
 	if err != nil {
 		log.Printf("Error loading world: %s", err.Error())
 		return
 	}
+	lspServer.roomNames = roomNames
+
+	// Publish
+	newPublishedUris := make(map[string]bool)
+	for path, diagnostics := range pathToDiagnostics {
+		uri := lspServer.dataPathToUri(path)
+		lspServer.publishDiagnostics(uri, diagnostics)
+		newPublishedUris[uri] = true
+	}
+
+	// Clear files whose problems are fixed
+	for uri := range lspServer.publishedUris {
+		if !newPublishedUris[uri] {
+			lspServer.publishDiagnostics(uri, []Diagnostic{})
+		}
+	}
+	lspServer.publishedUris = newPublishedUris
+}
+
+// Loads the world from a data folder. Returns the diagnostics for its problems keyed by path relative to the data folder,
+// and the name of every room file that loaded keyed by path relative to the rooms folder
+func diagnose(dataFolder fs.FS) (map[string][]Diagnostic, map[string]string, error) {
+	loadedWorld, problems, err := world.NewWorld(dataFolder, os.Stderr)
+	if err != nil {
+		return nil, nil, err
+	}
+	roomNames := loadedWorld.RoomFileNames
 	loadedWorld.Quit()
 
-	// Group problems by file
 	pathToDiagnostics := make(map[string][]Diagnostic)
 	pathToSource := make(map[string][]byte)
 	for _, problem := range problems {
 		source, hasSource := pathToSource[problem.Path]
 		if !hasSource {
 			// Problems on a core folder have no source to read
-			source, err = fs.ReadFile(lspServer.overlay, problem.Path)
+			source, err = fs.ReadFile(dataFolder, problem.Path)
 			if err != nil {
 				source = nil
 			}
@@ -235,21 +278,7 @@ func (lspServer *server) validate() {
 		})
 	}
 
-	// Publish
-	newPublishedUris := make(map[string]bool)
-	for path, diagnostics := range pathToDiagnostics {
-		uri := lspServer.dataPathToUri(path)
-		lspServer.publishDiagnostics(uri, diagnostics)
-		newPublishedUris[uri] = true
-	}
-
-	// Clear files whose problems are fixed
-	for uri := range lspServer.publishedUris {
-		if !newPublishedUris[uri] {
-			lspServer.publishDiagnostics(uri, []Diagnostic{})
-		}
-	}
-	lspServer.publishedUris = newPublishedUris
+	return pathToDiagnostics, roomNames, nil
 }
 
 func (lspServer *server) publishDiagnostics(uri string, diagnostics []Diagnostic) {

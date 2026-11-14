@@ -36,6 +36,9 @@ type World struct {
 	NextItemId ItemId
 	ItemGold *ItemType
 
+	// The name of every room file that parsed, keyed by its path relative to the rooms folder.
+	// Filled even when the layout has errors
+	RoomFileNames map[string]string
 	Rooms []Room
 	RoomPositionToIndex map[RoomPosition]int
 	StartRoom int

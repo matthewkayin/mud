@@ -13,6 +13,7 @@ func (world *World) loadRoomData() []ScriptProblem {
 
 	// Parse every room file, keyed by its path relative to the rooms folder
 	roomFiles := make(map[string]*Room, len(files))
+	world.RoomFileNames = make(map[string]string, len(files))
 	for _, file := range files {
 		parser := ScriptParser{ path: file.path }
 		room := parser.parseRoom(world, file.table)
@@ -21,7 +22,9 @@ func (world *World) loadRoomData() []ScriptProblem {
 			continue
 		}
 
-		roomFiles[strings.TrimPrefix(file.path, ROOM_DATA_FOLDER + "/")] = room
+		roomPath := strings.TrimPrefix(file.path, ROOM_DATA_FOLDER + "/")
+		roomFiles[roomPath] = room
+		world.RoomFileNames[roomPath] = room.Name
 	}
 
 	// Read layout

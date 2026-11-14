@@ -2,7 +2,9 @@
 
 The game's content is loaded from the data folder, `backend/data/`, when the server starts. Most of it is Lua scripts, each returning one table. Room positions and exits are stored in `layout.json` instead.
 
-`world.NewWorld` reads the data folder through the `fs.FS` it is given, so the same loader can run over files that aren't on disk. The server passes `os.DirFS("data")`. `NewWorld` loads only the script data; the server then loads saved characters from `saves/` with `World.LoadCharacters`.
+`world.NewWorld` reads the data folder through the `fs.FS` it is given, so the same loader can run over files that aren't on disk. The server passes `os.DirFS("data")`. The validation language server (`lsp.md`) passes a filesystem that overlays unsaved editor buffers on the folder. `NewWorld` also takes the writer that scripts calling `print` write to: stdout for the server, stderr for the language server. `NewWorld` loads only the script data; the server then loads saved characters from `saves/` with `World.LoadCharacters`.
+
+`World.RoomFileNames` maps the path of every room file that loaded, relative to `rooms/`, to its `name`. It is filled even when the layout has errors.
 
 ## Problems
 

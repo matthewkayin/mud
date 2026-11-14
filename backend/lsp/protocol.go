@@ -14,12 +14,15 @@ const RPC_ERROR_METHOD_NOT_FOUND = -32601
 const DIAGNOSTIC_SEVERITY_ERROR = 1
 const DIAGNOSTIC_SEVERITY_WARNING = 2
 
-// A request, notification or response. A request has an id and a method, a notification only a method
+// A request, notification or response. A request has an id and a method, a notification only a method,
+// and a response an id and either a result or an error
 type rpcMessage struct {
 	Jsonrpc string `json:"jsonrpc"`
 	Id json.RawMessage `json:"id,omitempty"`
 	Method string `json:"method,omitempty"`
 	Params json.RawMessage `json:"params,omitempty"`
+	Result json.RawMessage `json:"result,omitempty"`
+	Error *rpcError `json:"error,omitempty"`
 }
 
 type rpcError struct {
