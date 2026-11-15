@@ -38,6 +38,14 @@ export type MapViewRequest = {
     // Adds the exit and its matching exit back if the room doesn't have it, otherwise removes both
     toggleExit?: { position: Position; direction: string };
     setStart?: Position;
+    // Asks the author to pick a file from the rooms folder and assigns it to the room
+    chooseRoomFile?: Position;
+    // Asks the author for a file name, creates the file from the room template and assigns it to the unassigned room
+    createRoomFile?: Position;
+    // A file Shift-dropped from the explorer onto a room. The uri is the dropped file's, as a string
+    dropRoomFile?: { position: Position; uri: string };
+    // Opens the room's file in a code editor tab
+    openRoomFile?: Position;
 };
 
 export const DIRECTION_NORTH = "north";

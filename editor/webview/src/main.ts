@@ -57,6 +57,8 @@ const elevationDownButton = getElement<HTMLButtonElement>("elevation-down");
 const elevationUpButton = getElement<HTMLButtonElement>("elevation-up");
 const roomActions = getElement<HTMLDivElement>("room-actions");
 const setStartButton = getElement<HTMLButtonElement>("set-start");
+const assignFileButton = getElement<HTMLButtonElement>("assign-file");
+const newFileButton = getElement<HTMLButtonElement>("new-file");
 const deleteRoomButton = getElement<HTMLButtonElement>("delete-room");
 const errorPanel = getElement<HTMLDivElement>("error");
 
@@ -79,6 +81,8 @@ let hoverTarget: HitTarget | null = null;
 let leftPress: LeftPress | null = null;
 let drag: RoomDrag | null = null;
 let selectedPosition: Position | null = null;
+// The room a file from the explorer is being dragged over
+let fileDropPosition: Position | null = null;
 
 let isRenderRequested = false;
 
@@ -202,6 +206,58 @@ function onClick(target: HitTarget | null): void {
     }
 }
 
+// Double-clicking a room opens its file. The first click of the two has already selected it
+canvas.addEventListener("dblclick", (event) => {
+    const target = hitTestClient(event.clientX, event.clientY);
+    if (target?.kind !== "room") {
+        return;
+    }
+    const room = mapState?.layout == null ? undefined : findRoom(mapState.layout, target.position);
+    if (room !== undefined && room.path !== "") {
+        vscode.postMessage({ openRoomFile: target.position });
+    }
+});
+
+// Files dragged from the explorer. VS Code only delivers them to a webview while Shift is held
+
+canvas.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    const target = hitTestClient(event.clientX, event.clientY);
+    setFileDropPosition(target?.kind === "room" ? target.position : null);
+});
+
+canvas.addEventListener("dragleave", () => setFileDropPosition(null));
+
+canvas.addEventListener("drop", (event) => {
+    event.preventDefault();
+    setFileDropPosition(null);
+    const target = hitTestClient(event.clientX, event.clientY);
+    const uri = readDroppedUri(event.dataTransfer);
+    if (target?.kind === "room" && uri !== null) {
+        vscode.postMessage({ dropRoomFile: { position: target.position, uri } });
+    }
+});
+
+// The first URI in a drop's text/uri-list, which has one URI per line and # comment lines
+function readDroppedUri(dataTransfer: DataTransfer | null): string | null {
+    const uriList = dataTransfer?.getData("text/uri-list") ?? "";
+    const uri = uriList
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .find((line) => line !== "" && !line.startsWith("#"));
+    return uri ?? null;
+}
+
+function setFileDropPosition(position: Position | null): void {
+    const isSame =
+        position === null || fileDropPosition === null ? position === fileDropPosition : positionsEqual(position, fileDropPosition);
+    if (isSame) {
+        return;
+    }
+    fileDropPosition = position;
+    requestRender();
+}
+
 function finishDrag(finishedDrag: RoomDrag): void {
     if (mapState?.layout == null || finishedDrag.to === null || !isValidDragTarget(mapState.layout, finishedDrag)) {
         return;
@@ -322,6 +378,18 @@ setStartButton.addEventListener("click", () => {
     }
 });
 
+assignFileButton.addEventListener("click", () => {
+    if (selectedPosition !== null) {
+        vscode.postMessage({ chooseRoomFile: selectedPosition });
+    }
+});
+
+newFileButton.addEventListener("click", () => {
+    if (selectedPosition !== null) {
+        vscode.postMessage({ createRoomFile: selectedPosition });
+    }
+});
+
 deleteRoomButton.addEventListener("click", () => {
     if (selectedPosition !== null) {
         vscode.postMessage({ deleteRoom: selectedPosition });
@@ -406,6 +474,9 @@ function updateRoomActions(): void {
     roomActions.style.left = `${topCenter.x}px`;
     roomActions.style.top = `${topCenter.y - ROOM_ACTIONS_OFFSET}px`;
     setStartButton.disabled = positionsEqual(layout.start, selectedPosition);
+    const roomPath = findRoom(layout, selectedPosition)?.path ?? "";
+    assignFileButton.title = roomPath === "" ? "Choose this room's Lua file" : `Change this room's Lua file (rooms/${roomPath})`;
+    newFileButton.hidden = roomPath !== "";
     roomActions.hidden = false;
 }
 
@@ -431,6 +502,7 @@ function requestRender(): void {
             hoverTarget,
             selectedPosition,
             drag,
+            fileDropPosition,
         });
     });
 }

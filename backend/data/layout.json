@@ -6,6 +6,6 @@
         { "position": { "x": 0, "y": 0, "z": 1 }, "path": "church.lua", "exits": ["west", "east", "down"] },
         { "position": { "x": 1, "y": 0, "z": 1 }, "path": "faculty.lua", "exits": ["west"] },
         { "position": { "x": -1, "y": 0, "z": 1 }, "path": "hardware.lua", "exits": ["east"] },
-        { "position": { "x": 0, "y": -1, "z": 0 }, "path": "", "exits": ["south"] }
+        { "position": { "x": 0, "y": -1, "z": 0 }, "path": "dining_hall.lua", "exits": ["south"] }
     ]
 }

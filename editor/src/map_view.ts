@@ -1,9 +1,10 @@
 import { randomBytes } from "node:crypto";
 import * as vscode from "vscode";
 import type { LanguageClient } from "vscode-languageclient/node";
-import type { Layout, MapViewRequest, MapViewState } from "../shared/map_types";
+import { findRoom, type Layout, type LayoutRoom, type MapViewRequest, type MapViewState, type Position } from "../shared/map_types";
 import { parseLayout } from "./layout";
-import { createRoom, deleteRoom, formatLayout, moveRoom, setStart, toggleExit } from "./layout_edit";
+import { createRoom, deleteRoom, formatLayout, moveRoom, setRoomPath, setStart, toggleExit } from "./layout_edit";
+import { parseNewRoomFileName, roomFileTemplate, roomPathFromFilePath } from "./room_files";
 
 const ROOM_NAMES_REFRESH_DEBOUNCE_MS = 300;
 
@@ -78,7 +79,10 @@ export class MapViewProvider implements vscode.CustomTextEditorProvider {
                     this.postState(panel);
                     void this.refreshRoomNames();
                 }
-                void this.applyEditRequest(document, request);
+                void this.handleRequest(document, request).catch((error: unknown) => {
+                    const message = error instanceof Error ? error.message : String(error);
+                    void vscode.window.showErrorMessage(`Map edit failed: ${message}`);
+                });
             }),
             vscode.workspace.onDidChangeTextDocument((event) => {
                 if (event.document.uri.toString() === document.uri.toString()) {
@@ -95,13 +99,27 @@ export class MapViewProvider implements vscode.CustomTextEditorProvider {
         });
     }
 
-    // Applies an edit intent to the document's current text as one WorkspaceEdit, so VS Code's text buffer gives undo,
-    // redo, unsaved state and saving. The whole document is rewritten in the fixed format
-    private async applyEditRequest(document: vscode.TextDocument, request: MapViewRequest): Promise<void> {
+    private async handleRequest(document: vscode.TextDocument, request: MapViewRequest): Promise<void> {
         const editLayout = getEditFunction(request);
-        if (editLayout === null) {
-            return;
+        if (editLayout !== null) {
+            await this.applyLayoutEdit(document, editLayout);
+        } else if (request.chooseRoomFile !== undefined) {
+            await this.chooseRoomFile(document, request.chooseRoomFile);
+        } else if (request.createRoomFile !== undefined) {
+            await this.createRoomFile(document, request.createRoomFile);
+        } else if (request.dropRoomFile !== undefined) {
+            await this.dropRoomFile(document, request.dropRoomFile.position, request.dropRoomFile.uri);
+        } else if (request.openRoomFile !== undefined) {
+            await this.openRoomFile(document, request.openRoomFile);
         }
+    }
+
+    // Applies an edit to the document's current text as one WorkspaceEdit, so VS Code's text buffer gives undo, redo,
+    // unsaved state and saving. The whole document is rewritten in the fixed format
+    private async applyLayoutEdit(
+        document: vscode.TextDocument,
+        editLayout: (layout: Layout) => Layout | null,
+    ): Promise<void> {
         // While layout.json doesn't parse the map view shows the error, so there is nothing to edit
         const layout = parseLayout(document.getText()).layout;
         if (layout === null) {
@@ -119,6 +137,121 @@ export class MapViewProvider implements vscode.CustomTextEditorProvider {
         if (!isApplied) {
             console.warn(`Failed to apply map edit to ${document.uri.toString()}`);
         }
+    }
+
+    // Shows a quick-pick of the files in the rooms folder and assigns the chosen one to the room
+    private async chooseRoomFile(document: vscode.TextDocument, position: Position): Promise<void> {
+        const room = this.findDocumentRoom(document, position);
+        if (room === undefined) {
+            return;
+        }
+        const roomsUri = getRoomsFolderUri(document);
+        const fileUris = await vscode.workspace.findFiles(new vscode.RelativePattern(roomsUri, "**/*.lua"));
+        const roomPaths = fileUris
+            .map((uri) => roomPathFromFilePath(roomsUri.fsPath, uri.fsPath))
+            .filter((roomPath) => roomPath !== null)
+            .sort();
+        if (roomPaths.length === 0) {
+            void vscode.window.showInformationMessage(
+                "There are no files in the rooms folder. Use \"New file\" to create one.",
+            );
+            return;
+        }
+
+        const items: vscode.QuickPickItem[] = roomPaths.map((roomPath) => ({
+            label: roomPath,
+            description: this.roomNames[roomPath],
+            detail: roomPath === room.path ? "Current file" : undefined,
+        }));
+        const picked = await vscode.window.showQuickPick(items, {
+            title: "Assign a room file",
+            placeHolder: "Choose a file from the rooms folder",
+            matchOnDescription: true,
+        });
+        if (picked === undefined) {
+            return;
+        }
+        await this.applyLayoutEdit(document, (layout) => setRoomPath(layout, position, picked.label));
+    }
+
+    // Asks for a file name, creates the file from the room template, assigns it and opens it. Undoing the map edit only
+    // removes the assignment, and the file stays
+    private async createRoomFile(document: vscode.TextDocument, position: Position): Promise<void> {
+        const room = this.findDocumentRoom(document, position);
+        if (room === undefined || room.path !== "") {
+            return;
+        }
+        const roomsUri = getRoomsFolderUri(document);
+        const input = await vscode.window.showInputBox({
+            title: "New room file",
+            prompt: "File name, relative to the rooms folder",
+            placeHolder: "dining_hall",
+            validateInput: async (value) => {
+                const result = parseNewRoomFileName(value);
+                if (result.path === null) {
+                    return result.error;
+                }
+                const isExisting = await fileExists(vscode.Uri.joinPath(roomsUri, result.path));
+                return isExisting ? `rooms/${result.path} already exists` : null;
+            },
+        });
+        if (input === undefined) {
+            return;
+        }
+        const roomPath = parseNewRoomFileName(input).path;
+        if (roomPath === null) {
+            return;
+        }
+        const fileUri = vscode.Uri.joinPath(roomsUri, roomPath);
+        // Checked again, since the file may have been created while the input box was open
+        const isExisting = await fileExists(fileUri);
+        if (isExisting) {
+            void vscode.window.showErrorMessage(`rooms/${roomPath} already exists`);
+            return;
+        }
+
+        await vscode.workspace.fs.writeFile(fileUri, new TextEncoder().encode(roomFileTemplate(roomPath)));
+        await this.applyLayoutEdit(document, (layout) => setRoomPath(layout, position, roomPath));
+        await vscode.window.showTextDocument(fileUri, { preview: false });
+    }
+
+    private async dropRoomFile(document: vscode.TextDocument, position: Position, uriString: string): Promise<void> {
+        let fileUri: vscode.Uri;
+        try {
+            fileUri = vscode.Uri.parse(uriString, true);
+        } catch {
+            return;
+        }
+        const roomPath =
+            fileUri.scheme === "file" ? roomPathFromFilePath(getRoomsFolderUri(document).fsPath, fileUri.fsPath) : null;
+        if (roomPath === null) {
+            void vscode.window.showErrorMessage("Only .lua files in the rooms folder can be assigned to a room.");
+            return;
+        }
+        await this.applyLayoutEdit(document, (layout) => setRoomPath(layout, position, roomPath));
+    }
+
+    private async openRoomFile(document: vscode.TextDocument, position: Position): Promise<void> {
+        const room = this.findDocumentRoom(document, position);
+        if (room === undefined || room.path === "") {
+            return;
+        }
+        const fileUri = vscode.Uri.joinPath(getRoomsFolderUri(document), room.path);
+        const isExisting = await fileExists(fileUri);
+        if (!isExisting) {
+            void vscode.window.showErrorMessage(`rooms/${room.path} doesn't exist.`);
+            return;
+        }
+        await vscode.window.showTextDocument(fileUri, { preview: false });
+    }
+
+    // The room at a position in the document's current text, which may be newer than the webview's copy
+    private findDocumentRoom(document: vscode.TextDocument, position: Position): LayoutRoom | undefined {
+        const layout = parseLayout(document.getText()).layout;
+        if (layout === null) {
+            return undefined;
+        }
+        return findRoom(layout, position);
     }
 
     private postState(panel: MapPanel): void {
@@ -290,12 +423,28 @@ export class MapViewProvider implements vscode.CustomTextEditorProvider {
     </div>
     <div id="room-actions" hidden>
         <button id="set-start" title="New characters start in this room">Set as start</button>
+        <button id="assign-file" title="Choose this room's Lua file">Assign file…</button>
+        <button id="new-file" title="Create a Lua file for this room">New file…</button>
         <button id="delete-room" title="Delete this room and its connections (Delete)">Delete</button>
     </div>
     <div id="error" hidden></div>
     <script nonce="${nonce}" src="${webview.asWebviewUri(scriptUri).toString()}"></script>
 </body>
 </html>`;
+    }
+}
+
+// Room paths in layout.json are relative to the rooms folder next to it
+function getRoomsFolderUri(document: vscode.TextDocument): vscode.Uri {
+    return vscode.Uri.joinPath(document.uri, "..", "rooms");
+}
+
+async function fileExists(uri: vscode.Uri): Promise<boolean> {
+    try {
+        await vscode.workspace.fs.stat(uri);
+        return true;
+    } catch {
+        return false;
     }
 }
 

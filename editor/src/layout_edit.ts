@@ -86,6 +86,17 @@ export function setStart(layout: Layout, position: Position): Layout | null {
     return { start: { ...position }, rooms: cloneRooms(layout) };
 }
 
+// Assigns a room file, relative to the rooms folder. Exits and start are unchanged
+export function setRoomPath(layout: Layout, position: Position, path: string): Layout | null {
+    const index = findRoomIndex(layout, position);
+    if (index === -1 || layout.rooms[index].path === path) {
+        return null;
+    }
+    const rooms = cloneRooms(layout);
+    rooms[index].path = path;
+    return { start: layout.start, rooms };
+}
+
 // The fixed format the map view always writes, with one room per line so edits make small, readable diffs
 export function formatLayout(layout: Layout): string {
     const lines = ["{", `    "start": ${formatPosition(layout.start)},`];

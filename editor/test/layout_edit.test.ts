@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import type { Layout, LayoutRoom, Position } from "../shared/map_types.ts";
 import { parseLayout } from "../src/layout.ts";
-import { createRoom, deleteRoom, formatLayout, moveRoom, setStart, toggleExit } from "../src/layout_edit.ts";
+import { createRoom, deleteRoom, formatLayout, moveRoom, setRoomPath, setStart, toggleExit } from "../src/layout_edit.ts";
 
 function position(x: number, y: number, z: number): Position {
     return { x, y, z };
@@ -137,4 +137,17 @@ test("formatLayout writes an empty room list and escapes paths", () => {
     );
     const formatted = formatLayout({ start: position(0, 0, 0), rooms: [room(0, 0, 0, [], 'a "b".lua')] });
     assert.deepEqual(parseLayout(formatted).layout?.rooms[0].path, 'a "b".lua');
+});
+
+test("setRoomPath assigns a file and keeps exits and start", () => {
+    const result = setRoomPath(sampleLayout(), position(0, 0, 0), "rooms_folder/new.lua");
+    assert.ok(result);
+    assert.deepEqual(result.rooms[0], room(0, 0, 0, ["east"], "rooms_folder/new.lua"));
+    assert.deepEqual(result.start, position(0, 0, 0));
+    assert.deepEqual(result.rooms.slice(1), sampleLayout().rooms.slice(1));
+});
+
+test("setRoomPath does nothing for a missing room or an unchanged path", () => {
+    assert.equal(setRoomPath(sampleLayout(), position(5, 5, 0), "a.lua"), null);
+    assert.equal(setRoomPath(sampleLayout(), position(0, 0, 0), "a.lua"), null);
 });

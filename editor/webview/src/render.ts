@@ -83,6 +83,8 @@ export type MapRenderParams = {
     hoverTarget: HitTarget | null;
     selectedPosition: Position | null;
     drag: RoomDrag | null;
+    // The room a file from the explorer is being dragged over
+    fileDropPosition: Position | null;
 };
 
 export function cellRect(x: number, y: number): Rect {
@@ -156,6 +158,7 @@ export function renderMap(context: CanvasRenderingContext2D, params: MapRenderPa
     renderHoveredEmptyCell(context, params);
     renderSelection(context, params);
     renderDrag(context, params);
+    renderFileDrop(context, params);
 }
 
 // Faint outlines of the empty cells in view, so the grid is visible
@@ -243,6 +246,25 @@ function renderSelection(context: CanvasRenderingContext2D, params: MapRenderPar
     context.strokeStyle = params.colors.accent;
     context.lineWidth = SELECTION_LINE_WIDTH;
     context.setLineDash([6, 4]);
+    context.strokeRect(
+        rect.x - SELECTION_OFFSET,
+        rect.y - SELECTION_OFFSET,
+        rect.width + SELECTION_OFFSET * 2,
+        rect.height + SELECTION_OFFSET * 2,
+    );
+    context.restore();
+}
+
+// A room a file is being dragged over is outlined, since dropping assigns the file to it
+function renderFileDrop(context: CanvasRenderingContext2D, params: MapRenderParams): void {
+    const position = params.fileDropPosition;
+    if (position === null || position.z !== params.elevation || findRoom(params.layout, position) === undefined) {
+        return;
+    }
+    const rect = cellRect(position.x, position.y);
+    context.save();
+    context.strokeStyle = params.colors.accent;
+    context.lineWidth = SELECTION_LINE_WIDTH;
     context.strokeRect(
         rect.x - SELECTION_OFFSET,
         rect.y - SELECTION_OFFSET,
