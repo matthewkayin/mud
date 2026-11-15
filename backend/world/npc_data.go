@@ -63,47 +63,34 @@ type NpcData struct {
 	update *lua.Function
 }
 
-func (world *World) loadNpcData() error {
-	// Read NPC folder
-	paths, err := scriptGetFilesFrom(NPC_DATA_FOLDER)
-	if err != nil {
-		return fmt.Errorf("Error opening NPC data folder: %s", err.Error())
-	}
+func (world *World) loadNpcData() []ScriptProblem {
+	files, problems := world.scriptLoadFolder(NPC_DATA_FOLDER)
 
-	world.NpcData = make([]*NpcData, 0, len(paths))
+	world.NpcData = make([]*NpcData, 0, len(files))
 	world.NpcIdToData = make(map[string]*NpcData)
 
-	for _, path := range paths {
-		// Open script
-		table, err := world.scriptLoadTable(path)
-		if err != nil {
-			return err
-		}
-
+	for _, file := range files {
 		// Parse NPC data
-		parser := ScriptParser{}
-		npcData := parser.parserNpc(world, table)
+		parser := ScriptParser{ path: file.path }
+		npcData := parser.parserNpc(world, file.table)
 		if npcData == nil {
-			return fmt.Errorf("%s: %s", path, parser.getError().Error())
+			problems = append(problems, parser.problems...)
+			continue
 		}
-
-		world.NpcData = append(world.NpcData, npcData)
-	}
-
-	// Set the NPC ID to type mapping
-	for index := range len(world.NpcData) {
-		npcData := world.NpcData[index]
 
 		// Check for duplicate IDs
 		_, duplicateNpcId := world.NpcIdToData[npcData.id]
 		if duplicateNpcId {
-			return fmt.Errorf("NPC has ID '%s' which is a duplicate of another NPC.", npcData.id)
+			parser.addProblem("id", fmt.Errorf("NPC has ID '%s' which is a duplicate of another NPC.", npcData.id))
+			problems = append(problems, parser.problems...)
+			continue
 		}
 
 		world.NpcIdToData[npcData.id] = npcData
+		world.NpcData = append(world.NpcData, npcData)
 	}
 
-	return nil
+	return problems
 }
 
 func (parser *ScriptParser) parserNpc(world *World, table *lua.Table) *NpcData {
@@ -153,13 +140,13 @@ func (parser *ScriptParser) parserNpc(world *World, table *lua.Table) *NpcData {
 		for index := 1; index <= wareCount; index++ {
 			itemName, ok := waresTable.RawGetInt(index).AsString()
 			if !ok {
-				parser.addProblem(fmt.Errorf("wares[%d] must be an item name", index))
+				parser.addProblem("wares", fmt.Errorf("wares[%d] must be an item name", index))
 				continue
 			}
 
 			itemType, ok := world.ItemNameToType[itemName]
 			if !ok {
-				parser.addProblem(fmt.Errorf("wares[%d] has value %s which is not a valid item", index, itemName))
+				parser.addProblem("wares", fmt.Errorf("wares[%d] has value %s which is not a valid item", index, itemName))
 				continue
 			}
 
@@ -171,7 +158,7 @@ func (parser *ScriptParser) parserNpc(world *World, table *lua.Table) *NpcData {
 	dispositionString := parser.getString(table, "starting_disposition")
 	npcData.startingDisposition, ok = util.EnumFromString(dispositionString, NPC_DISPOSITION_COUNT)
 	if !ok {
-		parser.addProblem(fmt.Errorf("disposition value '%s' is not a valid NPC disposition", dispositionString))
+		parser.addProblem("starting_disposition", fmt.Errorf("disposition value '%s' is not a valid NPC disposition", dispositionString))
 	}
 
 	npcData.init = parser.getOptionalFunction(table, "init")

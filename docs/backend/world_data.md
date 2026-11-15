@@ -25,6 +25,7 @@ The server logs every problem. It refuses to start if any of them is an error. W
 ```
 data/
     items/          item types
+    npcs/           NPC types
     races/          playable races
     backgrounds/    playable backgrounds
     rooms/          room contents
@@ -32,7 +33,7 @@ data/
     world.d.lua     generated LuaLS definitions for the `world` script API
 ```
 
-Files load in this order: items, races, backgrounds, rooms (including the layout). Each of these core folders must exist, or it's an error. A loader can refer to data loaded before it. For example, room loot tables name items. Every `.lua` file under a core folder is loaded, including files in subfolders. Other files are skipped.
+Files load in this order: items, npcs, races, backgrounds, rooms (including the layout). Each of these core folders must exist, or it's an error. A loader can refer to data loaded before it. For example, room loot tables name items. Every `.lua` file under a core folder is loaded, including files in subfolders. Other files are skipped.
 
 Scripts run in a restricted Lua state. The base, math, string and table libraries are available, along with the `world` table (see `backend/world/script_library.go` and the generated `world.d.lua`). Reading or creating an undefined global is an error, so declare variables `local`.
 
@@ -49,6 +50,27 @@ Required fields must be present. There are no defaults for them.
 | `kind` | `world.ItemKind.*` | |
 | `price` | integer | Not negative. |
 | `size` | integer | Not negative. |
+
+### npcs
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | string | Required. Rooms refer to the NPC by this id. Must be unique. |
+| `name` | string | Required. |
+| `description` | string | Required. |
+| `starting_disposition` | `world.NpcDisposition.*` | Required. |
+| `max_health` | integer | Optional, defaults to 1. Greater than 0. |
+| `max_mana` | integer | Optional, defaults to 0. Not negative. |
+| `damage` | integer | Optional, defaults to 1. Not negative. |
+| `penetration` | integer | Optional, defaults to 0. Armor penetration score. Not negative. |
+| `resistance` | integer | Optional, defaults to 0. Flat armor resistance. Not negative. |
+| `deflection` | integer | Optional, defaults to 0. Deflection score. Not negative. |
+| `deflection_amount` | integer | Optional, defaults to 60. Percent of damage deflected on a successful deflect, from 1 to 100. |
+| `experience_worth` | integer | Optional, defaults to 0. Not negative. |
+| `loot` | array | Optional. Items the NPC drops, in the same format as a room's `loot`. |
+| `wares` | array | Optional. Item names the NPC sells. |
+| `init` | function | Optional. `(self)`, called when the NPC spawns. Returns the NPC's instance state table. |
+| `update` | function | Optional. `(self, instance)`, called each world update with the table `init` returned. |
 
 ### races and backgrounds
 
@@ -73,6 +95,7 @@ A room file describes what is in a room, not where the room is. `layout.json` pl
 | `interactions` | table | Optional. Maps a lowercase verb to a function `(state, player, arg)` that runs when a player in the room types that verb. |
 | `reset` | function | Optional. Called each time the room resets, every 5 minutes. |
 | `loot` | array | Optional. Items the room restocks on reset. Each entry has `item` (an item name), `amount` (an integer or `{ min, max }`), `drop_chance_percent`, and an optional `durability_percent` (defaults to 100). |
+| `npcs` | array | Optional. NPCs that spawn in the room. Each entry has `id` (an NPC id) and an optional `respawn_duration` in world updates (defaults to 5 minutes). Each NPC spawns when the server starts and respawns after it is gone. |
 
 Rooms with a `reset` function get a `state` table, which is passed to their interactions.
 

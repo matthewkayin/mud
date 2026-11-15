@@ -57,11 +57,11 @@ func (parser *ScriptParser) getOptionalInt(table *lua.Table, key string, fallbac
 		return fallback
 	}
 	if value.Kind() != lua.NumberKind {
-		parser.addProblem(fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, lua.NumberKind.String(), value.Kind().String()))
+		parser.addProblem(key, fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, lua.NumberKind.String(), value.Kind().String()))
 	}
 	result, _ := value.AsNumber()
 	if math.Trunc(result) != result {
-		parser.addProblem(fmt.Errorf("invalid type for '%s'. expected integer, got %f", key, result))
+		parser.addProblem(key, fmt.Errorf("invalid type for '%s'. expected integer, got %f", key, result))
 	}
 	return int(result)
 }
@@ -79,10 +79,10 @@ func (parser *ScriptParser) getOptionalInt32(table *lua.Table, key string, fallb
 		return fallback
 	}
 	if value.Kind() != lua.NumberKind {
-		parser.addProblem(fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, lua.NumberKind.String(), value.Kind().String()))
+		parser.addProblem(key, fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, lua.NumberKind.String(), value.Kind().String()))
 	}
 	result, _ := value.AsNumber()
-	parser.checkNumberIsInt32(result, key)
+	parser.checkNumberIsInt32(result, key, key)
 	return int32(result)
 }
 
@@ -92,7 +92,8 @@ func (parser *ScriptParser) getFloat32(table *lua.Table, key string) float32 {
 	return float32(result)
 }
 
-func (parser *ScriptParser) checkNumberIsInt32(number float64, key string) {
+// The problem is reported on key, and its message names fieldName, which is different from key for values inside a block
+func (parser *ScriptParser) checkNumberIsInt32(number float64, key string, fieldName string) {
 	if number != math.Trunc(number) {
 		parser.addProblem(key, fmt.Errorf("field '%s' must be an integer, got %v", fieldName, number))
 	}
@@ -138,7 +139,7 @@ func (parser *ScriptParser) getOptionalTable(table *lua.Table, key string) *lua.
 		return nil
 	}
 	if value.Kind() != lua.TableKind {
-		parser.addProblem(fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, lua.TableKind.String(), value.Kind().String()))
+		parser.addProblem(key, fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, lua.TableKind.String(), value.Kind().String()))
 	}
 
 	result, _ := value.AsTable()
@@ -187,7 +188,7 @@ func (parser *ScriptParser) getInt32Range(table *lua.Table, key string) util.Int
 
 func (parser *ScriptParser) checkInt32NonNegative(value int32, key string) {
 	if value < 0 {
-		parser.addProblem(fmt.Errorf("field '%s' must be greater than or equal to 0, got %d", key, value))
+		parser.addProblem(key, fmt.Errorf("field '%s' must be greater than or equal to 0, got %d", key, value))
 	}
 }
 
@@ -211,51 +212,21 @@ func (parser *ScriptParser) checkInt32IsPositivePercent(number int32, key string
 func (parser *ScriptParser) getAttributeBlock(table *lua.Table, key string) AttributeBlock {
 	attributes := AttributeBlock{}
 
-	parser.forEachInOptionalTable(table, key, func (key string, value lua.Value) bool {
-	value := table.RawGetString(key)
-	if value.IsNil() {
-		return attributes
-	}
-
-	attribTable, ok := value.AsTable()
-	if !ok {
-		parser.addProblem(key, fmt.Errorf("field '%s' must be a table.", key))
-		return attributes
-	}
-
-	nextKey := lua.Nil()
-	for {
-		attribKey, attribValue, ok, err := attribTable.Next(nextKey)
-		nextKey = attribKey
+	parser.forEachInOptionalTable(table, key, func (abbreviation string, value lua.Value) bool {
+		// Validate that the key is an attribute
+		attribute, err := attributeAbbreviationToEnum(abbreviation)
 		if err != nil {
-			parser.addProblem(key, fmt.Errorf("Error while iterating through attribute block table: %s", err.Error()))
-			break
-		}
-		if !ok {
-			break
-		}
-
-		// Validate that key is a string
-		abbreviation, ok := attribKey.AsString()
-		if !ok {
-			parser.addProblem(key, fmt.Errorf("Keys in the attribute block table must be strings."))
-			break
-		}
-
-		// Validate that the key is a skill
-		attribute, err := attributeAbbreviationToEnum(key)
-		if err != nil {
-			parser.addProblem(err)
+			parser.addProblem(key, err)
 			return false
 		}
 
 		attributeValue, ok := value.AsNumber()
 		if !ok {
-			parser.addProblem(fmt.Errorf("Values in the attribute block table must be numbers."))
+			parser.addProblem(key, fmt.Errorf("Values in the attribute block table must be numbers."))
 			return false
 		}
 
-		parser.checkNumberIsInt32(attributeValue, key)
+		parser.checkNumberIsInt32(attributeValue, key, abbreviation)
 		attributes.Values[attribute] = int32(attributeValue)
 		return true
 	})
@@ -266,20 +237,21 @@ func (parser *ScriptParser) getAttributeBlock(table *lua.Table, key string) Attr
 func (parser *ScriptParser) getSkillBlock(table *lua.Table, key string) SkillBlock {
 	skills := SkillBlock{}
 
-	parser.forEachInOptionalTable(table, key, func (key string, value lua.Value) bool {
-		skill, err := skillNameToEnum(key)
+	parser.forEachInOptionalTable(table, key, func (skillName string, value lua.Value) bool {
+		// Validate that the key is a skill
+		skill, err := skillNameToEnum(skillName)
 		if err != nil {
-			parser.addProblem(err)
+			parser.addProblem(key, err)
 			return false
 		}
 
 		skillValue, ok := value.AsNumber()
 		if !ok {
-			parser.addProblem(fmt.Errorf("Values in the skill block table must be numbers."))
+			parser.addProblem(key, fmt.Errorf("Values in the skill block table must be numbers."))
 			return false
 		}
 
-		parser.checkNumberIsInt32(skillValue, key)
+		parser.checkNumberIsInt32(skillValue, key, skillName)
 		skills.Values[skill] = int32(skillValue)
 		return true
 	})
@@ -287,7 +259,9 @@ func (parser *ScriptParser) getSkillBlock(table *lua.Table, key string) SkillBlo
 	return skills
 }
 
-func (parser *ScriptParser) forEachInOptionalTable(table *lua.Table, key string, handler func (key string, value lua.Value) bool) {
+// Calls handler for each entry of the table at key, stopping early if handler returns false.
+// Problems are reported on key. Does nothing if the field is missing
+func (parser *ScriptParser) forEachInOptionalTable(table *lua.Table, key string, handler func (entryKey string, entryValue lua.Value) bool) {
 	tableValue := table.RawGetString(key)
 	if tableValue.IsNil() {
 		return
@@ -295,7 +269,7 @@ func (parser *ScriptParser) forEachInOptionalTable(table *lua.Table, key string,
 
 	keyTable, ok := tableValue.AsTable()
 	if !ok {
-		parser.addProblem(fmt.Errorf("field '%s' must be a table.", key))
+		parser.addProblem(key, fmt.Errorf("field '%s' must be a table.", key))
 		return
 	}
 
@@ -304,7 +278,7 @@ func (parser *ScriptParser) forEachInOptionalTable(table *lua.Table, key string,
 		tableKey, tableValue, ok, err := keyTable.Next(nextKey)
 		nextKey = tableKey
 		if err != nil {
-			parser.addProblem(fmt.Errorf("Error while iterating through table '%s': %s", key, err.Error()))
+			parser.addProblem(key, fmt.Errorf("Error while iterating through table '%s': %s", key, err.Error()))
 			return
 		}
 		if !ok {
@@ -314,7 +288,7 @@ func (parser *ScriptParser) forEachInOptionalTable(table *lua.Table, key string,
 		// Validate that the key is a string
 		keyStr, ok := tableKey.AsString()
 		if !ok {
-			parser.addProblem(fmt.Errorf("Keys in the '%s' table must be strings.", key))
+			parser.addProblem(key, fmt.Errorf("Keys in the '%s' table must be strings.", key))
 			return
 		}
 
@@ -322,21 +296,5 @@ func (parser *ScriptParser) forEachInOptionalTable(table *lua.Table, key string,
 		if !ok {
 			return
 		}
-
-		// Validate that the key is a skill
-		skill, err := skillNameToEnum(skillName)
-		if err != nil {
-			parser.addProblem(key, err)
-			break
-		}
-
-		value, ok := skillValue.AsNumber()
-		if !ok {
-			parser.addProblem(key, fmt.Errorf("Values in the skill block table must be numbers."))
-			break
-		}
-
-		parser.checkNumberIsInt32(value, key, skillName)
-		skills.Values[skill] = int32(value)
 	}
 }
