@@ -227,14 +227,14 @@ func (parser *ScriptParser) parseRoom(world *World, table *lua.Table) *Room {
 			// Get NPC table
 			npc, ok := npcTable.RawGetInt(index).AsTable()
 			if !ok {
-				parser.addProblem(fmt.Errorf("npcs[%d] must be a table", index))
+				parser.addProblem("npcs", fmt.Errorf("npcs[%d] must be a table", index))
 				continue
 			}
 
 			id := parser.getString(npc, "id")
 			npcData, exists := world.NpcIdToData[id]
 			if !exists {
-				parser.addProblem(fmt.Errorf("npcs[%d] has id '%s' which does not match any NPC.", index, id))
+				parser.addProblem("npcs", fmt.Errorf("npcs[%d] has id '%s' which does not match any NPC.", index, id))
 				continue
 			}
 
