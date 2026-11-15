@@ -17,3 +17,7 @@ __debug_bin
 *__debug_bin
 
 ascii/
+
+editor/node_modules
+editor/dist
+editor/*.vsix

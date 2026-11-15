@@ -48,8 +48,7 @@ func (world *World) NewCharacter(playerKey string, characterSheet *CharacterShee
 	character.RoomsDiscovered = bitset.New(len(world.Rooms))
 
 	// Set the character's room to the start room
-	origin := RoomPosition { X: 0, Y: 0, Z: 0 }
-	character.Room = world.RoomPositionToIndex[origin]
+	character.Room = world.StartRoom
 	bitset.Set(character.RoomsDiscovered, character.Room, true)
 
 	// Set health and mana

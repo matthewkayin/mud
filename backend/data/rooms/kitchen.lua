@@ -6,8 +6,6 @@ room.details = {
     ["coffee makers"] = "Aside from the standard black-and-decker sludge maker, there are an assortment of coffee makers left behind by the opinionated drinkers of RC's past. A chemex, aeropress, hell, even an espresso machine are all available for you to use.",
     ["espresso machine"] = "It's a Breville Barista Express. You didn't expect a commercial one, did you?"
 }
-room.position = { x = -1, y = 0, z = 0 }
-room.exits = { "east" }
 
 room.loot = {
     {

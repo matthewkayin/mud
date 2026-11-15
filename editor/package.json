@@ -1,0 +1,64 @@
+{
+  "name": "mud-editor",
+  "displayName": "MUD World Editor",
+  "description": "Validation and map editing for MUD world data folders",
+  "publisher": "mudkit",
+  "version": "0.0.1",
+  "private": true,
+  "engines": {
+    "vscode": "^1.91.0"
+  },
+  "categories": [
+    "Linters"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "workspaceContains:**/layout.json"
+  ],
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "mud.mapView",
+        "displayName": "MUD Map",
+        "selector": [
+          {
+            "filenamePattern": "layout.json"
+          }
+        ],
+        "priority": "default"
+      }
+    ],
+    "configuration": {
+      "title": "MUD World Editor",
+      "properties": {
+        "mud.serverPath": {
+          "type": "string",
+          "default": "mud",
+          "markdownDescription": "The `mud` binary used to run `mud lsp`. A bare name is looked up on `PATH`. A relative path such as `./mud` is resolved against the workspace folder."
+        },
+        "mud.dataFolder": {
+          "type": "string",
+          "default": "data",
+          "markdownDescription": "The world's data folder, relative to the workspace folder."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"test/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p webview",
+    "package": "npm run typecheck && node esbuild.mjs --minify && vsce package --no-dependencies --skip-license --allow-missing-repository"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^11.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "@types/vscode": "~1.91.0",
+    "@vscode/vsce": "^4.1.1",
+    "esbuild": "^0.28.2",
+    "typescript": "~6.0.2"
+  }
+}

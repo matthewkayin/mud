@@ -1,7 +1,9 @@
 package world
 
 import (
+	"io"
 	"log"
+	"io/fs"
 	"slices"
 	"strings"
 	"github.com/mmcdole/lunar"
@@ -14,6 +16,9 @@ type World struct {
 	MessagePlayer func(playerKey string, message string)
 	tick uint32
 
+	dataFolder fs.FS
+	// Where scripts that call print write to
+	scriptStdout io.Writer
 	luaState *lua.State
 	mobHandleType *lua.UserDataType[MobHandle]
 
@@ -34,21 +39,34 @@ type World struct {
 	NpcData []*NpcData
 	NpcIdToData map[string]*NpcData
 
+	// The name of every room file that parsed, keyed by its path relative to the rooms folder.
+	// Filled even when the layout has errors
+	RoomFileNames map[string]string
 	Rooms []Room
 	RoomPositionToIndex map[RoomPosition]int
+	StartRoom int
 }
 
-func NewWorld() (*World, error) {
-	world := &World{}
+// Loads the world's script data from the data folder. Characters are loaded separately with LoadCharacters.
+// Every problem found in the data is returned. The world is returned even if some of those problems are errors,
+// in which case the files with errors are left out of it. The error is only for failures unrelated to the data.
+// scriptStdout is where scripts that call print write to
+func NewWorld(dataFolder fs.FS, scriptStdout io.Writer) (*World, []ScriptProblem, error) {
+	world := &World{
+		dataFolder: dataFolder,
+		scriptStdout: scriptStdout,
+	}
 
 	// Init script state
 	err := world.scriptInit()
 	if err != nil {
-		return nil, err
+		world.scriptQuit()
+		return nil, nil, err
 	}
 
 	// Load script data
-	loaders := []func() error {
+	problems := make([]ScriptProblem, 0)
+	loaders := []func() []ScriptProblem {
 		world.loadItemTypes,
 		world.loadNpcData,
 		world.loadRaceData,
@@ -56,23 +74,13 @@ func NewWorld() (*World, error) {
 		world.loadRoomData,
 	}
 	for _, loader := range loaders {
-		err := loader()
-		if err != nil {
-			world.scriptQuit()
-			return nil, err
-		}
-	}
-
-	// Load characters
-	err = world.loadCharacters()
-	if err != nil {
-		return nil, err
+		problems = append(problems, loader()...)
 	}
 
 	// Init mob array
 	world.Mobs = NewMobArray()
 
-	return world, nil
+	return world, problems, nil
 }
 
 func (world *World) Quit() {
