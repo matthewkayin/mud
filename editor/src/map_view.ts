@@ -1,8 +1,9 @@
 import { randomBytes } from "node:crypto";
 import * as vscode from "vscode";
 import type { LanguageClient } from "vscode-languageclient/node";
-import type { MapViewRequest, MapViewState } from "../shared/map_types";
+import type { Layout, MapViewRequest, MapViewState } from "../shared/map_types";
 import { parseLayout } from "./layout";
+import { createRoom, deleteRoom, formatLayout, moveRoom, setStart, toggleExit } from "./layout_edit";
 
 const ROOM_NAMES_REFRESH_DEBOUNCE_MS = 300;
 
@@ -77,6 +78,7 @@ export class MapViewProvider implements vscode.CustomTextEditorProvider {
                     this.postState(panel);
                     void this.refreshRoomNames();
                 }
+                void this.applyEditRequest(document, request);
             }),
             vscode.workspace.onDidChangeTextDocument((event) => {
                 if (event.document.uri.toString() === document.uri.toString()) {
@@ -91,6 +93,32 @@ export class MapViewProvider implements vscode.CustomTextEditorProvider {
                 subscription.dispose();
             }
         });
+    }
+
+    // Applies an edit intent to the document's current text as one WorkspaceEdit, so VS Code's text buffer gives undo,
+    // redo, unsaved state and saving. The whole document is rewritten in the fixed format
+    private async applyEditRequest(document: vscode.TextDocument, request: MapViewRequest): Promise<void> {
+        const editLayout = getEditFunction(request);
+        if (editLayout === null) {
+            return;
+        }
+        // While layout.json doesn't parse the map view shows the error, so there is nothing to edit
+        const layout = parseLayout(document.getText()).layout;
+        if (layout === null) {
+            return;
+        }
+        const newLayout = editLayout(layout);
+        if (newLayout === null) {
+            return;
+        }
+
+        const fullRange = new vscode.Range(document.positionAt(0), document.positionAt(document.getText().length));
+        const edit = new vscode.WorkspaceEdit();
+        edit.replace(document.uri, fullRange, formatLayout(newLayout));
+        const isApplied = await vscode.workspace.applyEdit(edit);
+        if (!isApplied) {
+            console.warn(`Failed to apply map edit to ${document.uri.toString()}`);
+        }
     }
 
     private postState(panel: MapPanel): void {
@@ -212,6 +240,36 @@ export class MapViewProvider implements vscode.CustomTextEditorProvider {
             min-width: 40px;
             text-align: center;
         }
+        #room-actions {
+            position: absolute;
+            transform: translate(-50%, -100%);
+            display: flex;
+            gap: 4px;
+            padding: 4px;
+            background: var(--vscode-editorWidget-background);
+            border: 1px solid var(--vscode-editorWidget-border, transparent);
+            border-radius: 4px;
+            font-family: var(--vscode-font-family);
+            font-size: var(--vscode-font-size);
+            white-space: nowrap;
+            user-select: none;
+        }
+        #room-actions button {
+            padding: 2px 8px;
+            border: none;
+            border-radius: 3px;
+            background: var(--vscode-button-secondaryBackground);
+            color: var(--vscode-button-secondaryForeground);
+            font: inherit;
+            cursor: pointer;
+        }
+        #room-actions button:hover:not(:disabled) {
+            background: var(--vscode-button-secondaryHoverBackground);
+        }
+        #room-actions button:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
         #error {
             padding: 16px;
             color: var(--vscode-errorForeground);
@@ -230,9 +288,38 @@ export class MapViewProvider implements vscode.CustomTextEditorProvider {
         <span id="elevation-label">Z: 0</span>
         <button id="elevation-up" title="Go up a level">+</button>
     </div>
+    <div id="room-actions" hidden>
+        <button id="set-start" title="New characters start in this room">Set as start</button>
+        <button id="delete-room" title="Delete this room and its connections (Delete)">Delete</button>
+    </div>
     <div id="error" hidden></div>
     <script nonce="${nonce}" src="${webview.asWebviewUri(scriptUri).toString()}"></script>
 </body>
 </html>`;
     }
+}
+
+// The layout edit a request asks for, or null if it isn't an edit
+function getEditFunction(request: MapViewRequest): ((layout: Layout) => Layout | null) | null {
+    const createPosition = request.createRoom;
+    const deletePosition = request.deleteRoom;
+    const move = request.moveRoom;
+    const toggle = request.toggleExit;
+    const startPosition = request.setStart;
+    if (createPosition !== undefined) {
+        return (layout) => createRoom(layout, createPosition);
+    }
+    if (deletePosition !== undefined) {
+        return (layout) => deleteRoom(layout, deletePosition);
+    }
+    if (move !== undefined) {
+        return (layout) => moveRoom(layout, move.from, move.to);
+    }
+    if (toggle !== undefined) {
+        return (layout) => toggleExit(layout, toggle.position, toggle.direction);
+    }
+    if (startPosition !== undefined) {
+        return (layout) => setStart(layout, startPosition);
+    }
+    return null;
 }

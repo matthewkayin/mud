@@ -1,5 +1,17 @@
-import type { MapViewRequest, MapViewState } from "../../shared/map_types";
-import { cellCenter, renderMap, screenToWorld, type Camera, type Colors, type Viewport } from "./render";
+import { findRoom, positionsEqual, type MapViewRequest, type MapViewState, type Position } from "../../shared/map_types";
+import { cellAt, hitTargetsEqual, hitTest, type HitTarget } from "./hit_test";
+import {
+    cellCenter,
+    cellRect,
+    isValidDragTarget,
+    renderMap,
+    screenToWorld,
+    worldToScreen,
+    type Camera,
+    type Colors,
+    type RoomDrag,
+    type Viewport,
+} from "./render";
 
 type VsCodeApi = {
     postMessage(request: MapViewRequest): void;
@@ -15,12 +27,26 @@ type SavedViewState = {
     elevation: number;
 };
 
+// A left button press that hasn't been released yet. It becomes a drag if it started on a room and the mouse moves far
+// enough, and a click otherwise
+type LeftPress = {
+    clientX: number;
+    clientY: number;
+    target: HitTarget | null;
+};
+
 const ZOOM_MIN = 0.25;
 const ZOOM_MAX = 2.0;
 const ZOOM_SPEED = 0.0015;
+const MOUSE_BUTTON_LEFT = 0;
 const MOUSE_BUTTON_RIGHT = 2;
-// The right button's bit in MouseEvent.buttons
+// The buttons' bits in MouseEvent.buttons
+const MOUSE_BUTTONS_LEFT_MASK = 1;
 const MOUSE_BUTTONS_RIGHT_MASK = 2;
+// How far, in CSS pixels, the mouse must move with the left button held before a press on a room becomes a drag
+const DRAG_THRESHOLD = 4;
+// The gap between the selected room's top edge and the room actions bar, in CSS pixels
+const ROOM_ACTIONS_OFFSET = 10;
 
 const vscode = acquireVsCodeApi();
 
@@ -29,6 +55,9 @@ const elevationControls = getElement<HTMLDivElement>("elevation");
 const elevationLabel = getElement<HTMLSpanElement>("elevation-label");
 const elevationDownButton = getElement<HTMLButtonElement>("elevation-down");
 const elevationUpButton = getElement<HTMLButtonElement>("elevation-up");
+const roomActions = getElement<HTMLDivElement>("room-actions");
+const setStartButton = getElement<HTMLButtonElement>("set-start");
+const deleteRoomButton = getElement<HTMLButtonElement>("delete-room");
 const errorPanel = getElement<HTMLDivElement>("error");
 
 const context = canvas.getContext("2d")!;
@@ -40,8 +69,16 @@ let viewport: Viewport = { width: 0, height: 0, pixelRatio: 1 };
 let colors: Colors = readColors();
 
 let isPanning = false;
-let lastMouseX = 0;
-let lastMouseY = 0;
+let panLastX = 0;
+let panLastY = 0;
+// The mouse's last position in client coordinates, for redoing the hover hit test when the map changes under it
+let mouseX = 0;
+let mouseY = 0;
+
+let hoverTarget: HitTarget | null = null;
+let leftPress: LeftPress | null = null;
+let drag: RoomDrag | null = null;
+let selectedPosition: Position | null = null;
 
 let isRenderRequested = false;
 
@@ -55,45 +92,144 @@ window.addEventListener("message", (event: MessageEvent<MapViewState>) => {
         viewState = { camera: { centerX: center.x, centerY: center.y, zoom: 1 }, elevation: start.z };
         saveViewState();
     }
+    // The selected room may have been deleted or moved, by the map or by editing the JSON
+    if (selectedPosition !== null && (mapState.layout === null || findRoom(mapState.layout, selectedPosition) === undefined)) {
+        selectedPosition = null;
+    }
+    if (drag !== null && (mapState.layout === null || findRoom(mapState.layout, drag.from) === undefined)) {
+        drag = null;
+    }
+    updateHoverTarget();
     updateControls();
     requestRender();
 });
 
-// Input
+// Mouse input. Edits are sent to the extension, which applies them to layout.json and sends back the new state
 
 canvas.addEventListener("contextmenu", (event) => event.preventDefault());
 
 canvas.addEventListener("mousedown", (event) => {
     if (event.button === MOUSE_BUTTON_RIGHT) {
         isPanning = true;
-        lastMouseX = event.clientX;
-        lastMouseY = event.clientY;
+        panLastX = event.clientX;
+        panLastY = event.clientY;
+        updateCursor();
+    } else if (event.button === MOUSE_BUTTON_LEFT) {
+        leftPress = { clientX: event.clientX, clientY: event.clientY, target: hitTestClient(event.clientX, event.clientY) };
     }
 });
 
 window.addEventListener("mousemove", (event) => {
-    if (!isPanning || viewState === null) {
+    mouseX = event.clientX;
+    mouseY = event.clientY;
+    if (isPanning) {
+        pan(event);
         return;
     }
+
     // A mouseup outside the webview is never delivered, so check the button is still held
-    if ((event.buttons & MOUSE_BUTTONS_RIGHT_MASK) === 0) {
-        isPanning = false;
-        saveViewState();
-        return;
+    if (leftPress !== null && (event.buttons & MOUSE_BUTTONS_LEFT_MASK) === 0) {
+        leftPress = null;
+        drag = null;
     }
-    viewState.camera.centerX -= (event.clientX - lastMouseX) / viewState.camera.zoom;
-    viewState.camera.centerY -= (event.clientY - lastMouseY) / viewState.camera.zoom;
-    lastMouseX = event.clientX;
-    lastMouseY = event.clientY;
+    if (leftPress !== null && drag === null && leftPress.target?.kind === "room") {
+        const distance = Math.hypot(event.clientX - leftPress.clientX, event.clientY - leftPress.clientY);
+        if (distance >= DRAG_THRESHOLD) {
+            drag = { from: leftPress.target.position, to: null };
+        }
+    }
+    if (drag !== null && viewState !== null) {
+        const world = clientToWorld(event.clientX, event.clientY);
+        drag.to = cellAt(world.x, world.y, viewState.elevation);
+    }
+
+    updateHoverTarget();
+    updateCursor();
     requestRender();
+});
+
+canvas.addEventListener("mouseleave", () => {
+    if (!isPanning && drag === null) {
+        setHoverTarget(null);
+    }
 });
 
 window.addEventListener("mouseup", (event) => {
     if (event.button === MOUSE_BUTTON_RIGHT && isPanning) {
         isPanning = false;
         saveViewState();
+        updateHoverTarget();
+        updateCursor();
+        return;
     }
+    if (event.button !== MOUSE_BUTTON_LEFT || leftPress === null) {
+        return;
+    }
+
+    if (drag !== null) {
+        finishDrag(drag);
+    } else if (event.target === canvas) {
+        // Only act if the press and release are on the same target, so a slip doesn't create a room
+        const target = hitTestClient(event.clientX, event.clientY);
+        if (hitTargetsEqual(target, leftPress.target)) {
+            onClick(target);
+        }
+    }
+    leftPress = null;
+    drag = null;
+    updateHoverTarget();
+    updateCursor();
+    requestRender();
 });
+
+function onClick(target: HitTarget | null): void {
+    if (target === null) {
+        setSelectedPosition(null);
+        return;
+    }
+    switch (target.kind) {
+        case "emptyCell":
+            setSelectedPosition(null);
+            vscode.postMessage({ createRoom: target.position });
+            break;
+        case "gap":
+        case "verticalArrow":
+            vscode.postMessage({ toggleExit: { position: target.position, direction: target.direction } });
+            break;
+        case "room":
+            setSelectedPosition(target.position);
+            break;
+    }
+}
+
+function finishDrag(finishedDrag: RoomDrag): void {
+    if (mapState?.layout == null || finishedDrag.to === null || !isValidDragTarget(mapState.layout, finishedDrag)) {
+        return;
+    }
+    vscode.postMessage({ moveRoom: { from: finishedDrag.from, to: finishedDrag.to } });
+    // A selected room stays selected at its new cell
+    if (selectedPosition !== null && positionsEqual(selectedPosition, finishedDrag.from)) {
+        selectedPosition = finishedDrag.to;
+    }
+}
+
+function pan(event: MouseEvent): void {
+    if (viewState === null) {
+        return;
+    }
+    // A mouseup outside the webview is never delivered, so check the button is still held
+    if ((event.buttons & MOUSE_BUTTONS_RIGHT_MASK) === 0) {
+        isPanning = false;
+        saveViewState();
+        updateCursor();
+        return;
+    }
+    viewState.camera.centerX -= (event.clientX - panLastX) / viewState.camera.zoom;
+    viewState.camera.centerY -= (event.clientY - panLastY) / viewState.camera.zoom;
+    panLastX = event.clientX;
+    panLastY = event.clientY;
+    requestRender();
+}
 
 // Zooms around the cursor, so the point under it stays put
 canvas.addEventListener(
@@ -115,20 +251,97 @@ canvas.addEventListener(
         camera.centerY += worldBefore.y - worldAfter.y;
 
         saveViewState();
+        updateHoverTarget();
         requestRender();
     },
     { passive: false },
 );
 
+function clientToWorld(clientX: number, clientY: number): { x: number; y: number } {
+    const canvasBounds = canvas.getBoundingClientRect();
+    return screenToWorld(viewport, viewState!.camera, clientX - canvasBounds.left, clientY - canvasBounds.top);
+}
+
+function hitTestClient(clientX: number, clientY: number): HitTarget | null {
+    if (mapState?.layout == null || viewState === null) {
+        return null;
+    }
+    const world = clientToWorld(clientX, clientY);
+    return hitTest(mapState.layout, viewState.elevation, world.x, world.y);
+}
+
+// Recomputes what's under the mouse, since the layout or camera may have changed under it
+function updateHoverTarget(): void {
+    const isOverCanvas = document.elementFromPoint(mouseX, mouseY) === canvas;
+    setHoverTarget(isOverCanvas && !isPanning ? hitTestClient(mouseX, mouseY) : null);
+}
+
+function setHoverTarget(target: HitTarget | null): void {
+    if (hitTargetsEqual(target, hoverTarget)) {
+        return;
+    }
+    hoverTarget = target;
+    updateCursor();
+    requestRender();
+}
+
+function updateCursor(): void {
+    if (isPanning) {
+        canvas.style.cursor = "grabbing";
+    } else if (drag !== null) {
+        canvas.style.cursor = "move";
+    } else if (hoverTarget !== null) {
+        canvas.style.cursor = "pointer";
+    } else {
+        canvas.style.cursor = "default";
+    }
+}
+
+// Keyboard input
+
+window.addEventListener("keydown", (event) => {
+    if (selectedPosition === null) {
+        return;
+    }
+    if (event.key === "Escape") {
+        setSelectedPosition(null);
+    } else if (event.key === "Delete" || event.key === "Backspace") {
+        event.preventDefault();
+        vscode.postMessage({ deleteRoom: selectedPosition });
+    }
+});
+
+// Controls
+
 elevationDownButton.addEventListener("click", () => changeElevation(-1));
 elevationUpButton.addEventListener("click", () => changeElevation(1));
+
+setStartButton.addEventListener("click", () => {
+    if (selectedPosition !== null) {
+        vscode.postMessage({ setStart: selectedPosition });
+    }
+});
+
+deleteRoomButton.addEventListener("click", () => {
+    if (selectedPosition !== null) {
+        vscode.postMessage({ deleteRoom: selectedPosition });
+    }
+});
 
 function changeElevation(change: number): void {
     if (viewState === null) {
         return;
     }
     viewState.elevation += change;
+    selectedPosition = null;
+    hoverTarget = null;
     saveViewState();
+    updateControls();
+    requestRender();
+}
+
+function setSelectedPosition(position: Position | null): void {
+    selectedPosition = position;
     updateControls();
     requestRender();
 }
@@ -178,6 +391,22 @@ function updateControls(): void {
     if (viewState !== null) {
         elevationLabel.textContent = `Z: ${viewState.elevation}`;
     }
+    updateRoomActions();
+}
+
+// The room actions bar floats above the selected room, so it moves whenever the map is drawn
+function updateRoomActions(): void {
+    const layout = mapState?.layout ?? null;
+    if (layout === null || viewState === null || selectedPosition === null) {
+        roomActions.hidden = true;
+        return;
+    }
+    const rect = cellRect(selectedPosition.x, selectedPosition.y);
+    const topCenter = worldToScreen(viewport, viewState.camera, rect.x + rect.width / 2, rect.y);
+    roomActions.style.left = `${topCenter.x}px`;
+    roomActions.style.top = `${topCenter.y - ROOM_ACTIONS_OFFSET}px`;
+    setStartButton.disabled = positionsEqual(layout.start, selectedPosition);
+    roomActions.hidden = false;
 }
 
 // The map only redraws when something changes, so anything that affects the picture must call this
@@ -188,6 +417,7 @@ function requestRender(): void {
     isRenderRequested = true;
     requestAnimationFrame(() => {
         isRenderRequested = false;
+        updateRoomActions();
         if (mapState === null || mapState.layout === null || viewState === null) {
             return;
         }
@@ -198,6 +428,9 @@ function requestRender(): void {
             layout: mapState.layout,
             roomNames: mapState.roomNames,
             colors,
+            hoverTarget,
+            selectedPosition,
+            drag,
         });
     });
 }

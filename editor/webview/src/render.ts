@@ -5,9 +5,14 @@ import {
     DIRECTION_SOUTH,
     DIRECTION_UP,
     DIRECTION_WEST,
+    findRoom,
+    positionPlusDirection,
+    positionsEqual,
     type Layout,
     type LayoutRoom,
+    type Position,
 } from "../../shared/map_types";
+import type { HitTarget } from "./hit_test";
 
 // World coordinates are in pixels at zoom 1. A room's cell is at (x * CELL_PITCH_X, y * CELL_PITCH_Y), with the gap
 // between it and its neighbors to the east and south. North is y - 1, matching RoomPosition.PlusDirection on the server
@@ -23,6 +28,13 @@ const START_ROOM_LINE_WIDTH = 3;
 const LABEL_PADDING = 10;
 const ROOM_FONT_SIZE = 15;
 const SMALL_FONT_SIZE = 11;
+// The up and down arrows sit in square slots in a room's top-right corner, up rightmost
+const ARROW_SLOT_SIZE = 14;
+const ARROW_SLOT_MARGIN = 4;
+const ARROW_SIZE = 8;
+const SELECTION_OFFSET = 5;
+const SELECTION_LINE_WIDTH = 2;
+const DRAG_GHOST_ALPHA = 0.6;
 
 export type Camera = {
     // The world point at the center of the view
@@ -54,6 +66,13 @@ export type Colors = {
     fontFamily: string;
 };
 
+// A room being dragged to a new cell
+export type RoomDrag = {
+    from: Position;
+    // Null until the mouse is over a cell
+    to: Position | null;
+};
+
 export type MapRenderParams = {
     viewport: Viewport;
     camera: Camera;
@@ -61,6 +80,9 @@ export type MapRenderParams = {
     layout: Layout;
     roomNames: Record<string, string>;
     colors: Colors;
+    hoverTarget: HitTarget | null;
+    selectedPosition: Position | null;
+    drag: RoomDrag | null;
 };
 
 export function cellRect(x: number, y: number): Rect {
@@ -69,6 +91,29 @@ export function cellRect(x: number, y: number): Rect {
 
 export function cellCenter(x: number, y: number): { x: number; y: number } {
     return { x: x * CELL_PITCH_X + ROOM_WIDTH / 2, y: y * CELL_PITCH_Y + ROOM_HEIGHT / 2 };
+}
+
+export function arrowSlotRect(roomRect: Rect, direction: string): Rect {
+    const slotIndex = direction === DIRECTION_UP ? 0 : 1;
+    return {
+        x: roomRect.x + roomRect.width - ARROW_SLOT_MARGIN - ARROW_SLOT_SIZE * (slotIndex + 1),
+        y: roomRect.y + ARROW_SLOT_MARGIN,
+        width: ARROW_SLOT_SIZE,
+        height: ARROW_SLOT_SIZE,
+    };
+}
+
+// An up or down arrow can be clicked to remove an existing exit, or to connect to a room directly above or below
+export function isVerticalArrowActive(layout: Layout, room: LayoutRoom, direction: string): boolean {
+    if (room.exits.includes(direction)) {
+        return true;
+    }
+    return findRoom(layout, positionPlusDirection(room.position, direction)!) !== undefined;
+}
+
+// A drag can drop on an empty cell other than the one it started from
+export function isValidDragTarget(layout: Layout, drag: RoomDrag): boolean {
+    return drag.to !== null && !positionsEqual(drag.from, drag.to) && findRoom(layout, drag.to) === undefined;
 }
 
 export function screenToWorld(viewport: Viewport, camera: Camera, screenX: number, screenY: number): { x: number; y: number } {
@@ -104,9 +149,13 @@ export function renderMap(context: CanvasRenderingContext2D, params: MapRenderPa
     for (const room of rooms) {
         renderConnections(context, room, colors);
     }
+    renderHoveredGap(context, params);
     for (const room of rooms) {
         renderRoom(context, room, params);
     }
+    renderHoveredEmptyCell(context, params);
+    renderSelection(context, params);
+    renderDrag(context, params);
 }
 
 // Faint outlines of the empty cells in view, so the grid is visible
@@ -133,6 +182,100 @@ function renderEmptyCells(context: CanvasRenderingContext2D, params: MapRenderPa
         }
     }
     context.restore();
+}
+
+// An empty cell under the mouse is outlined, since clicking it creates a room
+function renderHoveredEmptyCell(context: CanvasRenderingContext2D, params: MapRenderParams): void {
+    const target = params.hoverTarget;
+    if (params.drag !== null || target === null || target.kind !== "emptyCell") {
+        return;
+    }
+    const rect = cellRect(target.position.x, target.position.y);
+    context.save();
+    context.strokeStyle = params.colors.accent;
+    context.lineWidth = ROOM_LINE_WIDTH;
+    context.setLineDash([6, 4]);
+    context.strokeRect(rect.x, rect.y, rect.width, rect.height);
+    context.restore();
+}
+
+// Clicking a gap toggles the connection across it. An unconnected gap previews the connection as a dotted line, and a
+// connected one is highlighted, since clicking removes it
+function renderHoveredGap(context: CanvasRenderingContext2D, params: MapRenderParams): void {
+    const target = params.hoverTarget;
+    if (params.drag !== null || target === null || target.kind !== "gap") {
+        return;
+    }
+    const room = findRoom(params.layout, target.position);
+    if (room === undefined) {
+        return;
+    }
+    const rect = cellRect(target.position.x, target.position.y);
+    context.save();
+    context.lineWidth = CONNECTION_LINE_WIDTH;
+    if (room.exits.includes(target.direction)) {
+        context.strokeStyle = params.colors.accent;
+    } else {
+        context.strokeStyle = params.colors.foreground;
+        context.setLineDash([3, 4]);
+    }
+    context.beginPath();
+    if (target.direction === DIRECTION_EAST) {
+        const centerY = rect.y + rect.height / 2;
+        context.moveTo(rect.x + rect.width, centerY);
+        context.lineTo(rect.x + rect.width + ROOM_GAP, centerY);
+    } else {
+        const centerX = rect.x + rect.width / 2;
+        context.moveTo(centerX, rect.y + rect.height);
+        context.lineTo(centerX, rect.y + rect.height + ROOM_GAP);
+    }
+    context.stroke();
+    context.restore();
+}
+
+function renderSelection(context: CanvasRenderingContext2D, params: MapRenderParams): void {
+    const selected = params.selectedPosition;
+    if (selected === null || selected.z !== params.elevation || findRoom(params.layout, selected) === undefined) {
+        return;
+    }
+    const rect = cellRect(selected.x, selected.y);
+    context.save();
+    context.strokeStyle = params.colors.accent;
+    context.lineWidth = SELECTION_LINE_WIDTH;
+    context.setLineDash([6, 4]);
+    context.strokeRect(
+        rect.x - SELECTION_OFFSET,
+        rect.y - SELECTION_OFFSET,
+        rect.width + SELECTION_OFFSET * 2,
+        rect.height + SELECTION_OFFSET * 2,
+    );
+    context.restore();
+}
+
+// The dragged room is drawn faded at the cell under the mouse, outlined in the accent color if it can be dropped there
+function renderDrag(context: CanvasRenderingContext2D, params: MapRenderParams): void {
+    const drag = params.drag;
+    if (drag === null || drag.to === null) {
+        return;
+    }
+    const room = findRoom(params.layout, drag.from);
+    if (room === undefined) {
+        return;
+    }
+    const ghost: LayoutRoom = { position: drag.to, path: room.path, exits: [] };
+    context.save();
+    context.globalAlpha = DRAG_GHOST_ALPHA;
+    renderRoom(context, ghost, { ...params, hoverTarget: null });
+    context.restore();
+
+    if (isValidDragTarget(params.layout, drag)) {
+        const rect = cellRect(drag.to.x, drag.to.y);
+        context.save();
+        context.strokeStyle = params.colors.accent;
+        context.lineWidth = START_ROOM_LINE_WIDTH;
+        context.strokeRect(rect.x, rect.y, rect.width, rect.height);
+        context.restore();
+    }
 }
 
 // Each exit draws from its room's edge to the middle of the gap, so a two-way connection is a full line and a one-way
@@ -205,18 +348,56 @@ function renderRoom(context: CanvasRenderingContext2D, room: LayoutRoom, params:
         context.fillText("START", rect.x + 6, rect.y + 5);
     }
 
-    // Up and down arrows in the top-right corner, up rightmost
-    context.fillStyle = colors.foreground;
-    context.textAlign = "right";
-    let arrowRight = rect.x + rect.width - 6;
-    if (room.exits.includes(DIRECTION_UP)) {
-        context.fillText("▲", arrowRight, rect.y + 5);
-    }
-    arrowRight -= SMALL_FONT_SIZE + 2;
-    if (room.exits.includes(DIRECTION_DOWN)) {
-        context.fillText("▼", arrowRight, rect.y + 5);
+    for (const direction of [DIRECTION_UP, DIRECTION_DOWN]) {
+        renderVerticalArrow(context, room, rect, direction, params);
     }
 
+    context.restore();
+}
+
+// A solid arrow for an exit. While hovered, an existing exit is highlighted (clicking removes it) and a room above or
+// below with no exit gets a dotted arrow (clicking connects it)
+function renderVerticalArrow(
+    context: CanvasRenderingContext2D,
+    room: LayoutRoom,
+    roomRect: Rect,
+    direction: string,
+    params: MapRenderParams,
+): void {
+    const target = params.hoverTarget;
+    const isHovered =
+        params.drag === null &&
+        target !== null &&
+        target.kind === "verticalArrow" &&
+        target.direction === direction &&
+        positionsEqual(target.position, room.position);
+    const hasExit = room.exits.includes(direction);
+    if (!hasExit && !(isHovered && isVerticalArrowActive(params.layout, room, direction))) {
+        return;
+    }
+
+    const slot = arrowSlotRect(roomRect, direction);
+    const centerX = slot.x + slot.width / 2;
+    const centerY = slot.y + slot.height / 2;
+    const halfSize = ARROW_SIZE / 2;
+    const tipY = direction === DIRECTION_UP ? centerY - halfSize : centerY + halfSize;
+    const baseY = direction === DIRECTION_UP ? centerY + halfSize : centerY - halfSize;
+
+    context.save();
+    context.beginPath();
+    context.moveTo(centerX, tipY);
+    context.lineTo(centerX + halfSize, baseY);
+    context.lineTo(centerX - halfSize, baseY);
+    context.closePath();
+    if (hasExit) {
+        context.fillStyle = isHovered ? params.colors.accent : params.colors.foreground;
+        context.fill();
+    } else {
+        context.strokeStyle = params.colors.foreground;
+        context.lineWidth = 1;
+        context.setLineDash([2, 2]);
+        context.stroke();
+    }
     context.restore();
 }
 

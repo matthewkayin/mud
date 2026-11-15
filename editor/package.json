@@ -47,6 +47,7 @@
   "scripts": {
     "build": "node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"test/**/*.test.ts\"",
     "typecheck": "tsc --noEmit && tsc --noEmit -p webview",
     "package": "npm run typecheck && node esbuild.mjs --minify && vsce package --no-dependencies --skip-license --allow-missing-repository"
   },

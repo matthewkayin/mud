@@ -2,7 +2,7 @@
 
 A VS Code extension for editing a MUD's world data folder. It runs the game's validation language server, `mud lsp` (see `docs/backend/lsp.md`), so problems in the data folder show up while you type. They appear in open editors, in the Problems panel and as colored entries in the file explorer, including problems that span files.
 
-It also adds a map view for `layout.json` (see "Map view" below). The map view is read-only for now.
+It also adds a map view for `layout.json` (see "Map view" below), where you can place rooms and connect them.
 
 ## Requirements
 
@@ -52,6 +52,16 @@ Opening `layout.json` opens the map view, which draws the rooms on a grid one Z-
 - ▲ and ▼ in a room's top-right corner mean it has an `up` or `down` exit.
 - The start room has an accent-colored border and a "START" label.
 
+Editing:
+
+- Click an empty cell to create a room there, on the Z-level shown. A new room has no file, so the validation server reports it until one is assigned.
+- Click the gap between two rooms to connect them. Hovering shows a dotted line first. Clicking a connected gap removes the connection.
+- Hover the top-right corner of a room with a room directly above or below it to see a dotted ▲ or ▼, and click it to connect them. Clicking an existing ▲ or ▼ removes that connection.
+- Click a room to select it. A bar above it has "Set as start" and "Delete". Delete or Backspace also deletes the selected room, and Escape deselects it. Deleting a room removes its connections. Its Lua file is left alone. Deleting the start room leaves `start` pointing at an empty cell, which the validation server reports.
+- Drag a room to an empty cell to move it. Moving a room removes all of its connections, and the start moves with the start room.
+
+Connections are always added and removed on both rooms, and clicking a one-way exit made by hand completes it. Every edit is an ordinary text edit to `layout.json`, so undo and redo (Ctrl+Z, Ctrl+Shift+Z), the unsaved-changes dot and saving work as for any file. Each edit rewrites the file in a fixed format, with one room per line, so map edits make small diffs. Edits are ignored while the JSON doesn't parse.
+
 Room names come from the server's `mud/roomNames` request. The extension requests them again a moment after any Lua file in the data folder changes.
 
 ## Developing
@@ -59,8 +69,11 @@ Room names come from the server's `mud/roomNames` request. The extension request
 - `npm run build`: bundles the extension (`src/`) into `dist/extension.js` and the map view webview (`webview/src/`) into `dist/webview.js` with esbuild (`esbuild.mjs`).
 - `npm run watch`: rebuilds both on change.
 - `npm run typecheck`: runs `tsc` on the extension and on the webview, which has its own `webview/tsconfig.json` with the DOM types.
+- `npm test`: runs the tests in `test/` with Node's built-in test runner, which runs the TypeScript directly. Files the tests load use `.ts` extensions on their imports, since Node needs them.
 - `npm run package`: type checks, builds a minified bundle and writes the `.vsix`.
 
 Types shared by both bundles, such as the layout and the messages between the extension and the webview, are in `shared/map_types.ts`. The extension parses `layout.json` (`src/layout.ts`) and always sends the webview the full state: the parsed layout or the parse error, and the room names. The webview sends `{ isReady: true }` once it has loaded, and the extension only posts to it after that.
+
+Map edits are sent as intents on the same message type (`createRoom`, `deleteRoom`, `moveRoom`, `toggleExit`, `setStart`), naming rooms by position. The extension applies each one to the document's current text with the pure functions in `src/layout_edit.ts`, which also format the file, and replaces the document's text with one `WorkspaceEdit`. The document change then sends the new state back to the webview. The webview finds what's under the mouse in `webview/src/hit_test.ts` and draws hover previews, the selection and drags in `webview/src/render.ts`.
 
 To try changes without packaging, open `editor/` in VS Code and press F5. This builds the extension and opens a second window with it loaded. Open `backend/` in that window.
