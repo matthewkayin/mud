@@ -174,7 +174,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 				to: InventoryTransferLocation {
 					inventory: &targetMob.Inventory,
 					name: targetMob.Name,
-					capacity: targetMob.InventoryCapacity(),
+					capacity: targetMob.Owner.InventoryCapacity(),
 				},
 				verb: "give",
 				itemWords: itemWords,
@@ -190,8 +190,8 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 			gamestate.world.MessageRoom(player.character.Room, fmt.Sprintf("<y>%s</y> gave <g>%s</g> to <y>%s</y>",
 				player.character.Name, result.item.NameWithAmount(), targetMob.Name))
 			player.isInventoryDirty = true
-			if targetMob.IsPlayer() {
-				targetPlayerIndex := gamestate.playerKeyToIndexMap[targetMob.Character.PlayerKey]
+			if targetMob.Owner.IsPlayer() {
+				targetPlayerIndex := gamestate.playerKeyToIndexMap[targetMob.Owner.GetPlayerKey()]
 				gamestate.players[targetPlayerIndex].isInventoryDirty = true
 			}
 			return true

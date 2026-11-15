@@ -74,6 +74,18 @@ world.Skill = {
 	CONJURATION = "Conjuration",
 }
 
+---@enum NpcDisposition
+world.NpcDisposition = {
+	NEUTRAL = "Neutral",
+	FRIENDLY = "Friendly",
+	HOSTILE = "Hostile",
+}
+
+--- Returns the current world tick
+---
+---@return integer
+function world.get_ticks() end
+
 --- Logs a message to the game
 ---
 ---@param message string
@@ -90,3 +102,80 @@ function world.message_player(player, message) end
 ---@param room integer
 ---@param message string
 function world.message_room(room, message) end
+
+--- Returns true if the mob exists
+---
+---@param handle MobHandle
+---@return boolean
+function world.mob_exists(handle) end
+
+--- Returns the mob's current health
+---
+---@param handle MobHandle
+---@return integer
+function world.mob_get_health(handle) end
+
+--- Returns the mob's current mana
+---
+---@param handle MobHandle
+---@return integer
+function world.mob_get_mana(handle) end
+
+--- Returns the mob's max health
+---
+---@param handle MobHandle
+---@return integer
+function world.mob_get_max_health(handle) end
+
+--- Returns the mob's max mana
+---
+---@param handle MobHandle
+---@return integer
+function world.mob_get_max_mana(handle) end
+
+--- Returns the mob's name
+---
+---@param handle MobHandle
+---@return string
+function world.mob_get_name(handle) end
+
+--- Returns the room the mob is in
+---
+---@param handle MobHandle
+---@return integer
+function world.mob_get_room(handle) end
+
+--- Returns true if the mob is dead
+---
+---@param handle MobHandle
+---@return boolean
+function world.mob_is_dead(handle) end
+
+--- Sends a dialog message to a specified player.
+--- Dialog messages are prefixed with the speakers name:
+--- i.e. "Troll: 'This is a message'"
+---
+---@param speaker MobHandle
+---@param player MobHandle
+---@param message string
+function world.say_to_player(speaker, player, message) end
+
+--- Sends a dialog message to the speaker's room.
+--- Dialog messages are prefixed with the speakers name:
+--- i.e. "Troll: 'This is a message'"
+---
+---@param speaker MobHandle
+---@param message string
+function world.say_to_room(speaker, message) end
+
+--- Returns the number of ticks that will occur in X minutes
+---
+---@param minutes integer
+---@return integer
+function world.time_minutes(minutes) end
+
+--- Return the number of ticks that will occur in X seconds
+---
+---@param seconds integer
+---@return integer
+function world.time_seconds(seconds) end

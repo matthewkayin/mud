@@ -36,6 +36,9 @@ type World struct {
 	NextItemId ItemId
 	ItemGold *ItemType
 
+	NpcData []*NpcData
+	NpcIdToData map[string]*NpcData
+
 	// The name of every room file that parsed, keyed by its path relative to the rooms folder.
 	// Filled even when the layout has errors
 	RoomFileNames map[string]string
@@ -65,6 +68,7 @@ func NewWorld(dataFolder fs.FS, scriptStdout io.Writer) (*World, []ScriptProblem
 	problems := make([]ScriptProblem, 0)
 	loaders := []func() []ScriptProblem {
 		world.loadItemTypes,
+		world.loadNpcData,
 		world.loadRaceData,
 		world.loadBackgroundData,
 		world.loadRoomData,
@@ -126,9 +130,7 @@ func (world *World) MessageRoom(roomIndex int, message string) {
 	room := &world.Rooms[roomIndex]
 	for _, handle := range room.Occupants {
 		mob := world.Mobs.Get(handle)
-		if mob.IsPlayer() {
-			world.MessagePlayer(mob.Character.PlayerKey, message)
-		}
+		mob.Owner.Message(__world, message)
 	}
 }
 
@@ -138,6 +140,10 @@ func (world *World) Update() {
 		for index := range len(world.Rooms) {
 			world.Rooms[index].Reset(world)
 		}
+	}
+
+	for index := range len(world.Rooms) {
+		world.Rooms[index].update(world)
 	}
 
 	world.tick++
