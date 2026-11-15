@@ -117,17 +117,17 @@ func (world *World) loadRoomData() []ScriptProblem {
 	return problems
 }
 
-func (parser *ScriptParser) parseRoom(world *World, table *lua.Table) *Room {
+func (parser *ScriptParser) parseRoom(world *World, luaTable *lua.Table) *Room {
 	room := &Room{}
+	table := newScriptTable(luaTable, "")
 
 	room.Name = parser.getString(table, "name")
 	room.Description = parser.getString(table, "description")
 
 	// Room details
 	room.Details = make(map[string]string)
-	detailsTableValue := table.RawGetString("details")
-	detailsTable, ok := detailsTableValue.AsTable()
-	if ok {
+	detailsTable := parser.getOptionalTable(table, "details")
+	if detailsTable != nil {
 		key := lua.Nil()
 		for {
 			// Get next key / value from the table
@@ -165,9 +165,8 @@ func (parser *ScriptParser) parseRoom(world *World, table *lua.Table) *Room {
 
 	// Interactions
 	room.Interactions = make(map[string]*lua.Function)
-	interactionsTableValue := table.RawGetString("interactions")
-	interactionsTable, ok := interactionsTableValue.AsTable()
-	if ok {
+	interactionsTable := parser.getOptionalTable(table, "interactions")
+	if interactionsTable != nil {
 		key := lua.Nil()
 		for {
 			// Get next key / value from the table
@@ -210,6 +209,8 @@ func (parser *ScriptParser) parseRoom(world *World, table *lua.Table) *Room {
 
 	// Room loot table
 	room.lootTable = parser.getOptionalLootTable(world, table, "loot")
+
+	parser.checkNoUnknownFields(table)
 
 	if len(parser.problems) != 0 {
 		return nil

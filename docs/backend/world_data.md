@@ -11,7 +11,7 @@ The game's content is loaded from the data folder, `backend/data/`, when the ser
 Loading doesn't stop at the first bad file. `NewWorld` returns every problem it finds as a list of `ScriptProblem`s (`backend/world/script_problem.go`), along with the world. Each problem has:
 
 - `Path`: the file it is about, relative to the data folder (or the core folder, if the folder is missing).
-- `Key`: the field it is about, if any (for example `item` in a loot entry). Problems inside `attributes`, `skills`, `details`, `interactions` and `loot` use that table's key.
+- `Key`: the field it is about, if any. Problems about a field of a loot entry or a `{ min, max }` range use that field's own key (for example `item` or `amount`). Problems about the contents of `attributes`, `skills`, `details` and `interactions` use that table's key. An unknown field, or a string key in an array, uses the offending key.
 - `Line`: the line Lua reported, for syntax errors and errors raised while the script runs. 0 otherwise.
 - `RoomIndex`: for `layout.json` problems, the index of the room entry. -1 otherwise.
 - `Severity`: error or warning.
@@ -37,6 +37,10 @@ Files load in this order: items, races, backgrounds, rooms (including the layout
 Scripts run in a restricted Lua state. The base, math, string and table libraries are available, along with the `world` table (see `backend/world/script_library.go` and the generated `world.d.lua`). Reading or creating an undefined global is an error, so declare variables `local`.
 
 Required fields must be present. There are no defaults for them.
+
+Unknown fields are an error in every table the loader reads, including nested ones such as loot entries and `{ min, max }` ranges, so a misspelled field name is reported rather than ignored. Array fields such as `loot` may only have the keys 1 to n, with no gaps. A field written as key/value pairs where an array is expected is an error.
+
+The getters that read fields are in `backend/world/script_parser.go`. They take a `ScriptTable`, which records each key a getter reads. Each parse function calls `checkNoUnknownFields` on its table once it has read every field, and reports the keys no getter read.
 
 ## Core folders
 

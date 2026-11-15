@@ -5,8 +5,6 @@ import (
 	"log"
 	"mud/util"
 	"math/rand/v2"
-
-	"github.com/mmcdole/lunar"
 )
 
 type LootTableEntry struct {
@@ -79,55 +77,43 @@ func (table *LootTable) replenish(world *World, inventory *Inventory) {
 // PARSE
 
 // Returns a loot table parsed from the specified key. If there is no table at the key, then it will just return an empty loot table
-func (parser *ScriptParser) getOptionalLootTable(world *World, table *lua.Table, key string) LootTable {
-	// Init empty loot table
+func (parser *ScriptParser) getOptionalLootTable(world *World, table *ScriptTable, key string) LootTable {
 	lootTable := LootTable {
 		Entries: []LootTableEntry{},
 	}
 
-	// Get value at key. If it's nil, return an empty loot table
-	luaLootTableValue := table.RawGetString(key)
-	if luaLootTableValue.IsNil() {
-		return lootTable
-	}
-
-	// If the value is not a table, then add an error
-	if luaLootTableValue.Kind() != lua.TableKind {
-		parser.addProblem(key, fmt.Errorf("invalid type for '%s'. expected %s, got %s.", key, lua.TableKind, luaLootTableValue.Kind()))
-		return lootTable
-	}
-
-	// Convert to a table and parse each entry
-	luaLootTable, _ := luaLootTableValue.AsTable()
-	entryCount := luaLootTable.RawLen()
-
-	for index := 1; index <= entryCount; index++ {
-		entryKey := fmt.Sprintf("%s[%d]", key, index)
-		entryTable, ok := luaLootTable.RawGetInt(index).AsTable()
+	entryValues := parser.getOptionalArray(table, key)
+	for valueIndex, entryValue := range entryValues {
+		entryKey := fmt.Sprintf("%s[%d]", key, valueIndex + 1)
+		luaEntryTable, ok := entryValue.AsTable()
 		if !ok {
 			parser.addProblem(key, fmt.Errorf("field '%s' must be a table", entryKey))
 			continue
 		}
+		entryTable := newScriptTable(luaEntryTable, entryKey)
 
 		itemTypeString := parser.getString(entryTable, "item")
+		amountRange := parser.getInt32Range(entryTable, "amount")
+		durabilityPercentRange := parser.getOptionalInt32Range(entryTable, "durability_percent", 100)
+		dropChancePercent := parser.getInt32(entryTable, "drop_chance_percent")
+		parser.checkNoUnknownFields(entryTable)
+
+		parser.checkInt32IsPositivePercent(durabilityPercentRange.Min, "durability_percent")
+		parser.checkInt32IsPositivePercent(durabilityPercentRange.Max, "durability_percent")
+		parser.checkInt32IsPositivePercent(dropChancePercent, "drop_chance_percent")
+
 		itemType, exists := world.ItemNameToType[itemTypeString]
 		if !exists {
 			parser.addProblem("item", fmt.Errorf("item '%s' in drop table entry %s does not exist.", itemTypeString, entryKey))
 			continue
 		}
 
-		entry := LootTableEntry {
+		lootTable.Entries = append(lootTable.Entries, LootTableEntry {
 			itemType: itemType,
-			amountRange: parser.getInt32Range(entryTable, "amount"),
-			durabilityPercentRange: parser.getOptionalInt32Range(entryTable, "durability_percent", 100),
-			dropChancePercent: parser.getInt32(entryTable, "drop_chance_percent"),
-		}
-
-		parser.checkInt32IsPositivePercent(entry.durabilityPercentRange.Min, "durability_percent")
-		parser.checkInt32IsPositivePercent(entry.durabilityPercentRange.Max, "durability_percent")
-		parser.checkInt32IsPositivePercent(entry.dropChancePercent, "drop_chance_percent")
-
-		lootTable.Entries = append(lootTable.Entries, entry)
+			amountRange: amountRange,
+			durabilityPercentRange: durabilityPercentRange,
+			dropChancePercent: dropChancePercent,
+		})
 	}
 
 	return lootTable

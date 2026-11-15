@@ -48,13 +48,16 @@ func (world *World) loadRaceData() []ScriptProblem {
 	return problems
 }
 
-func (parser *ScriptParser) parseRace(table *lua.Table) *RaceData {
+func (parser *ScriptParser) parseRace(luaTable *lua.Table) *RaceData {
 	raceData := &RaceData{}
+	table := newScriptTable(luaTable, "")
 
 	raceData.Name = parser.getString(table, "name")
 	raceData.Description = parser.getString(table, "description")
 	raceData.Attributes = parser.getAttributeBlock(table, "attributes")
 	raceData.Skills = parser.getSkillBlock(table, "skills")
+
+	parser.checkNoUnknownFields(table)
 
 	if len(parser.problems) != 0 {
 		return nil

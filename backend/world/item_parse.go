@@ -50,8 +50,9 @@ func (world *World) loadItemTypes() []ScriptProblem {
 	return problems
 }
 
-func (parser *ScriptParser) parseItemType(table *lua.Table) *ItemType {
+func (parser *ScriptParser) parseItemType(luaTable *lua.Table) *ItemType {
 	itemType := &ItemType{}
+	table := newScriptTable(luaTable, "")
 
 	itemType.Name = parser.getString(table, "name")
 	itemType.Description = parser.getString(table, "description")
@@ -70,6 +71,8 @@ func (parser *ScriptParser) parseItemType(table *lua.Table) *ItemType {
 	if !ok {
 		parser.addProblem("kind", fmt.Errorf("Invalid item kind '%s'.", kindString))
 	}
+
+	parser.checkNoUnknownFields(table)
 
 	if len(parser.problems) != 0 {
 		return nil

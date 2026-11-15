@@ -48,13 +48,16 @@ func (world *World) loadBackgroundData() []ScriptProblem {
 	return problems
 }
 
-func (parser *ScriptParser) parseBackground(table *lua.Table) *BackgroundData {
+func (parser *ScriptParser) parseBackground(luaTable *lua.Table) *BackgroundData {
 	backgroundData := &BackgroundData{}
+	table := newScriptTable(luaTable, "")
 
 	backgroundData.Name = parser.getString(table, "name")
 	backgroundData.Description = parser.getString(table, "description")
 	backgroundData.Attributes = parser.getAttributeBlock(table, "attributes")
 	backgroundData.Skills = parser.getSkillBlock(table, "skills")
+
+	parser.checkNoUnknownFields(table)
 
 	if len(parser.problems) != 0 {
 		return nil

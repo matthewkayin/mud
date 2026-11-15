@@ -4,8 +4,10 @@ room.name = "Church"
 room.description = "The pews are made of couches"
 
 room.loot = {
-    item = "Bread",
-    amount = 12
+    {
+        item = "Apple",
+        amount = 12
+    }
 }
 
 return room
