@@ -93,7 +93,7 @@ func (parser *ScriptParser) getOptionalLootTable(world *World, table *lua.Table,
 
 	// If the value is not a table, then add an error
 	if luaLootTableValue.Kind() != lua.TableKind {
-		parser.addProblem(fmt.Errorf("invalid type for '%s'. expected %s, got %s.", key, lua.TableKind, luaLootTableValue.Kind()))
+		parser.addProblem(key, fmt.Errorf("invalid type for '%s'. expected %s, got %s.", key, lua.TableKind, luaLootTableValue.Kind()))
 		return lootTable
 	}
 
@@ -105,14 +105,14 @@ func (parser *ScriptParser) getOptionalLootTable(world *World, table *lua.Table,
 		entryKey := fmt.Sprintf("%s[%d]", key, index)
 		entryTable, ok := luaLootTable.RawGetInt(index).AsTable()
 		if !ok {
-			parser.addProblem(fmt.Errorf("field '%s' must be a table", entryKey))
+			parser.addProblem(key, fmt.Errorf("field '%s' must be a table", entryKey))
 			continue
 		}
 
 		itemTypeString := parser.getString(entryTable, "item")
 		itemType, exists := world.ItemNameToType[itemTypeString]
 		if !exists {
-			parser.addProblem(fmt.Errorf("item '%s' in drop table entry %s does not exist.", itemTypeString, entryKey))
+			parser.addProblem("item", fmt.Errorf("item '%s' in drop table entry %s does not exist.", itemTypeString, entryKey))
 			continue
 		}
 
@@ -123,8 +123,8 @@ func (parser *ScriptParser) getOptionalLootTable(world *World, table *lua.Table,
 			dropChancePercent: parser.getInt32(entryTable, "drop_chance_percent"),
 		}
 
-		parser.checkInt32IsPositivePercent(entry.durabilityPercentRange.Min, "durability_percent.min")
-		parser.checkInt32IsPositivePercent(entry.durabilityPercentRange.Max, "durability_percent.max")
+		parser.checkInt32IsPositivePercent(entry.durabilityPercentRange.Min, "durability_percent")
+		parser.checkInt32IsPositivePercent(entry.durabilityPercentRange.Max, "durability_percent")
 		parser.checkInt32IsPositivePercent(entry.dropChancePercent, "drop_chance_percent")
 
 		lootTable.Entries = append(lootTable.Entries, entry)

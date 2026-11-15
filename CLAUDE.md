@@ -11,7 +11,7 @@ A multi-user dungeon (MUD) with a Go game server (`backend/`, module `mud`) and 
 The branch `kayin/mudkit-refactor` is rebuilding the project from scratch. The goal is server software that other people can configure to run their own MUD, so game-specific values (such as the game's name) come from config instead of the code.
 
 - Commit `ae485c7` ("begin refactor") deleted the old server, client, world editor, data and most of the docs. The old implementation is at `feb5cd1` (also `main`). Read it with `git show feb5cd1:<path>` (e.g. `git show feb5cd1:backend/game/game.go`) or list it with `git ls-tree -r --name-only feb5cd1`. Use it as a reference when rebuilding a feature, not as code to restore wholesale.
-- Only describe and rely on what exists in the working tree. Many things the old code had (game loop, world simulation, Lua scripting, world editor, Disco deployment, most of `docs/backend/`, `docs/deployment.md`, `docs/editor.md`) don't exist yet on this branch.
+- Only describe and rely on what exists in the working tree. Many things the old code had (game loop, world simulation, Lua scripting, Disco deployment, most of `docs/backend/`, `docs/deployment.md`) don't exist yet on this branch.
 - When you rebuild something from the old code, update this file and `docs/` to cover it.
 
 ### Current state
@@ -19,6 +19,9 @@ The branch `kayin/mudkit-refactor` is rebuilding the project from scratch. The g
 - `backend/main.go` sets up logging to stdout and `logs/<timestamp>.log`, loads env, creates `saves/accounts`, and runs the HTTP server on `PORT` until SIGINT/SIGTERM. There is no game loop yet.
 - `backend/env/env.go` loads `NAME`, `PORT` and the optional `ENABLE_DEBUG_AUTH` from `backend/.env` or the OS environment. `NAME` is the game's identity. `ENABLE_DEBUG_AUTH=true` allows password-less, per-tab sign-in for testing (see `docs/backend/accounts.md`).
 - `backend/api/` holds `ApiState` (in-memory sessions) and username/password accounts with the `/api/auth/me`, `register`, `login` and `logout` routes (see `docs/backend/accounts.md`).
+- `backend/world/` loads Lua world data (items, races, backgrounds, rooms) from `backend/data/` and places rooms on the map using `backend/data/layout.json` (see `docs/backend/world_data.md`). Loading collects every problem in the data folder (file, field key, line, layout room index, severity) instead of stopping at the first; the server logs them all and won't start if any is an error.
+- `backend/lsp/` is the validation language server, run with `mud lsp <data folder>` (`go run . lsp data`). It validates the data folder, including unsaved editor buffers, with the same loader, publishes diagnostics over stdio, and answers a custom `mud/roomNames` request (see `docs/backend/lsp.md`).
+- `editor/` is the VS Code extension (see `editor/README.md`). It starts `mud lsp` for the workspace's data folder and opens `layout.json` in a map view (a webview drawn on a canvas, in `editor/webview/`) that creates, deletes, moves and connects rooms, sets the start room, and assigns, creates and opens room files, by applying text edits to `layout.json`. `docs/editor.md` describes the editor as a whole.
 - `backend/persist/` has `WriteJsonAtomically`, the helper all save files must be written with. Save data lives in `backend/saves/` (gitignored).
 - `frontend/` is a new, rewritten client (see `docs/frontend.md`). It has home, sign-in, create-account and game pages and uses the server's auth routes. The game page has an empty slot for the terminal.
 
@@ -28,6 +31,16 @@ Backend (run from `backend/`, since it reads `./.env` and writes `./logs` and `.
 ```
 go run .
 go test ./...
+go run . lsp data   # validation language server on stdio, see docs/backend/lsp.md
+```
+
+Editor extension (run from `editor/`):
+```
+npm install
+npm run build       # esbuild bundles (extension and map view webview) to editor/dist
+npm run typecheck
+npm test            # unit tests for the layout edits, with node:test
+npm run package     # writes editor/mud-editor-<version>.vsix
 ```
 
 Frontend (run from `frontend/`):

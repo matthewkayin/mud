@@ -1,7 +1,6 @@
 package world
 
 import (
-	"os"
 	"fmt"
 	"log"
 	"io/fs"
@@ -11,6 +10,13 @@ import (
 )
 
 const SCRIPT_DATA_FOLDER = "data"
+
+// A script that ran and returned a table
+type scriptFile struct {
+	// Relative to the data folder
+	path string
+	table *lua.Table
+}
 
 func (world *World) scriptInit() error {
 	// Init Lua state
@@ -22,7 +28,8 @@ func (world *World) scriptInit() error {
 			lua.StringLibrary,
 			lua.TableLibrary,
 		},
-		ScriptLoader: lua.FSLoader(os.DirFS(SCRIPT_DATA_FOLDER)),
+		ScriptLoader: lua.FSLoader(world.dataFolder),
+		Stdout: world.scriptStdout,
 	})
 	if err != nil {
 		return fmt.Errorf("Error initializing lua state: %s", err.Error())
@@ -161,36 +168,64 @@ func scriptFormatError(err error) string {
 
 
 // Loads a table from a script. The path is relative to the data folder, e.g. "spells/firebolt.lua"
+// Lua's own errors start with "<path>:<line>:", see scriptProblemFromLoadError
 func (world *World) scriptLoadTable(path string) (*lua.Table, error) {
-	// Do file. Every error names the script's path
+	// Do file
 	results, err := world.luaState.DoFile(path)
 	if err != nil {
-		// Lua's own errors usually start with "<path>:<line>:" already
-		if strings.HasPrefix(err.Error(), path + ":") {
-			return nil, err
-		}
-		return nil, fmt.Errorf("%s: %w", path, err)
+		return nil, err
 	}
 
 	// Get results
 	if len(results) != 1 {
-		return nil, fmt.Errorf("%s: script must return exactly one table, got %d values", path, len(results))
+		return nil, fmt.Errorf("script must return exactly one table, got %d values", len(results))
 	}
 
 	// Get table
 	table, ok := results[0].AsTable()
 	if !ok {
-		return nil, fmt.Errorf("%s: script must return a table, got %s", path, results[0].Kind())
+		return nil, fmt.Errorf("script must return a table, got %s", results[0].Kind())
 	}
 
 	return table, nil
 }
 
+// Runs every script in a core folder of the data folder.
+// A missing folder or a script that fails to run is reported as a problem, and failed scripts are left out
+func (world *World) scriptLoadFolder(folder string) ([]scriptFile, []ScriptProblem) {
+	problems := make([]ScriptProblem, 0)
+
+	paths, err := world.scriptGetFilesFrom(folder)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			err = fmt.Errorf("missing core folder '%s'", folder)
+		}
+		problems = append(problems, newScriptProblem(folder, err))
+		return nil, problems
+	}
+
+	files := make([]scriptFile, 0, len(paths))
+	for _, path := range paths {
+		table, err := world.scriptLoadTable(path)
+		if err != nil {
+			problems = append(problems, scriptProblemFromLoadError(path, err))
+			continue
+		}
+
+		files = append(files, scriptFile {
+			path: path,
+			table: table,
+		})
+	}
+
+	return files, problems
+}
+
 // Returns the paths of the scripts in a subfolder of the data folder, relative to the data folder
-func scriptGetFilesFrom(subfolder string) ([]string, error) {
+func (world *World) scriptGetFilesFrom(subfolder string) ([]string, error) {
 	paths := make([]string, 0, 1)
 
-	err := fs.WalkDir(os.DirFS(SCRIPT_DATA_FOLDER), subfolder, func (path string, entry fs.DirEntry, err error) error {
+	err := fs.WalkDir(world.dataFolder, subfolder, func (path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}

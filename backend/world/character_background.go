@@ -18,41 +18,34 @@ type BackgroundData struct {
 
 const BACKGROUND_DATA_FOLDER = "backgrounds"
 
-func (world *World) loadBackgroundData() error {
-	// Read class folder
-	paths, err := scriptGetFilesFrom(BACKGROUND_DATA_FOLDER)
-	if err != nil {
-		return fmt.Errorf("Error opening background data folder: %s", err.Error())
-	}
+func (world *World) loadBackgroundData() []ScriptProblem {
+	files, problems := world.scriptLoadFolder(BACKGROUND_DATA_FOLDER)
 
-	world.BackgroundData = make([]*BackgroundData, 0, len(paths))
+	world.BackgroundData = make([]*BackgroundData, 0, len(files))
 	world.BackgroundNameToId = make(map[string]BackgroundId)
 
-	for _, path := range paths {
-		// Open script
-		table, err := world.scriptLoadTable(path)
-		if err != nil {
-			return err
-		}
-
-		// Parse class data
-		parser := ScriptParser{}
-		backgroundData := parser.parseBackground(table)
+	for _, file := range files {
+		// Parse background data
+		parser := ScriptParser{ path: file.path }
+		backgroundData := parser.parseBackground(file.table)
 		if backgroundData == nil {
-			return fmt.Errorf("%s: %s", path, parser.getError().Error())
+			problems = append(problems, parser.problems...)
+			continue
 		}
 
 		// Check for duplicates
-		_, duplicateBackgroundName := world.BackgroundNameToId[backgroundData.Name]
-		if duplicateBackgroundName {
-			return fmt.Errorf("Background %s has name '%s' which is a duplicate of another background.", path, backgroundData.Name)
+		_, duplicateName := world.BackgroundNameToId[backgroundData.Name]
+		if duplicateName {
+			parser.addProblem("name", fmt.Errorf("Background has name '%s' which is a duplicate of another background.", backgroundData.Name))
+			problems = append(problems, parser.problems...)
+			continue
 		}
 
 		world.BackgroundNameToId[backgroundData.Name] = BackgroundId(len(world.BackgroundData))
 		world.BackgroundData = append(world.BackgroundData, backgroundData)
 	}
 
-	return nil
+	return problems
 }
 
 func (parser *ScriptParser) parseBackground(table *lua.Table) *BackgroundData {

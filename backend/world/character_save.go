@@ -62,7 +62,7 @@ func (world *World) SaveCharacter(character *Character) {
 	log.Printf("Saved character file %s.", path)
 }
 
-func (world *World) loadCharacters() error {
+func (world *World) LoadCharacters() error {
 	world.Characters = make(map[string]*Character)
 	world.PlayerCharacters = make(map[string][]string)
 

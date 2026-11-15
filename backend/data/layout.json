@@ -1,0 +1,11 @@
+{
+    "start": { "x": 0, "y": 0, "z": 0 },
+    "rooms": [
+        { "position": { "x": 0, "y": 0, "z": 0 }, "path": "presentation_space.lua", "exits": ["north", "west", "up"] },
+        { "position": { "x": -1, "y": 0, "z": 0 }, "path": "kitchen.lua", "exits": ["east"] },
+        { "position": { "x": 0, "y": 0, "z": 1 }, "path": "church.lua", "exits": ["west", "east", "down"] },
+        { "position": { "x": 1, "y": 0, "z": 1 }, "path": "faculty.lua", "exits": ["west"] },
+        { "position": { "x": -1, "y": 0, "z": 1 }, "path": "hardware.lua", "exits": ["east"] },
+        { "position": { "x": 0, "y": -1, "z": 0 }, "path": "dining_hall.lua", "exits": ["south"] }
+    ]
+}

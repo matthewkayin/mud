@@ -11,6 +11,7 @@ import (
 	"mud/api"
 	"mud/env"
 	"mud/game"
+	"mud/lsp"
 	"mud/world"
 	"mud/generate"
 	"net/http"
@@ -36,6 +37,16 @@ func main() {
 			log.Fatalf("Error generating Lua definitions: %s", err.Error())
 		}
 		return
+	}
+
+	// Handle language server run path. stdout carries the protocol, so logs only go to stderr
+	if flag.Arg(0) == "lsp" {
+		if flag.NArg() != 2 {
+			log.Fatalf("Usage: mud lsp <data folder>")
+		}
+		log.SetOutput(os.Stderr)
+		log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+		os.Exit(lsp.Run(flag.Arg(1)))
 	}
 
 	// Init logger
