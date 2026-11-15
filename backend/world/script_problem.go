@@ -17,8 +17,8 @@ const (
 type ScriptProblem struct {
 	// Relative to the data folder, e.g. "items/apple.lua", "layout.json", or a core folder such as "rooms"
 	Path string
-	// The field key the problem is about, empty if none
-	Key string
+	// The keys of the field the problem is about, outermost first, e.g. ["loot", "amount"]. Empty if none
+	KeyPath []string
 	// 1-based line from a Lua error, 0 if unknown
 	Line int
 	// Index into layout.json's rooms, -1 if the problem is not about a room entry

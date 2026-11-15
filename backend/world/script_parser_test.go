@@ -8,7 +8,8 @@ import (
 )
 
 type expectedProblem struct {
-	key string
+	// Joined with "."
+	keyPath string
 	messageContains string
 }
 
@@ -45,12 +46,12 @@ func checkProblems(test *testing.T, problems []ScriptProblem, expectedProblems [
 	for _, expected := range expectedProblems {
 		found := false
 		for _, problem := range problems {
-			if problem.Key == expected.key && strings.Contains(problem.Message, expected.messageContains) {
+			if strings.Join(problem.KeyPath, ".") == expected.keyPath && strings.Contains(problem.Message, expected.messageContains) {
 				found = true
 			}
 		}
 		if !found {
-			test.Fatalf("expected a problem on key %q containing %q, got %+v", expected.key, expected.messageContains, problems)
+			test.Fatalf("expected a problem on key path %q containing %q, got %+v", expected.keyPath, expected.messageContains, problems)
 		}
 	}
 }
@@ -70,21 +71,21 @@ func TestCheckNoUnknownFields(test *testing.T) {
 			name: "unknown field",
 			source: `return { name = "a", amount = 1, drops = {} }`,
 			expectedProblems: []expectedProblem{
-				{ key: "drops", messageContains: "unknown field 'drops'" },
+				{ keyPath: "drops", messageContains: "unknown field 'drops'" },
 			},
 		},
 		{
 			name: "positional entry",
 			source: `return { "apple", name = "a", amount = 1 }`,
 			expectedProblems: []expectedProblem{
-				{ key: "", messageContains: "unexpected array entry [1]" },
+				{ keyPath: "", messageContains: "unexpected array entry [1]" },
 			},
 		},
 		{
 			name: "unknown field in range",
 			source: `return { name = "a", amount = { min = 1, max = 2, mx = 2 } }`,
 			expectedProblems: []expectedProblem{
-				{ key: "mx", messageContains: "unknown field 'mx' in 'amount'" },
+				{ keyPath: "amount.mx", messageContains: "unknown field 'mx' in 'amount'" },
 			},
 		},
 	}
@@ -92,7 +93,7 @@ func TestCheckNoUnknownFields(test *testing.T) {
 	for _, testCase := range testCases {
 		test.Run(testCase.name, func(test *testing.T) {
 			parser := ScriptParser{ path: "test.lua" }
-			table := newScriptTable(testLuaTable(test, testCase.source), "")
+			table := newScriptTable(testLuaTable(test, testCase.source))
 			parser.getString(table, "name")
 			parser.getInt32Range(table, "amount")
 			parser.checkNoUnknownFields(table)
@@ -125,7 +126,7 @@ func TestGetOptionalArray(test *testing.T) {
 			source: `return { loot = { item = "apple" } }`,
 			expectedLength: 0,
 			expectedProblems: []expectedProblem{
-				{ key: "item", messageContains: "field 'loot' must be an array, but it has key 'item'" },
+				{ keyPath: "loot.item", messageContains: "field 'loot' must be an array, but it has key 'item'" },
 			},
 		},
 		{
@@ -133,7 +134,7 @@ func TestGetOptionalArray(test *testing.T) {
 			source: `return { loot = { [1] = "a", [3] = "b" } }`,
 			expectedLength: 0,
 			expectedProblems: []expectedProblem{
-				{ key: "loot", messageContains: "no gaps" },
+				{ keyPath: "loot", messageContains: "no gaps" },
 			},
 		},
 		{
@@ -141,7 +142,7 @@ func TestGetOptionalArray(test *testing.T) {
 			source: `return { loot = { [1.5] = "a" } }`,
 			expectedLength: 0,
 			expectedProblems: []expectedProblem{
-				{ key: "loot", messageContains: "must be an array" },
+				{ keyPath: "loot", messageContains: "must be an array" },
 			},
 		},
 		{
@@ -149,7 +150,7 @@ func TestGetOptionalArray(test *testing.T) {
 			source: `return { loot = "apple" }`,
 			expectedLength: 0,
 			expectedProblems: []expectedProblem{
-				{ key: "loot", messageContains: "invalid type for 'loot'" },
+				{ keyPath: "loot", messageContains: "invalid type for 'loot'" },
 			},
 		},
 	}
@@ -157,7 +158,7 @@ func TestGetOptionalArray(test *testing.T) {
 	for _, testCase := range testCases {
 		test.Run(testCase.name, func(test *testing.T) {
 			parser := ScriptParser{ path: "test.lua" }
-			table := newScriptTable(testLuaTable(test, testCase.source), "")
+			table := newScriptTable(testLuaTable(test, testCase.source))
 			values := parser.getOptionalArray(table, "loot")
 			if len(values) != testCase.expectedLength {
 				test.Fatalf("expected %d values, got %d", testCase.expectedLength, len(values))
@@ -182,31 +183,31 @@ func TestParseRoomFields(test *testing.T) {
 			name: "loot misnamed",
 			fields: `drops = { { item = "Apple", amount = 1, drop_chance_percent = 50 } }`,
 			expectedProblems: []expectedProblem{
-				{ key: "drops", messageContains: "unknown field 'drops'" },
+				{ keyPath: "drops", messageContains: "unknown field 'drops'" },
 			},
 		},
 		{
 			name: "loot written as key value pairs",
 			fields: `loot = { item = "Apple", amount = 1, drop_chance_percent = 50 }`,
 			expectedProblems: []expectedProblem{
-				{ key: "item", messageContains: "must be an array" },
-				{ key: "amount", messageContains: "must be an array" },
-				{ key: "drop_chance_percent", messageContains: "must be an array" },
+				{ keyPath: "loot.item", messageContains: "must be an array" },
+				{ keyPath: "loot.amount", messageContains: "must be an array" },
+				{ keyPath: "loot.drop_chance_percent", messageContains: "must be an array" },
 			},
 		},
 		{
 			name: "misspelled loot entry field",
 			fields: `loot = { { item = "Apple", amonut = 1, drop_chance_percent = 50 } }`,
 			expectedProblems: []expectedProblem{
-				{ key: "amount", messageContains: "missing required field 'amount'" },
-				{ key: "amonut", messageContains: "unknown field 'amonut' in 'loot[1]'" },
+				{ keyPath: "loot.amount", messageContains: "missing required field 'amount'" },
+				{ keyPath: "loot.amonut", messageContains: "unknown field 'amonut' in 'loot[1]'" },
 			},
 		},
 		{
 			name: "details not a table",
 			fields: `details = "a counter"`,
 			expectedProblems: []expectedProblem{
-				{ key: "details", messageContains: "invalid type for 'details'" },
+				{ keyPath: "details", messageContains: "invalid type for 'details'" },
 			},
 		},
 	}

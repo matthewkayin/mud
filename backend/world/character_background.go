@@ -36,7 +36,7 @@ func (world *World) loadBackgroundData() []ScriptProblem {
 		// Check for duplicates
 		_, duplicateName := world.BackgroundNameToId[backgroundData.Name]
 		if duplicateName {
-			parser.addProblem("name", fmt.Errorf("Background has name '%s' which is a duplicate of another background.", backgroundData.Name))
+			parser.addProblem([]string{ "name" }, fmt.Errorf("Background has name '%s' which is a duplicate of another background.", backgroundData.Name))
 			problems = append(problems, parser.problems...)
 			continue
 		}
@@ -50,7 +50,7 @@ func (world *World) loadBackgroundData() []ScriptProblem {
 
 func (parser *ScriptParser) parseBackground(luaTable *lua.Table) *BackgroundData {
 	backgroundData := &BackgroundData{}
-	table := newScriptTable(luaTable, "")
+	table := newScriptTable(luaTable)
 
 	backgroundData.Name = parser.getString(table, "name")
 	backgroundData.Description = parser.getString(table, "description")

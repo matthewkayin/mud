@@ -16,9 +16,9 @@ func problemRange(problem world.ScriptProblem, source []byte) Range {
 		return lineRange(source, problem.Line - 1)
 	}
 
-	// Field problems go on the key
-	if problem.Key != "" {
-		keyRange, found := keyRange(source, problem.Key)
+	// Field problems go on the deepest key of their path that is written in the source
+	if len(problem.KeyPath) != 0 {
+		keyRange, found := keyPathRange(source, problem.KeyPath)
 		if found {
 			return keyRange
 		}
@@ -35,21 +35,45 @@ func problemRange(problem world.ScriptProblem, source []byte) Range {
 	return lineRange(source, 0)
 }
 
-// Returns the range of the first place the key is written as a table key: key =, ["key"] = or ['key'] =
-func keyRange(source []byte, key string) (Range, bool) {
+// Finds each key of the path in turn, each one searched for after the previous one's match, and returns the range of the
+// deepest key found. For ["loot", "amount"] this is the first amount after loot, or loot itself if no amount follows it
+func keyPathRange(source []byte, keyPath []string) (Range, bool) {
+	searchStart := 0
+	deepestStart := -1
+	deepestEnd := -1
+	for _, key := range keyPath {
+		start, end, found := findKey(source[searchStart:], key)
+		if !found {
+			break
+		}
+
+		deepestStart = searchStart + start
+		deepestEnd = searchStart + end
+		searchStart = deepestEnd
+	}
+
+	if deepestStart < 0 {
+		return Range{}, false
+	}
+
+	return Range {
+		Start: offsetToPosition(source, deepestStart),
+		End: offsetToPosition(source, deepestEnd),
+	}, true
+}
+
+// Returns the byte offsets of the first place the key is written as a table key: key =, ["key"] = or ['key'] =
+func findKey(source []byte, key string) (int, int, bool) {
 	quotedKey := regexp.QuoteMeta(key)
 	pattern := fmt.Sprintf(`(?:^|[^\w])(%s|\["%s"\]|\['%s'\])\s*=(?:[^=]|$)`, quotedKey, quotedKey, quotedKey)
 	keyRegexp := regexp.MustCompile(pattern)
 
 	match := keyRegexp.FindSubmatchIndex(source)
 	if match == nil {
-		return Range{}, false
+		return 0, 0, false
 	}
 
-	return Range {
-		Start: offsetToPosition(source, match[2]),
-		End: offsetToPosition(source, match[3]),
-	}, true
+	return match[2], match[3], true
 }
 
 // Returns the 0-based line of the room entry at roomIndex in layout.json's rooms array

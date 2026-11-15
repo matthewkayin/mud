@@ -12,6 +12,12 @@ func TestProblemRange(test *testing.T) {
 		"room.description = \"A room\"\n" +
 		"return room\n"
 
+	lootSource := "local room = {}\n" +
+		"room.item = 1\n" +
+		"room.loot = {\n" +
+		"    { item = \"Bread\", amount = 12 },\n" +
+		"}\n"
+
 	layoutSource := "{\n" +
 		"    \"start\": { \"x\": 0, \"y\": 0, \"z\": 0 },\n" +
 		"    \"rooms\": [\n" +
@@ -28,45 +34,57 @@ func TestProblemRange(test *testing.T) {
 	}{
 		{
 			name: "lua line covers the whole line",
-			problem: world.ScriptProblem { Line: 3, Key: "description", RoomIndex: -1 },
+			problem: world.ScriptProblem { Line: 3, KeyPath: []string{ "description" }, RoomIndex: -1 },
 			source: roomSource,
 			expected: Range { Start: Position { 2, 0 }, End: Position { 2, 13 } },
 		},
 		{
 			name: "dotted key",
-			problem: world.ScriptProblem { Key: "name", RoomIndex: -1 },
+			problem: world.ScriptProblem { KeyPath: []string{ "name" }, RoomIndex: -1 },
 			source: roomSource,
 			expected: Range { Start: Position { 2, 5 }, End: Position { 2, 9 } },
 		},
 		{
 			name: "bracketed key",
-			problem: world.ScriptProblem { Key: "name", RoomIndex: -1 },
+			problem: world.ScriptProblem { KeyPath: []string{ "name" }, RoomIndex: -1 },
 			source: "local room = {\n    [\"name\"] = 5,\n}\n",
 			expected: Range { Start: Position { 1, 4 }, End: Position { 1, 12 } },
 		},
 		{
 			name: "single quoted bracketed key",
-			problem: world.ScriptProblem { Key: "name", RoomIndex: -1 },
+			problem: world.ScriptProblem { KeyPath: []string{ "name" }, RoomIndex: -1 },
 			source: "local room = {\n    ['name'] = 5,\n}\n",
 			expected: Range { Start: Position { 1, 4 }, End: Position { 1, 12 } },
 		},
 		{
 			name: "comparison is not an assignment",
-			problem: world.ScriptProblem { Key: "name", RoomIndex: -1 },
+			problem: world.ScriptProblem { KeyPath: []string{ "name" }, RoomIndex: -1 },
 			source: "if other.name == 5 then end\nroom.name = 5\n",
 			expected: Range { Start: Position { 1, 5 }, End: Position { 1, 9 } },
 		},
 		{
 			name: "key inside a longer word is not matched",
-			problem: world.ScriptProblem { Key: "name", RoomIndex: -1 },
+			problem: world.ScriptProblem { KeyPath: []string{ "name" }, RoomIndex: -1 },
 			source: "room.surname = 5\nroom.name = 5\n",
 			expected: Range { Start: Position { 1, 5 }, End: Position { 1, 9 } },
 		},
 		{
 			name: "missing key goes on line 1",
-			problem: world.ScriptProblem { Key: "loot", RoomIndex: -1 },
+			problem: world.ScriptProblem { KeyPath: []string{ "loot" }, RoomIndex: -1 },
 			source: roomSource,
 			expected: Range { Start: Position { 0, 0 }, End: Position { 0, 15 } },
+		},
+		{
+			name: "nested key goes on the key after its table",
+			problem: world.ScriptProblem { KeyPath: []string{ "loot", "item" }, RoomIndex: -1 },
+			source: lootSource,
+			expected: Range { Start: Position { 3, 6 }, End: Position { 3, 10 } },
+		},
+		{
+			name: "missing nested key goes on its table",
+			problem: world.ScriptProblem { KeyPath: []string{ "loot", "drop_chance_percent" }, RoomIndex: -1 },
+			source: lootSource,
+			expected: Range { Start: Position { 2, 5 }, End: Position { 2, 9 } },
 		},
 		{
 			name: "no key or line goes on line 1",
@@ -100,7 +118,7 @@ func TestProblemRange(test *testing.T) {
 		},
 		{
 			name: "columns count utf-16 code units",
-			problem: world.ScriptProblem { Key: "name", RoomIndex: -1 },
+			problem: world.ScriptProblem { KeyPath: []string{ "name" }, RoomIndex: -1 },
 			// The emoji is 4 bytes in UTF-8 and 2 code units in UTF-16
 			source: "local t = { d = \"😀\", name = 5 }\n",
 			expected: Range { Start: Position { 0, 22 }, End: Position { 0, 26 } },

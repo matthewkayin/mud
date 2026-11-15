@@ -40,7 +40,7 @@ It handles `initialize`, `initialized`, `shutdown`, `exit`, `textDocument/didOpe
 A problem's position comes from the first of these that applies (`backend/lsp/lines.go`):
 
 1. A Lua error with a line number goes on that line.
-2. A problem about a field goes on the first place the field's key is written as a table key: `key =`, `["key"] =` or `['key'] =`. A key used more than once in a file may put the diagnostic on the wrong one.
+2. A problem about a field goes on its key path. Each key is searched for as a table key (`key =`, `["key"] =` or `['key'] =`) after the previous key's match, and the diagnostic goes on the deepest key found. For `["loot", "drop_chance_percent"]`, it goes on the first `drop_chance_percent =` after `loot =`, or on `loot` if the field is missing. Searching after the outer key keeps a nested key off an earlier, unrelated table, but a key repeated inside the same table (for example `item` in the second loot entry) still lands on its first occurrence.
 3. A `layout.json` problem about a room entry goes on the line where that entry starts.
 4. Anything else goes on line 1.
 

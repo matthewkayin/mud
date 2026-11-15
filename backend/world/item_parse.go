@@ -38,7 +38,7 @@ func (world *World) loadItemTypes() []ScriptProblem {
 		// Check for duplicates
 		_, duplicateItemName := world.ItemNameToType[itemType.Name]
 		if duplicateItemName {
-			parser.addProblem("name", fmt.Errorf("Item has name '%s' which is a duplicate of another item.", itemType.Name))
+			parser.addProblem([]string{ "name" }, fmt.Errorf("Item has name '%s' which is a duplicate of another item.", itemType.Name))
 			problems = append(problems, parser.problems...)
 			continue
 		}
@@ -52,24 +52,24 @@ func (world *World) loadItemTypes() []ScriptProblem {
 
 func (parser *ScriptParser) parseItemType(luaTable *lua.Table) *ItemType {
 	itemType := &ItemType{}
-	table := newScriptTable(luaTable, "")
+	table := newScriptTable(luaTable)
 
 	itemType.Name = parser.getString(table, "name")
 	itemType.Description = parser.getString(table, "description")
 	itemType.price = parser.getInt32(table, "price")
 	if itemType.price < 0 {
-		parser.addProblem("price", fmt.Errorf("Item price cannot be negative."))
+		parser.addProblem(table.keyPathTo("price"), fmt.Errorf("Item price cannot be negative."))
 	}
 	itemType.size = parser.getInt32(table, "size")
 	if itemType.size < 0 {
-		parser.addProblem("size", fmt.Errorf("Item size cannot be negative."))
+		parser.addProblem(table.keyPathTo("size"), fmt.Errorf("Item size cannot be negative."))
 	}
 
 	var ok bool
 	kindString := parser.getString(table, "kind")
 	itemType.kind, ok = util.EnumFromString[ItemKind](kindString, ITEM_KIND_COUNT)
 	if !ok {
-		parser.addProblem("kind", fmt.Errorf("Invalid item kind '%s'.", kindString))
+		parser.addProblem(table.keyPathTo("kind"), fmt.Errorf("Invalid item kind '%s'.", kindString))
 	}
 
 	parser.checkNoUnknownFields(table)

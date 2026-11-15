@@ -36,7 +36,7 @@ func (world *World) loadRaceData() []ScriptProblem {
 		// Check for duplicates
 		_, duplicateName := world.RaceNameToId[raceData.Name]
 		if duplicateName {
-			parser.addProblem("name", fmt.Errorf("Race has name '%s' which is a duplicate of another race.", raceData.Name))
+			parser.addProblem([]string{ "name" }, fmt.Errorf("Race has name '%s' which is a duplicate of another race.", raceData.Name))
 			problems = append(problems, parser.problems...)
 			continue
 		}
@@ -50,7 +50,7 @@ func (world *World) loadRaceData() []ScriptProblem {
 
 func (parser *ScriptParser) parseRace(luaTable *lua.Table) *RaceData {
 	raceData := &RaceData{}
-	table := newScriptTable(luaTable, "")
+	table := newScriptTable(luaTable)
 
 	raceData.Name = parser.getString(table, "name")
 	raceData.Description = parser.getString(table, "description")

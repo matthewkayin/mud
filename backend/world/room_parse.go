@@ -119,7 +119,7 @@ func (world *World) loadRoomData() []ScriptProblem {
 
 func (parser *ScriptParser) parseRoom(world *World, luaTable *lua.Table) *Room {
 	room := &Room{}
-	table := newScriptTable(luaTable, "")
+	table := newScriptTable(luaTable)
 
 	room.Name = parser.getString(table, "name")
 	room.Description = parser.getString(table, "description")
@@ -133,7 +133,7 @@ func (parser *ScriptParser) parseRoom(world *World, luaTable *lua.Table) *Room {
 			// Get next key / value from the table
 			detailKey, detailValue, ok, err := detailsTable.Next(key)
 			if err != nil {
-				parser.addProblem("details", fmt.Errorf("Error while iterating through details table: %s", err.Error()))
+				parser.addProblem(table.keyPathTo("details"), fmt.Errorf("Error while iterating through details table: %s", err.Error()))
 				break
 			}
 			if !ok {
@@ -143,14 +143,14 @@ func (parser *ScriptParser) parseRoom(world *World, luaTable *lua.Table) *Room {
 			// Validate that key is a string
 			detailName, ok := detailKey.AsString()
 			if !ok {
-				parser.addProblem("details", fmt.Errorf("Keys in the details table must be strings."))
+				parser.addProblem(table.keyPathTo("details"), fmt.Errorf("Keys in the details table must be strings."))
 				break
 			}
 
 			// Validate that the value is a string
 			detail, ok := detailValue.AsString()
 			if !ok {
-				parser.addProblem("details", fmt.Errorf("Details table value of '%s' is not a string, but it should be.", detailName))
+				parser.addProblem(table.keyPathTo("details"), fmt.Errorf("Details table value of '%s' is not a string, but it should be.", detailName))
 			}
 
 			// Add detail to room
@@ -172,7 +172,7 @@ func (parser *ScriptParser) parseRoom(world *World, luaTable *lua.Table) *Room {
 			// Get next key / value from the table
 			interactionKey, interactionValue, ok, err := interactionsTable.Next(key)
 			if err != nil {
-				parser.addProblem("interactions", fmt.Errorf("Error while iterating through interactions table: %s", err.Error()))
+				parser.addProblem(table.keyPathTo("interactions"), fmt.Errorf("Error while iterating through interactions table: %s", err.Error()))
 				break
 			}
 			if !ok {
@@ -182,7 +182,7 @@ func (parser *ScriptParser) parseRoom(world *World, luaTable *lua.Table) *Room {
 			// Validate that key is a string
 			interactionVerb, ok := interactionKey.AsString()
 			if !ok {
-				parser.addProblem("interactions", fmt.Errorf("Keys in the interactions table must be strings."))
+				parser.addProblem(table.keyPathTo("interactions"), fmt.Errorf("Keys in the interactions table must be strings."))
 				break
 			}
 
@@ -190,7 +190,7 @@ func (parser *ScriptParser) parseRoom(world *World, luaTable *lua.Table) *Room {
 			for index := range len(interactionVerb) {
 				c := interactionVerb[index]
 				if c < 'a' || c > 'z' {
-					parser.addProblem("interactions", fmt.Errorf("Unexpected char '%c' in interaction verb %s.", c, interactionVerb))
+					parser.addProblem(table.keyPathTo("interactions"), fmt.Errorf("Unexpected char '%c' in interaction verb %s.", c, interactionVerb))
 					break
 				}
 			}
@@ -198,7 +198,7 @@ func (parser *ScriptParser) parseRoom(world *World, luaTable *lua.Table) *Room {
 			// Validate that the value is a string
 			interaction, ok := interactionValue.AsFunction()
 			if !ok {
-				parser.addProblem("interactions", fmt.Errorf("Interaction table value of '%s' is not a function, but it should be.", interactionKey))
+				parser.addProblem(table.keyPathTo("interactions"), fmt.Errorf("Interaction table value of '%s' is not a function, but it should be.", interactionKey))
 			}
 
 			room.Interactions[interactionVerb] = interaction

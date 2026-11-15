@@ -18,15 +18,37 @@ type ScriptTable struct {
 	table *lua.Table
 	// How messages name this table, e.g. "loot[2]" or "amount". Empty for a file's top-level table
 	name string
+	// The keys of the fields that lead to this table from the file's top-level table, outermost first. Empty for the top-level table
+	keyPath []string
 	readKeys map[string]bool
 }
 
-func newScriptTable(table *lua.Table, name string) *ScriptTable {
+// Returns a file's top-level table
+func newScriptTable(table *lua.Table) *ScriptTable {
 	return &ScriptTable {
 		table: table,
-		name: name,
+		name: "",
+		keyPath: []string{},
 		readKeys: make(map[string]bool),
 	}
+}
+
+// Returns a table nested in this one at key. name is how messages refer to it, e.g. "loot[2]"
+func (table *ScriptTable) childTable(childTable *lua.Table, key string, name string) *ScriptTable {
+	return &ScriptTable {
+		table: childTable,
+		name: name,
+		keyPath: table.keyPathTo(key),
+		readKeys: make(map[string]bool),
+	}
+}
+
+// Returns the key path of the field at key in this table
+func (table *ScriptTable) keyPathTo(key string) []string {
+	keyPath := make([]string, 0, len(table.keyPath) + 1)
+	keyPath = append(keyPath, table.keyPath...)
+	keyPath = append(keyPath, key)
+	return keyPath
 }
 
 // Marks the key as read and returns its raw value
@@ -35,24 +57,24 @@ func (table *ScriptTable) get(key string) lua.Value {
 	return table.table.RawGetString(key)
 }
 
-// Adds an error problem about the field with the given key. The key may be empty
-func (parser *ScriptParser) addProblem(key string, err error) {
+// Adds an error problem about the field with the given key path. The key path may be empty
+func (parser *ScriptParser) addProblem(keyPath []string, err error) {
 	if err == nil {
 		return
 	}
 
 	problem := newScriptProblem(parser.path, err)
-	problem.Key = key
+	problem.KeyPath = keyPath
 	parser.problems = append(parser.problems, problem)
 }
 
 func (parser *ScriptParser) getTypedValue(table *ScriptTable, key string, kind lua.Kind) lua.Value {
 	value := table.get(key)
 	if value.IsNil() {
-		parser.addProblem(key, fmt.Errorf("missing required field '%s'", key))
+		parser.addProblem(table.keyPathTo(key), fmt.Errorf("missing required field '%s'", key))
 	}
 	if value.Kind() != kind {
-		parser.addProblem(key, fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, kind, value.Kind().String()))
+		parser.addProblem(table.keyPathTo(key), fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, kind, value.Kind().String()))
 	}
 
 	return value
@@ -68,7 +90,7 @@ func (parser *ScriptParser) getInt(table *ScriptTable, key string) int {
 	value := parser.getTypedValue(table, key, lua.NumberKind)
 	result, _ := value.AsNumber()
 	if result != math.Trunc(result) {
-		parser.addProblem(key, fmt.Errorf("field '%s' must be an integer, got %v", key, result))
+		parser.addProblem(table.keyPathTo(key), fmt.Errorf("field '%s' must be an integer, got %v", key, result))
 	}
 	return int(result)
 }
@@ -76,17 +98,17 @@ func (parser *ScriptParser) getInt(table *ScriptTable, key string) int {
 func (parser *ScriptParser) getInt32(table *ScriptTable, key string) int32 {
 	value := parser.getTypedValue(table, key, lua.NumberKind)
 	result, _ := value.AsNumber()
-	parser.checkNumberIsInt32(result, key, key)
+	parser.checkNumberIsInt32(result, table, key, key)
 	return int32(result)
 }
 
-// The problem is reported on key, and its message names fieldName, which is different from key for values inside a block
-func (parser *ScriptParser) checkNumberIsInt32(number float64, key string, fieldName string) {
+// The problem is reported on the field at key, and its message names fieldName, which is different from key for values inside a block
+func (parser *ScriptParser) checkNumberIsInt32(number float64, table *ScriptTable, key string, fieldName string) {
 	if number != math.Trunc(number) {
-		parser.addProblem(key, fmt.Errorf("field '%s' must be an integer, got %v", fieldName, number))
+		parser.addProblem(table.keyPathTo(key), fmt.Errorf("field '%s' must be an integer, got %v", fieldName, number))
 	}
 	if number < math.MinInt32 || number > math.MaxInt32 {
-		parser.addProblem(key, fmt.Errorf("field '%s' must be between %d and %d, got %v", fieldName, math.MinInt32, math.MaxInt32, number))
+		parser.addProblem(table.keyPathTo(key), fmt.Errorf("field '%s' must be between %d and %d, got %v", fieldName, math.MinInt32, math.MaxInt32, number))
 	}
 }
 
@@ -105,7 +127,7 @@ func (parser *ScriptParser) getOptionalFunction(table *ScriptTable, key string) 
 
 	result, ok := value.AsFunction()
 	if !ok {
-		parser.addProblem(key, fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, lua.FunctionKind, value.Kind().String()))
+		parser.addProblem(table.keyPathTo(key), fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, lua.FunctionKind, value.Kind().String()))
 		return nil
 	}
 
@@ -121,7 +143,7 @@ func (parser *ScriptParser) getOptionalTable(table *ScriptTable, key string) *lu
 
 	result, ok := value.AsTable()
 	if !ok {
-		parser.addProblem(key, fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, lua.TableKind, value.Kind().String()))
+		parser.addProblem(table.keyPathTo(key), fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, lua.TableKind, value.Kind().String()))
 		return nil
 	}
 
@@ -144,7 +166,7 @@ func (parser *ScriptParser) getOptionalArray(table *ScriptTable, key string) []l
 		entryKey, _, ok, err := arrayTable.Next(nextKey)
 		nextKey = entryKey
 		if err != nil {
-			parser.addProblem(key, fmt.Errorf("Error while iterating through array '%s': %s", key, err.Error()))
+			parser.addProblem(table.keyPathTo(key), fmt.Errorf("Error while iterating through array '%s': %s", key, err.Error()))
 			break
 		}
 		if !ok {
@@ -153,13 +175,13 @@ func (parser *ScriptParser) getOptionalArray(table *ScriptTable, key string) []l
 
 		entryKeyString, isString := entryKey.AsString()
 		if isString {
-			parser.addProblem(entryKeyString, fmt.Errorf("field '%s' must be an array, but it has key '%s'", key, entryKeyString))
+			parser.addProblem(append(table.keyPathTo(key), entryKeyString), fmt.Errorf("field '%s' must be an array, but it has key '%s'", key, entryKeyString))
 			continue
 		}
 
 		index, isNumber := entryKey.AsNumber()
 		if !isNumber || index != math.Trunc(index) || index < 1 {
-			parser.addProblem(key, fmt.Errorf("field '%s' must be an array, but it has key [%s]", key, entryKey.String()))
+			parser.addProblem(table.keyPathTo(key), fmt.Errorf("field '%s' must be an array, but it has key [%s]", key, entryKey.String()))
 			continue
 		}
 
@@ -173,7 +195,7 @@ func (parser *ScriptParser) getOptionalArray(table *ScriptTable, key string) []l
 
 	// The keys are distinct whole numbers from 1 up, so they are 1 to count only if the largest is count
 	if largestIndex != float64(count) {
-		parser.addProblem(key, fmt.Errorf("field '%s' must be an array with no gaps", key))
+		parser.addProblem(table.keyPathTo(key), fmt.Errorf("field '%s' must be an array with no gaps", key))
 		return nil
 	}
 
@@ -197,7 +219,7 @@ func (parser *ScriptParser) checkNoUnknownFields(table *ScriptTable) {
 		key, _, ok, err := table.table.Next(nextKey)
 		nextKey = key
 		if err != nil {
-			parser.addProblem(table.name, fmt.Errorf("Error while iterating through table%s: %s", location, err.Error()))
+			parser.addProblem(table.keyPath, fmt.Errorf("Error while iterating through table%s: %s", location, err.Error()))
 			break
 		}
 		if !ok {
@@ -206,12 +228,12 @@ func (parser *ScriptParser) checkNoUnknownFields(table *ScriptTable) {
 
 		keyString, isString := key.AsString()
 		if !isString {
-			parser.addProblem(table.name, fmt.Errorf("unexpected array entry [%s]%s", key.String(), location))
+			parser.addProblem(table.keyPath, fmt.Errorf("unexpected array entry [%s]%s", key.String(), location))
 			continue
 		}
 
 		if !table.readKeys[keyString] {
-			parser.addProblem(keyString, fmt.Errorf("unknown field '%s'%s", keyString, location))
+			parser.addProblem(table.keyPathTo(keyString), fmt.Errorf("unknown field '%s'%s", keyString, location))
 		}
 	}
 }
@@ -231,13 +253,13 @@ func (parser *ScriptParser) getOptionalInt32Range(table *ScriptTable, key string
 func (parser *ScriptParser) getInt32Range(table *ScriptTable, key string) util.Int32Range {
 	value := table.get(key)
 	if value.IsNil() {
-		parser.addProblem(key, fmt.Errorf("missing required field '%s'", key))
+		parser.addProblem(table.keyPathTo(key), fmt.Errorf("missing required field '%s'", key))
 		return util.Int32Range{}
 	}
 
 	if value.Kind() == lua.NumberKind {
 		number, _ := value.AsNumber()
-		parser.checkNumberIsInt32(number, key, key)
+		parser.checkNumberIsInt32(number, table, key, key)
 		return util.Int32Range {
 			Min: int32(number),
 			Max: int32(number),
@@ -246,7 +268,7 @@ func (parser *ScriptParser) getInt32Range(table *ScriptTable, key string) util.I
 
 	if value.Kind() == lua.TableKind {
 		luaValueTable, _ := value.AsTable()
-		valueTable := newScriptTable(luaValueTable, key)
+		valueTable := table.childTable(luaValueTable, key, key)
 		result := util.Int32Range {
 			Min: parser.getInt32(valueTable, "min"),
 			Max: parser.getInt32(valueTable, "max"),
@@ -255,25 +277,25 @@ func (parser *ScriptParser) getInt32Range(table *ScriptTable, key string) util.I
 		return result
 	}
 
-	parser.addProblem(key, fmt.Errorf("invalid type for '%s'. expected number or table, got %s", key, value.Kind().String()))
+	parser.addProblem(table.keyPathTo(key), fmt.Errorf("invalid type for '%s'. expected number or table, got %s", key, value.Kind().String()))
 	return util.Int32Range{}
 }
 
-func (parser *ScriptParser) checkInt32Positive(value int32, key string) {
+func (parser *ScriptParser) checkInt32Positive(value int32, table *ScriptTable, key string) {
 	if value <= 0 {
-		parser.addProblem(key, fmt.Errorf("field '%s' must be greater than 0, got %d", key, value))
+		parser.addProblem(table.keyPathTo(key), fmt.Errorf("field '%s' must be greater than 0, got %d", key, value))
 	}
 }
 
-func (parser *ScriptParser) checkInt32IsPercent(number int32, key string) {
+func (parser *ScriptParser) checkInt32IsPercent(number int32, table *ScriptTable, key string) {
 	if number < 0 || number > 100 {
-		parser.addProblem(key, fmt.Errorf("field '%s' must be a percent value from 0 to 100, got %d", key, number))
+		parser.addProblem(table.keyPathTo(key), fmt.Errorf("field '%s' must be a percent value from 0 to 100, got %d", key, number))
 	}
 }
 
-func (parser *ScriptParser) checkInt32IsPositivePercent(number int32, key string) {
-	parser.checkInt32IsPercent(number, key)
-	parser.checkInt32Positive(number, key)
+func (parser *ScriptParser) checkInt32IsPositivePercent(number int32, table *ScriptTable, key string) {
+	parser.checkInt32IsPercent(number, table, key)
+	parser.checkInt32Positive(number, table, key)
 }
 
 func (parser *ScriptParser) getAttributeBlock(table *ScriptTable, key string) AttributeBlock {
@@ -286,7 +308,7 @@ func (parser *ScriptParser) getAttributeBlock(table *ScriptTable, key string) At
 
 	attribTable, ok := value.AsTable()
 	if !ok {
-		parser.addProblem(key, fmt.Errorf("field '%s' must be a table.", key))
+		parser.addProblem(table.keyPathTo(key), fmt.Errorf("field '%s' must be a table.", key))
 		return attributes
 	}
 
@@ -295,7 +317,7 @@ func (parser *ScriptParser) getAttributeBlock(table *ScriptTable, key string) At
 		attribKey, attribValue, ok, err := attribTable.Next(nextKey)
 		nextKey = attribKey
 		if err != nil {
-			parser.addProblem(key, fmt.Errorf("Error while iterating through attribute block table: %s", err.Error()))
+			parser.addProblem(table.keyPathTo(key), fmt.Errorf("Error while iterating through attribute block table: %s", err.Error()))
 			break
 		}
 		if !ok {
@@ -305,24 +327,24 @@ func (parser *ScriptParser) getAttributeBlock(table *ScriptTable, key string) At
 		// Validate that key is a string
 		abbreviation, ok := attribKey.AsString()
 		if !ok {
-			parser.addProblem(key, fmt.Errorf("Keys in the attribute block table must be strings."))
+			parser.addProblem(table.keyPathTo(key), fmt.Errorf("Keys in the attribute block table must be strings."))
 			break
 		}
 
 		// Validate that the key is a skill
 		attribute, err := attributeAbbreviationToEnum(abbreviation)
 		if err != nil {
-			parser.addProblem(key, err)
+			parser.addProblem(table.keyPathTo(key), err)
 			break
 		}
 
 		value, ok := attribValue.AsNumber()
 		if !ok {
-			parser.addProblem(key, fmt.Errorf("Values in the attribute block table must be numbers."))
+			parser.addProblem(table.keyPathTo(key), fmt.Errorf("Values in the attribute block table must be numbers."))
 			break
 		}
 
-		parser.checkNumberIsInt32(value, key, abbreviation)
+		parser.checkNumberIsInt32(value, table, key, abbreviation)
 		attributes.Values[attribute] = int32(value)
 	}
 
@@ -339,7 +361,7 @@ func (parser *ScriptParser) getSkillBlock(table *ScriptTable, key string) SkillB
 
 	skillTable, ok := value.AsTable()
 	if !ok {
-		parser.addProblem(key, fmt.Errorf("field '%s' must be a table.", key))
+		parser.addProblem(table.keyPathTo(key), fmt.Errorf("field '%s' must be a table.", key))
 		return skills
 	}
 
@@ -348,7 +370,7 @@ func (parser *ScriptParser) getSkillBlock(table *ScriptTable, key string) SkillB
 		skillKey, skillValue, ok, err := skillTable.Next(nextKey)
 		nextKey = skillKey
 		if err != nil {
-			parser.addProblem(key, fmt.Errorf("Error while iterating through skill block table: %s", err.Error()))
+			parser.addProblem(table.keyPathTo(key), fmt.Errorf("Error while iterating through skill block table: %s", err.Error()))
 			break
 		}
 		if !ok {
@@ -358,24 +380,24 @@ func (parser *ScriptParser) getSkillBlock(table *ScriptTable, key string) SkillB
 		// Validate that key is a string
 		skillName, ok := skillKey.AsString()
 		if !ok {
-			parser.addProblem(key, fmt.Errorf("Keys in the skill block table must be strings."))
+			parser.addProblem(table.keyPathTo(key), fmt.Errorf("Keys in the skill block table must be strings."))
 			break
 		}
 
 		// Validate that the key is a skill
 		skill, err := skillNameToEnum(skillName)
 		if err != nil {
-			parser.addProblem(key, err)
+			parser.addProblem(table.keyPathTo(key), err)
 			break
 		}
 
 		value, ok := skillValue.AsNumber()
 		if !ok {
-			parser.addProblem(key, fmt.Errorf("Values in the skill block table must be numbers."))
+			parser.addProblem(table.keyPathTo(key), fmt.Errorf("Values in the skill block table must be numbers."))
 			break
 		}
 
-		parser.checkNumberIsInt32(value, key, skillName)
+		parser.checkNumberIsInt32(value, table, key, skillName)
 		skills.Values[skill] = int32(value)
 	}
 

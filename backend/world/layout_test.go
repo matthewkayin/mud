@@ -1,6 +1,7 @@
 package world
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -203,7 +204,7 @@ func TestValidateLayoutPaths(test *testing.T) {
 		test.Fatalf("expected %v, got %v", expectedProblems, problems)
 	}
 	for index := range expectedProblems {
-		if problems[index] != expectedProblems[index] {
+		if !reflect.DeepEqual(problems[index], expectedProblems[index]) {
 			test.Fatalf("expected %+v, got %+v", expectedProblems[index], problems[index])
 		}
 	}

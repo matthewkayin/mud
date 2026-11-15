@@ -11,7 +11,7 @@ The game's content is loaded from the data folder, `backend/data/`, when the ser
 Loading doesn't stop at the first bad file. `NewWorld` returns every problem it finds as a list of `ScriptProblem`s (`backend/world/script_problem.go`), along with the world. Each problem has:
 
 - `Path`: the file it is about, relative to the data folder (or the core folder, if the folder is missing).
-- `Key`: the field it is about, if any. Problems about a field of a loot entry or a `{ min, max }` range use that field's own key (for example `item` or `amount`). Problems about the contents of `attributes`, `skills`, `details` and `interactions` use that table's key. An unknown field, or a string key in an array, uses the offending key.
+- `KeyPath`: the keys of the field it is about, outermost first, if any. A top-level field is `["name"]`. A field of a loot entry or a `{ min, max }` range includes the keys of the tables around it, for example `["loot", "amount"]` or `["loot", "amount", "min"]`. Problems about the contents of `attributes`, `skills`, `details` and `interactions` use that table's key. An unknown field, or a string key in an array, ends with the offending key.
 - `Line`: the line Lua reported, for syntax errors and errors raised while the script runs. 0 otherwise.
 - `RoomIndex`: for `layout.json` problems, the index of the room entry. -1 otherwise.
 - `Severity`: error or warning.
