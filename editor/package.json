@@ -1,0 +1,51 @@
+{
+  "name": "mud-editor",
+  "displayName": "MUD World Editor",
+  "description": "Validation and map editing for MUD world data folders",
+  "publisher": "mudkit",
+  "version": "0.0.1",
+  "private": true,
+  "engines": {
+    "vscode": "^1.91.0"
+  },
+  "categories": [
+    "Linters"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "workspaceContains:**/layout.json"
+  ],
+  "contributes": {
+    "configuration": {
+      "title": "MUD World Editor",
+      "properties": {
+        "mud.serverPath": {
+          "type": "string",
+          "default": "mud",
+          "markdownDescription": "The `mud` binary used to run `mud lsp`. A bare name is looked up on `PATH`. A relative path such as `./mud` is resolved against the workspace folder."
+        },
+        "mud.dataFolder": {
+          "type": "string",
+          "default": "data",
+          "markdownDescription": "The world's data folder, relative to the workspace folder."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=dist/extension.js --sourcemap",
+    "watch": "npm run build -- --watch",
+    "typecheck": "tsc --noEmit",
+    "package": "npm run typecheck && npm run build -- --minify && vsce package --no-dependencies --skip-license --allow-missing-repository"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^11.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "@types/vscode": "~1.91.0",
+    "@vscode/vsce": "^4.1.1",
+    "esbuild": "^0.28.2",
+    "typescript": "~6.0.2"
+  }
+}

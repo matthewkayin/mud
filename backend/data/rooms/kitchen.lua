@@ -9,7 +9,7 @@ room.details = {
 
 room.loot = {
     {
-        item = "Apple",
+        item = "Bread",
         amount = 1,
         drop_chance_percent = 100,
     },
