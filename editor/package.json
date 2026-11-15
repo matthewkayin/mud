@@ -16,6 +16,18 @@
     "workspaceContains:**/layout.json"
   ],
   "contributes": {
+    "customEditors": [
+      {
+        "viewType": "mud.mapView",
+        "displayName": "MUD Map",
+        "selector": [
+          {
+            "filenamePattern": "layout.json"
+          }
+        ],
+        "priority": "default"
+      }
+    ],
     "configuration": {
       "title": "MUD World Editor",
       "properties": {
@@ -33,10 +45,10 @@
     }
   },
   "scripts": {
-    "build": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=dist/extension.js --sourcemap",
-    "watch": "npm run build -- --watch",
-    "typecheck": "tsc --noEmit",
-    "package": "npm run typecheck && npm run build -- --minify && vsce package --no-dependencies --skip-license --allow-missing-repository"
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p webview",
+    "package": "npm run typecheck && node esbuild.mjs --minify && vsce package --no-dependencies --skip-license --allow-missing-repository"
   },
   "dependencies": {
     "vscode-languageclient": "^11.0.0"

@@ -5,10 +5,15 @@ import {
     type LanguageClientOptions,
     type ServerOptions,
 } from "vscode-languageclient/node";
+import { MapViewProvider } from "./map_view";
 
 let client: LanguageClient | undefined;
+let mapViewProvider: MapViewProvider | undefined;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
+    mapViewProvider = new MapViewProvider(context.extensionUri, () => client, getDataFolderUri);
+    context.subscriptions.push(...mapViewProvider.register());
+
     await startClient();
 
     context.subscriptions.push(
@@ -34,7 +39,7 @@ async function startClient(): Promise<void> {
 
     const config = vscode.workspace.getConfiguration("mud");
     const serverPath = resolveServerPath(config.get<string>("serverPath", "mud"), workspaceFolder.uri.fsPath);
-    const dataFolderUri = vscode.Uri.joinPath(workspaceFolder.uri, config.get<string>("dataFolder", "data"));
+    const dataFolderUri = getWorkspaceDataFolderUri(workspaceFolder);
 
     const serverOptions: ServerOptions = {
         command: serverPath,
@@ -64,6 +69,22 @@ async function startClient(): Promise<void> {
         return;
     }
     client = newClient;
+    mapViewProvider?.onClientStarted();
+}
+
+// The data folder in the first workspace folder
+function getDataFolderUri(): vscode.Uri | undefined {
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    if (workspaceFolder === undefined) {
+        return undefined;
+    }
+    return getWorkspaceDataFolderUri(workspaceFolder);
+}
+
+// The data folder in a workspace folder, from the mud.dataFolder setting
+function getWorkspaceDataFolderUri(workspaceFolder: vscode.WorkspaceFolder): vscode.Uri {
+    const dataFolder = vscode.workspace.getConfiguration("mud").get<string>("dataFolder", "data");
+    return vscode.Uri.joinPath(workspaceFolder.uri, dataFolder);
 }
 
 async function stopClient(): Promise<void> {

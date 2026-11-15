@@ -102,7 +102,7 @@ Implementation notes:
 - The map view is a webview. It and the extension exchange messages with `postMessage`.
 - Every map edit is applied as a `WorkspaceEdit` to the layout file's text document. VS Code's own text buffer then provides undo/redo, unsaved-changes state and saving, so the map view does not need its own command stack.
 - When the layout document changes, including when the author edits the JSON directly, the extension sends the new state to the webview and it redraws.
-- Room names come from the validation server through a custom LSP request (for example, `mud/roomNames`), which returns the name of each room file it loaded successfully. The extension forwards the result to the webview and requests it again whenever the server republishes diagnostics.
+- Room names come from the validation server through the custom `mud/roomNames` request, which returns the name of each room file it loaded successfully. The extension forwards the result to the webview. It requests the names again shortly after any Lua file in the data folder changes (including unsaved edits), because the server only republishes diagnostics when problems change, so renaming a room publishes nothing.
 
 ## Layout
 
@@ -237,7 +237,7 @@ At the end of this phase authors can install the `.vsix` and get validation and 
 - Register a `CustomTextEditorProvider` for `**/layout.json`.
 - Build the webview as a separate bundle in `editor/webview/`. It receives the parsed layout and room names over `postMessage`.
 - Draw the grid at the current Z-level, with rooms, room names, connections, up/down arrows and a marker on the start room. Add right-drag panning, scroll-wheel zoom, and the +/- elevation controls.
-- When the document changes, or the server republishes diagnostics, send the new layout or names to the webview.
+- When the document changes, or a Lua file in the data folder changes, send the new layout or names to the webview.
 - If `layout.json` doesn't parse, show the parse error in the map view instead of the map.
 
 **3.3 Map editing**
