@@ -76,7 +76,7 @@ func (character *Character) getMobData() *MobData {
 	return &character.MobData
 }
 
-func (character *Character) getFaction() MobFaction {
+func (character *Character) GetFaction() MobFaction {
 	return MOB_FACTION_ALLIANCE
 }
 

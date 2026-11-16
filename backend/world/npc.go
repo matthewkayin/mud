@@ -82,7 +82,7 @@ func (npc *Npc) getMobData() *MobData {
 	return &npc.MobData
 }
 
-func (npc *Npc) getFaction() MobFaction {
+func (npc *Npc) GetFaction() MobFaction {
 	if npc.disposition == NPC_DISPOSITION_FRIENDLY {
 		return MOB_FACTION_ALLIANCE
 	}
@@ -131,7 +131,7 @@ func (npc *Npc) update(world *World) {
 		// Find a target enemy
 		targetIndex := slices.IndexFunc(room.Occupants, func (handle MobHandle) bool {
 			occupant := world.Mobs.Get(handle)
-			return !occupant.isDead() && occupant.Owner.getFaction() != npc.getFaction()
+			return !occupant.isDead() && occupant.Owner.GetFaction() != npc.GetFaction()
 		})
 
 		// If target enemy found, set mode to attack

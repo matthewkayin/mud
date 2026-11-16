@@ -2,6 +2,7 @@ package world
 
 import (
 	"fmt"
+	"github.com/mmcdole/lunar"
 )
 
 type ItemId uint64
@@ -48,10 +49,16 @@ type ItemType struct {
 	Name string
 	Description string
 
-	kind ItemKind
+	Kind ItemKind
 	price int32
 	size int32
-	data any
+	Data any
+}
+
+type ItemDataConsumable struct {
+	TargetType TargetType
+	ValidateTarget *lua.Function
+	onUse *lua.Function
 }
 
 type CreateItemParams struct {
@@ -98,7 +105,7 @@ func (item *Item) Size() int32 {
 }
 
 func (itemType *ItemType) CanStack() bool {
-	switch itemType.kind {
+	switch itemType.Kind {
 		case ITEM_KIND_CONSUMABLE:
 			return true
 		default:

@@ -21,6 +21,7 @@ type World struct {
 	scriptStdout io.Writer
 	luaState *lua.State
 	mobHandleType *lua.UserDataType[MobHandle]
+	itemHandleType *lua.UserDataType[ItemHandle]
 
 	Characters map[string]*Character
 	PlayerCharacters map[string][]string

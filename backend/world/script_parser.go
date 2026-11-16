@@ -298,3 +298,13 @@ func (parser *ScriptParser) forEachInOptionalTable(table *lua.Table, key string,
 		}
 	}
 }
+
+func (parser *ScriptParser) getTargetType(table *lua.Table, key string) TargetType {
+	targetTypeString := parser.getString(table, key)
+	targetType, ok := util.EnumFromString[TargetType](targetTypeString, TARGET_TYPE_COUNT)
+	if !ok {
+		parser.addProblem(key, fmt.Errorf("'%s' is not a valid TargetType.", targetTypeString))
+	}
+
+	return targetType
+}

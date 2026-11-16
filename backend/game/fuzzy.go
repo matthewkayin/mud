@@ -195,6 +195,79 @@ func fuzzyFindInventoryItemResultString(result FuzzyResult, inventoryName string
 	}
 }
 
+func fuzzyFindMobItem(mob *world.Mob, searchWords []string) (world.MobItemTarget, error) {
+	if (!mob.Owner.IsPlayer()) {
+		log.Printf("warn: fuzzyFindMobItem only works for players.")
+		return world.MobItemTarget{}, fmt.Errorf("Something went wrong.")
+	}
+
+	// Split args
+	itemWords, locationWords, userSpecifiedLocation := splitArgsBy(searchWords, "in")
+	if len(itemWords) == 0 {
+		return world.MobItemTarget{}, fmt.Errorf("You must specify an item.")
+	}
+
+	// If user specified location, search just inventory or just equipment
+	if userSpecifiedLocation {
+		location, _, isLocation := parseItemLocation(locationWords)
+		if !isLocation {
+			return world.MobItemTarget{}, fmt.Errorf("'%s' is not your 'inventory' or an equipment slot.", strings.Join(locationWords, " "))
+		}
+
+		switch location {
+			case world.ITEM_LOCATION_INVENTORY: {
+				index, result := fuzzyFindInventoryItem(&mob.Inventory, itemWords)
+				if result != FUZZY_RESULT_OK {
+					return world.MobItemTarget{}, fmt.Errorf("%s", fuzzyFindInventoryItemResultString(result, "your inventory", itemWords))
+				}
+
+				return world.MobItemTarget {
+					Mob: mob.Handle,
+					Location: location,
+					Index: index,
+					Id: mob.Inventory.Items[index].Id,
+				}, nil
+			}
+
+			case world.ITEM_LOCATION_EQUIPMENT: {
+				return world.MobItemTarget{}, fmt.Errorf("Equipment doesn't exist yet!")
+			}
+		}
+	}
+
+	// If user did not specify location, search inventory
+	index, result := fuzzyFindInventoryItem(&mob.Inventory, itemWords)
+	if result == FUZZY_RESULT_OK {
+		return world.MobItemTarget {
+			Mob: mob.Handle,
+			Location: world.ITEM_LOCATION_INVENTORY,
+			Index: index,
+			Id: mob.Inventory.Items[index].Id,
+		}, nil
+	}
+
+	// If the item was not in inventory, search equipment
+	// TODO: when you do equipment here, maybe lump inventory and equipment into a single fuzzy find
+
+	return world.MobItemTarget{}, fmt.Errorf(fuzzyFindInventoryItemResultString(result, "your inventory", itemWords))
+}
+
+// TODO:
+// func parseItemLocation(locationWords []string) (world.MobItemLocation, EquipmentSlot, bool) {
+func parseItemLocation(locationWords []string) (world.ItemLocation, int, bool) {
+	if len(locationWords) == 1 && strings.EqualFold(locationWords[0], "inventory") {
+		return world.ITEM_LOCATION_INVENTORY, 0, true
+	}
+
+	// TODO:
+	// slot, err := fuzzyFindEquipmentSlot(locationWords)
+	// if err == nil {
+	//     return world.MOB_ITEM_LOCATION_EQUIPMENT, slot, true
+	// }
+
+	return 0, 0, false
+}
+
 func fuzzyFindMob(gamestate *GameState, player *Player, searchWords []string) (world.MobHandle, error) {
 	// Check that there are any arguments
 	if len(searchWords) == 0 {

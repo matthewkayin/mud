@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"mud/util"
 	"mud/world"
+	"os/user"
 	"strings"
 )
 
@@ -230,6 +231,57 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 
 			player.send(fmt.Sprintf("You dropped <g>%s</g>.", result.item.NameWithAmount()))
 			player.isInventoryDirty = true
+			return true
+		},
+	},
+
+	"use": {
+		usage: "use <item> [on <target>]",
+		description: "Use an item",
+		categories: []string { "combat", "items" },
+		handler: func (gamestate *GameState, player *Player, args []string) bool {
+			// Get item words and target words
+			itemWords, targetWords, userSpecifiedTarget := splitArgsBy(args, "on")
+			if len(itemWords) == 0 {
+				return false
+			}
+			if userSpecifiedTarget && len(targetWords) == 0 {
+				player.send("When specifying 'on' you must specify a target.")
+				return false
+			}
+
+			// Find item
+			index, result := fuzzyFindInventoryItem(&player.character.Inventory, itemWords)
+			if result != FUZZY_RESULT_OK {
+				player.send(fuzzyFindInventoryItemResultString(result, "your inventory", itemWords))
+				return true
+			}
+
+			// Get item
+			item := &player.character.Inventory.Items[index]
+			switch item.Kind {
+				case world.ITEM_KIND_CONSUMABLE: {
+					consumableData := item.Data.(*world.ItemDataConsumable)
+
+					// Find target
+					target, err := findTarget(gamestate, player, FindTargetParams {
+						targetType: consumableData.TargetType,
+						userSpecifiedTarget: userSpecifiedTarget,
+						verb: "use",
+						noun: "item",
+						name: item.Name,
+						validateTarget: consumableData.ValidateTarget,
+					})
+					if err != nil {
+						player.send(err.Error())
+						return true
+					}
+
+					playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+					playerMob.SetModeUseItem()
+				}
+			}
+
 			return true
 		},
 	},

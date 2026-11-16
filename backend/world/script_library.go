@@ -233,6 +233,15 @@ func frameGetMobArg(frame *lua.Frame, index int) *Mob {
 	return mob
 }
 
+func frameGetItemHandleArg(frame *lua.Frame, index int) ItemHandle {
+	handle, ok := __world.itemHandleType.FromArgument(*frame, index)
+	if !ok {
+		frame.ThrowArgError(index, "ItemHandle expected")
+	}
+
+	return handle
+}
+
 func frameGetPlayerArg(frame *lua.Frame, index int) *Mob {
 	mob := frameGetMobArg(frame, index)
 	if !mob.Owner.IsPlayer() {
