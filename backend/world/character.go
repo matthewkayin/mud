@@ -19,6 +19,9 @@ type Character struct {
 	Attributes AttributeBlock
 	Skills SkillBlock
 
+	Inventory Inventory
+	Equipment Equipment
+
 	RoomsDiscovered []byte
 
 	MobData

@@ -7,6 +7,8 @@ import (
 	"strings"
 	"strconv"
 	"mud/world"
+	"errors"
+	"mud/util"
 )
 
 type FuzzyResult int
@@ -193,6 +195,79 @@ func fuzzyFindInventoryItemResultString(result FuzzyResult, inventoryName string
 			log.Printf("Warn: Fuzzy result type %d not handled in fuzzyFindInventoryItemResultString().", result)
 			return "Something strange happened."
 	}
+}
+
+func fuzzyFindEquipmentSlot(searchWords []string) (world.EquipmentSlot, error) {
+	if len(searchWords) == 0 {
+		return 0, errors.New("You must specify an equipment slot.")
+	}
+
+	// Equipment slot names
+	slotNames := make([]string, world.EQUIPMENT_SLOT_COUNT)
+	for index := range world.EQUIPMENT_SLOT_COUNT {
+		slot := world.EquipmentSlot(index)
+		slotNames[index] = slot.String()
+	}
+
+	slotIndex, fuzzyResult := fuzzyFind(slotNames, searchWords, FUZZY_NUMBER_NOT_SPECIFIED)
+
+	// Handle edge cases
+	if fuzzyResult == FUZZY_RESULT_NOT_FOUND {
+		return 0, fmt.Errorf("'%s' is not an equipment slot. Valid slot names are: %s",
+			strings.Join(searchWords, " "), util.CombineNames(slotNames))
+	}
+	if fuzzyResult == FUZZY_RESULT_AMBIGUOUS {
+		return 0, fmt.Errorf("The equipment slot string '%s' is ambiguous.",
+			strings.Join(searchWords, " "))
+	}
+	if fuzzyResult == FUZZY_RESULT_NUMBER_OUT_OF_RANGE {
+		panic("Received fuzzy number out of range when no fuzzy number was provided.")
+	}
+
+	return world.EquipmentSlot(slotIndex), nil
+}
+
+
+func fuzzyFindEquipmentSlotByItem(equipment *world.Equipment, searchWords []string) (world.EquipmentSlot, error) {
+	if len(searchWords) == 0 {
+		return 0, errors.New("You must specify an item.")
+	}
+
+	// Create parallel arrays of equipped item name and equipment slot
+	itemNames := make([]string, 0, world.EQUIPMENT_SLOT_COUNT)
+	equipmentSlots := make([]world.EquipmentSlot, 0, world.EQUIPMENT_SLOT_COUNT)
+	for slotIndex := range world.EQUIPMENT_SLOT_COUNT {
+		slot := world.EquipmentSlot(slotIndex)
+		item := equipment.Get(slot)
+		if item == nil {
+			continue
+		}
+
+		itemNames = append(itemNames, item.Name)
+		equipmentSlots = append(equipmentSlots, slot)
+	}
+
+	// Check if they even have any items
+	if len(itemNames) == 0 {
+		return 0, errors.New("You have no items equipped.")
+	}
+
+	index, result := fuzzyFind(itemNames, searchWords, FUZZY_NUMBER_NOT_SPECIFIED)
+
+	// Handle edge cases
+	if result == FUZZY_RESULT_NOT_FOUND {
+		return 0, fmt.Errorf("'%s' is not an item you have equipped.",
+			strings.Join(searchWords, " "))
+	}
+	if result == FUZZY_RESULT_AMBIGUOUS {
+		return 0, fmt.Errorf("The item string '%s' is ambiguous.",
+			strings.Join(searchWords, " "))
+	}
+	if result == FUZZY_RESULT_NUMBER_OUT_OF_RANGE {
+		panic("Received fuzzy number out of range when no fuzzy number was provided.")
+	}
+
+	return equipmentSlots[index], nil
 }
 
 func fuzzyFindMob(gamestate *GameState, player *Player, searchWords []string) (world.MobHandle, error) {
