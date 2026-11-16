@@ -82,6 +82,9 @@ type Mob struct {
 
 	// The item that MOB_MODE_USE_ITEM will use
 	itemToUse ItemId
+
+	// Set when an action is queued and cleared on the mob's turn (Mob.update)
+	HasPendingAction bool
 }
 
 func NewMob(owner MobOwner) Mob {
@@ -94,6 +97,7 @@ func NewMob(owner MobOwner) Mob {
 			Type: MOB_TARGET_NONE,
 			Value: nil,
 		},
+		HasPendingAction: false,
 	}
 }
 
@@ -125,12 +129,14 @@ func (mob *Mob) SetModeAttack(targetHandle MobHandle) {
 		Type: MOB_TARGET_MOB,
 		Value: targetHandle,
 	}
+	mob.HasPendingAction = true
 }
 
 func (mob *Mob) SetModeUseItem(itemToUse ItemId, target MobTarget) {
 	mob.Mode = MOB_MODE_USE_ITEM
 	mob.Target = target
 	mob.itemToUse = itemToUse
+	mob.HasPendingAction = true
 }
 
 // Items
@@ -164,6 +170,9 @@ func (mob *Mob) Move(world *World, newRoomIndex int) {
 
 func (mob *Mob) update(world *World) {
 	mob.Owner.update(world)
+
+	// This is the mob's turn, so any queued action resolves now
+	mob.HasPendingAction = false
 
 	switch mob.Mode {
 		case MOB_MODE_USE_ITEM: {

@@ -74,6 +74,8 @@ Items with `kind = world.ItemKind.CONSUMABLE` also have:
 
 Using an item is a combat action. The `use` command checks the target (calling `validate_target` if the item has it) and sets the mob to `MOB_MODE_USE_ITEM`. On the next world tick, `Mob.useItem` checks that the item and target still exist and calls `validate_target` again. Then it calls `on_use`, and if that doesn't error, removes one of the item from the user's inventory.
 
+Queuing an action (`SetModeUseItem`, `SetModeAttack`) sets `Mob.HasPendingAction`, and the mob's turn (`Mob.update`, once per tick) clears it before resolving the mode. The player's status heartbeat reports it as `action`, which the client shows as an animated prompt.
+
 ### npcs
 
 | Field | Type | Notes |
