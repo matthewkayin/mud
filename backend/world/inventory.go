@@ -41,9 +41,19 @@ func (inventory *Inventory) AmountThatFits(itemType *ItemType, amount int32, cap
 	return min(amount, spaceRemaining/itemType.size)
 }
 
-func (inventory *Inventory) FindItem(itemType *ItemType) (int, bool) {
+func (inventory *Inventory) FindItemWithType(itemType *ItemType) (int, bool) {
 	for index := range len(inventory.Items) {
 		if inventory.Items[index].ItemType == itemType {
+			return index, true
+		}
+	}
+
+	return 0, false
+}
+
+func (inventory *Inventory) FindItemById(id ItemId) (int, bool) {
+	for index := range len(inventory.Items) {
+		if inventory.Items[index].Id == id {
 			return index, true
 		}
 	}
@@ -66,7 +76,7 @@ func (inventory *Inventory) AmountOf(itemType *ItemType) int32 {
 func (inventory *Inventory) AddItem(item Item) int {
 	// First, try to stack on top of an existing item
 	if item.CanStack() {
-		index, found := inventory.FindItem(item.ItemType)
+		index, found := inventory.FindItemWithType(item.ItemType)
 		if found {
 			inventory.Items[index].Amount += item.Amount
 			return index

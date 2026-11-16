@@ -173,7 +173,7 @@ export function GamePage() {
           history={history}
           historyIndex={historyIndex}
           setHistoryIndex={setHistoryIndex}
-          pendingAction={false}
+          pendingAction={playerStatus?.action ?? false}
           onSubmit={onSubmit}
         />
         <StatusBar status={playerStatus} />

@@ -80,7 +80,7 @@ func (character *Character) getMobData() *MobData {
 	return &character.MobData
 }
 
-func (character *Character) getFaction() MobFaction {
+func (character *Character) GetFaction() MobFaction {
 	return MOB_FACTION_ALLIANCE
 }
 
@@ -217,7 +217,7 @@ func (character *Character) EquipFromInventory(world *World, itemIndex int, slot
 }
 
 func (character *Character) UnequipToInventory(slot EquipmentSlot) (Item, error) {
-	if slot == EQUIPMENT_SLOT_OFF_HAND && character.Equipment.isTwoHandedWeaponEquipped() {
+	if slot == EQUIPMENT_SLOT_OFF_HAND && character.Equipment.IsTwoHandedWeaponEquipped() {
 		slot = EQUIPMENT_SLOT_MAIN_HAND
 	}
 

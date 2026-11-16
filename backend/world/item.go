@@ -2,6 +2,7 @@ package world
 
 import (
 	"fmt"
+	"github.com/mmcdole/lunar"
 )
 
 type ItemId uint64
@@ -14,6 +15,12 @@ type Item struct {
 	Amount int32
 	Durability int32
 }
+
+type ItemLocation int
+const (
+	ITEM_LOCATION_INVENTORY ItemLocation = iota
+	ITEM_LOCATION_EQUIPMENT
+)
 
 type ItemKind int
 const (
@@ -34,6 +41,17 @@ const (
 	ITEM_KIND_EQUIPMENT_ACCESSORY
 	ITEM_KIND_COUNT
 )
+
+func (location ItemLocation) String() string {
+	switch location {
+		case ITEM_LOCATION_INVENTORY:
+			return "Inventory"
+		case ITEM_LOCATION_EQUIPMENT:
+			return "Equipment"
+		default:
+			panic(fmt.Sprintf("Item location %d not handled.", location))
+	}
+}
 
 func (kind ItemKind) String() string {
 	switch kind {
@@ -113,10 +131,16 @@ type ItemType struct {
 	Name string
 	Description string
 
-	kind ItemKind
+	Kind ItemKind
 	price int32
 	size int32
-	data any
+	Data any
+}
+
+type ItemDataConsumable struct {
+	TargetType TargetType
+	ValidateTarget *lua.Function
+	onUse *lua.Function
 }
 
 type CreateItemParams struct {
@@ -200,7 +224,7 @@ func (item *Item) Size() int32 {
 }
 
 func (itemType *ItemType) CanStack() bool {
-	switch itemType.kind {
+	switch itemType.Kind {
 		case ITEM_KIND_CONSUMABLE:
 			return true
 		default:
@@ -209,7 +233,7 @@ func (itemType *ItemType) CanStack() bool {
 }
 
 func (itemType *ItemType) HasWeaponData() bool {
-switch itemType.kind {
+switch itemType.Kind {
 	case ITEM_KIND_EQUIPMENT_ONE_HANDED_SWORD,
 	ITEM_KIND_EQUIPMENT_ONE_HANDED_AXE,
 	ITEM_KIND_EQUIPMENT_ONE_HANDED_BLUNT,
@@ -225,7 +249,7 @@ switch itemType.kind {
 }
 
 func (itemType *ItemType) HasArmorData() bool {
-	switch itemType.kind {
+	switch itemType.Kind {
 		case ITEM_KIND_EQUIPMENT_OUTFIT_CLOTHING,
    		 ITEM_KIND_EQUIPMENT_OUTFIT_LIGHT_ARMOR,
 		 ITEM_KIND_EQUIPMENT_OUTFIT_HEAVY_ARMOR,
@@ -238,7 +262,7 @@ func (itemType *ItemType) HasArmorData() bool {
 }
 
 func (item *Item) IsOneHandedWeapon() bool {
-	switch item.ItemType.kind {
+	switch item.ItemType.Kind {
 	 	case ITEM_KIND_EQUIPMENT_ONE_HANDED_SWORD,
 	   		 ITEM_KIND_EQUIPMENT_ONE_HANDED_AXE,
 			 ITEM_KIND_EQUIPMENT_ONE_HANDED_BLUNT,
@@ -250,7 +274,7 @@ func (item *Item) IsOneHandedWeapon() bool {
 }
 
 func (item *Item) IsTwoHandedWeapon() bool {
-	switch item.ItemType.kind {
+	switch item.ItemType.Kind {
 	 	case ITEM_KIND_EQUIPMENT_TWO_HANDED_SWORD,
 	   		 ITEM_KIND_EQUIPMENT_TWO_HANDED_AXE,
 			 ITEM_KIND_EQUIPMENT_TWO_HANDED_BLUNT,
@@ -262,7 +286,7 @@ func (item *Item) IsTwoHandedWeapon() bool {
 }
 
 func (item *Item) IsOutfit() bool {
-	switch item.ItemType.kind {
+	switch item.ItemType.Kind {
 	 	case ITEM_KIND_EQUIPMENT_OUTFIT_CLOTHING,
 	   		 ITEM_KIND_EQUIPMENT_OUTFIT_LIGHT_ARMOR,
 			 ITEM_KIND_EQUIPMENT_OUTFIT_HEAVY_ARMOR:
@@ -273,7 +297,7 @@ func (item *Item) IsOutfit() bool {
 }
 
 func (item *Item) IsShield() bool {
-	switch item.ItemType.kind {
+	switch item.ItemType.Kind {
 		case ITEM_KIND_EQUIPMENT_SHIELD:
 			return true
 		default:
@@ -282,7 +306,7 @@ func (item *Item) IsShield() bool {
 }
 
 func (item *Item) IsAccessory() bool {
-	switch item.ItemType.kind {
+	switch item.ItemType.Kind {
 		case ITEM_KIND_EQUIPMENT_ACCESSORY:
 			return true
 		default:
@@ -319,16 +343,16 @@ func (kind ItemKind) requiredSkill() (SkillName, bool) {
 
 // Returns the skill and rank needed to equip items of this type, and whether the type has a skill requirement
 func (itemType *ItemType) getSkillRequirement() (SkillName, int32, bool) {
-	skill, hasSkillRequirement := itemType.kind.requiredSkill()
+	skill, hasSkillRequirement := itemType.Kind.requiredSkill()
 	if !hasSkillRequirement {
 		return 0, 0, false
 	}
 
 	if itemType.HasWeaponData() {
-		return skill, itemType.data.(WeaponData).skillRequirement, true
+		return skill, itemType.Data.(WeaponData).skillRequirement, true
 	}
 	if itemType.HasArmorData() {
-		return skill, itemType.data.(ArmorData).skillRequirement, true
+		return skill, itemType.Data.(ArmorData).skillRequirement, true
 	}
 
 	return 0, 0, false
@@ -351,10 +375,10 @@ func (item *Item) EquipmentSlotForItem() (EquipmentSlot, bool) {
 // Returns 0 for item types which have no durability
 func (itemType *ItemType) MaxDurability() int32 {
 	if itemType.HasWeaponData() {
-		return itemType.data.(WeaponData).maxDurability
+		return itemType.Data.(WeaponData).maxDurability
 	}
 	if itemType.HasArmorData() {
-		return itemType.data.(ArmorData).maxDurability
+		return itemType.Data.(ArmorData).maxDurability
 	}
 
 	return 0
@@ -363,10 +387,10 @@ func (itemType *ItemType) MaxDurability() int32 {
 // Returns the prefix shown on an item whose durability is above its max durability
 func (itemType *ItemType) GetReinforcedPrefix() (string, bool) {
 	if itemType.HasWeaponData() {
-		return itemType.data.(WeaponData).reinforcedPrefix, true
+		return itemType.Data.(WeaponData).reinforcedPrefix, true
 	}
 	if itemType.HasArmorData() {
-		return itemType.data.(ArmorData).reinforcedPrefix, true
+		return itemType.Data.(ArmorData).reinforcedPrefix, true
 	}
 
 	return "", false

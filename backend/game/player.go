@@ -55,7 +55,7 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 				MaxHealth: playerMob.MaxHealth(),
 				Mana: playerMob.Mana,
 				MaxMana: playerMob.MaxMana(),
-				PendingAction: false,
+				PendingAction: playerMob.HasPendingAction,
 			}
 			if player.isMinimapDirty {
 				heartbeat.Map = gamestate.GetMinimap(player.character.Room, player.character.RoomsDiscovered)

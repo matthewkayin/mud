@@ -181,7 +181,7 @@ func (world *World) characterToJson(character *Character) CharacterJson {
 		}
 
 		// A two-handed weapon marks the off hand as in use, but the item is saved with the main hand
-		if index == EQUIPMENT_SLOT_OFF_HAND && character.Equipment.isTwoHandedWeaponEquipped() {
+		if index == EQUIPMENT_SLOT_OFF_HAND && character.Equipment.IsTwoHandedWeaponEquipped() {
 			continue
 		}
 

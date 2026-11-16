@@ -75,6 +75,30 @@ Kinds with a required skill (all weapons, `SHIELD`, `LIGHT_ARMOR` and `HEAVY_ARM
 Weapon kinds also need `damage` and `penetration`, both integers and not negative.
 
 Armor kinds also need `deflection_chance`, `deflection_bonus` and `damage_resistance` (integers, not negative), plus `evade_modifier`, `sneak_modifier` and `initiative_modifier` (integers).
+Each item instance in the game has an `ItemId` that is unique while the server runs. IDs aren't saved: loaded items get new ones. Consumables stack.
+
+#### Consumables
+
+Items with `kind = world.ItemKind.CONSUMABLE` also have:
+
+| Field | Type | Notes |
+|---|---|---|
+| `target_type` | `world.TargetType.*` | What the player names after `on` in `use <item> [on <target>]`. |
+| `validate_target` | function | Required when `target_type` is `ITEM` or `ARGUMENT`. `validate_target(self, target)` returns an error message string to refuse the target, or `nil` to accept it. |
+| `on_use` | function | `on_use(self, target)`. Called when the item is used. |
+
+`self` is the user's `MobHandle`. What `target` holds depends on `target_type`:
+
+| `target_type` | `target` |
+|---|---|
+| `NONE` | Not passed. The player can't name a target. |
+| `ALLY`, `ENEMY` | The target's `MobHandle`. Must be in the user's faction (`ALLY`) or not in it (`ENEMY`). |
+| `ITEM` | The `ItemId` (an integer) of an item in the user's inventory. |
+| `ARGUMENT` | The words after `on`, lowercased, as a string. |
+
+Using an item is a combat action. The `use` command checks the target (calling `validate_target` if the item has it) and sets the mob to `MOB_MODE_USE_ITEM`. On the next world tick, `Mob.useItem` checks that the item and target still exist and calls `validate_target` again. Then it calls `on_use`, and if that doesn't error, removes one of the item from the user's inventory.
+
+Queuing an action (`SetModeUseItem`, `SetModeAttack`) sets `Mob.HasPendingAction`, and the mob's turn (`Mob.update`, once per tick) clears it before resolving the mode. The player's status heartbeat reports it as `action`, which the client shows as an animated prompt.
 
 ### npcs
 

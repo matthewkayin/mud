@@ -7,9 +7,6 @@ world = {}
 ---An opaque reference to a mob. Compare with ==. It may refer to a mob that no longer exists; check with world.mob_exists.
 ---@class MobHandle
 
----An opaque reference to an item in a mob's inventory or equipment. Compare with ==. Only valid until the mob's inventory or equipment changes, so don't store it.
----@class ItemHandle
-
 ---A stack of items, such as the value of an Item NPC behavior param.
 ---@class Item
 ---@field name string
@@ -20,6 +17,15 @@ world = {}
 world.ItemKind = {
 	CONSUMABLE = "Consumable",
 	MISC = "Misc",
+}
+
+---@enum TargetType
+world.TargetType = {
+	NONE = "None",
+	ALLY = "Ally",
+	ENEMY = "Enemy",
+	ITEM = "Item",
+	ARGUMENT = "Argument",
 }
 
 ---@enum Direction

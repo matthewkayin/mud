@@ -64,7 +64,7 @@ func (equipment *Equipment) Get(slot EquipmentSlot) *Item {
 	if !equipment.IsSlotInUse[slot] {
 		return nil
 	}
-	if slot == EQUIPMENT_SLOT_OFF_HAND && equipment.isTwoHandedWeaponEquipped() {
+	if slot == EQUIPMENT_SLOT_OFF_HAND && equipment.IsTwoHandedWeaponEquipped() {
 		return nil
 	}
 	return &equipment.SlotItem[slot]
@@ -76,14 +76,14 @@ func (equipment *Equipment) GetShield() *Item {
 		return nil
 	}
 
-	if item.kind != ITEM_KIND_EQUIPMENT_SHIELD {
+	if item.Kind != ITEM_KIND_EQUIPMENT_SHIELD {
 		return nil
 	}
 
 	return item
 }
 
-func (equipment *Equipment) isTwoHandedWeaponEquipped() bool {
+func (equipment *Equipment) IsTwoHandedWeaponEquipped() bool {
 	item := equipment.Get(EQUIPMENT_SLOT_MAIN_HAND)
 	if item == nil {
 		return false
@@ -165,7 +165,7 @@ func (equipment *Equipment) Unequip(slot EquipmentSlot) (Item, bool) {
 
 	// Unequipping the off hand while holding a two-handed item unequips the two-handed item
 	isUnequippingTwoHandedWeapon :=
-		equipment.isTwoHandedWeaponEquipped() &&
+		equipment.IsTwoHandedWeaponEquipped() &&
 		(slot == EQUIPMENT_SLOT_MAIN_HAND || slot == EQUIPMENT_SLOT_OFF_HAND)
 	if isUnequippingTwoHandedWeapon {
 		slot = EQUIPMENT_SLOT_MAIN_HAND

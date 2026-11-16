@@ -20,7 +20,7 @@ func (world *World) loadItemTypes() []ScriptProblem {
 		Name: "Gold",
 		Description: "Gold coins, currency of the land.",
 
-		kind: ITEM_KIND_MISC,
+		Kind: ITEM_KIND_MISC,
 		price: 1,
 		size: 0,
 	}
@@ -63,7 +63,7 @@ func (parser *ScriptParser) parseItemType(table *lua.Table) *ItemType {
 
 	var ok bool
 	kindString := parser.getString(table, "kind")
-	itemType.kind, ok = util.EnumFromString[ItemKind](kindString, ITEM_KIND_COUNT)
+	itemType.Kind, ok = util.EnumFromString[ItemKind](kindString, ITEM_KIND_COUNT)
 	if !ok {
 		parser.addProblem("kind", fmt.Errorf("Invalid item kind '%s'.", kindString))
 	}
@@ -81,7 +81,7 @@ func (parser *ScriptParser) parseItemType(table *lua.Table) *ItemType {
 		weaponData.skillRequirement = parser.getInt32(table, "skill_requirement")
 		parser.checkInt32NonNegative(weaponData.skillRequirement, "skill_requirement")
 
-		itemType.data = weaponData
+		itemType.Data = weaponData
 	}
 
 	if itemType.HasArmorData() {
@@ -100,13 +100,28 @@ func (parser *ScriptParser) parseItemType(table *lua.Table) *ItemType {
 		armorData.sneakModifier = parser.getInt32(table, "sneak_modifier")
 		armorData.reinforcedPrefix = parser.getString(table, "reinforced_prefix")
 
-		_, hasSkillRequirement := itemType.kind.requiredSkill()
+		_, hasSkillRequirement := itemType.Kind.requiredSkill()
 		if hasSkillRequirement {
 			armorData.skillRequirement = parser.getInt32(table, "skill_requirement")
 			parser.checkInt32NonNegative(armorData.skillRequirement, "skill_requirement")
 		}
 
-		itemType.data = armorData
+		itemType.Data = armorData
+	}
+
+	if itemType.Kind == ITEM_KIND_CONSUMABLE {
+		data := &ItemDataConsumable{}
+
+		data.TargetType = parser.getTargetType(table, "target_type")
+		if data.TargetType == TARGET_TYPE_ITEM || data.TargetType == TARGET_TYPE_ARGUMENT {
+			data.ValidateTarget = parser.getOptionalFunction(table, "validate_target")
+			if data.ValidateTarget == nil {
+				parser.addProblem("validate_target", fmt.Errorf("'validate_target' is a required field when target_type is 'Item' or 'Argument'."))
+			}
+		}
+
+		data.onUse = parser.getFunction(table, "on_use")
+		itemType.Data = data
 	}
 
 	if len(parser.problems) != 0 {
