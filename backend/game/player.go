@@ -62,9 +62,27 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 				heartbeat.Map = gamestate.GetMinimap(player.character.Room, player.character.RoomsDiscovered)
 				player.isMinimapDirty = false
 			}
-			if player.isInventoryDirty {
+			if player.isInventoryDirty || player.isEquipmentDirty {
 				heartbeat.Inventory = make([]string, 0, 1 + len(player.character.Inventory.Items))
+
+				//move to its own window pane later
+
+				for index := range player.character.Equipment.IsSlotInUse {
+					slotName := world.EquipmentSlot(index).String()
+					item := "<none>"
+					if player.character.Equipment.IsSlotInUse[index] == true {
+						item = player.character.Equipment.SlotItem[index].Name
+					}
+					heartbeat.Inventory = append(heartbeat.Inventory, fmt.Sprintf("%s: %s", slotName, item))
+				}
+
+				heartbeat.Inventory = append(heartbeat.Inventory, "* * * * * *")
+
 				heartbeat.Inventory = append(heartbeat.Inventory, "Inventory:")
+
+				if len(player.character.Inventory.Items) == 0 {
+					heartbeat.Inventory = append(heartbeat.Inventory, "<empty>")
+				}
 
 				for index := range len(player.character.Inventory.Items) {
 					item := &player.character.Inventory.Items[index]

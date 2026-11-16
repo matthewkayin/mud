@@ -23,6 +23,7 @@ var MENU_WORLD_PARAMS = MenuNewParams {
 	topics: util.MergeMaps(
 		MENU_WORLD_TOPICS_SOCIAL,
 		MENU_WORLD_TOPICS_ITEM,
+		MENU_WORLD_TOPICS_EQUIP,
 	),
 	interceptCommand: menuWorldInterceptCommand,
 }

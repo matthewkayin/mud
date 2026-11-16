@@ -7,9 +7,9 @@ import (
 
 var MENU_WORLD_TOPICS_EQUIP = map[string]MenuHelpTopic {
 	"equipment": {
-		categories: []string { "equipment" },
+		categories: []string { "gear" },
 		lines: []string {
-			"=== Equipment ===",
+			"=== Equipping Items ===",
 			"Something.",
 			"And something else.",
 		},
@@ -20,7 +20,7 @@ var MENU_WORLD_ENTRIES_EQUIP = map[string]MenuEntry {
 	"equip": {
 		usage: "equip <item> [in <slot>]",
 		description: "Equip the specified item [in the specified slot].",
-		categories: []string { "equipment" },
+		categories: []string { "gear" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			if len(args) < 1 {
 				return false
@@ -60,7 +60,7 @@ var MENU_WORLD_ENTRIES_EQUIP = map[string]MenuEntry {
 					return true
 				}
 			} else {
-				if item.IsOneHandedWeapon() || item.IsShield() {
+				if item.IsOneHandedWeapon() {
 					player.send(fmt.Sprintf("%s is a one-handed item. You must specify whether to equip it to 'main hand' hand or 'off hand'.", item.NameWithCondition()))
 					return false
 				}
@@ -83,6 +83,7 @@ var MENU_WORLD_ENTRIES_EQUIP = map[string]MenuEntry {
 			for _, message := range messages {
 				player.send(message)
 			}
+			player.isEquipmentDirty = true
 
 			return true
 		},
@@ -91,7 +92,7 @@ var MENU_WORLD_ENTRIES_EQUIP = map[string]MenuEntry {
 	"remove": {
 		usage: "remove [<item>] [from <slot>]",
 		description: "Remove an equipped item by name or by slot.",
-		categories: []string { "items" },
+		categories: []string { "gear" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			// The way this works is that the user can specify a slot OR an item,
 			// but there's no reason for them to specify both so I'm not going to
@@ -142,6 +143,7 @@ var MENU_WORLD_ENTRIES_EQUIP = map[string]MenuEntry {
 				return true
 			}
 			player.send(fmt.Sprintf("You unequipped <g>%s</g>.", item.NameWithCondition()))
+			player.isEquipmentDirty = true
 
 			return true
 		},

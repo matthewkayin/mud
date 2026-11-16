@@ -32,7 +32,7 @@ type CharacterJson struct {
 	Mana int32
 
 	Inventory []ItemJson
-	Equipment []EquipmentJson
+	Equipment []EquipmentSlotJson
 }
 
 type ItemJson struct {
@@ -41,8 +41,7 @@ type ItemJson struct {
 	Durability int32
 }
 
-type EquipmentJson struct {
-	Slot EquipmentSlot
+type EquipmentSlotJson struct {
 	IsEmpty bool
 	Name string
 	Durability int32
@@ -150,7 +149,7 @@ func (world *World) characterToJson(character *Character) CharacterJson {
 		Mana: character.Mana,
 
 		Inventory: make([]ItemJson, 0, len(character.Inventory.Items)),
-		Equipment: make([]EquipmentJson, EQUIPMENT_SLOT_COUNT),
+		Equipment: make([]EquipmentSlotJson, EQUIPMENT_SLOT_COUNT),
 	}
 
 	// Rooms discovered
@@ -180,15 +179,18 @@ func (world *World) characterToJson(character *Character) CharacterJson {
 		})
 	}
 
-	for i := 0; i < EQUIPMENT_SLOT_COUNT; i++ {
-		characterJson.Equipment[i].Slot = EquipmentSlot(i)
-		if character.Equipment.IsSlotInUse[i] == false {
-			characterJson.Equipment[i].IsEmpty = true
+	for index := range EQUIPMENT_SLOT_COUNT {
+		if character.Equipment.IsSlotInUse[index] == true {
+			characterJson.Equipment[index].IsEmpty = false
+			characterJson.Equipment[index].Name = character.Equipment.SlotItem[index].Name
+			characterJson.Equipment[index].Durability = character.Equipment.SlotItem[index].Durability
+		} else {
+			characterJson.Equipment[index].IsEmpty = true
+			characterJson.Equipment[index].Name = ""
+			characterJson.Equipment[index].Durability = 0
 		}
-		characterJson.Equipment[i].IsEmpty = false
-		characterJson.Equipment[i].Name = character.Equipment.SlotItem[i].Name
-		characterJson.Equipment[i].Durability = character.Equipment.SlotItem[i].Durability
 	}
+	log.Printf("successfully created new Json")
 
 	return characterJson
 }
@@ -271,16 +273,19 @@ func (world *World) characterFromJson(characterJson *CharacterJson) (*Character,
 		character.Inventory.AddItem(item)
 	}
 
-	for i := 0; i < EQUIPMENT_SLOT_COUNT; i++ {
-		equip := characterJson.Equipment[i]
+	var newEquipment Equipment
+	for _, equip := range characterJson.Equipment {
 		if !equip.IsEmpty {
-			character.Equipment.IsSlotInUse[equip.Slot] = true
-			character.Equipment.SlotItem[equip.Slot] = world.createItem(CreateItemParams {
+			newEquipment.IsSlotInUse = append(newEquipment.IsSlotInUse, true)
+		} else {
+			newEquipment.IsSlotInUse = append(newEquipment.IsSlotInUse, false)
+		}
+			newEquipment.SlotItem = append(newEquipment.SlotItem, world.createItem(CreateItemParams {
 				itemType: world.ItemNameToType[equip.Name],
 				durability: equip.Durability,
-			})
-		}
+			}))
 	}
+	character.Equipment = newEquipment
 
 	return character, nil
 }

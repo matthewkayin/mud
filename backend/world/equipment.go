@@ -24,7 +24,7 @@ func ItemMatchesEquipmentSlot(item Item, slot EquipmentSlot) bool {
 		return slot == EQUIPMENT_SLOT_MAIN_HAND || slot == EQUIPMENT_SLOT_OFF_HAND
 	} else if item.IsShield() {
 		return slot == EQUIPMENT_SLOT_OFF_HAND
-	} else if item.IsShield() {
+	} else if item.IsTwoHandedWeapon() {
 		return slot == EQUIPMENT_SLOT_MAIN_HAND
 	} else if item.IsOutfit() {
 		return slot == EQUIPMENT_SLOT_OUTFIT

@@ -58,6 +58,10 @@ func (world *World) NewCharacter(playerKey string, characterSheet *CharacterShee
 	character.Health = character.MaxHealth()
 	character.Mana = character.MaxMana()
 
+
+	character.Equipment.IsSlotInUse = make([]bool, EQUIPMENT_SLOT_COUNT)
+	character.Equipment.SlotItem = make([]Item, EQUIPMENT_SLOT_COUNT)
+
 	return character
 }
 
@@ -191,7 +195,7 @@ func (character *Character) EquipFromInventory(world *World, itemIndex int, slot
 	// Check stat requirements
 	hasRequirements, requirements := item.getRequirements()
 	if hasRequirements {
-		if character.Skills.Meets(&requirements) {
+		if !character.Skills.Meets(&requirements) {
 			return item, nil, fmt.Errorf("You do not meet the stat requirements to equip %s.", item.NameWithCondition())
 		}
 	}
