@@ -24,7 +24,6 @@ type Player struct {
 	mobHandle world.MobHandle
 	isMinimapDirty bool
 	isInventoryDirty bool
-	isEquipmentDirty bool
 }
 
 func playerInit(key string, inbox *chan SocketMessage) Player {
@@ -62,8 +61,9 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 				heartbeat.Map = gamestate.GetMinimap(player.character.Room, player.character.RoomsDiscovered)
 				player.isMinimapDirty = false
 			}
-			if player.isInventoryDirty || player.isEquipmentDirty {
-				heartbeat.Inventory = make([]string, 0, 1 + len(player.character.Inventory.Items))
+			if player.isInventoryDirty {
+				// Equipment slot lines, separator, inventory header, then either "<empty>" or the item lines
+				heartbeat.Inventory = make([]string, 0, world.EQUIPMENT_SLOT_COUNT + 3 + len(player.character.Inventory.Items))
 
 				//move to its own window pane later
 

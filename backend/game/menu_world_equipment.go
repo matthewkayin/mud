@@ -39,7 +39,7 @@ var MENU_WORLD_ENTRIES_EQUIP = map[string]MenuEntry {
 			// Determine the item
 			itemIndex, result := fuzzyFindInventoryItem(&player.character.Inventory, itemWords)
 			if result != FUZZY_RESULT_OK {
-				player.send("Cannot find this item in your inventory.")
+				player.send(fuzzyFindInventoryItemResultString(result, "your inventory", itemWords))
 				return true
 			}
 
@@ -83,7 +83,7 @@ var MENU_WORLD_ENTRIES_EQUIP = map[string]MenuEntry {
 			for _, message := range messages {
 				player.send(message)
 			}
-			player.isEquipmentDirty = true
+			player.isInventoryDirty = true
 
 			return true
 		},
@@ -143,7 +143,7 @@ var MENU_WORLD_ENTRIES_EQUIP = map[string]MenuEntry {
 				return true
 			}
 			player.send(fmt.Sprintf("You unequipped <g>%s</g>.", item.NameWithCondition()))
-			player.isEquipmentDirty = true
+			player.isInventoryDirty = true
 
 			return true
 		},

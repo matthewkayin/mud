@@ -7,6 +7,7 @@ import (
 	"log"
 	"mud/database"
 	"mud/bitset"
+	"mud/util"
 	"os"
 	"path/filepath"
 	"strings"
@@ -42,9 +43,8 @@ type ItemJson struct {
 }
 
 type EquipmentSlotJson struct {
-	IsEmpty bool
-	Name string
-	Durability int32
+	Slot string
+	Item ItemJson
 }
 
 var CHARACTER_SAVES_FOLDER = filepath.Join(database.SAVES_FOLDER, "characters")
@@ -149,7 +149,7 @@ func (world *World) characterToJson(character *Character) CharacterJson {
 		Mana: character.Mana,
 
 		Inventory: make([]ItemJson, 0, len(character.Inventory.Items)),
-		Equipment: make([]EquipmentSlotJson, EQUIPMENT_SLOT_COUNT),
+		Equipment: make([]EquipmentSlotJson, 0, EQUIPMENT_SLOT_COUNT),
 	}
 
 	// Rooms discovered
@@ -171,26 +171,25 @@ func (world *World) characterToJson(character *Character) CharacterJson {
 
 	// Inventory
 	for index := range len(character.Inventory.Items) {
-		item := &character.Inventory.Items[index]
-		characterJson.Inventory = append(characterJson.Inventory, ItemJson {
-			Name: item.Name,
-			Amount: item.Amount,
-			Durability: item.Durability,
-		})
+		characterJson.Inventory = append(characterJson.Inventory, itemToJson(&character.Inventory.Items[index]))
 	}
 
+	// Equipment
 	for index := range EQUIPMENT_SLOT_COUNT {
-		if character.Equipment.IsSlotInUse[index] == true {
-			characterJson.Equipment[index].IsEmpty = false
-			characterJson.Equipment[index].Name = character.Equipment.SlotItem[index].Name
-			characterJson.Equipment[index].Durability = character.Equipment.SlotItem[index].Durability
-		} else {
-			characterJson.Equipment[index].IsEmpty = true
-			characterJson.Equipment[index].Name = ""
-			characterJson.Equipment[index].Durability = 0
+		if !character.Equipment.IsSlotInUse[index] {
+			continue
 		}
+
+		// A two-handed weapon marks the off hand as in use, but the item is saved with the main hand
+		if index == EQUIPMENT_SLOT_OFF_HAND && character.Equipment.isTwoHandedWeaponEquipped() {
+			continue
+		}
+
+		characterJson.Equipment = append(characterJson.Equipment, EquipmentSlotJson {
+			Slot: EquipmentSlot(index).String(),
+			Item: itemToJson(&character.Equipment.SlotItem[index]),
+		})
 	}
-	log.Printf("successfully created new Json")
 
 	return characterJson
 }
@@ -259,33 +258,56 @@ func (world *World) characterFromJson(characterJson *CharacterJson) (*Character,
 
 	// Inventory
 	character.Inventory = NewInventory()
-	for _, itemJson := range characterJson.Inventory {
-		itemType, exists := world.ItemNameToType[itemJson.Name]
-		if !exists {
-			return nil, fmt.Errorf("Character has item %s which does not exist.", itemJson.Name)
+	for index := range characterJson.Inventory {
+		item, err := world.itemFromJson(&characterJson.Inventory[index])
+		if err != nil {
+			return nil, err
 		}
 
-		item := world.createItem(CreateItemParams {
-			itemType: itemType,
-			amount: itemJson.Amount,
-			durability: itemJson.Durability,
-		})
 		character.Inventory.AddItem(item)
 	}
 
-	var newEquipment Equipment
-	for _, equip := range characterJson.Equipment {
-		if !equip.IsEmpty {
-			newEquipment.IsSlotInUse = append(newEquipment.IsSlotInUse, true)
-		} else {
-			newEquipment.IsSlotInUse = append(newEquipment.IsSlotInUse, false)
+	// Equipment
+	character.Equipment = NewEquipment()
+	for index := range characterJson.Equipment {
+		equipmentSlotJson := &characterJson.Equipment[index]
+
+		slot, ok := util.EnumFromString[EquipmentSlot](equipmentSlotJson.Slot, EQUIPMENT_SLOT_COUNT)
+		if !ok {
+			return nil, fmt.Errorf("Character has equipment in slot '%s' which does not exist.", equipmentSlotJson.Slot)
 		}
-			newEquipment.SlotItem = append(newEquipment.SlotItem, world.createItem(CreateItemParams {
-				itemType: world.ItemNameToType[equip.Name],
-				durability: equip.Durability,
-			}))
+
+		item, err := world.itemFromJson(&equipmentSlotJson.Item)
+		if err != nil {
+			return nil, err
+		}
+
+		_, wasEquipped := character.Equipment.Equip(slot, item)
+		if !wasEquipped {
+			return nil, fmt.Errorf("Character has item %s equipped in slot %s, but it cannot be equipped there.", item.Name, slot.String())
+		}
 	}
-	character.Equipment = newEquipment
 
 	return character, nil
+}
+
+func itemToJson(item *Item) ItemJson {
+	return ItemJson {
+		Name: item.Name,
+		Amount: item.Amount,
+		Durability: item.Durability,
+	}
+}
+
+func (world *World) itemFromJson(itemJson *ItemJson) (Item, error) {
+	itemType, exists := world.ItemNameToType[itemJson.Name]
+	if !exists {
+		return Item{}, fmt.Errorf("Character has item %s which does not exist.", itemJson.Name)
+	}
+
+	return world.createItem(CreateItemParams {
+		itemType: itemType,
+		amount: itemJson.Amount,
+		durability: itemJson.Durability,
+	}), nil
 }

@@ -19,7 +19,6 @@ type Character struct {
 	Attributes AttributeBlock
 	Skills SkillBlock
 
-	Inventory Inventory
 	Equipment Equipment
 
 	RoomsDiscovered []byte
@@ -58,9 +57,7 @@ func (world *World) NewCharacter(playerKey string, characterSheet *CharacterShee
 	character.Health = character.MaxHealth()
 	character.Mana = character.MaxMana()
 
-
-	character.Equipment.IsSlotInUse = make([]bool, EQUIPMENT_SLOT_COUNT)
-	character.Equipment.SlotItem = make([]Item, EQUIPMENT_SLOT_COUNT)
+	character.Equipment = NewEquipment()
 
 	return character
 }
@@ -146,7 +143,6 @@ func (character *Character) grantExperience(world *World, amount int32) {
 }
 
 func (character *Character) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot) {
-
 	item := character.Equipment.Get(slot)
 	if item == nil {
 		return
@@ -170,9 +166,8 @@ func (character *Character) subtractDurabilityFromEquipment(world *World, slot E
 	}
 
 	// If an item has lost its sharpness, tell the user
-	itemWasSharp := (item.Durability + 1) > maxDurability
-	itemIsSharp := item.Durability > maxDurability
-	if itemWasSharp && !itemIsSharp {
+	itemLostSharpness := item.Durability == maxDurability
+	if itemLostSharpness {
 		itemIsWeapon :=
 			item.IsOneHandedWeapon() ||
 			item.IsTwoHandedWeapon()
@@ -192,12 +187,10 @@ func (character *Character) EquipFromInventory(world *World, itemIndex int, slot
 		return item, nil, fmt.Errorf("%s cannot be equipped to slot %s.", item.NameWithCondition(), slot.String())
 	}
 
-	// Check stat requirements
-	hasRequirements, requirements := item.getRequirements()
-	if hasRequirements {
-		if !character.Skills.Meets(&requirements) {
-			return item, nil, fmt.Errorf("You do not meet the stat requirements to equip %s.", item.NameWithCondition())
-		}
+	// Check skill requirement
+	skill, requirement, hasRequirement := item.getSkillRequirement()
+	if hasRequirement && character.Skills.Values[skill] < requirement {
+		return item, nil, fmt.Errorf("You need rank %d in %s to equip %s.", requirement, SKILL_DATA[skill].Name, item.NameWithCondition())
 	}
 
 	// Check that the displaced items will fit in the inventory once this item is removed from it

@@ -7,7 +7,7 @@ item.price = 5
 item.size = 1
 
 item.max_durability = 100
-item.prefix = "badass"
+item.reinforced_prefix = "badass"
 
 item.required_rank = 0
 item.deflection_chance = 6

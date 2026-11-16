@@ -18,6 +18,13 @@ type Equipment struct {
 	SlotItem []Item
 }
 
+func NewEquipment() Equipment {
+	return Equipment {
+		IsSlotInUse: make([]bool, EQUIPMENT_SLOT_COUNT),
+		SlotItem: make([]Item, EQUIPMENT_SLOT_COUNT),
+	}
+}
+
 func ItemMatchesEquipmentSlot(item Item, slot EquipmentSlot) bool {
 
 	if item.IsOneHandedWeapon() {
