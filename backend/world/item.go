@@ -37,23 +37,75 @@ const (
 
 func (kind ItemKind) String() string {
 	switch kind {
-		case ITEM_KIND_CONSUMABLE:
-			return "Consumable"
-		case ITEM_KIND_MISC:
-			return "Misc"
-		default:
-			panic(fmt.Sprintf("Item kind %d not handled", kind))
+	case ITEM_KIND_EQUIPMENT_ONE_HANDED_SWORD:
+		return "One-Handed Sword"
+	case ITEM_KIND_EQUIPMENT_ONE_HANDED_AXE:
+		return "One-Handed Axe"
+	case ITEM_KIND_EQUIPMENT_ONE_HANDED_BLUNT:
+		return "One-Handed Blunt"
+	case ITEM_KIND_EQUIPMENT_ONE_HANDED_DAGGER:
+		return "Dagger"
+	case ITEM_KIND_EQUIPMENT_TWO_HANDED_SWORD:
+		return "Two-Handed Sword"
+	case ITEM_KIND_EQUIPMENT_TWO_HANDED_AXE:
+		return "Two-Handed Axe"
+	case ITEM_KIND_EQUIPMENT_TWO_HANDED_BLUNT:
+		return "Two-Handed Blunt"
+	case ITEM_KIND_EQUIPMENT_TWO_HANDED_BOW:
+		return "Bow"
+	case ITEM_KIND_EQUIPMENT_SHIELD:
+		return "Shield"
+	case ITEM_KIND_EQUIPMENT_OUTFIT_CLOTHING:
+		return "Clothing"
+	case ITEM_KIND_EQUIPMENT_OUTFIT_LIGHT_ARMOR:
+		return "Light Armor"
+	case ITEM_KIND_EQUIPMENT_OUTFIT_HEAVY_ARMOR:
+		return "Heavy Armor"
+	case ITEM_KIND_EQUIPMENT_ACCESSORY:
+		return "Accessory"
+	case ITEM_KIND_CONSUMABLE:
+		return "Consumable"
+	case ITEM_KIND_MISC:
+		return "Misc"
+	default:
+		panic(fmt.Sprintf("Item kind %d not handled", kind))
 	}
 }
 
 func (kind ItemKind) toScriptEnum() string {
 	switch kind {
-		case ITEM_KIND_CONSUMABLE:
-			return "CONSUMABLE"
-		case ITEM_KIND_MISC:
-			return "MISC"
-		default:
-			panic(fmt.Sprintf("Item kind %d not handled", kind))
+	case ITEM_KIND_EQUIPMENT_ONE_HANDED_SWORD:
+		return "ONE_HANDED_SWORD"
+	case ITEM_KIND_EQUIPMENT_ONE_HANDED_AXE:
+		return "ONE_HANDED_AXE"
+	case ITEM_KIND_EQUIPMENT_ONE_HANDED_BLUNT:
+		return "ONE_HANDED_BLUNT"
+	case ITEM_KIND_EQUIPMENT_ONE_HANDED_DAGGER:
+		return "DAGGER"
+	case ITEM_KIND_EQUIPMENT_TWO_HANDED_SWORD:
+		return "TWO_HANDED_SWORD"
+	case ITEM_KIND_EQUIPMENT_TWO_HANDED_AXE:
+		return "TWO_HANDED_AXE"
+	case ITEM_KIND_EQUIPMENT_TWO_HANDED_BLUNT:
+		return "TWO_HANDED_BLUNT"
+	case ITEM_KIND_EQUIPMENT_TWO_HANDED_BOW:
+		return "BOW"
+	case ITEM_KIND_EQUIPMENT_SHIELD:
+		return "SHIELD"
+	case ITEM_KIND_EQUIPMENT_OUTFIT_CLOTHING:
+		return "CLOTHING"
+	case ITEM_KIND_EQUIPMENT_OUTFIT_LIGHT_ARMOR:
+		return "LIGHT_ARMOR"
+	case ITEM_KIND_EQUIPMENT_OUTFIT_HEAVY_ARMOR:
+		return "HEAVY_ARMOR"
+	case ITEM_KIND_EQUIPMENT_ACCESSORY:
+		return "ACCESSORY"
+	case ITEM_KIND_CONSUMABLE:
+		return "CONSUMABLE"
+	case ITEM_KIND_MISC:
+		return "MISC"
+	default:
+		panic(fmt.Sprintf("Item kind %d not handled", kind))
 	}
 }
 
@@ -64,8 +116,7 @@ type ItemType struct {
 	kind ItemKind
 	price int32
 	size int32
-	maxDurability int32
-	requirements int32
+	requirement int32
 	data any
 }
 
@@ -77,18 +128,20 @@ type CreateItemParams struct {
 }
 
 type ArmorData struct {
+	maxDurability int32
 	prefix string
 
 	deflectChance int32
 	deflectBonus int32
-	damnageResistance int32
+	damageResistance int32
 
-	sneakModified int32
+	sneakModifier int32
 	evadeModifier int32
 	initiativeModifier int32
 }
 
 type WeaponData struct {
+	maxDurability int32
 	prefix string
 
 	damage int32
@@ -101,9 +154,14 @@ func (world *World) createItem(params CreateItemParams) Item {
 	itemId := world.NextItemId
 	world.NextItemId++
 
+
 	durability := params.durability
 	if durability == 0 && params.durabilityPercent != 0 {
-		durability = (params.durabilityPercent * params.itemType.maxDurability) / 100
+		if params.itemType.HasWeaponData() {
+			durability = (params.durabilityPercent * params.itemType.data.(WeaponData).maxDurability) / 100
+		} else if params.itemType.HasArmorData() {
+			durability = (params.durabilityPercent * params.itemType.data.(ArmorData).maxDurability) / 100
+		}
 	}
 
 	return Item {
@@ -115,22 +173,20 @@ func (world *World) createItem(params CreateItemParams) Item {
 }
 
 func (item *Item) NameWithCondition() string {
-	maxDurability := item.ItemType.maxDurability
-	if maxDurability == 0 {
-		return item.Name
-	}
-
-	var prefix string
-	hasPrefix := false
+		var maxDurability int32
+		var hasPrefix = false
+		var prefix string
 
 	if item.IsOneHandedWeapon() || item.IsTwoHandedWeapon() {
+		maxDurability = item.ItemType.data.(WeaponData).maxDurability
 		prefix = item.ItemType.data.(WeaponData).prefix
 		hasPrefix = true
-	}
-
-	if item.IsOutfit() || item.IsShield() {
+	} else if item.IsOutfit()||item.IsShield() {
+		maxDurability = item.ItemType.data.(ArmorData).maxDurability
 		prefix = item.ItemType.data.(ArmorData).prefix
 		hasPrefix = true
+	}	else {
+		return item.Name
 	}
 
 	if item.Durability < maxDurability / 2 {
@@ -159,6 +215,34 @@ func (itemType *ItemType) CanStack() bool {
 			return true
 		default:
 			return false
+	}
+}
+
+func (itemType *ItemType) HasWeaponData() bool {
+switch itemType.kind {
+	case ITEM_KIND_EQUIPMENT_ONE_HANDED_SWORD,
+	ITEM_KIND_EQUIPMENT_ONE_HANDED_AXE,
+	ITEM_KIND_EQUIPMENT_ONE_HANDED_BLUNT,
+	ITEM_KIND_EQUIPMENT_ONE_HANDED_DAGGER,
+	ITEM_KIND_EQUIPMENT_TWO_HANDED_SWORD,
+	ITEM_KIND_EQUIPMENT_TWO_HANDED_AXE,
+	ITEM_KIND_EQUIPMENT_TWO_HANDED_BLUNT,
+	ITEM_KIND_EQUIPMENT_TWO_HANDED_BOW:
+		return true
+	default:
+		return false
+	}
+}
+
+func (itemType *ItemType) HasArmorData() bool {
+	switch itemType.kind {
+		case ITEM_KIND_EQUIPMENT_OUTFIT_CLOTHING,
+   		 ITEM_KIND_EQUIPMENT_OUTFIT_LIGHT_ARMOR,
+		 ITEM_KIND_EQUIPMENT_OUTFIT_HEAVY_ARMOR,
+		 ITEM_KIND_EQUIPMENT_ACCESSORY:
+		 return true
+	default:
+		 return false
 	}
 }
 
@@ -223,30 +307,30 @@ func (item *Item) getRequirements() (bool, SkillBlock) {
 		case ITEM_KIND_EQUIPMENT_ONE_HANDED_SWORD,
 			 ITEM_KIND_EQUIPMENT_TWO_HANDED_SWORD:
 			hasRequirements = true
-		 	requirements.Values[SKILL_SWORDS] = item.ItemType.requirements
+		 	requirements.Values[SKILL_SWORDS] = item.ItemType.requirement
 		case ITEM_KIND_EQUIPMENT_ONE_HANDED_AXE,
 			 ITEM_KIND_EQUIPMENT_TWO_HANDED_AXE:
 			hasRequirements = true
-		 	requirements.Values[SKILL_AXES] = item.ItemType.requirements
+		 	requirements.Values[SKILL_AXES] = item.ItemType.requirement
 		case ITEM_KIND_EQUIPMENT_ONE_HANDED_BLUNT,
 			 ITEM_KIND_EQUIPMENT_TWO_HANDED_BLUNT:
 			hasRequirements = true
-		 	requirements.Values[SKILL_BLUDGEONING] = item.ItemType.requirements
+		 	requirements.Values[SKILL_BLUDGEONING] = item.ItemType.requirement
 		case ITEM_KIND_EQUIPMENT_ONE_HANDED_DAGGER:
 			hasRequirements = true
-		 	requirements.Values[SKILL_DAGGERS] = item.ItemType.requirements
+		 	requirements.Values[SKILL_DAGGERS] = item.ItemType.requirement
 		case ITEM_KIND_EQUIPMENT_TWO_HANDED_BOW:
 			hasRequirements = true
-			requirements.Values[SKILL_MARKSMANSHIP] = item.ItemType.requirements
+			requirements.Values[SKILL_MARKSMANSHIP] = item.ItemType.requirement
 		case ITEM_KIND_EQUIPMENT_OUTFIT_LIGHT_ARMOR:
 			hasRequirements = true
-			requirements.Values[SKILL_LIGHT_ARMOR] = item.ItemType.requirements
+			requirements.Values[SKILL_LIGHT_ARMOR] = item.ItemType.requirement
 		case ITEM_KIND_EQUIPMENT_OUTFIT_HEAVY_ARMOR:
 			hasRequirements = true
-			requirements.Values[SKILL_HEAVY_ARMOR] = item.ItemType.requirements
+			requirements.Values[SKILL_HEAVY_ARMOR] = item.ItemType.requirement
 		case ITEM_KIND_EQUIPMENT_SHIELD:
 			hasRequirements = true
-			requirements.Values[SKILL_SHIELDS] = item.ItemType.requirements
+			requirements.Values[SKILL_SHIELDS] = item.ItemType.requirement
 		default:
 			hasRequirements = false
 	}
@@ -266,4 +350,14 @@ func (item *Item) EquipmentSlotForItem() (EquipmentSlot, bool) {
 	} else {
 		return EQUIPMENT_SLOT_COUNT, false
 	}
+}
+
+func (item *Item) MaxDurability() int32 {
+	if item.IsOneHandedWeapon() || item.IsTwoHandedWeapon() {
+		return item.ItemType.data.(WeaponData).maxDurability
+	} else if item.IsOutfit() || item.IsShield() {
+		return item.ItemType.data.(ArmorData).maxDurability
+	}
+
+	return 0
 }

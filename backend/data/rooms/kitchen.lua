@@ -17,7 +17,27 @@ room.loot = {
         item = "Potion",
         amount = 1,
         drop_chance_percent = 100,
-    }
+    },
+    {
+        item = "Test Armor",
+        amount = 1,
+        drop_chance_percent = 100
+    },
+    {
+        item = "Test Longbow",
+        amount = 1,
+        drop_chance_percent = 100
+    },
+    {
+            item = "Test Shield",
+            amount = 1,
+            drop_chance_percent = 100
+        },
+        {
+            item = "Test Broadsword",
+            amount = 1,
+            drop_chance_percent = 100
+        },
 }
 
 room.interactions = {

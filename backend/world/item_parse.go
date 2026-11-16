@@ -55,6 +55,11 @@ func (parser *ScriptParser) parseItemType(table *lua.Table) *ItemType {
 
 	itemType.Name = parser.getString(table, "name")
 	itemType.Description = parser.getString(table, "description")
+
+	itemType.requirement = parser.getInt32(table, "required_rank")
+	if itemType.requirement < 0 {
+		parser.addProblem("requirements", fmt.Errorf("Required rank cannot be negative."))
+	}
 	itemType.price = parser.getInt32(table, "price")
 	if itemType.price < 0 {
 		parser.addProblem("price", fmt.Errorf("Item price cannot be negative."))
@@ -69,6 +74,54 @@ func (parser *ScriptParser) parseItemType(table *lua.Table) *ItemType {
 	itemType.kind, ok = util.EnumFromString[ItemKind](kindString, ITEM_KIND_COUNT)
 	if !ok {
 		parser.addProblem("kind", fmt.Errorf("Invalid item kind '%s'.", kindString))
+	}
+
+	if itemType.HasWeaponData() {
+		var weaponData WeaponData
+
+		weaponData.maxDurability = parser.getInt32(table, "max_durability")
+		if weaponData.maxDurability < 0 {
+			parser.addProblem("maxDurability", fmt.Errorf("Max durability cannot be negative."))
+		}
+		weaponData.damage = parser.getInt32(table, "damage")
+		if weaponData.damage < 0 {
+			parser.addProblem("damage", fmt.Errorf("Weapon damage cannot be negative."))
+		}
+		weaponData.damage = parser.getInt32(table, "penetration")
+		if weaponData.penetration < 0 {
+			parser.addProblem("penetration", fmt.Errorf("Weapon penetration cannot be negative."))
+		}
+		weaponData.prefix = parser.getString(table, "prefix")
+
+		itemType.data = weaponData
+	}
+
+
+	if itemType.HasArmorData() {
+		var armorData ArmorData
+
+		armorData.maxDurability = parser.getInt32(table, "max_durability")
+		if armorData.maxDurability < 0 {
+			parser.addProblem("maxDurability", fmt.Errorf("Max durability cannot be negative."))
+		}
+		armorData.deflectChance = parser.getInt32(table, "deflection_chance")
+		if armorData.deflectChance < 0 {
+			parser.addProblem("deflection chance", fmt.Errorf("Armor deflection chance cannot be negative."))
+		}
+		armorData.deflectBonus = parser.getInt32(table, "deflection_bonus")
+		if armorData.deflectChance < 0 {
+			parser.addProblem("deflection bonus", fmt.Errorf("Armor deflection bonus cannot be negative."))
+		}
+		armorData.damageResistance = parser.getInt32(table, "damage_resistance")
+		if armorData.deflectChance < 0 {
+			parser.addProblem("damage resistance", fmt.Errorf("Armor damage resistance cannot be negative."))
+		}
+		armorData.evadeModifier = parser.getInt32(table, "evade_modifier")
+		armorData.initiativeModifier = parser.getInt32(table, "initiative_modifier")
+		armorData.sneakModifier = parser.getInt32(table, "sneak_modifier")
+		armorData.prefix = parser.getString(table, "prefix")
+
+		itemType.data = armorData
 	}
 
 	if len(parser.problems) != 0 {
