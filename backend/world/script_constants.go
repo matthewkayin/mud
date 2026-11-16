@@ -34,6 +34,19 @@ func ScriptConstantTables() []ScriptConstantTable {
 		})
 	}
 
+	// Target type
+	targetTypeTable := ScriptConstantTable {
+		Name: "TargetType",
+		Constants: make([]ScriptConstant, 0, TARGET_TYPE_COUNT),
+	}
+	for index := range TARGET_TYPE_COUNT {
+		targetType := TargetType(index)
+		targetTypeTable.Constants = append(targetTypeTable.Constants, ScriptConstant {
+			Name: strings.ToUpper(targetType.String()),
+			Value: lua.String(targetType.String()),
+		})
+	}
+
 	// Direction
 	directionTable := ScriptConstantTable {
 		Name: "Direction",
@@ -86,6 +99,7 @@ func ScriptConstantTables() []ScriptConstantTable {
 
 	return []ScriptConstantTable {
 		itemKindTable,
+		targetTypeTable,
 		directionTable,
 		attributeTable,
 		skillTable,

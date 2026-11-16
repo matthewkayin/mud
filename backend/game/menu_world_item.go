@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"mud/util"
 	"mud/world"
-	"os/user"
 	"strings"
 )
 
@@ -267,6 +266,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 					target, err := findTarget(gamestate, player, FindTargetParams {
 						targetType: consumableData.TargetType,
 						userSpecifiedTarget: userSpecifiedTarget,
+						targetWords: targetWords,
 						verb: "use",
 						noun: "item",
 						name: item.Name,
@@ -278,7 +278,11 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 					}
 
 					playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-					playerMob.SetModeUseItem()
+					playerMob.SetModeUseItem(item.Id, target)
+				}
+
+				default: {
+					player.send(fmt.Sprintf("You can't use <g>%s</g>.", item.Name))
 				}
 			}
 

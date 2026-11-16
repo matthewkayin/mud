@@ -78,6 +78,7 @@ func Init(version string) *GameState {
 	}
 
 	gamestate.world.MessagePlayer = gamestate.messagePlayer
+	gamestate.world.PlayerInventoryChanged = gamestate.markPlayerInventoryDirty
 
 	gamestate.initMenus()
 
@@ -232,6 +233,15 @@ func (gamestate *GameState) messagePlayer(playerKey string, message string) {
 	}
 
 	player.send(message)
+}
+
+func (gamestate *GameState) markPlayerInventoryDirty(playerKey string) {
+	player := gamestate.getPlayerByKey(playerKey)
+	if player == nil {
+		return
+	}
+
+	player.isInventoryDirty = true
 }
 
 // Sends a message to all logged in players

@@ -206,7 +206,7 @@ func findTarget(gamestate *GameState, player *Player, params FindTargetParams) (
 
 		case world.TARGET_TYPE_ITEM: {
 			if !params.userSpecifiedTarget {
-				return world.MobTarget{}, fmt.Errorf("%s targets an item. You must specify an item in your inventory or equipment to target.", params.name, params.noun)
+				return world.MobTarget{}, fmt.Errorf("%s targets an item. You must specify an item in your inventory or equipment to target.", params.name)
 			}
 
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
@@ -215,10 +215,23 @@ func findTarget(gamestate *GameState, player *Player, params FindTargetParams) (
 				return world.MobTarget{}, err
 			}
 
-			return world.MobTarget {
+			// Validate item
+			target := world.MobTarget {
 				Type: world.MOB_TARGET_ITEM,
 				Value: itemTarget,
-			}, nil
+			}
+			err = playerMob.ValidateTarget(gamestate.world, world.MobValidateTargetParams {
+				Hook: params.validateTarget,
+				Target: target,
+				Verb: params.verb,
+				Name: params.name,
+				Noun: params.noun,
+			})
+			if err != nil {
+				return world.MobTarget{}, err
+			}
+
+			return target, nil
 		}
 
 		case world.TARGET_TYPE_ARGUMENT: {
@@ -250,7 +263,7 @@ func findTarget(gamestate *GameState, player *Player, params FindTargetParams) (
 		}
 
 		default: {
-			log.Printf("warn: target type %d is not handled in findTarget()", params.targetType)
+			log.Printf("Warn - target type %d is not handled in findTarget()", params.targetType)
 			return world.MobTarget{}, fmt.Errorf("Something strange happened.")
 		}
 	}

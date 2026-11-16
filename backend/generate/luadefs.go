@@ -44,9 +44,6 @@ func LuaDefs(path string) error {
 	output.WriteString("\n---An opaque reference to a mob. Compare with ==. It may refer to a mob that no longer exists; check with world.mob_exists.\n")
 	output.WriteString("---@class MobHandle\n")
 
-	output.WriteString("\n---An opaque reference to an item in a mob's inventory or equipment. Compare with ==. Only valid until the mob's inventory or equipment changes, so don't store it.\n")
-	output.WriteString("---@class ItemHandle\n")
-
 	// Matches the table built by npcBehaviorParamToLua in world/npc.go
 	output.WriteString("\n---A stack of items, such as the value of an Item NPC behavior param.\n")
 	output.WriteString("---@class Item\n")

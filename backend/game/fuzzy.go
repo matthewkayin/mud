@@ -223,8 +223,6 @@ func fuzzyFindMobItem(mob *world.Mob, searchWords []string) (world.MobItemTarget
 
 				return world.MobItemTarget {
 					Mob: mob.Handle,
-					Location: location,
-					Index: index,
 					Id: mob.Inventory.Items[index].Id,
 				}, nil
 			}
@@ -240,8 +238,6 @@ func fuzzyFindMobItem(mob *world.Mob, searchWords []string) (world.MobItemTarget
 	if result == FUZZY_RESULT_OK {
 		return world.MobItemTarget {
 			Mob: mob.Handle,
-			Location: world.ITEM_LOCATION_INVENTORY,
-			Index: index,
 			Id: mob.Inventory.Items[index].Id,
 		}, nil
 	}
@@ -249,7 +245,7 @@ func fuzzyFindMobItem(mob *world.Mob, searchWords []string) (world.MobItemTarget
 	// If the item was not in inventory, search equipment
 	// TODO: when you do equipment here, maybe lump inventory and equipment into a single fuzzy find
 
-	return world.MobItemTarget{}, fmt.Errorf(fuzzyFindInventoryItemResultString(result, "your inventory", itemWords))
+	return world.MobItemTarget{}, fmt.Errorf("%s", fuzzyFindInventoryItemResultString(result, "your inventory", itemWords))
 }
 
 // TODO:
