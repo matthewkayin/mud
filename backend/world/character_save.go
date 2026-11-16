@@ -32,11 +32,19 @@ type CharacterJson struct {
 	Mana int32
 
 	Inventory []ItemJson
+	Equipment []EquipmentJson
 }
 
 type ItemJson struct {
 	Name string
 	Amount int32
+	Durability int32
+}
+
+type EquipmentJson struct {
+	Slot EquipmentSlot
+	IsEmpty bool
+	Name string
 	Durability int32
 }
 
@@ -142,6 +150,7 @@ func (world *World) characterToJson(character *Character) CharacterJson {
 		Mana: character.Mana,
 
 		Inventory: make([]ItemJson, 0, len(character.Inventory.Items)),
+		Equipment: make([]EquipmentJson, EQUIPMENT_SLOT_COUNT),
 	}
 
 	// Rooms discovered
@@ -169,6 +178,16 @@ func (world *World) characterToJson(character *Character) CharacterJson {
 			Amount: item.Amount,
 			Durability: item.Durability,
 		})
+	}
+
+	for i := 0; i < EQUIPMENT_SLOT_COUNT; i++ {
+		characterJson.Equipment[i].Slot = EquipmentSlot(i)
+		if character.Equipment.IsSlotInUse[i] == false {
+			characterJson.Equipment[i].IsEmpty = true
+		}
+		characterJson.Equipment[i].IsEmpty = false
+		characterJson.Equipment[i].Name = character.Equipment.SlotItem[i].Name
+		characterJson.Equipment[i].Durability = character.Equipment.SlotItem[i].Durability
 	}
 
 	return characterJson
@@ -250,6 +269,17 @@ func (world *World) characterFromJson(characterJson *CharacterJson) (*Character,
 			durability: itemJson.Durability,
 		})
 		character.Inventory.AddItem(item)
+	}
+
+	for i := 0; i < EQUIPMENT_SLOT_COUNT; i++ {
+		equip := characterJson.Equipment[i]
+		if !equip.IsEmpty {
+			character.Equipment.IsSlotInUse[equip.Slot] = true
+			character.Equipment.SlotItem[equip.Slot] = world.createItem(CreateItemParams {
+				itemType: world.ItemNameToType[equip.Name],
+				durability: equip.Durability,
+			})
+		}
 	}
 
 	return character, nil

@@ -17,6 +17,7 @@ var MENU_WORLD_PARAMS = MenuNewParams {
 		MENU_WORLD_ENTRIES_SOCIAL,
 		MENU_WORLD_ENTRIES_LOOK,
 		MENU_WORLD_ENTRIES_ITEM,
+		MENU_WORLD_ENTRIES_EQUIP,
 		makeMoveEntries(),
 	),
 	topics: util.MergeMaps(

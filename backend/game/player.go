@@ -24,6 +24,7 @@ type Player struct {
 	mobHandle world.MobHandle
 	isMinimapDirty bool
 	isInventoryDirty bool
+	isEquipmentDirty bool
 }
 
 func playerInit(key string, inbox *chan SocketMessage) Player {
