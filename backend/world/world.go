@@ -14,6 +14,8 @@ const WORLD_SECONDS_PER_UPDATE = 3
 type World struct {
 	Mobs MobArray
 	MessagePlayer func(playerKey string, message string)
+	// Called when the world changes a player's inventory, so the game can update the player's inventory view
+	PlayerInventoryChanged func(playerKey string)
 	tick uint32
 
 	dataFolder fs.FS

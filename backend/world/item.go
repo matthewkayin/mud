@@ -2,6 +2,7 @@ package world
 
 import (
 	"fmt"
+	"github.com/mmcdole/lunar"
 )
 
 type ItemId uint64
@@ -15,12 +16,29 @@ type Item struct {
 	Durability int32
 }
 
+type ItemLocation int
+const (
+	ITEM_LOCATION_INVENTORY ItemLocation = iota
+	ITEM_LOCATION_EQUIPMENT
+)
+
 type ItemKind int
 const (
 	ITEM_KIND_CONSUMABLE = iota
 	ITEM_KIND_MISC
 	ITEM_KIND_COUNT
 )
+
+func (location ItemLocation) String() string {
+	switch location {
+		case ITEM_LOCATION_INVENTORY:
+			return "Inventory"
+		case ITEM_LOCATION_EQUIPMENT:
+			return "Equipment"
+		default:
+			panic(fmt.Sprintf("Item location %d not handled.", location))
+	}
+}
 
 func (kind ItemKind) String() string {
 	switch kind {
@@ -48,10 +66,16 @@ type ItemType struct {
 	Name string
 	Description string
 
-	kind ItemKind
+	Kind ItemKind
 	price int32
 	size int32
-	data any
+	Data any
+}
+
+type ItemDataConsumable struct {
+	TargetType TargetType
+	ValidateTarget *lua.Function
+	onUse *lua.Function
 }
 
 type CreateItemParams struct {
@@ -98,7 +122,7 @@ func (item *Item) Size() int32 {
 }
 
 func (itemType *ItemType) CanStack() bool {
-	switch itemType.kind {
+	switch itemType.Kind {
 		case ITEM_KIND_CONSUMABLE:
 			return true
 		default:
