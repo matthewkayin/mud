@@ -62,8 +62,36 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 				player.isMinimapDirty = false
 			}
 			if player.isInventoryDirty {
-				heartbeat.Inventory = make([]string, 0, 1 + len(player.character.Inventory.Items))
+				// Equipment slot lines, separator, inventory header, then either "<empty>" or the item lines
+				heartbeat.Inventory = make([]string, 0, world.EQUIPMENT_SLOT_COUNT + 3 + len(player.character.Inventory.Items))
+
+				//move to its own window pane later
+
+				mainHandItem := player.character.Equipment.Get(world.EQUIPMENT_SLOT_MAIN_HAND)
+				isTwoHandedWeaponEquipped := mainHandItem != nil && mainHandItem.IsTwoHandedWeapon()
+				for index := range world.EQUIPMENT_SLOT_COUNT {
+					slot := world.EquipmentSlot(index)
+					item := player.character.Equipment.Get(slot)
+
+					// A two-handed weapon occupies the off hand too
+					if slot == world.EQUIPMENT_SLOT_OFF_HAND && isTwoHandedWeaponEquipped {
+						item = mainHandItem
+					}
+
+					itemName := "<none>"
+					if item != nil {
+						itemName = item.Name
+					}
+					heartbeat.Inventory = append(heartbeat.Inventory, fmt.Sprintf("%s: %s", slot.String(), itemName))
+				}
+
+				heartbeat.Inventory = append(heartbeat.Inventory, "* * * * * *")
+
 				heartbeat.Inventory = append(heartbeat.Inventory, "Inventory:")
+
+				if len(player.character.Inventory.Items) == 0 {
+					heartbeat.Inventory = append(heartbeat.Inventory, "<empty>")
+				}
 
 				for index := range len(player.character.Inventory.Items) {
 					item := &player.character.Inventory.Items[index]

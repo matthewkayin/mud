@@ -55,14 +55,11 @@ func (parser *ScriptParser) parseItemType(table *lua.Table) *ItemType {
 
 	itemType.Name = parser.getString(table, "name")
 	itemType.Description = parser.getString(table, "description")
+
 	itemType.price = parser.getInt32(table, "price")
-	if itemType.price < 0 {
-		parser.addProblem("price", fmt.Errorf("Item price cannot be negative."))
-	}
+	parser.checkInt32NonNegative(itemType.price, "price")
 	itemType.size = parser.getInt32(table, "size")
-	if itemType.size < 0 {
-		parser.addProblem("size", fmt.Errorf("Item size cannot be negative."))
-	}
+	parser.checkInt32NonNegative(itemType.size, "size")
 
 	var ok bool
 	kindString := parser.getString(table, "kind")
@@ -71,21 +68,60 @@ func (parser *ScriptParser) parseItemType(table *lua.Table) *ItemType {
 		parser.addProblem("kind", fmt.Errorf("Invalid item kind '%s'.", kindString))
 	}
 
-	switch itemType.Kind {
-		case ITEM_KIND_CONSUMABLE: {
-			data := &ItemDataConsumable{}
+	if itemType.HasWeaponData() {
+		var weaponData WeaponData
 
-			data.TargetType = parser.getTargetType(table, "target_type")
-			if data.TargetType == TARGET_TYPE_ITEM || data.TargetType == TARGET_TYPE_ARGUMENT {
-				data.ValidateTarget = parser.getOptionalFunction(table, "validate_target")
-				if data.ValidateTarget == nil {
-					parser.addProblem("validate_target", fmt.Errorf("'validate_target' is a required field when target_type is 'Item' or 'Argument'."))
-				}
-			}
+		weaponData.maxDurability = parser.getInt32(table, "max_durability")
+		parser.checkInt32NonNegative(weaponData.maxDurability, "max_durability")
+		weaponData.damage = parser.getInt32(table, "damage")
+		parser.checkInt32NonNegative(weaponData.damage, "damage")
+		weaponData.penetration = parser.getInt32(table, "penetration")
+		parser.checkInt32NonNegative(weaponData.penetration, "penetration")
+		weaponData.reinforcedPrefix = parser.getString(table, "reinforced_prefix")
+		weaponData.skillRequirement = parser.getInt32(table, "skill_requirement")
+		parser.checkInt32NonNegative(weaponData.skillRequirement, "skill_requirement")
 
-			data.onUse = parser.getFunction(table, "on_use")
-			itemType.Data = data
+		itemType.Data = weaponData
+	}
+
+	if itemType.HasArmorData() {
+		var armorData ArmorData
+
+		armorData.maxDurability = parser.getInt32(table, "max_durability")
+		parser.checkInt32NonNegative(armorData.maxDurability, "max_durability")
+		armorData.deflectChance = parser.getInt32(table, "deflection_chance")
+		parser.checkInt32NonNegative(armorData.deflectChance, "deflection_chance")
+		armorData.deflectBonus = parser.getInt32(table, "deflection_bonus")
+		parser.checkInt32NonNegative(armorData.deflectBonus, "deflection_bonus")
+		armorData.damageResistance = parser.getInt32(table, "damage_resistance")
+		parser.checkInt32NonNegative(armorData.damageResistance, "damage_resistance")
+		armorData.evadeModifier = parser.getInt32(table, "evade_modifier")
+		armorData.initiativeModifier = parser.getInt32(table, "initiative_modifier")
+		armorData.sneakModifier = parser.getInt32(table, "sneak_modifier")
+		armorData.reinforcedPrefix = parser.getString(table, "reinforced_prefix")
+
+		_, hasSkillRequirement := itemType.Kind.requiredSkill()
+		if hasSkillRequirement {
+			armorData.skillRequirement = parser.getInt32(table, "skill_requirement")
+			parser.checkInt32NonNegative(armorData.skillRequirement, "skill_requirement")
 		}
+
+		itemType.Data = armorData
+	}
+
+	if itemType.Kind == ITEM_KIND_CONSUMABLE {
+		data := &ItemDataConsumable{}
+
+		data.TargetType = parser.getTargetType(table, "target_type")
+		if data.TargetType == TARGET_TYPE_ITEM || data.TargetType == TARGET_TYPE_ARGUMENT {
+			data.ValidateTarget = parser.getOptionalFunction(table, "validate_target")
+			if data.ValidateTarget == nil {
+				parser.addProblem("validate_target", fmt.Errorf("'validate_target' is a required field when target_type is 'Item' or 'Argument'."))
+			}
+		}
+
+		data.onUse = parser.getFunction(table, "on_use")
+		itemType.Data = data
 	}
 
 	if len(parser.problems) != 0 {

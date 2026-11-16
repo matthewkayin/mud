@@ -28,11 +28,13 @@ var MENU_WORLD_PARAMS = MenuNewParams {
 		MENU_WORLD_ENTRIES_SOCIAL,
 		MENU_WORLD_ENTRIES_LOOK,
 		MENU_WORLD_ENTRIES_ITEM,
+		MENU_WORLD_ENTRIES_EQUIP,
 		makeMoveEntries(),
 	),
 	topics: util.MergeMaps(
 		MENU_WORLD_TOPICS_SOCIAL,
 		MENU_WORLD_TOPICS_ITEM,
+		MENU_WORLD_TOPICS_EQUIP,
 	),
 	interceptCommand: menuWorldInterceptCommand,
 }
@@ -210,7 +212,7 @@ func findTarget(gamestate *GameState, player *Player, params FindTargetParams) (
 			}
 
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-			itemTarget, err := fuzzyFindMobItem(playerMob, params.targetWords)
+			itemTarget, err := fuzzyFindPlayerItem(player, params.targetWords)
 			if err != nil {
 				return world.MobTarget{}, err
 			}

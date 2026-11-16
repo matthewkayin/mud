@@ -7,6 +7,8 @@ import (
 	"strings"
 	"strconv"
 	"mud/world"
+	"errors"
+	"mud/util"
 )
 
 type FuzzyResult int
@@ -169,7 +171,7 @@ func fuzzyFindInventoryItem(inventory *world.Inventory, searchWords []string) (i
 	// Put all item names into an array
 	itemNames := make([]string, len(inventory.Items))
 	for index := range len(inventory.Items) {
-		itemNames[index] = inventory.Items[index].Name
+		itemNames[index] = inventory.Items[index].NameWithCondition()
 	}
 
 	// Fuzzy find the item
@@ -195,12 +197,80 @@ func fuzzyFindInventoryItemResultString(result FuzzyResult, inventoryName string
 	}
 }
 
-func fuzzyFindMobItem(mob *world.Mob, searchWords []string) (world.MobItemTarget, error) {
-	if (!mob.Owner.IsPlayer()) {
-		log.Printf("warn: fuzzyFindMobItem only works for players.")
-		return world.MobItemTarget{}, fmt.Errorf("Something went wrong.")
+func fuzzyFindEquipmentSlot(searchWords []string) (world.EquipmentSlot, error) {
+	if len(searchWords) == 0 {
+		return 0, errors.New("You must specify an equipment slot.")
 	}
 
+	// Equipment slot names
+	slotNames := make([]string, world.EQUIPMENT_SLOT_COUNT)
+	for index := range world.EQUIPMENT_SLOT_COUNT {
+		slot := world.EquipmentSlot(index)
+		slotNames[index] = slot.String()
+	}
+
+	slotIndex, fuzzyResult := fuzzyFind(slotNames, searchWords, FUZZY_NUMBER_NOT_SPECIFIED)
+
+	// Handle edge cases
+	if fuzzyResult == FUZZY_RESULT_NOT_FOUND {
+		return 0, fmt.Errorf("'%s' is not an equipment slot. Valid slot names are: %s",
+			strings.Join(searchWords, " "), util.CombineNames(slotNames))
+	}
+	if fuzzyResult == FUZZY_RESULT_AMBIGUOUS {
+		return 0, fmt.Errorf("The equipment slot string '%s' is ambiguous.",
+			strings.Join(searchWords, " "))
+	}
+	if fuzzyResult == FUZZY_RESULT_NUMBER_OUT_OF_RANGE {
+		panic("Received fuzzy number out of range when no fuzzy number was provided.")
+	}
+
+	return world.EquipmentSlot(slotIndex), nil
+}
+
+
+func fuzzyFindEquipmentSlotByItem(equipment *world.Equipment, searchWords []string) (world.EquipmentSlot, error) {
+	if len(searchWords) == 0 {
+		return 0, errors.New("You must specify an item.")
+	}
+
+	// Create parallel arrays of equipped item name and equipment slot
+	itemNames := make([]string, 0, world.EQUIPMENT_SLOT_COUNT)
+	equipmentSlots := make([]world.EquipmentSlot, 0, world.EQUIPMENT_SLOT_COUNT)
+	for slotIndex := range world.EQUIPMENT_SLOT_COUNT {
+		slot := world.EquipmentSlot(slotIndex)
+		item := equipment.Get(slot)
+		if item == nil {
+			continue
+		}
+
+		itemNames = append(itemNames, item.Name)
+		equipmentSlots = append(equipmentSlots, slot)
+	}
+
+	// Check if they even have any items
+	if len(itemNames) == 0 {
+		return 0, errors.New("You have no items equipped.")
+	}
+
+	index, result := fuzzyFind(itemNames, searchWords, FUZZY_NUMBER_NOT_SPECIFIED)
+
+	// Handle edge cases
+	if result == FUZZY_RESULT_NOT_FOUND {
+		return 0, fmt.Errorf("'%s' is not an item you have equipped.",
+			strings.Join(searchWords, " "))
+	}
+	if result == FUZZY_RESULT_AMBIGUOUS {
+		return 0, fmt.Errorf("The item string '%s' is ambiguous.",
+			strings.Join(searchWords, " "))
+	}
+	if result == FUZZY_RESULT_NUMBER_OUT_OF_RANGE {
+		panic("Received fuzzy number out of range when no fuzzy number was provided.")
+	}
+
+	return equipmentSlots[index], nil
+}
+
+func fuzzyFindPlayerItem(player *Player, searchWords []string) (world.MobItemTarget, error) {
 	// Split args
 	itemWords, locationWords, userSpecifiedLocation := splitArgsBy(searchWords, "in")
 	if len(itemWords) == 0 {
@@ -209,57 +279,95 @@ func fuzzyFindMobItem(mob *world.Mob, searchWords []string) (world.MobItemTarget
 
 	// If user specified location, search just inventory or just equipment
 	if userSpecifiedLocation {
-		location, _, isLocation := parseItemLocation(locationWords)
+		location, slot, isLocation := parseItemLocation(locationWords)
 		if !isLocation {
 			return world.MobItemTarget{}, fmt.Errorf("'%s' is not your 'inventory' or an equipment slot.", strings.Join(locationWords, " "))
 		}
 
 		switch location {
 			case world.ITEM_LOCATION_INVENTORY: {
-				index, result := fuzzyFindInventoryItem(&mob.Inventory, itemWords)
+				index, result := fuzzyFindInventoryItem(&player.character.Inventory, itemWords)
 				if result != FUZZY_RESULT_OK {
 					return world.MobItemTarget{}, fmt.Errorf("%s", fuzzyFindInventoryItemResultString(result, "your inventory", itemWords))
 				}
 
 				return world.MobItemTarget {
-					Mob: mob.Handle,
-					Id: mob.Inventory.Items[index].Id,
+					Mob: player.mobHandle,
+					Id: player.character.Inventory.Items[index].Id,
 				}, nil
 			}
 
 			case world.ITEM_LOCATION_EQUIPMENT: {
-				return world.MobItemTarget{}, fmt.Errorf("Equipment doesn't exist yet!")
+				item := player.character.Equipment.Get(slot)
+				if item == nil {
+					return world.MobItemTarget{}, fmt.Errorf("There is no item called '%s' in your %s.", strings.Join(itemWords, " "), strings.ToLower(slot.String()))
+				}
+
+				return world.MobItemTarget {
+					Mob: player.mobHandle,
+					Id: item.Id,
+				}, nil
 			}
 		}
 	}
 
-	// If user did not specify location, search inventory
-	index, result := fuzzyFindInventoryItem(&mob.Inventory, itemWords)
-	if result == FUZZY_RESULT_OK {
-		return world.MobItemTarget {
-			Mob: mob.Handle,
-			Id: mob.Inventory.Items[index].Id,
-		}, nil
+	// If user did not specify location, search both inventory and equipment
+	fuzzyNumber, itemWords := getFuzzyNumberFromArgs(itemWords)
+	if len(itemWords) == 0 {
+		return world.MobItemTarget{}, fmt.Errorf("You must specify an item.")
 	}
 
-	// If the item was not in inventory, search equipment
-	// TODO: when you do equipment here, maybe lump inventory and equipment into a single fuzzy find
+	itemNames := make([]string, 0, len(player.character.Inventory.Items) + world.EQUIPMENT_SLOT_COUNT)
+	for index := range len(player.character.Inventory.Items) {
+		itemNames = append(itemNames, player.character.Inventory.Items[index].NameWithCondition())
+	}
+
+	for index := range world.EQUIPMENT_SLOT_COUNT {
+		slot := world.EquipmentSlot(index)
+		item := player.character.Equipment.Get(slot)
+		if slot == world.EQUIPMENT_SLOT_OFF_HAND && item.IsTwoHandedWeapon() {
+			continue
+		}
+		itemNames = append(itemNames, item.NameWithCondition())
+	}
+
+	index, result := fuzzyFind(itemNames, searchWords, fuzzyNumber)
+	if result == FUZZY_RESULT_OK {
+		var item *world.Item = nil
+		if index < len(player.character.Inventory.Items) {
+			item = &player.character.Inventory.Items[index]
+		} else {
+			slotIndex := index - len(player.character.Inventory.Items)
+			if player.character.Equipment.IsTwoHandedWeaponEquipped() && slotIndex >= world.EQUIPMENT_SLOT_OFF_HAND {
+				slotIndex++
+			}
+			slot := world.EquipmentSlot(slotIndex)
+			item = player.character.Equipment.Get(slot)
+		}
+
+		if item == nil {
+			log.Printf("warn: fuzzyFindPlayerItem failed, item is nil")
+			return world.MobItemTarget{}, fmt.Errorf("Something went wrong.")
+		}
+
+		return world.MobItemTarget {
+			Mob: player.mobHandle,
+			Id: item.Id,
+		}, nil
+	}
 
 	return world.MobItemTarget{}, fmt.Errorf("%s", fuzzyFindInventoryItemResultString(result, "your inventory", itemWords))
 }
 
-// TODO:
-// func parseItemLocation(locationWords []string) (world.MobItemLocation, EquipmentSlot, bool) {
-func parseItemLocation(locationWords []string) (world.ItemLocation, int, bool) {
+func parseItemLocation(locationWords []string) (world.ItemLocation, world.EquipmentSlot, bool) {
 	if len(locationWords) == 1 && strings.EqualFold(locationWords[0], "inventory") {
 		return world.ITEM_LOCATION_INVENTORY, 0, true
 	}
 
-	// TODO:
-	// slot, err := fuzzyFindEquipmentSlot(locationWords)
-	// if err == nil {
-	//     return world.MOB_ITEM_LOCATION_EQUIPMENT, slot, true
-	// }
+	slot, err := fuzzyFindEquipmentSlot(locationWords)
+	if err == nil {
+	    return world.ITEM_LOCATION_EQUIPMENT, slot, true
+	}
 
 	return 0, 0, false
 }
