@@ -68,12 +68,6 @@ func (parser *ScriptParser) parseItemType(table *lua.Table) *ItemType {
 		parser.addProblem("kind", fmt.Errorf("Invalid item kind '%s'.", kindString))
 	}
 
-	_, _, hasSkillRequirement := itemType.getSkillRequirement()
-	if hasSkillRequirement {
-		itemType.requirement = parser.getInt32(table, "required_rank")
-		parser.checkInt32NonNegative(itemType.requirement, "required_rank")
-	}
-
 	if itemType.HasWeaponData() {
 		var weaponData WeaponData
 
@@ -84,6 +78,8 @@ func (parser *ScriptParser) parseItemType(table *lua.Table) *ItemType {
 		weaponData.penetration = parser.getInt32(table, "penetration")
 		parser.checkInt32NonNegative(weaponData.penetration, "penetration")
 		weaponData.reinforcedPrefix = parser.getString(table, "reinforced_prefix")
+		weaponData.skillRequirement = parser.getInt32(table, "skill_requirement")
+		parser.checkInt32NonNegative(weaponData.skillRequirement, "skill_requirement")
 
 		itemType.data = weaponData
 	}
@@ -103,6 +99,12 @@ func (parser *ScriptParser) parseItemType(table *lua.Table) *ItemType {
 		armorData.initiativeModifier = parser.getInt32(table, "initiative_modifier")
 		armorData.sneakModifier = parser.getInt32(table, "sneak_modifier")
 		armorData.reinforcedPrefix = parser.getString(table, "reinforced_prefix")
+
+		_, hasSkillRequirement := itemType.kind.requiredSkill()
+		if hasSkillRequirement {
+			armorData.skillRequirement = parser.getInt32(table, "skill_requirement")
+			parser.checkInt32NonNegative(armorData.skillRequirement, "skill_requirement")
+		}
 
 		itemType.data = armorData
 	}

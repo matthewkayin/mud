@@ -50,11 +50,10 @@ Required fields must be present. There are no defaults for them.
 | `kind` | `world.ItemKind.*` | See the kinds below. |
 | `price` | integer | Not negative. |
 | `size` | integer | Not negative. |
-| `required_rank` | integer | Only for kinds that have a skill requirement (see below). The rank a character needs in that skill to equip the item. Not negative. |
 
 Item kinds:
 
-| Kind | Equips to | Skill requirement | Extra fields |
+| Kind | Equips to | Required skill | Extra fields |
 |---|---|---|---|
 | `CONSUMABLE`, `MISC` | Can't be equipped | None | None |
 | `ONE_HANDED_SWORD`, `ONE_HANDED_AXE`, `ONE_HANDED_BLUNT`, `DAGGER` | Main hand or off hand | Swords, Axes, Bludgeoning, Daggers | Weapon |
@@ -70,6 +69,8 @@ Weapon and armor kinds have durability and need these fields:
 |---|---|---|
 | `max_durability` | integer | Not negative. An item below half its max durability is shown as "Damaged". |
 | `reinforced_prefix` | string | Shown before the item's name while its durability is above its max durability, for example "Sharpened". |
+
+Kinds with a required skill (all weapons, `SHIELD`, `LIGHT_ARMOR` and `HEAVY_ARMOR`) also need `skill_requirement`: an integer, not negative, giving the rank a character needs in the required skill to equip the item. `CLOTHING` and `ACCESSORY` don't have it.
 
 Weapon kinds also need `damage` and `penetration`, both integers and not negative.
 

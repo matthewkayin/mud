@@ -9,7 +9,7 @@ item.size = 1
 item.max_durability = 100
 item.reinforced_prefix = "badass"
 
-item.required_rank = 0
+item.skill_requirement = 0
 item.deflection_chance = 6
 item.deflection_bonus = 4
 item.damage_resistance = 0

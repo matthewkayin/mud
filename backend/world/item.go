@@ -116,7 +116,6 @@ type ItemType struct {
 	kind ItemKind
 	price int32
 	size int32
-	requirement int32
 	data any
 }
 
@@ -131,6 +130,9 @@ type ArmorData struct {
 	maxDurability int32
 	reinforcedPrefix string
 
+	// Only parsed for armor kinds which have a required skill
+	skillRequirement int32
+
 	deflectChance int32
 	deflectBonus int32
 	damageResistance int32
@@ -143,6 +145,7 @@ type ArmorData struct {
 type WeaponData struct {
 	maxDurability int32
 	reinforcedPrefix string
+	skillRequirement int32
 
 	damage int32
 	penetration int32
@@ -287,31 +290,48 @@ func (item *Item) IsAccessory() bool {
 	}
 }
 
-// Returns the skill and rank needed to equip items of this type, and whether the type has a requirement
-func (itemType *ItemType) getSkillRequirement() (SkillName, int32, bool) {
-	switch itemType.kind {
+// Returns the skill which items of this kind require, and whether the kind has a skill requirement
+func (kind ItemKind) requiredSkill() (SkillName, bool) {
+	switch kind {
 		case ITEM_KIND_EQUIPMENT_ONE_HANDED_SWORD,
 			 ITEM_KIND_EQUIPMENT_TWO_HANDED_SWORD:
-			return SKILL_SWORDS, itemType.requirement, true
+			return SKILL_SWORDS, true
 		case ITEM_KIND_EQUIPMENT_ONE_HANDED_AXE,
 			 ITEM_KIND_EQUIPMENT_TWO_HANDED_AXE:
-			return SKILL_AXES, itemType.requirement, true
+			return SKILL_AXES, true
 		case ITEM_KIND_EQUIPMENT_ONE_HANDED_BLUNT,
 			 ITEM_KIND_EQUIPMENT_TWO_HANDED_BLUNT:
-			return SKILL_BLUDGEONING, itemType.requirement, true
+			return SKILL_BLUDGEONING, true
 		case ITEM_KIND_EQUIPMENT_ONE_HANDED_DAGGER:
-			return SKILL_DAGGERS, itemType.requirement, true
+			return SKILL_DAGGERS, true
 		case ITEM_KIND_EQUIPMENT_TWO_HANDED_BOW:
-			return SKILL_MARKSMANSHIP, itemType.requirement, true
+			return SKILL_MARKSMANSHIP, true
 		case ITEM_KIND_EQUIPMENT_OUTFIT_LIGHT_ARMOR:
-			return SKILL_LIGHT_ARMOR, itemType.requirement, true
+			return SKILL_LIGHT_ARMOR, true
 		case ITEM_KIND_EQUIPMENT_OUTFIT_HEAVY_ARMOR:
-			return SKILL_HEAVY_ARMOR, itemType.requirement, true
+			return SKILL_HEAVY_ARMOR, true
 		case ITEM_KIND_EQUIPMENT_SHIELD:
-			return SKILL_SHIELDS, itemType.requirement, true
+			return SKILL_SHIELDS, true
 		default:
-			return 0, 0, false
+			return 0, false
 	}
+}
+
+// Returns the skill and rank needed to equip items of this type, and whether the type has a skill requirement
+func (itemType *ItemType) getSkillRequirement() (SkillName, int32, bool) {
+	skill, hasSkillRequirement := itemType.kind.requiredSkill()
+	if !hasSkillRequirement {
+		return 0, 0, false
+	}
+
+	if itemType.HasWeaponData() {
+		return skill, itemType.data.(WeaponData).skillRequirement, true
+	}
+	if itemType.HasArmorData() {
+		return skill, itemType.data.(ArmorData).skillRequirement, true
+	}
+
+	return 0, 0, false
 }
 
 func (item *Item) EquipmentSlotForItem() (EquipmentSlot, bool) {

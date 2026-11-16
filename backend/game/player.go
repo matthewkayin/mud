@@ -67,13 +67,22 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 
 				//move to its own window pane later
 
-				for index := range player.character.Equipment.IsSlotInUse {
-					slotName := world.EquipmentSlot(index).String()
-					item := "<none>"
-					if player.character.Equipment.IsSlotInUse[index] == true {
-						item = player.character.Equipment.SlotItem[index].Name
+				mainHandItem := player.character.Equipment.Get(world.EQUIPMENT_SLOT_MAIN_HAND)
+				isTwoHandedWeaponEquipped := mainHandItem != nil && mainHandItem.IsTwoHandedWeapon()
+				for index := range world.EQUIPMENT_SLOT_COUNT {
+					slot := world.EquipmentSlot(index)
+					item := player.character.Equipment.Get(slot)
+
+					// A two-handed weapon occupies the off hand too
+					if slot == world.EQUIPMENT_SLOT_OFF_HAND && isTwoHandedWeaponEquipped {
+						item = mainHandItem
 					}
-					heartbeat.Inventory = append(heartbeat.Inventory, fmt.Sprintf("%s: %s", slotName, item))
+
+					itemName := "<none>"
+					if item != nil {
+						itemName = item.Name
+					}
+					heartbeat.Inventory = append(heartbeat.Inventory, fmt.Sprintf("%s: %s", slot.String(), itemName))
 				}
 
 				heartbeat.Inventory = append(heartbeat.Inventory, "* * * * * *")
