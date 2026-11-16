@@ -116,7 +116,6 @@ type ItemType struct {
 	kind ItemKind
 	price int32
 	size int32
-	requirement int32
 	data any
 }
 
@@ -129,7 +128,10 @@ type CreateItemParams struct {
 
 type ArmorData struct {
 	maxDurability int32
-	prefix string
+	reinforcedPrefix string
+
+	// Only parsed for armor kinds which have a required skill
+	skillRequirement int32
 
 	deflectChance int32
 	deflectBonus int32
@@ -142,7 +144,8 @@ type ArmorData struct {
 
 type WeaponData struct {
 	maxDurability int32
-	prefix string
+	reinforcedPrefix string
+	skillRequirement int32
 
 	damage int32
 	penetration int32
@@ -154,14 +157,9 @@ func (world *World) createItem(params CreateItemParams) Item {
 	itemId := world.NextItemId
 	world.NextItemId++
 
-
 	durability := params.durability
 	if durability == 0 && params.durabilityPercent != 0 {
-		if params.itemType.HasWeaponData() {
-			durability = (params.durabilityPercent * params.itemType.data.(WeaponData).maxDurability) / 100
-		} else if params.itemType.HasArmorData() {
-			durability = (params.durabilityPercent * params.itemType.data.(ArmorData).maxDurability) / 100
-		}
+		durability = (params.durabilityPercent * params.itemType.MaxDurability()) / 100
 	}
 
 	return Item {
@@ -173,26 +171,18 @@ func (world *World) createItem(params CreateItemParams) Item {
 }
 
 func (item *Item) NameWithCondition() string {
-		var maxDurability int32
-		var hasPrefix = false
-		var prefix string
-
-	if item.IsOneHandedWeapon() || item.IsTwoHandedWeapon() {
-		maxDurability = item.ItemType.data.(WeaponData).maxDurability
-		prefix = item.ItemType.data.(WeaponData).prefix
-		hasPrefix = true
-	} else if item.IsOutfit()||item.IsShield() {
-		maxDurability = item.ItemType.data.(ArmorData).maxDurability
-		prefix = item.ItemType.data.(ArmorData).prefix
-		hasPrefix = true
-	}	else {
+	maxDurability := item.MaxDurability()
+	if maxDurability == 0 {
 		return item.Name
 	}
 
 	if item.Durability < maxDurability / 2 {
 		return "Damaged " + item.Name
-	} else if item.Durability > maxDurability && hasPrefix {
-		return prefix + " " + item.Name
+	}
+
+	reinforcedPrefix, hasReinforcedPrefix := item.GetReinforcedPrefix()
+	if item.Durability > maxDurability && hasReinforcedPrefix {
+		return reinforcedPrefix + " " + item.Name
 	}
 
 	return item.Name
@@ -300,43 +290,48 @@ func (item *Item) IsAccessory() bool {
 	}
 }
 
-func (item *Item) getRequirements() (bool, SkillBlock) {
-	var hasRequirements bool
-	var requirements SkillBlock
-
-	switch item.ItemType.kind {
+// Returns the skill which items of this kind require, and whether the kind has a skill requirement
+func (kind ItemKind) requiredSkill() (SkillName, bool) {
+	switch kind {
 		case ITEM_KIND_EQUIPMENT_ONE_HANDED_SWORD,
 			 ITEM_KIND_EQUIPMENT_TWO_HANDED_SWORD:
-			hasRequirements = true
-		 	requirements.Values[SKILL_SWORDS] = item.ItemType.requirement
+			return SKILL_SWORDS, true
 		case ITEM_KIND_EQUIPMENT_ONE_HANDED_AXE,
 			 ITEM_KIND_EQUIPMENT_TWO_HANDED_AXE:
-			hasRequirements = true
-		 	requirements.Values[SKILL_AXES] = item.ItemType.requirement
+			return SKILL_AXES, true
 		case ITEM_KIND_EQUIPMENT_ONE_HANDED_BLUNT,
 			 ITEM_KIND_EQUIPMENT_TWO_HANDED_BLUNT:
-			hasRequirements = true
-		 	requirements.Values[SKILL_BLUDGEONING] = item.ItemType.requirement
+			return SKILL_BLUDGEONING, true
 		case ITEM_KIND_EQUIPMENT_ONE_HANDED_DAGGER:
-			hasRequirements = true
-		 	requirements.Values[SKILL_DAGGERS] = item.ItemType.requirement
+			return SKILL_DAGGERS, true
 		case ITEM_KIND_EQUIPMENT_TWO_HANDED_BOW:
-			hasRequirements = true
-			requirements.Values[SKILL_MARKSMANSHIP] = item.ItemType.requirement
+			return SKILL_MARKSMANSHIP, true
 		case ITEM_KIND_EQUIPMENT_OUTFIT_LIGHT_ARMOR:
-			hasRequirements = true
-			requirements.Values[SKILL_LIGHT_ARMOR] = item.ItemType.requirement
+			return SKILL_LIGHT_ARMOR, true
 		case ITEM_KIND_EQUIPMENT_OUTFIT_HEAVY_ARMOR:
-			hasRequirements = true
-			requirements.Values[SKILL_HEAVY_ARMOR] = item.ItemType.requirement
+			return SKILL_HEAVY_ARMOR, true
 		case ITEM_KIND_EQUIPMENT_SHIELD:
-			hasRequirements = true
-			requirements.Values[SKILL_SHIELDS] = item.ItemType.requirement
+			return SKILL_SHIELDS, true
 		default:
-			hasRequirements = false
+			return 0, false
+	}
+}
+
+// Returns the skill and rank needed to equip items of this type, and whether the type has a skill requirement
+func (itemType *ItemType) getSkillRequirement() (SkillName, int32, bool) {
+	skill, hasSkillRequirement := itemType.kind.requiredSkill()
+	if !hasSkillRequirement {
+		return 0, 0, false
 	}
 
-	return hasRequirements, requirements
+	if itemType.HasWeaponData() {
+		return skill, itemType.data.(WeaponData).skillRequirement, true
+	}
+	if itemType.HasArmorData() {
+		return skill, itemType.data.(ArmorData).skillRequirement, true
+	}
+
+	return 0, 0, false
 }
 
 func (item *Item) EquipmentSlotForItem() (EquipmentSlot, bool) {
@@ -353,12 +348,26 @@ func (item *Item) EquipmentSlotForItem() (EquipmentSlot, bool) {
 	}
 }
 
-func (item *Item) MaxDurability() int32 {
-	if item.IsOneHandedWeapon() || item.IsTwoHandedWeapon() {
-		return item.ItemType.data.(WeaponData).maxDurability
-	} else if item.IsOutfit() || item.IsShield() {
-		return item.ItemType.data.(ArmorData).maxDurability
+// Returns 0 for item types which have no durability
+func (itemType *ItemType) MaxDurability() int32 {
+	if itemType.HasWeaponData() {
+		return itemType.data.(WeaponData).maxDurability
+	}
+	if itemType.HasArmorData() {
+		return itemType.data.(ArmorData).maxDurability
 	}
 
 	return 0
+}
+
+// Returns the prefix shown on an item whose durability is above its max durability
+func (itemType *ItemType) GetReinforcedPrefix() (string, bool) {
+	if itemType.HasWeaponData() {
+		return itemType.data.(WeaponData).reinforcedPrefix, true
+	}
+	if itemType.HasArmorData() {
+		return itemType.data.(ArmorData).reinforcedPrefix, true
+	}
+
+	return "", false
 }

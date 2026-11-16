@@ -24,7 +24,6 @@ type Player struct {
 	mobHandle world.MobHandle
 	isMinimapDirty bool
 	isInventoryDirty bool
-	isEquipmentDirty bool
 }
 
 func playerInit(key string, inbox *chan SocketMessage) Player {
@@ -62,18 +61,28 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 				heartbeat.Map = gamestate.GetMinimap(player.character.Room, player.character.RoomsDiscovered)
 				player.isMinimapDirty = false
 			}
-			if player.isInventoryDirty || player.isEquipmentDirty {
-				heartbeat.Inventory = make([]string, 0, 1 + len(player.character.Inventory.Items))
+			if player.isInventoryDirty {
+				// Equipment slot lines, separator, inventory header, then either "<empty>" or the item lines
+				heartbeat.Inventory = make([]string, 0, world.EQUIPMENT_SLOT_COUNT + 3 + len(player.character.Inventory.Items))
 
 				//move to its own window pane later
 
-				for index := range player.character.Equipment.IsSlotInUse {
-					slotName := world.EquipmentSlot(index).String()
-					item := "<none>"
-					if player.character.Equipment.IsSlotInUse[index] == true {
-						item = player.character.Equipment.SlotItem[index].Name
+				mainHandItem := player.character.Equipment.Get(world.EQUIPMENT_SLOT_MAIN_HAND)
+				isTwoHandedWeaponEquipped := mainHandItem != nil && mainHandItem.IsTwoHandedWeapon()
+				for index := range world.EQUIPMENT_SLOT_COUNT {
+					slot := world.EquipmentSlot(index)
+					item := player.character.Equipment.Get(slot)
+
+					// A two-handed weapon occupies the off hand too
+					if slot == world.EQUIPMENT_SLOT_OFF_HAND && isTwoHandedWeaponEquipped {
+						item = mainHandItem
 					}
-					heartbeat.Inventory = append(heartbeat.Inventory, fmt.Sprintf("%s: %s", slotName, item))
+
+					itemName := "<none>"
+					if item != nil {
+						itemName = item.Name
+					}
+					heartbeat.Inventory = append(heartbeat.Inventory, fmt.Sprintf("%s: %s", slot.String(), itemName))
 				}
 
 				heartbeat.Inventory = append(heartbeat.Inventory, "* * * * * *")

@@ -47,9 +47,34 @@ Required fields must be present. There are no defaults for them.
 |---|---|---|
 | `name` | string | Other files refer to the item by this name. |
 | `description` | string | |
-| `kind` | `world.ItemKind.*` | |
+| `kind` | `world.ItemKind.*` | See the kinds below. |
 | `price` | integer | Not negative. |
 | `size` | integer | Not negative. |
+
+Item kinds:
+
+| Kind | Equips to | Required skill | Extra fields |
+|---|---|---|---|
+| `CONSUMABLE`, `MISC` | Can't be equipped | None | None |
+| `ONE_HANDED_SWORD`, `ONE_HANDED_AXE`, `ONE_HANDED_BLUNT`, `DAGGER` | Main hand or off hand | Swords, Axes, Bludgeoning, Daggers | Weapon |
+| `TWO_HANDED_SWORD`, `TWO_HANDED_AXE`, `TWO_HANDED_BLUNT`, `BOW` | Both hands | Swords, Axes, Bludgeoning, Marksmanship | Weapon |
+| `SHIELD` | Off hand | Shields | Armor |
+| `CLOTHING` | Outfit | None | Armor |
+| `LIGHT_ARMOR`, `HEAVY_ARMOR` | Outfit | Light Armor, Heavy Armor | Armor |
+| `ACCESSORY` | Accessory | None | Armor |
+
+Weapon and armor kinds have durability and need these fields:
+
+| Field | Type | Notes |
+|---|---|---|
+| `max_durability` | integer | Not negative. An item below half its max durability is shown as "Damaged". |
+| `reinforced_prefix` | string | Shown before the item's name while its durability is above its max durability, for example "Sharpened". |
+
+Kinds with a required skill (all weapons, `SHIELD`, `LIGHT_ARMOR` and `HEAVY_ARMOR`) also need `skill_requirement`: an integer, not negative, giving the rank a character needs in the required skill to equip the item. `CLOTHING` and `ACCESSORY` don't have it.
+
+Weapon kinds also need `damage` and `penetration`, both integers and not negative.
+
+Armor kinds also need `deflection_chance`, `deflection_bonus` and `damage_resistance` (integers, not negative), plus `evade_modifier`, `sneak_modifier` and `initiative_modifier` (integers).
 
 ### npcs
 
