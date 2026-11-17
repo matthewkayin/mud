@@ -1,21 +1,24 @@
-local background = {}
+local class = {}
 
-background.name = "Thief"
-background.description = "Torrents all his spell scrolls off the pirate bay"
+class.name = "Thief"
+class.description = "Likes to steal stuff"
 
-background.attributes = {
-    [world.Attribute.VIT] = 4,
-    [world.Attribute.STR] = 2,
-    [world.Attribute.AGI] = 4,
-    [world.Attribute.INT] = 2,
-    [world.Attribute.FTH] = 1,
+class.stats = {
+    [world.Stat.STR] = 4,
+    [world.Stat.VIT] = 6,
+    [world.Stat.AGI] = 10,
+    [world.Stat.INT] = 8,
+    [world.Stat.FTH] = 4,
 }
 
-background.skills = {
-    [world.Skill.SNEAK] = 3,
-    [world.Skill.DAGGERS] = 2,
-    [world.Skill.SECURITY] = 2,
-    [world.Skill.EVADE] = 2,
+class.skills = {
+    world.Skill.LIGHT_ARMOR,
+    world.Skill.SWORDS,
+    world.Skill.BLUNT,
+    world.Skill.DAGGERS,
+    world.Skill.BOWS,
+    world.Skill.SNEAK,
+    world.Skill.SECURITY,
 }
 
-return background
+return class
