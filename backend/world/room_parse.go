@@ -232,7 +232,7 @@ func (parser *ScriptParser) parseRoom(world *World, table *lua.Table) *Room {
 			}
 
 			id := parser.getString(npc, "id")
-			npcData, exists := world.NpcIdToData[id]
+			npcData, exists := world.NpcData[id]
 			if !exists {
 				parser.addProblem("npcs", fmt.Errorf("npcs[%d] has id '%s' which does not match any NPC.", index, id))
 				continue

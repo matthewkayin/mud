@@ -2,18 +2,14 @@ package world
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/mmcdole/lunar"
 )
-
-type RaceId int
 
 type RaceData struct {
 	Name string
 	Description string
-	Attributes AttributeBlock
-	Skills SkillBlock
+	Stats StatBlock
+	Skills SkillFlags
 }
 
 const RACE_DATA_FOLDER = "races"
@@ -21,8 +17,7 @@ const RACE_DATA_FOLDER = "races"
 func (world *World) loadRaceData() []ScriptProblem {
 	files, problems := world.scriptLoadFolder(RACE_DATA_FOLDER)
 
-	world.RaceData = make([]*RaceData, 0, len(files))
-	world.RaceNameToId = make(map[string]RaceId)
+	world.RaceData = make(map[string]*RaceData)
 
 	for _, file := range files {
 		// Parse race data
@@ -34,15 +29,14 @@ func (world *World) loadRaceData() []ScriptProblem {
 		}
 
 		// Check for duplicates
-		_, duplicateName := world.RaceNameToId[raceData.Name]
+		_, duplicateName := world.RaceData[raceData.Name]
 		if duplicateName {
 			parser.addProblem("name", fmt.Errorf("Race has name '%s' which is a duplicate of another race.", raceData.Name))
 			problems = append(problems, parser.problems...)
 			continue
 		}
 
-		world.RaceNameToId[raceData.Name] = RaceId(len(world.RaceData))
-		world.RaceData = append(world.RaceData, raceData)
+		world.RaceData[raceData.Name] = raceData
 	}
 
 	return problems
@@ -53,22 +47,12 @@ func (parser *ScriptParser) parseRace(table *lua.Table) *RaceData {
 
 	raceData.Name = parser.getString(table, "name")
 	raceData.Description = parser.getString(table, "description")
-	raceData.Attributes = parser.getAttributeBlock(table, "attributes")
-	raceData.Skills = parser.getSkillBlock(table, "skills")
+	raceData.Stats = parser.getStatBlock(table, "stats")
+	raceData.Skills = parser.getSkillFlags(table, "skills")
 
 	if len(parser.problems) != 0 {
 		return nil
 	}
 
 	return raceData
-}
-
-func (world *World) RaceIdFromString(name string) (RaceId, error) {
-	for raceId, raceData := range world.RaceData {
-		if strings.EqualFold(name, raceData.Name) {
-			return RaceId(raceId), nil
-		}
-	}
-
-	return 0, fmt.Errorf("'%s' is not a valid race.", name)
 }

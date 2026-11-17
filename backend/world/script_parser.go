@@ -209,52 +209,57 @@ func (parser *ScriptParser) checkInt32IsPositivePercent(number int32, key string
 	parser.checkInt32Positive(number, key)
 }
 
-func (parser *ScriptParser) getAttributeBlock(table *lua.Table, key string) AttributeBlock {
-	attributes := AttributeBlock{}
+func (parser *ScriptParser) getStatBlock(table *lua.Table, key string) StatBlock {
+	stats := StatBlock{}
 
 	parser.forEachInOptionalTable(table, key, func (abbreviation string, value lua.Value) bool {
 		// Validate that the key is an attribute
-		attribute, err := attributeAbbreviationToEnum(abbreviation)
-		if err != nil {
-			parser.addProblem(key, err)
-			return false
-		}
-
-		attributeValue, ok := value.AsNumber()
+		statName, ok := util.EnumFromString[StatName](abbreviation, STAT_COUNT)
 		if !ok {
-			parser.addProblem(key, fmt.Errorf("Values in the attribute block table must be numbers."))
+			parser.addProblem(key, fmt.Errorf("'%s' is not a valid stat.", abbreviation))
 			return false
 		}
 
-		parser.checkNumberIsInt32(attributeValue, key, abbreviation)
-		attributes.Values[attribute] = int32(attributeValue)
+		statValue, ok := value.AsNumber()
+		if !ok {
+			parser.addProblem(key, fmt.Errorf("Values in the stat block table must be numbers."))
+			return false
+		}
+
+		parser.checkNumberIsInt32(statValue, key, abbreviation)
+		stats.Values[statName] = int32(statValue)
 		return true
 	})
 
-	return attributes
+	return stats
 }
 
-func (parser *ScriptParser) getSkillBlock(table *lua.Table, key string) SkillBlock {
-	skills := SkillBlock{}
+func (parser *ScriptParser) getSkillFlags(table *lua.Table, key string) SkillFlags {
+	skills := SkillFlags(0)
 
-	parser.forEachInOptionalTable(table, key, func (skillName string, value lua.Value) bool {
-		// Validate that the key is a skill
-		skill, err := skillNameToEnum(skillName)
-		if err != nil {
-			parser.addProblem(key, err)
-			return false
-		}
+	tableValue := parser.getOptionalTable(table, key)
+	skillTable, ok := tableValue.Value().AsTable()
+	if !ok {
+		return skills
+	}
 
-		skillValue, ok := value.AsNumber()
+	skillCount := skillTable.RawLen()
+	for index := 1; index <= skillCount; index++ {
+		skillValue := skillTable.RawGetInt(index)
+		skillStr, ok := skillValue.AsString()
 		if !ok {
-			parser.addProblem(key, fmt.Errorf("Values in the skill block table must be numbers."))
-			return false
+			parser.addProblem(key, fmt.Errorf("Values in a skill list must be strings."))
+			continue
 		}
 
-		parser.checkNumberIsInt32(skillValue, key, skillName)
-		skills.Values[skill] = int32(skillValue)
-		return true
-	})
+		skill, ok := util.EnumFromString[Skill](skillStr, SKILL_COUNT)
+		if !ok {
+			parser.addProblem(key, fmt.Errorf("'%s' is not a valid skill.", skillStr))
+			continue
+		}
+
+		skills.Grant(skill)
+	}
 
 	return skills
 }

@@ -21,13 +21,12 @@ type CharacterJson struct {
 	RoomsDiscovered []RoomPosition
 
 	Race string
-	Background string
+	Class string
 
 	Experience int32
 	ExpTotal int32
 
-	Attributes map[string]int32
-	Skills map[string]int32
+	Skills []string
 
 	Health int32
 	Mana int32
@@ -136,14 +135,13 @@ func (world *World) characterToJson(character *Character) CharacterJson {
 		Room: world.Rooms[character.Room].Position,
 		RoomsDiscovered: make([]RoomPosition, 0, len(world.Rooms)),
 
-		Race: world.RaceData[character.Race].Name,
-		Background: world.BackgroundData[character.Background].Name,
+		Race: character.Race.Name,
+		Class: character.Class.Name,
 
 		Experience: character.Experience,
 		ExpTotal: character.ExpTotal,
 
-		Attributes: make(map[string]int32),
-		Skills: make(map[string]int32),
+		Skills: character.Skills.ToStringArray(),
 
 		Health: character.Health,
 		Mana: character.Mana,
@@ -157,16 +155,6 @@ func (world *World) characterToJson(character *Character) CharacterJson {
 		if bitset.Check(character.RoomsDiscovered, index) {
 			characterJson.RoomsDiscovered = append(characterJson.RoomsDiscovered, world.Rooms[index].Position)
 		}
-	}
-
-	// Attributes
-	for index := range ATTRIBUTE_COUNT {
-		characterJson.Attributes[ATTRIBUTE_DATA[index].Abbreviation] = character.Attributes.Values[index]
-	}
-
-	// Skills
-	for index := range SKILL_COUNT {
-		characterJson.Skills[SKILL_DATA[index].Name] = character.Skills.Values[index]
 	}
 
 	// Inventory
@@ -219,15 +207,15 @@ func (world *World) characterFromJson(characterJson *CharacterJson) (*Character,
 	}
 
 	// Race
-	character.Race, exists = world.RaceNameToId[characterJson.Race]
+	character.Race, exists = world.RaceData[characterJson.Race]
 	if !exists {
-		return nil, fmt.Errorf("No race ID matches the race '%s'.", characterJson.Race)
+		return nil, fmt.Errorf("Unrecognized race '%s'.", characterJson.Race)
 	}
 
-	// Background
-	character.Background, exists = world.BackgroundNameToId[characterJson.Background]
+	// Class
+	character.Class, exists = world.ClassData[characterJson.Class]
 	if !exists {
-		return nil, fmt.Errorf("No background ID matches the background '%s'.", characterJson.Background)
+		return nil, fmt.Errorf("Unrecognized class '%s'.", characterJson.Class)
 	}
 
 	// Character level is cached on the Character struct but is not saved in Json
@@ -236,25 +224,17 @@ func (world *World) characterFromJson(characterJson *CharacterJson) (*Character,
 	character.Level = LevelFromExpTotal(characterJson.ExpTotal)
 	character.Experience = characterJson.Experience
 	character.ExpTotal = characterJson.ExpTotal
-
-	// Attributes
-	for index := range ATTRIBUTE_COUNT {
-		character.Attributes.Values[index], exists = characterJson.Attributes[ATTRIBUTE_DATA[index].Abbreviation]
-		if !exists {
-			return nil, fmt.Errorf("Character is missing attribute %s.", ATTRIBUTE_DATA[index].Abbreviation)
-		}
-	}
-
-	// Skills
-	for index := range SKILL_COUNT {
-		character.Skills.Values[index], exists = characterJson.Skills[SKILL_DATA[index].Name]
-		if !exists {
-			return nil, fmt.Errorf("Character is missing skill %s.", SKILL_DATA[index].Name)
-		}
-	}
+	character.calculateStats()
 
 	character.Health = characterJson.Health
 	character.Mana = characterJson.Mana
+
+	// Skills
+	var err error
+	character.Skills, err = skillFlagsFromStringArray(characterJson.Skills)
+	if err != nil {
+		return nil, err
+	}
 
 	// Inventory
 	character.Inventory = NewInventory()
@@ -300,7 +280,7 @@ func itemToJson(item *Item) ItemJson {
 }
 
 func (world *World) itemFromJson(itemJson *ItemJson) (Item, error) {
-	itemType, exists := world.ItemNameToType[itemJson.Name]
+	itemType, exists := world.ItemTypes[itemJson.Name]
 	if !exists {
 		return Item{}, fmt.Errorf("Character has item %s which does not exist.", itemJson.Name)
 	}
