@@ -66,8 +66,7 @@ type NpcData struct {
 func (world *World) loadNpcData() []ScriptProblem {
 	files, problems := world.scriptLoadFolder(NPC_DATA_FOLDER)
 
-	world.NpcData = make([]*NpcData, 0, len(files))
-	world.NpcIdToData = make(map[string]*NpcData)
+	world.NpcData = make(map[string]*NpcData)
 
 	for _, file := range files {
 		// Parse NPC data
@@ -79,15 +78,14 @@ func (world *World) loadNpcData() []ScriptProblem {
 		}
 
 		// Check for duplicate IDs
-		_, duplicateNpcId := world.NpcIdToData[npcData.id]
+		_, duplicateNpcId := world.NpcData[npcData.id]
 		if duplicateNpcId {
 			parser.addProblem("id", fmt.Errorf("NPC has ID '%s' which is a duplicate of another NPC.", npcData.id))
 			problems = append(problems, parser.problems...)
 			continue
 		}
 
-		world.NpcIdToData[npcData.id] = npcData
-		world.NpcData = append(world.NpcData, npcData)
+		world.NpcData[npcData.id] = npcData
 	}
 
 	return problems
@@ -144,7 +142,7 @@ func (parser *ScriptParser) parserNpc(world *World, table *lua.Table) *NpcData {
 				continue
 			}
 
-			itemType, ok := world.ItemNameToType[itemName]
+			itemType, ok := world.ItemTypes[itemName]
 			if !ok {
 				parser.addProblem("wares", fmt.Errorf("wares[%d] has value %s which is not a valid item", index, itemName))
 				continue

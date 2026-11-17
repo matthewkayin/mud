@@ -12,8 +12,7 @@ const ITEM_DATA_FOLDER = "items"
 func (world *World) loadItemTypes() []ScriptProblem {
 	files, problems := world.scriptLoadFolder(ITEM_DATA_FOLDER)
 
-	world.ItemTypes = make([]*ItemType, 0, len(files))
-	world.ItemNameToType = make(map[string]*ItemType)
+	world.ItemTypes = make(map[string]*ItemType)
 
 	// Add a custom item for gold
 	world.ItemGold = &ItemType {
@@ -24,7 +23,7 @@ func (world *World) loadItemTypes() []ScriptProblem {
 		price: 1,
 		size: 0,
 	}
-	world.ItemNameToType[world.ItemGold.Name] = world.ItemGold
+	world.ItemTypes[world.ItemGold.Name] = world.ItemGold
 
 	for _, file := range files {
 		// Parse item type
@@ -36,15 +35,14 @@ func (world *World) loadItemTypes() []ScriptProblem {
 		}
 
 		// Check for duplicates
-		_, duplicateItemName := world.ItemNameToType[itemType.Name]
+		_, duplicateItemName := world.ItemTypes[itemType.Name]
 		if duplicateItemName {
 			parser.addProblem("name", fmt.Errorf("Item has name '%s' which is a duplicate of another item.", itemType.Name))
 			problems = append(problems, parser.problems...)
 			continue
 		}
 
-		world.ItemNameToType[itemType.Name] = itemType
-		world.ItemTypes = append(world.ItemTypes, itemType)
+		world.ItemTypes[itemType.Name] = itemType
 	}
 
 	return problems
@@ -78,8 +76,6 @@ func (parser *ScriptParser) parseItemType(table *lua.Table) *ItemType {
 		weaponData.penetration = parser.getInt32(table, "penetration")
 		parser.checkInt32NonNegative(weaponData.penetration, "penetration")
 		weaponData.reinforcedPrefix = parser.getString(table, "reinforced_prefix")
-		weaponData.skillRequirement = parser.getInt32(table, "skill_requirement")
-		parser.checkInt32NonNegative(weaponData.skillRequirement, "skill_requirement")
 
 		itemType.Data = weaponData
 	}
@@ -99,12 +95,6 @@ func (parser *ScriptParser) parseItemType(table *lua.Table) *ItemType {
 		armorData.initiativeModifier = parser.getInt32(table, "initiative_modifier")
 		armorData.sneakModifier = parser.getInt32(table, "sneak_modifier")
 		armorData.reinforcedPrefix = parser.getString(table, "reinforced_prefix")
-
-		_, hasSkillRequirement := itemType.Kind.requiredSkill()
-		if hasSkillRequirement {
-			armorData.skillRequirement = parser.getInt32(table, "skill_requirement")
-			parser.checkInt32NonNegative(armorData.skillRequirement, "skill_requirement")
-		}
 
 		itemType.Data = armorData
 	}

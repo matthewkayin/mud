@@ -24,10 +24,11 @@ var MENU_LOGIN_PARAMS = MenuNewParams {
 
 				for _, name := range characters {
 					character, _ := gamestate.world.GetCharacterIfExists(name)
-					player.send(fmt.Sprintf("<y>%s</y> - <p>%s %s</p>",
+					player.send(fmt.Sprintf("<y>%s</y> - Level %d %s %s",
 						name,
-						gamestate.world.RaceData[character.Race].Name,
-						gamestate.world.BackgroundData[character.Background].Name))
+						character.Level,
+						character.Race.Name,
+						character.Class.Name))
 				}
 
 				return true

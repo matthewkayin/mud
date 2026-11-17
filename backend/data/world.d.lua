@@ -17,6 +17,19 @@ world = {}
 world.ItemKind = {
 	CONSUMABLE = "Consumable",
 	MISC = "Misc",
+	ONE_HANDED_SWORD = "Sword (One-Handed)",
+	ONE_HANDED_AXE = "Axe (One-Handed)",
+	ONE_HANDED_BLUNT = "Blunt Weapon (One-Handed)",
+	DAGGER = "Dagger",
+	TWO_HANDED_SWORD = "Sword (Two-Handed)",
+	TWO_HANDED_AXE = "Axe (Two-Handed)",
+	TWO_HANDED_BLUNT = "Blunt Weapon (Two-Handed)",
+	BOW = "Bow",
+	SHIELD = "Shield",
+	CLOTHING = "Clothing",
+	LIGHT_ARMOR = "Light Armor",
+	HEAVY_ARMOR = "Heavy Armor",
+	ACCESSORY = "Accessory",
 }
 
 ---@enum TargetType
@@ -38,46 +51,37 @@ world.Direction = {
 	DOWN = "down",
 }
 
----@enum Attribute
-world.Attribute = {
+---@enum Stat
+world.Stat = {
 	VIT = "VIT",
 	STR = "STR",
 	AGI = "AGI",
 	INT = "INT",
 	FTH = "FTH",
+	LCK = "LCK",
 }
 
 ---@enum Skill
 world.Skill = {
-	FORTITUDE = "Fortitude",
 	HEAVY_ARMOR = "Heavy Armor",
-	SURVIVAL = "Survival",
+	LIGHT_ARMOR = "Light Armor",
 	TAUNT = "Taunt",
 	SWORDS = "Swords",
 	AXES = "Axes",
-	BLUDGEONING = "Bludgeoning",
 	SHIELDS = "Shields",
-	BLACKSMITHING = "Blacksmithing",
-	POWER_ATTACK = "Power Attack",
-	MARKSMANSHIP = "Marksmanship",
+	BLUNT = "Blunt",
+	BOWS = "Bows",
 	DAGGERS = "Daggers",
-	DUAL_WIELD = "Dual Wield",
 	SNEAK = "Sneak",
-	EVADE = "Evade",
-	LIGHT_ARMOR = "Light Armor",
 	SECURITY = "Security",
-	KEEN = "Keen",
-	SPELLCRAFT = "Spellcraft",
-	SCRIBE = "Scribe",
-	ALCHEMY = "Alchemy",
-	ENCHANTING = "Enchanting",
-	PSIONICS = "Psionics",
+	METAMAGIC = "Metamagic",
 	CANTRIPS = "Cantrips",
-	MEDITATION = "Meditation",
-	WILLPOWER = "Willpower",
+	PSIONICS = "Psionics",
 	EVOCATION = "Evocation",
 	DRUIDRY = "Druidry",
 	CONJURATION = "Conjuration",
+	NECROMANCY = "Necromancy",
+	PRAYER = "Prayer",
 }
 
 ---@enum NpcDisposition

@@ -110,7 +110,7 @@ func (parser *ScriptParser) getOptionalLootTable(world *World, table *lua.Table,
 		}
 
 		itemTypeString := parser.getString(entryTable, "item")
-		itemType, exists := world.ItemNameToType[itemTypeString]
+		itemType, exists := world.ItemTypes[itemTypeString]
 		if !exists {
 			parser.addProblem("item", fmt.Errorf("item '%s' in drop table entry %s does not exist.", itemTypeString, entryKey))
 			continue

@@ -9,15 +9,14 @@ import (
 type Character struct {
 	PlayerKey string
 
-	Race RaceId
-	Background BackgroundId
+	Race *RaceData
+	Class *ClassData
 
 	Level int32
 	Experience int32
-	ExpTotal int32
 
-	Attributes AttributeBlock
-	Skills SkillBlock
+	Stats StatBlock
+	Skills SkillFlags
 
 	Equipment Equipment
 
@@ -29,8 +28,8 @@ type Character struct {
 type CharacterSheet struct {
 	Name string
 
-	Race RaceId
-	Background BackgroundId
+	Race *RaceData
+	Class *ClassData
 }
 
 func (world *World) NewCharacter(playerKey string, characterSheet *CharacterSheet) *Character {
@@ -39,13 +38,12 @@ func (world *World) NewCharacter(playerKey string, characterSheet *CharacterShee
 	character.PlayerKey = playerKey
 	character.Name = characterSheet.Name
 	character.Race = characterSheet.Race
-	character.Background = characterSheet.Background
+	character.Class = characterSheet.Class
 
 	// Set attributes and skills
-	raceData := world.RaceData[character.Race]
-	backgroundData := world.BackgroundData[character.Background]
-	character.Attributes = raceData.Attributes.Add(&backgroundData.Attributes)
-	character.Skills = raceData.Skills.Add(&backgroundData.Skills)
+	character.Level = 1
+	character.Stats = character.Race.Stats.Add(&character.Class.Stats)
+	character.Skills = character.Race.Skills | character.Class.Skills
 
 	character.RoomsDiscovered = bitset.New(len(world.Rooms))
 
@@ -85,18 +83,16 @@ func (character *Character) GetFaction() MobFaction {
 }
 
 func (character *Character) DescribeToPlayer(world *World, playerKey string) {
-	raceData := world.RaceData[character.Race]
-	guild := "Adventurer"
 	world.MessagePlayer(playerKey, fmt.Sprintf("<y>%s</y> is a level %d %s %s.",
-		character.Name, character.Level, raceData.Name, guild))
+		character.Name, character.Level, character.Race.Name, character.Class.Name))
 }
 
 func (character *Character) MaxHealth() int32 {
-	return 40 + (character.Level * 10) + (character.Skills.Values[SKILL_FORTITUDE] * 25)
+	return 10 * character.Stats.Values[STAT_VIT]
 }
 
 func (character *Character) MaxMana() int32 {
-	return 40 + (character.Skills.Values[SKILL_SPELLCRAFT] * 10)
+	return 10 * character.Stats.Values[STAT_INT]
 }
 
 func (character *Character) InventoryCapacity() int32 {
@@ -114,11 +110,18 @@ func (character *Character) update(world *World) {
 // CHARACTER FUNCTIONS
 
 func (character *Character) MaxSpellSlots() int32 {
-	return 2 + character.Skills.Values[SKILL_SPELLCRAFT]
+	return int32(character.Stats.Values[STAT_INT] / 4)
 }
 
 func ExpToNextLevel(level int32) int32 {
 	return int32(756.0 * math.Pow(1.26, float64(level - 1)))
+}
+
+func (character *Character) ExpTowardNextLevel() int32 {
+	if character.Level == 1 {
+		return character.Experience
+	}
+	return character.Experience - ExpToNextLevel(character.Level - 1)
 }
 
 func LevelFromExpTotal(expTotal int32) int32 {
@@ -129,17 +132,18 @@ func LevelFromExpTotal(expTotal int32) int32 {
 	return level
 }
 
-func MaxAttributeAtLevel(level int32) int32 {
-	return level + 4
-}
-
 func (character *Character) grantExperience(world *World, amount int32) {
 	character.Experience += amount
-	character.ExpTotal += amount
-	for character.ExpTotal > ExpToNextLevel(character.Level) {
+	for character.Experience > ExpToNextLevel(character.Level) {
 		character.Level++
+		character.calculateStats()
 		world.MessagePlayer(character.PlayerKey, fmt.Sprintf("Level up! You are now level %d.", character.Level))
 	}
+}
+
+func (character *Character) calculateStats() {
+	baseStats := character.Race.Stats.Add(&character.Class.Stats)
+	character.Stats = baseStats.ScaledToLevel(character.Level)
 }
 
 func (character *Character) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot) {
@@ -188,9 +192,9 @@ func (character *Character) EquipFromInventory(world *World, itemIndex int, slot
 	}
 
 	// Check skill requirement
-	skill, requirement, hasRequirement := item.getSkillRequirement()
-	if hasRequirement && character.Skills.Values[skill] < requirement {
-		return item, nil, fmt.Errorf("You need rank %d in %s to equip %s.", requirement, SKILL_DATA[skill].Name, item.NameWithCondition())
+	skill, hasRequirement := item.Kind.requiredSkill()
+	if hasRequirement && !character.Skills.Has(skill) {
+		return item, nil, fmt.Errorf("You need the skill %s to equip %s.", skill.String(), item.NameWithCondition())
 	}
 
 	// Check that the displaced items will fit in the inventory once this item is removed from it

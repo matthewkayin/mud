@@ -2,6 +2,7 @@ package world
 
 import (
 	"fmt"
+	"log"
 	"github.com/mmcdole/lunar"
 )
 
@@ -56,19 +57,19 @@ func (location ItemLocation) String() string {
 func (kind ItemKind) String() string {
 	switch kind {
 	case ITEM_KIND_EQUIPMENT_ONE_HANDED_SWORD:
-		return "One-Handed Sword"
+		return "Sword (One-Handed)"
 	case ITEM_KIND_EQUIPMENT_ONE_HANDED_AXE:
-		return "One-Handed Axe"
+		return "Axe (One-Handed)"
 	case ITEM_KIND_EQUIPMENT_ONE_HANDED_BLUNT:
-		return "One-Handed Blunt"
+		return "Blunt Weapon (One-Handed)"
 	case ITEM_KIND_EQUIPMENT_ONE_HANDED_DAGGER:
 		return "Dagger"
 	case ITEM_KIND_EQUIPMENT_TWO_HANDED_SWORD:
-		return "Two-Handed Sword"
+		return "Sword (Two-Handed)"
 	case ITEM_KIND_EQUIPMENT_TWO_HANDED_AXE:
-		return "Two-Handed Axe"
+		return "Axe (Two-Handed)"
 	case ITEM_KIND_EQUIPMENT_TWO_HANDED_BLUNT:
-		return "Two-Handed Blunt"
+		return "Blunt Weapon (Two-Handed)"
 	case ITEM_KIND_EQUIPMENT_TWO_HANDED_BOW:
 		return "Bow"
 	case ITEM_KIND_EQUIPMENT_SHIELD:
@@ -86,7 +87,8 @@ func (kind ItemKind) String() string {
 	case ITEM_KIND_MISC:
 		return "Misc"
 	default:
-		panic(fmt.Sprintf("Item kind %d not handled", kind))
+		log.Printf("Item kind %d not handled", kind)
+		return ""
 	}
 }
 
@@ -154,9 +156,6 @@ type ArmorData struct {
 	maxDurability int32
 	reinforcedPrefix string
 
-	// Only parsed for armor kinds which have a required skill
-	skillRequirement int32
-
 	deflectChance int32
 	deflectBonus int32
 	damageResistance int32
@@ -169,7 +168,6 @@ type ArmorData struct {
 type WeaponData struct {
 	maxDurability int32
 	reinforcedPrefix string
-	skillRequirement int32
 
 	damage int32
 	penetration int32
@@ -315,7 +313,7 @@ func (item *Item) IsAccessory() bool {
 }
 
 // Returns the skill which items of this kind require, and whether the kind has a skill requirement
-func (kind ItemKind) requiredSkill() (SkillName, bool) {
+func (kind ItemKind) requiredSkill() (Skill, bool) {
 	switch kind {
 		case ITEM_KIND_EQUIPMENT_ONE_HANDED_SWORD,
 			 ITEM_KIND_EQUIPMENT_TWO_HANDED_SWORD:
@@ -325,11 +323,11 @@ func (kind ItemKind) requiredSkill() (SkillName, bool) {
 			return SKILL_AXES, true
 		case ITEM_KIND_EQUIPMENT_ONE_HANDED_BLUNT,
 			 ITEM_KIND_EQUIPMENT_TWO_HANDED_BLUNT:
-			return SKILL_BLUDGEONING, true
+			return SKILL_BLUNT, true
 		case ITEM_KIND_EQUIPMENT_ONE_HANDED_DAGGER:
 			return SKILL_DAGGERS, true
 		case ITEM_KIND_EQUIPMENT_TWO_HANDED_BOW:
-			return SKILL_MARKSMANSHIP, true
+			return SKILL_BOWS, true
 		case ITEM_KIND_EQUIPMENT_OUTFIT_LIGHT_ARMOR:
 			return SKILL_LIGHT_ARMOR, true
 		case ITEM_KIND_EQUIPMENT_OUTFIT_HEAVY_ARMOR:
@@ -339,23 +337,6 @@ func (kind ItemKind) requiredSkill() (SkillName, bool) {
 		default:
 			return 0, false
 	}
-}
-
-// Returns the skill and rank needed to equip items of this type, and whether the type has a skill requirement
-func (itemType *ItemType) getSkillRequirement() (SkillName, int32, bool) {
-	skill, hasSkillRequirement := itemType.Kind.requiredSkill()
-	if !hasSkillRequirement {
-		return 0, 0, false
-	}
-
-	if itemType.HasWeaponData() {
-		return skill, itemType.Data.(WeaponData).skillRequirement, true
-	}
-	if itemType.HasArmorData() {
-		return skill, itemType.Data.(ArmorData).skillRequirement, true
-	}
-
-	return 0, 0, false
 }
 
 func (item *Item) EquipmentSlotForItem() (EquipmentSlot, bool) {

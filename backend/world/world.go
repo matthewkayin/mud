@@ -27,19 +27,14 @@ type World struct {
 	Characters map[string]*Character
 	PlayerCharacters map[string][]string
 
-	RaceData []*RaceData
-	RaceNameToId map[string]RaceId
+	RaceData map[string]*RaceData
+	ClassData map[string]*ClassData
 
-	BackgroundData []*BackgroundData
-	BackgroundNameToId map[string]BackgroundId
-
-	ItemTypes []*ItemType
-	ItemNameToType map[string]*ItemType
+	ItemTypes map[string]*ItemType
 	NextItemId ItemId
 	ItemGold *ItemType
 
-	NpcData []*NpcData
-	NpcIdToData map[string]*NpcData
+	NpcData map[string]*NpcData
 
 	// The name of every room file that parsed, keyed by its path relative to the rooms folder.
 	// Filled even when the layout has errors
@@ -72,7 +67,7 @@ func NewWorld(dataFolder fs.FS, scriptStdout io.Writer) (*World, []ScriptProblem
 		world.loadItemTypes,
 		world.loadNpcData,
 		world.loadRaceData,
-		world.loadBackgroundData,
+		world.loadClassData,
 		world.loadRoomData,
 	}
 	for _, loader := range loaders {
