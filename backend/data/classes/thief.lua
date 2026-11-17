@@ -9,6 +9,7 @@ class.stats = {
     [world.Stat.AGI] = 10,
     [world.Stat.INT] = 8,
     [world.Stat.FTH] = 4,
+    [world.Stat.AGI] = 8,
 }
 
 class.skills = {

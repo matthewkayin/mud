@@ -2,6 +2,8 @@ package world
 
 import (
 	"log"
+	"strings"
+	"strconv"
 )
 
 const STAT_SCALING_FACTOR float32 = 1.0 / 5.0
@@ -92,4 +94,26 @@ func (baseStats *StatBlock) ScaledToLevel(level int32) StatBlock {
 		stats.Values[index] = baseStats.Values[index] + int32((float32(baseStats.Values[index] * (level - 1)) * STAT_SCALING_FACTOR))
 	}
 	return stats
+}
+
+func (stats *StatBlock) ToString(showPlus bool) string {
+	var builder strings.Builder
+	builder.Grow(8 * STAT_COUNT)
+
+	for index := range STAT_COUNT {
+		stat := StatName(index)
+		builder.WriteString(stat.String())
+		builder.WriteByte(' ')
+
+		if showPlus && stats.Values[index] >= 0 {
+			builder.WriteByte('+')
+		}
+		builder.WriteString(strconv.Itoa(int(stats.Values[index])))
+
+		if index < STAT_COUNT - 1 {
+			builder.Write([]byte(" | "))
+		}
+	}
+
+	return builder.String()
 }

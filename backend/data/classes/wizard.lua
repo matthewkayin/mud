@@ -5,10 +5,11 @@ class.description = "Likes to spell stuff"
 
 class.stats = {
     [world.Stat.STR] = 4,
-    [world.Stat.VIT] = 4,
+    [world.Stat.VIT] = 6,
     [world.Stat.AGI] = 6,
     [world.Stat.INT] = 10,
     [world.Stat.FTH] = 8,
+    [world.Stat.LCK] = 4,
 }
 
 class.skills = {

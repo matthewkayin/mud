@@ -2,6 +2,7 @@ package world
 
 import (
 	"fmt"
+	"strings"
 	"github.com/mmcdole/lunar"
 )
 
@@ -36,7 +37,7 @@ func (world *World) loadRaceData() []ScriptProblem {
 			continue
 		}
 
-		world.RaceData[raceData.Name] = raceData
+		world.RaceData[strings.ToLower(raceData.Name)] = raceData
 	}
 
 	return problems

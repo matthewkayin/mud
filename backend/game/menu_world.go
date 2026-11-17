@@ -51,6 +51,26 @@ var MENU_WORLD_ENTRIES_GENERAL = map[string]MenuEntry {
 		},
 	},
 
+	"stats": {
+		usage: "stats",
+		description: "Show your current stats",
+		categories: []string { "general" },
+		handler: func (gamestate *GameState, player *Player, args []string) bool {
+			player.send("=== CHARACTER SHEET ===")
+			player.send("\n")
+			player.send(fmt.Sprintf("Name       : <y>%s</y>", player.character.Name))
+			player.send(fmt.Sprintf("Race       : %s", player.character.Race.Name))
+			player.send(fmt.Sprintf("Class      : %s", player.character.Class.Name))
+			player.send("\n")
+			player.send(fmt.Sprintf("Level      : %d", player.character.Level))
+			player.send(fmt.Sprintf("Experience : %d / %d", player.character.ExpTowardNextLevel(), world.ExpToNextLevel(player.character.Level)))
+			player.send("\n")
+			player.send(fmt.Sprintf("Attributes : %s", player.character.Stats.ToString(false)))
+			player.send(fmt.Sprintf("Skills     : %s", util.CombineNames(player.character.Skills.ToStringArray())))
+
+			return true
+		},
+	},
 }
 
 func menuWorldInterceptCommand(gamestate *GameState, player *Player, verb string, args []string) bool {

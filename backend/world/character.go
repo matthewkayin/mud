@@ -14,7 +14,6 @@ type Character struct {
 
 	Level int32
 	Experience int32
-	ExpTotal int32
 
 	Stats StatBlock
 	Skills SkillFlags
@@ -42,6 +41,7 @@ func (world *World) NewCharacter(playerKey string, characterSheet *CharacterShee
 	character.Class = characterSheet.Class
 
 	// Set attributes and skills
+	character.Level = 1
 	character.Stats = character.Race.Stats.Add(&character.Class.Stats)
 	character.Skills = character.Race.Skills | character.Class.Skills
 
@@ -117,6 +117,13 @@ func ExpToNextLevel(level int32) int32 {
 	return int32(756.0 * math.Pow(1.26, float64(level - 1)))
 }
 
+func (character *Character) ExpTowardNextLevel() int32 {
+	if character.Level == 1 {
+		return character.Experience
+	}
+	return character.Experience - ExpToNextLevel(character.Level - 1)
+}
+
 func LevelFromExpTotal(expTotal int32) int32 {
 	level := int32(1)
 	for expTotal > ExpToNextLevel(level) {
@@ -127,9 +134,9 @@ func LevelFromExpTotal(expTotal int32) int32 {
 
 func (character *Character) grantExperience(world *World, amount int32) {
 	character.Experience += amount
-	character.ExpTotal += amount
-	for character.ExpTotal > ExpToNextLevel(character.Level) {
+	for character.Experience > ExpToNextLevel(character.Level) {
 		character.Level++
+		character.calculateStats()
 		world.MessagePlayer(character.PlayerKey, fmt.Sprintf("Level up! You are now level %d.", character.Level))
 	}
 }

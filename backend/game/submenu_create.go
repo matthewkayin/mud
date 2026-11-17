@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"mud/util"
 	"mud/world"
-	"strconv"
 	"strings"
 )
 
@@ -60,7 +59,7 @@ func (submenu *SubmenuCreate) handleCommand(gamestate *GameState, player *Player
 
 		case SUBMENU_CREATE_MODE_RACE: {
 			// Search for a race matching the input
-			race, ok := gamestate.world.RaceData[input]
+			race, ok := gamestate.world.RaceData[strings.ToLower(input)]
 			if !ok {
 				player.send(fmt.Sprintf("'%s' is not a valid race.", input))
 				return true
@@ -73,7 +72,7 @@ func (submenu *SubmenuCreate) handleCommand(gamestate *GameState, player *Player
 
 		case SUBMENU_CREATE_MODE_CLASS: {
 			// Search for a class matching the input
-			class, ok := gamestate.world.ClassData[input]
+			class, ok := gamestate.world.ClassData[strings.ToLower(input)]
 			if !ok {
 				player.send(fmt.Sprintf("'%s' is not a valid class.", input))
 				return true
@@ -130,7 +129,7 @@ func (submenu *SubmenuCreate) setMode(gamestate *GameState, player *Player, mode
 			for _, raceData := range gamestate.world.RaceData {
 				player.send(fmt.Sprintf("[%s]", strings.ToUpper(raceData.Name)))
 				player.send(fmt.Sprintf("Description : %s", raceData.Description))
-				player.send(fmt.Sprintf("Attributes  : %s", statBonusString(&raceData.Stats)))
+				player.send(fmt.Sprintf("Attributes  : %s", raceData.Stats.ToString(true)))
 				player.send(fmt.Sprintf("Skills      : %s", util.CombineNames(raceData.Skills.ToStringArray())))
 				player.send("\n")
 			}
@@ -146,7 +145,7 @@ func (submenu *SubmenuCreate) setMode(gamestate *GameState, player *Player, mode
 			for _, classData := range gamestate.world.ClassData {
 				player.send(fmt.Sprintf("[%s]", strings.ToUpper(classData.Name)))
 				player.send(fmt.Sprintf("Description : %s", classData.Description))
-				player.send(fmt.Sprintf("Attributes  : %s", statBonusString(&classData.Stats)))
+				player.send(fmt.Sprintf("Attributes  : %s", classData.Stats.ToString(true)))
 				player.send(fmt.Sprintf("Skills      : %s", util.CombineNames(classData.Skills.ToStringArray())))
 				player.send("\n")
 			}
@@ -163,32 +162,10 @@ func (submenu *SubmenuCreate) setMode(gamestate *GameState, player *Player, mode
 			player.send(fmt.Sprintf("Name       : <y>%s</y>", submenu.characterSheet.Name))
 			player.send(fmt.Sprintf("Race       : %s", submenu.characterSheet.Race.Name))
 			player.send(fmt.Sprintf("Class      : %s", submenu.characterSheet.Class.Name))
-			player.send(fmt.Sprintf("Attributes : %s", statBonusString(&stats)))
+			player.send(fmt.Sprintf("Attributes : %s", stats.ToString(false)))
 			player.send(fmt.Sprintf("Skills     : %s", util.CombineNames(skills.ToStringArray())))
 			player.send("\n")
 			player.send("Type 'finish' to create your character or 'back' to change something.")
 		}
 	}
-}
-
-func statBonusString(attributes *world.StatBlock) string {
-	var builder strings.Builder
-	builder.Grow(8 * world.STAT_COUNT)
-
-	for index := range world.STAT_COUNT {
-		stat := world.StatName(index)
-		builder.WriteString(stat.String())
-		builder.WriteByte(' ')
-
-		if attributes.Values[index] >= 0 {
-			builder.WriteByte('+')
-		}
-		builder.WriteString(strconv.Itoa(int(attributes.Values[index])))
-
-		if index < world.STAT_COUNT - 1 {
-			builder.Write([]byte(" | "))
-		}
-	}
-
-	return builder.String()
 }

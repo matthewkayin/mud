@@ -135,11 +135,11 @@ func (world *World) characterToJson(character *Character) CharacterJson {
 		Room: world.Rooms[character.Room].Position,
 		RoomsDiscovered: make([]RoomPosition, 0, len(world.Rooms)),
 
-		Race: character.Race.Name,
-		Class: character.Class.Name,
+		// We save the lowercase name because world.CharacterData and world.RaceData use lowercase names for keys
+		Race: strings.ToLower(character.Race.Name),
+		Class: strings.ToLower(character.Class.Name),
 
 		Experience: character.Experience,
-		ExpTotal: character.ExpTotal,
 
 		Skills: character.Skills.ToStringArray(),
 
@@ -223,7 +223,6 @@ func (world *World) characterFromJson(characterJson *CharacterJson) (*Character,
 	// If we change the level scaling, character levels will automatically update to match
 	character.Level = LevelFromExpTotal(characterJson.ExpTotal)
 	character.Experience = characterJson.Experience
-	character.ExpTotal = characterJson.ExpTotal
 	character.calculateStats()
 
 	character.Health = characterJson.Health
