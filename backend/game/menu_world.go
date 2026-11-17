@@ -212,11 +212,11 @@ func findTarget(gamestate *GameState, player *Player, params FindTargetParams) (
 			}
 
 			targetMob := gamestate.world.Mobs.Get(targetHandle)
-			if params.targetType == world.TARGET_TYPE_ALLY && targetMob.Owner.GetFaction() != player.character.GetFaction() {
+			if params.targetType == world.TARGET_TYPE_ALLY && targetMob.Owner.IsEvil() {
 				return world.MobTarget{}, fmt.Errorf("You can only %s that %s on allies.", params.verb, params.noun)
 			}
 
-			if params.targetType == world.TARGET_TYPE_ENEMY && targetMob.Owner.GetFaction() == player.character.GetFaction() {
+			if params.targetType == world.TARGET_TYPE_ENEMY && !targetMob.Owner.IsEvil() {
 				return world.MobTarget{}, fmt.Errorf("You can only %s that %s on enemies.", params.verb, params.noun)
 			}
 

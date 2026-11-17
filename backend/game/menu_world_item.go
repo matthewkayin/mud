@@ -278,7 +278,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 					}
 
 					playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-					playerMob.SetModeUseItem(item.Id, target)
+					playerMob.SetModeUseItem(gamestate.world, item.Id, target)
 				}
 
 				default: {

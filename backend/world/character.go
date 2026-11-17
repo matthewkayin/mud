@@ -78,8 +78,12 @@ func (character *Character) getMobData() *MobData {
 	return &character.MobData
 }
 
-func (character *Character) GetFaction() MobFaction {
-	return MOB_FACTION_ALLIANCE
+func (character *Character) IsEvil() bool {
+	return false
+}
+
+func (character *Character) IsHostile() bool {
+	return false
 }
 
 func (character *Character) DescribeToPlayer(world *World, playerKey string) {

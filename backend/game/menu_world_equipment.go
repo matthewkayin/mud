@@ -27,12 +27,11 @@ var MENU_WORLD_ENTRIES_EQUIP = map[string]MenuEntry {
 			}
 
 			// Check if they are in combat
-			/*
-			if player.character.IsInCombat(gamestate.world) {
+			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+			if playerMob.IsInCombat(gamestate.world) {
 				player.send("You cannot equip items while you are in combat.")
 				return true
 			}
-			*/
 
 			itemWords, slotWords, userSpecifiedSlot := splitArgsBy(args, "in")
 

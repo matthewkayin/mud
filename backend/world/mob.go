@@ -6,18 +6,11 @@ import (
 	"github.com/mmcdole/lunar"
 )
 
-type MobFaction int
-const (
-	// Consists of players and friendly NPCs, apologies in advance to all orc players
-	MOB_FACTION_ALLIANCE MobFaction = iota
-	// Consists of non-friendly NPCs
-	MOB_FACTION_HORDE
-)
-
 type MobMode int
 const (
 	MOB_MODE_IDLE MobMode = iota
 	MOB_MODE_ATTACK
+	MOB_MODE_CAST
 	MOB_MODE_USE_ITEM
 )
 
@@ -57,7 +50,8 @@ type MobOwner interface {
 	IsNpc() bool
 	GetPlayerKey() string
 	getMobData() *MobData
-	GetFaction() MobFaction
+	IsEvil() bool
+	IsHostile() bool
 	DescribeToPlayer(world *World, playerKey string)
 
 	MaxHealth() int32
@@ -82,6 +76,9 @@ type Mob struct {
 
 	// The item that MOB_MODE_USE_ITEM will use
 	itemToUse ItemId
+
+	// MOB_MODE_CAST state
+	spellTimer int
 
 	// Set when an action is queued and cleared on the mob's turn (Mob.update)
 	HasPendingAction bool
@@ -113,30 +110,87 @@ func (mob *Mob) isDead() bool {
 	return mob.Health <= 0
 }
 
+func (mob *Mob) IsInCombat(world *World) bool {
+	room := &world.Rooms[mob.Room]
+	for _, occupantHandle := range room.Occupants {
+		occupant := world.Mobs.Get(occupantHandle)
+		if mob.Owner.IsPlayer() && occupant.Owner.IsHostile() {
+			return true
+		}
+		if mob.Owner.IsHostile() && occupant.Owner.IsPlayer() {
+			return true
+		}
+	}
+
+	return false
+}
+
 // Set Mode
 
+// Silently resets the mob to idle. Use Stop instead when the mob chose to cancel its action
 func (mob *Mob) SetModeIdle() {
 	mob.Mode = MOB_MODE_IDLE
 	mob.Target = MobTarget {
 		Type: MOB_TARGET_NONE,
 		Value: nil,
 	}
+	mob.HasPendingAction = false
 }
 
-func (mob *Mob) SetModeAttack(targetHandle MobHandle) {
-	mob.Mode = MOB_MODE_ATTACK
-	mob.Target = MobTarget {
+// Cancels the mob's current action, announcing the cancellation if the action was in progress
+func (mob *Mob) Stop(world *World) {
+	mob.announceActionCancelled(world)
+	mob.SetModeIdle()
+}
+
+func (mob *Mob) SetModeAttack(world *World, targetHandle MobHandle) {
+	mob.beginAction(world, MOB_MODE_ATTACK, MobTarget {
 		Type: MOB_TARGET_MOB,
 		Value: targetHandle,
-	}
+	})
+}
+
+func (mob *Mob) SetModeUseItem(world *World, itemToUse ItemId, target MobTarget) {
+	mob.beginAction(world, MOB_MODE_USE_ITEM, target)
+	mob.itemToUse = itemToUse
+}
+
+// Every mode the mob chooses to start (attack, cast, use item) must be set through here,
+// so that replacing an in-progress action always announces its cancellation
+func (mob *Mob) beginAction(world *World, mode MobMode, target MobTarget) {
+	mob.announceActionCancelled(world)
+	mob.Mode = mode
+	mob.Target = target
 	mob.HasPendingAction = true
 }
 
-func (mob *Mob) SetModeUseItem(itemToUse ItemId, target MobTarget) {
-	mob.Mode = MOB_MODE_USE_ITEM
-	mob.Target = target
-	mob.itemToUse = itemToUse
-	mob.HasPendingAction = true
+// Announces that the mob cancelled its current action. Says nothing if the action hasn't started yet,
+// if its target is gone (dead or left the room), or if the action is an item use
+func (mob *Mob) announceActionCancelled(world *World) {
+	if mob.HasPendingAction {
+		return
+	}
+	if !mob.isTargetValid(world) {
+		return
+	}
+
+	switch mob.Mode {
+		case MOB_MODE_ATTACK: {
+			targetMob := world.Mobs.Get(mob.Target.Value.(MobHandle))
+			world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> stopped attacking <y>%s</y>.", mob.Name, targetMob.Name))
+		}
+
+		case MOB_MODE_CAST: {
+			world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> cancelled their spell.", mob.Name))
+		}
+	}
+}
+
+func (mob *Mob) IsAttacking(targetHandle MobHandle) bool {
+	if mob.Mode != MOB_MODE_ATTACK || mob.Target.Type != MOB_TARGET_MOB {
+		return false
+	}
+	return mob.Target.Value.(MobHandle) == targetHandle
 }
 
 // Items
@@ -156,6 +210,11 @@ func (mob *Mob) FindItem(id ItemId) (*Item, bool) {
 // Behavior
 
 func (mob *Mob) Move(world *World, newRoomIndex int) {
+	// Clear the mob's action
+	if mob.Mode == MOB_MODE_ATTACK || mob.Mode == MOB_MODE_CAST {
+		mob.SetModeIdle()
+	}
+
 	oldRoom := &world.Rooms[mob.Room]
 	oldRoom.RemoveOccupant(mob.Handle)
 

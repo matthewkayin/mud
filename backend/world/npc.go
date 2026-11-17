@@ -82,11 +82,12 @@ func (npc *Npc) getMobData() *MobData {
 	return &npc.MobData
 }
 
-func (npc *Npc) GetFaction() MobFaction {
-	if npc.disposition == NPC_DISPOSITION_FRIENDLY {
-		return MOB_FACTION_ALLIANCE
-	}
-	return MOB_FACTION_HORDE
+func (npc *Npc) IsEvil() bool {
+	return npc.disposition != NPC_DISPOSITION_FRIENDLY
+}
+
+func (npc *Npc) IsHostile() bool {
+	return npc.disposition == NPC_DISPOSITION_HOSTILE
 }
 
 func (npc *Npc) DescribeToPlayer(world *World, playerKey string) {
@@ -131,12 +132,12 @@ func (npc *Npc) update(world *World) {
 		// Find a target enemy
 		targetIndex := slices.IndexFunc(room.Occupants, func (handle MobHandle) bool {
 			occupant := world.Mobs.Get(handle)
-			return !occupant.isDead() && occupant.Owner.GetFaction() != npc.GetFaction()
+			return !occupant.isDead() && occupant.Owner.IsPlayer()
 		})
 
 		// If target enemy found, set mode to attack
 		if targetIndex != -1 {
-			npcMob.SetModeAttack(room.Occupants[targetIndex])
+			npcMob.SetModeAttack(world, room.Occupants[targetIndex])
 		}
 	}
 }
