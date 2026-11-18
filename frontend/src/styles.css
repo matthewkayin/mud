@@ -373,7 +373,7 @@ button[type="submit"]:disabled {
 /* Minimap */
 
 /* The panel is a square as wide as the sidebar, and the viewBox scales the map to fit it. It doesn't grow or
-   shrink, so the inventory below it takes the rest of the sidebar. Overflow is visible so the carets of rooms in
+   shrink, so the view panel below it takes the rest of the sidebar. Overflow is visible so the carets of rooms in
    the last column can draw past the edge. */
 .minimap {
     display: block;
@@ -404,10 +404,10 @@ button[type="submit"]:disabled {
     vector-effect: non-scaling-stroke;
 }
 
-/* Inventory */
+/* View panel */
 
 /* Fills the rest of the sidebar, so its bottom edge lines up with the status bar's */
-.inventory {
+.view {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
@@ -444,7 +444,7 @@ button[type="submit"]:disabled {
     grid-template-columns: 100%;
   }
 
-  .inventory {
+  .view {
     min-height: 4em;
   }
 }

@@ -30,10 +30,12 @@ src/
   game/socket_message.ts shape of the messages the server sends over the websocket
   game/terminal.tsx     terminal component
   game/parser.ts        color-tag parser for terminal lines
+  game/text_line.tsx    renders one color-tagged line, shared by the terminal and the view panel
   game/text_color.ts    terminal text colors
   game/status_bar.tsx   HP and MP meters
   game/minimap.tsx      SVG map of the rooms around the player
-  game/inventory.tsx    inventory panel (placeholder until there is inventory data)
+  game/view.tsx         view panel (help, chat, inventory or equipment)
+  game/view_mode.ts     view panel modes
 ```
 
 File names are snake_case; components are PascalCase named exports.
@@ -48,7 +50,23 @@ File names are snake_case; components are PascalCase named exports.
 | `/game`           | `game/game.tsx`                        | Redirects to `/signin` when signed out             |
 | `*`               | `pages/not_found.tsx`                  |                                                    |
 
-The game page renders its panels inside an `article.game` in two columns: the terminal with the status bar below it, and a sidebar to its right holding the minimap and inventory. The panels are always on the page. The status bar and inventory are empty until the player is in the world (the server is sending a status), and the minimap is empty until the server sends one. The minimap draws each discovered room as a box with lines for its north, east, south and west exits, and carets in the gap east of the room for up and down exits: a `^` near the top of its east side for up and a `v` near the bottom for down. While the status's `action` is true (the player has queued an action that hasn't resolved yet), the terminal prompt is replaced by a spinner.
+The game page renders its panels inside an `article.game` in two columns: the terminal with the status bar below it, and a sidebar to its right holding the minimap and the view panel. The panels are always on the page. The status bar is empty, and the view panel shows no inventory or equipment, until the player is in the world (the server is sending a status), and the minimap is empty until the server sends one. The minimap draws each discovered room as a box with lines for its north, east, south and west exits, and carets in the gap east of the room for up and down exits: a `^` near the top of its east side for up and a `v` near the bottom for down. While the status's `action` is true (the player has queued an action that hasn't resolved yet), the terminal prompt is replaced by a spinner.
+
+## View panel
+
+The view panel (`game/view.tsx`) shows text only, one mode at a time, under a `=== <Mode> ===` title:
+
+- `help`: explains the panel and the `view` command. The default.
+- `chat`: the chat history.
+- `inventory`: the server's `inv` lines.
+- `equipment`: the server's `equip` lines.
+
+The client handles `view <mode>` itself in `game.tsx` and never sends it to the server: it switches the mode, or writes a usage line to the terminal when the mode is missing or unknown. The server has a `view` help topic so `help view` still describes it. The client already holds the lines for every mode:
+
+- Any message that starts with a bracketed tag, optionally inside a color tag (such as `<p>[Chat]</p> ...` or `[Whisper] ...`), is also appended to the chat history, which keeps the last 1024 lines. These messages still appear in the terminal. Other server text must not start with a bracketed tag, or it will be taken for chat.
+- The server sends `inv` (item lines, or `<empty>`) and `equip` (one `<Slot>: <item>` line per slot) in a heartbeat whenever the player's inventory or equipment changes, including on entering the world. They are cleared when a status-less heartbeat arrives.
+
+While the panel is scrolled to the bottom it follows new lines, like the terminal, and switching modes scrolls to the bottom.
 
 ## Auth
 
@@ -82,5 +100,5 @@ All styling lives in `src/styles.css`. The look is a parchment page with serif t
 - Don't add a CSS framework or component library.
 - The `.page` frame sizes to its content, is never narrower than 760px (except on small screens) and never wider than the viewport. Each page's content sets the width:
   - Text pages render a top-level `<article>`, which the stylesheet fixes at 690px, the width of the old 760px column inside the frame.
-  - The game page's `article.game` is a two-column grid with one row. The `.game-main` column holds the terminal (100 columns wide, which sets the column's width) with the status bar below it, and the `.game-sidebar` takes the fixed-width second column, so together they set the frame's width. The sidebar stretches to the height of the first column: the minimap sits at its top and the inventory grows to fill the rest, lining its bottom edge up with the status bar's. The minimap is a square as wide as the sidebar, and the map scales to fit it; the inventory takes the rest of the column, so a taller terminal makes only the inventory taller. On small screens the grid becomes one column.
+  - The game page's `article.game` is a two-column grid with one row. The `.game-main` column holds the terminal (100 columns wide, which sets the column's width) with the status bar below it, and the `.game-sidebar` takes the fixed-width second column, so together they set the frame's width. The sidebar stretches to the height of the first column: the minimap sits at its top and the view panel grows to fill the rest, lining its bottom edge up with the status bar's. The minimap is a square as wide as the sidebar, and the map scales to fit it; the view panel takes the rest of the column, so a taller terminal makes only the view panel taller. On small screens the grid becomes one column.
 - No page may scroll horizontally at phone width; the `@media (max-width: 600px)` block handles small screens.

@@ -11,4 +11,5 @@ export type SocketMessage = {
   status?: PlayerStatus;
   map?: number[];
   inv?: string[];
+  equip?: string[];
 };

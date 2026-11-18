@@ -127,7 +127,7 @@ func (submenu *SubmenuCreate) setMode(gamestate *GameState, player *Player, mode
 			player.send("\n")
 
 			for _, raceData := range gamestate.world.RaceData {
-				player.send(fmt.Sprintf("[%s]", strings.ToUpper(raceData.Name)))
+				player.send(fmt.Sprintf("--- %s ---", strings.ToUpper(raceData.Name)))
 				player.send(fmt.Sprintf("Description : %s", raceData.Description))
 				player.send(fmt.Sprintf("Attributes  : %s", raceData.Stats.ToString(true)))
 				player.send(fmt.Sprintf("Skills      : %s", util.CombineNames(raceData.Skills.ToStringArray())))
@@ -143,7 +143,7 @@ func (submenu *SubmenuCreate) setMode(gamestate *GameState, player *Player, mode
 			player.send("\n")
 
 			for _, classData := range gamestate.world.ClassData {
-				player.send(fmt.Sprintf("[%s]", strings.ToUpper(classData.Name)))
+				player.send(fmt.Sprintf("--- %s ---", strings.ToUpper(classData.Name)))
 				player.send(fmt.Sprintf("Description : %s", classData.Description))
 				player.send(fmt.Sprintf("Attributes  : %s", classData.Stats.ToString(true)))
 				player.send(fmt.Sprintf("Skills      : %s", util.CombineNames(classData.Skills.ToStringArray())))

@@ -33,11 +33,28 @@ var MENU_WORLD_PARAMS = MenuNewParams {
 		makeMoveEntries(),
 	),
 	topics: util.MergeMaps(
+		MENU_WORLD_TOPICS_GENERAL,
 		MENU_WORLD_TOPICS_SOCIAL,
 		MENU_WORLD_TOPICS_ITEM,
 		MENU_WORLD_TOPICS_EQUIP,
 	),
 	interceptCommand: menuWorldInterceptCommand,
+}
+
+var MENU_WORLD_TOPICS_GENERAL = map[string]MenuHelpTopic {
+	// The client handles the view command itself, so the server only describes it
+	"view": {
+		categories: []string { "general" },
+		lines: []string {
+			"=== View Panel ===",
+			"The panel at the bottom right of the screen is the view panel.",
+			"Type 'view <mode>' to change what it shows. The modes are:",
+			"  help      - explains the view panel",
+			"  chat      - a history of chat messages",
+			"  inventory - the items you are carrying",
+			"  equipment - the items you have equipped",
+		},
+	},
 }
 
 var MENU_WORLD_ENTRIES_GENERAL = map[string]MenuEntry {

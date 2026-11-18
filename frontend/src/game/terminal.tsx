@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { parseLine } from './parser';
-import { TEXT_COLOR_VALUES } from './text_color';
+import { textLineToParagraph } from './text_line';
 
 type TerminalProps = {
   prompt: string;
@@ -146,7 +145,7 @@ export const Terminal = ({ prompt, lines, command, setCommand, history, historyI
         ref={contentsContainerRef}
         onScroll={onScroll}
       >
-        {lines.map(terminalLineToSpan)}
+        {lines.map(textLineToParagraph)}
       </div>
     </div>
   )
@@ -154,14 +153,4 @@ export const Terminal = ({ prompt, lines, command, setCommand, history, historyI
 
 const sanitizeLine = (line: string) => {
   return line.replace(/[^\x20-\x7E]|[<>[\]{}\\]/g, "");
-}
-
-const terminalLineToSpan = (line: string, index: number) => {
-  const tokens = parseLine(line);
-
-  return (
-    <p key={index} className="terminal-text">
-      {tokens.map((token) => (<span style={{ color: TEXT_COLOR_VALUES[token.color] }}>{token.text}</span>) )}
-    </p>
-  );
 }

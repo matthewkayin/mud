@@ -62,42 +62,8 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 				player.isMinimapDirty = false
 			}
 			if player.isInventoryDirty {
-				// Equipment slot lines, separator, inventory header, then either "<empty>" or the item lines
-				heartbeat.Inventory = make([]string, 0, world.EQUIPMENT_SLOT_COUNT + 3 + len(player.character.Inventory.Items))
-
-				//move to its own window pane later
-
-				mainHandItem := player.character.Equipment.Get(world.EQUIPMENT_SLOT_MAIN_HAND)
-				isTwoHandedWeaponEquipped := mainHandItem != nil && mainHandItem.IsTwoHandedWeapon()
-				for index := range world.EQUIPMENT_SLOT_COUNT {
-					slot := world.EquipmentSlot(index)
-					item := player.character.Equipment.Get(slot)
-
-					// A two-handed weapon occupies the off hand too
-					if slot == world.EQUIPMENT_SLOT_OFF_HAND && isTwoHandedWeaponEquipped {
-						item = mainHandItem
-					}
-
-					itemName := "<none>"
-					if item != nil {
-						itemName = item.Name
-					}
-					heartbeat.Inventory = append(heartbeat.Inventory, fmt.Sprintf("%s: %s", slot.String(), itemName))
-				}
-
-				heartbeat.Inventory = append(heartbeat.Inventory, "* * * * * *")
-
-				heartbeat.Inventory = append(heartbeat.Inventory, "Inventory:")
-
-				if len(player.character.Inventory.Items) == 0 {
-					heartbeat.Inventory = append(heartbeat.Inventory, "<empty>")
-				}
-
-				for index := range len(player.character.Inventory.Items) {
-					item := &player.character.Inventory.Items[index]
-					heartbeat.Inventory = append(heartbeat.Inventory, fmt.Sprintf("  %s", item.NameWithAmount()))
-				}
-
+				heartbeat.Equipment = getEquipmentLines(player.character)
+				heartbeat.Inventory = getInventoryLines(player.character)
 				player.isInventoryDirty = false
 			}
 		}
@@ -109,6 +75,47 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 		case *player.inbox <- heartbeat:
 		default:
 	}
+}
+
+// One line per equipment slot, for the client's equipment view
+func getEquipmentLines(character *world.Character) []string {
+	lines := make([]string, 0, world.EQUIPMENT_SLOT_COUNT)
+
+	mainHandItem := character.Equipment.Get(world.EQUIPMENT_SLOT_MAIN_HAND)
+	isTwoHandedWeaponEquipped := mainHandItem != nil && mainHandItem.IsTwoHandedWeapon()
+	for index := range world.EQUIPMENT_SLOT_COUNT {
+		slot := world.EquipmentSlot(index)
+		item := character.Equipment.Get(slot)
+
+		// A two-handed weapon occupies the off hand too
+		if slot == world.EQUIPMENT_SLOT_OFF_HAND && isTwoHandedWeaponEquipped {
+			item = mainHandItem
+		}
+
+		itemName := "<none>"
+		if item != nil {
+			itemName = item.Name
+		}
+		lines = append(lines, fmt.Sprintf("%s: %s", slot.String(), itemName))
+	}
+
+	return lines
+}
+
+// One line per inventory item, or "<empty>", for the client's inventory view
+// Never returns an empty slice, so that an empty inventory is still sent to the client
+func getInventoryLines(character *world.Character) []string {
+	if len(character.Inventory.Items) == 0 {
+		return []string { "<empty>" }
+	}
+
+	lines := make([]string, 0, len(character.Inventory.Items))
+	for index := range len(character.Inventory.Items) {
+		item := &character.Inventory.Items[index]
+		lines = append(lines, item.NameWithAmount())
+	}
+
+	return lines
 }
 
 func (player *Player) setMenuLogin(gamestate *GameState) {

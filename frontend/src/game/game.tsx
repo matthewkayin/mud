@@ -5,13 +5,23 @@ import { getDebugUsername } from '../auth/auth_api.ts';
 import { Terminal } from './terminal.tsx';
 import { StatusBar } from './status_bar.tsx';
 import { Minimap } from './minimap.tsx';
-import { Inventory } from './inventory.tsx';
+import { View } from './view.tsx';
+import { VIEW_MODES, isViewMode, type ViewMode } from './view_mode.ts';
 import { type PlayerStatus, type SocketMessage } from './socket_message';
 
 const TERMINAL_PROMPT = ">";
 const HEARTBEAT_TIMEOUT_MS = 10000;
 const TERMINAL_MAX_LINE_COUNT = 1024;
 const TERMINAL_MAX_HISTORY = 32;
+const CHAT_MAX_LINE_COUNT = 1024;
+// A chat message starts with a bracketed tag, such as "[Chat]", optionally wrapped in a color tag
+const CHAT_MESSAGE_PATTERN = /^(<[a-z]*>)?\[[^\]]+\]/;
+
+// Appends a line, dropping the oldest line once there are maxLineCount lines
+const appendLine = (lines: string[], line: string, maxLineCount: number) => {
+  const startIndex = lines.length >= maxLineCount ? lines.length - maxLineCount + 1 : 0;
+  return [...lines.slice(startIndex), line];
+};
 
 export function GamePage() {
   // Auth
@@ -26,16 +36,28 @@ export function GamePage() {
   // Status
   const [playerStatus, setPlayerStatus] = useState<PlayerStatus | null>(null);
   const [minimap, setMinimap] = useState<number[] | null>(null);
+
+  // View panel
+  const [viewMode, setViewMode] = useState<ViewMode>('help');
+  const [chatLines, setChatLines] = useState<string[]>([]);
   const [inventoryLines, setInventoryLines] = useState<string[] | null>(null);
+  const [equipmentLines, setEquipmentLines] = useState<string[] | null>(null);
 
   // Websocket
   const websocketRef = useRef<WebSocket | null>(null);
 
-  const terminalWriteLine = (line: string) => setLines((previous) => {
-    const startIndex = previous.length === TERMINAL_MAX_LINE_COUNT ? 1 : 0;
-    const previousLines = previous.slice(startIndex);
-    return [...previousLines, line];
-  });
+  const terminalWriteLine = (line: string) => setLines((previous) => appendLine(previous, line, TERMINAL_MAX_LINE_COUNT));
+
+  // The client handles the view command itself, since it already has the lines for every mode
+  const handleViewCommand = (args: string[]) => {
+    const mode = args.length === 1 ? args[0].toLowerCase() : '';
+    if (!isViewMode(mode)) {
+      terminalWriteLine(`Usage: view <${VIEW_MODES.join('|')}>`);
+      return;
+    }
+
+    setViewMode(mode);
+  };
   const onSubmit = (command: string) => {
     if (websocketRef.current === null) {
       return;
@@ -48,6 +70,13 @@ export function GamePage() {
       return [command, ...previousHistory];
     });
     setHistoryIndex(-1);
+
+    const words = command.trim().split(/\s+/);
+    if (words[0].toLowerCase() === 'view') {
+      handleViewCommand(words.slice(1));
+      return;
+    }
+
     websocketRef.current.send(command.trim());
   }
 
@@ -91,6 +120,11 @@ export function GamePage() {
       // Get message from socketMessage
       if (socketMessage.message !== null) {
         terminalWriteLine(socketMessage.message);
+
+        const message = socketMessage.message;
+        if (CHAT_MESSAGE_PATTERN.test(message)) {
+          setChatLines((previous) => appendLine(previous, message, CHAT_MAX_LINE_COUNT));
+        }
       }
 
       // Get status from socketMessage
@@ -99,10 +133,11 @@ export function GamePage() {
       } else if (socketMessage.message === null) {
         // If we receive no status and message is null, then this is a status-less heartbeat,
         // which means the player is receiving a heartbeat but they aren't in game, so clear
-        // their status and minimap (which hides the status bar, minimap and inventory)
+        // their status, minimap, inventory and equipment
         setPlayerStatus(null);
         setMinimap(null);
         setInventoryLines(null);
+        setEquipmentLines(null);
       }
 
       // Get minimap from socketMessage
@@ -113,6 +148,9 @@ export function GamePage() {
 
       if (socketMessage.inv) {
         setInventoryLines(socketMessage.inv);
+      }
+      if (socketMessage.equip) {
+        setEquipmentLines(socketMessage.equip);
       }
     };
 
@@ -180,7 +218,13 @@ export function GamePage() {
       </div>
       <div className="game-sidebar">
         <Minimap map={minimap} />
-        <Inventory isInWorld={playerStatus !== null} lines={inventoryLines} />
+        <View
+          mode={viewMode}
+          isInWorld={playerStatus !== null}
+          chatLines={chatLines}
+          inventoryLines={inventoryLines}
+          equipmentLines={equipmentLines}
+        />
       </div>
     </article>
   );
