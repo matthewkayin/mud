@@ -1,5 +1,22 @@
 # Mob actions
 
+## Mob ownership
+
+A `Mob` (`backend/world/mob.go`) belongs to exactly one `Character` or `Npc`, held in `Mob.Character` or `Mob.Npc`; the other is nil. `Mob.MobData` points to the owner's `MobData` (name, room, health, mana, inventory).
+
+`Mob` methods hide the difference where both kinds of mob have an answer: `IsPlayer`, `IsEvil`, `IsHostile`, `Message` (does nothing for NPCs), `DescribeToPlayer`, `MaxHealth`, `MaxMana`, `InventoryCapacity`, `GetAttacks` and the combat stat getters. Characters derive these from stats and equipment, and NPCs read them from their `NpcData`. Logic that applies to only one kind of mob, such as equipment durability or the player key, checks `mob.Character` or `mob.Npc` directly.
+
+## Attacks
+
+`Mob.attackTarget` resolves one `MobAttack` (damage, penetration, and the equipment slot of the weapon, if any):
+
+1. The deflect chance is `(target deflection - penetration) * MOB_DEFLECTION_PER_POINT` percent, clamped to 0–100.
+2. A deflected attack deals `deflectionAmount` percent of its damage.
+3. The target's flat resistance is subtracted, with a minimum of 1 damage.
+4. An attack made with a weapon costs the weapon 1 durability (`Character.subtractDurabilityFromEquipment`). A weapon that breaks is unequipped.
+
+Characters have no deflection or resistance of their own yet.
+
 Every mob (player character or NPC) has a `Mode` and a `Target` (`backend/world/mob.go`). The mode is what the mob is doing:
 
 | Mode | Started by | Notes |

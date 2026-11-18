@@ -33,7 +33,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 			targetHandle, err := fuzzyFindMob(gamestate, player, searchWords)
 			if err == nil {
 				target := gamestate.world.Mobs.Get(targetHandle)
-				target.Owner.DescribeToPlayer(gamestate.world, player.key)
+				target.DescribeToPlayer(gamestate.world, player.key)
 				return true
 			}
 

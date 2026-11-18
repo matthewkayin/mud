@@ -3,8 +3,12 @@ package world
 import (
 	"fmt"
 	"log"
+	"math/rand/v2"
 	"github.com/mmcdole/lunar"
 )
+
+// Each point of deflection above the attack's penetration adds this much percent chance to deflect
+const MOB_DEFLECTION_PER_POINT = 5
 
 type MobMode int
 const (
@@ -43,27 +47,20 @@ type MobValidateTargetParams struct {
 	Name string
 }
 
-// Owner
+type MobAttack struct {
+	damage int32
+	penetration int32
 
-type MobOwner interface {
-	IsPlayer() bool
-	IsNpc() bool
-	GetPlayerKey() string
-	getMobData() *MobData
-	IsEvil() bool
-	IsHostile() bool
-	DescribeToPlayer(world *World, playerKey string)
-
-	MaxHealth() int32
-	MaxMana() int32
-	InventoryCapacity() int32
-
-	Message(world *World, message string)
-	update(world *World)
+	// Set for attacks made with an equipped weapon, so that the weapon can lose durability
+	hasWeaponSlot bool
+	weaponSlot EquipmentSlot
 }
 
 type Mob struct {
-	Owner MobOwner
+	// Exactly one of these is set
+	Character *Character
+	Npc *Npc
+
 	Handle MobHandle
 
 	*MobData
@@ -84,10 +81,21 @@ type Mob struct {
 	HasPendingAction bool
 }
 
-func NewMob(owner MobOwner) Mob {
+func NewCharacterMob(character *Character) Mob {
+	mob := newMob(&character.MobData)
+	mob.Character = character
+	return mob
+}
+
+func NewNpcMob(npc *Npc) Mob {
+	mob := newMob(&npc.MobData)
+	mob.Npc = npc
+	return mob
+}
+
+func newMob(mobData *MobData) Mob {
 	return Mob {
-		Owner: owner,
-		MobData: owner.getMobData(),
+		MobData: mobData,
 
 		Mode: MOB_MODE_IDLE,
 		Target: MobTarget {
@@ -98,12 +106,101 @@ func NewMob(owner MobOwner) Mob {
 	}
 }
 
+// Owner
+// These functions hide whether the mob is a character or an NPC
+
+func (mob *Mob) IsPlayer() bool {
+	return mob.Character != nil
+}
+
+func (mob *Mob) IsNpc() bool {
+	return mob.Npc != nil
+}
+
+func (mob *Mob) IsEvil() bool {
+	if mob.IsPlayer() {
+		return false
+	}
+	return mob.Npc.disposition != NPC_DISPOSITION_FRIENDLY
+}
+
+func (mob *Mob) IsHostile() bool {
+	if mob.IsPlayer() {
+		return false
+	}
+	return mob.Npc.disposition == NPC_DISPOSITION_HOSTILE
+}
+
+// Sends a message to the mob's player. Does nothing for NPCs
+func (mob *Mob) Message(world *World, message string) {
+	if mob.Character == nil {
+		return
+	}
+	world.MessagePlayer(mob.Character.PlayerKey, message)
+}
+
+func (mob *Mob) DescribeToPlayer(world *World, playerKey string) {
+	if mob.IsPlayer() {
+		mob.Character.DescribeToPlayer(world, playerKey)
+		return
+	}
+	mob.Npc.DescribeToPlayer(world, playerKey)
+}
+
 func (mob *Mob) MaxHealth() int32 {
-	return mob.Owner.MaxHealth()
+	if mob.IsPlayer() {
+		return mob.Character.MaxHealth()
+	}
+	return mob.Npc.MaxHealth()
 }
 
 func (mob *Mob) MaxMana() int32 {
-	return mob.Owner.MaxMana()
+	if mob.IsPlayer() {
+		return mob.Character.MaxMana()
+	}
+	return mob.Npc.MaxMana()
+}
+
+func (mob *Mob) InventoryCapacity() int32 {
+	if mob.IsPlayer() {
+		return mob.Character.InventoryCapacity()
+	}
+	return mob.Npc.InventoryCapacity()
+}
+
+func (mob *Mob) GetAttacks() []MobAttack {
+	if mob.IsPlayer() {
+		return mob.Character.GetAttacks()
+	}
+	return mob.Npc.GetAttacks()
+}
+
+func (mob *Mob) getInitiative() int32 {
+	if mob.IsPlayer() {
+		return mob.Character.getInitiative()
+	}
+	return mob.Npc.getInitiative()
+}
+
+func (mob *Mob) getDeflection() int32 {
+	if mob.IsPlayer() {
+		return mob.Character.getDeflection()
+	}
+	return mob.Npc.getDeflection()
+}
+
+func (mob *Mob) getDeflectionAmount() int32 {
+	if mob.IsPlayer() {
+		return mob.Character.getDeflectionAmount()
+	}
+	return mob.Npc.getDeflectionAmount()
+}
+
+func (mob *Mob) getResistance() int32 {
+	if mob.Character != nil {
+		return mob.Character.getResistance()
+	}
+	return mob.Npc.getResistance()
 }
 
 func (mob *Mob) isDead() bool {
@@ -114,10 +211,10 @@ func (mob *Mob) IsInCombat(world *World) bool {
 	room := &world.Rooms[mob.Room]
 	for _, occupantHandle := range room.Occupants {
 		occupant := world.Mobs.Get(occupantHandle)
-		if mob.Owner.IsPlayer() && occupant.Owner.IsHostile() {
+		if mob.IsPlayer() && occupant.IsHostile() {
 			return true
 		}
-		if mob.Owner.IsHostile() && occupant.Owner.IsPlayer() {
+		if mob.IsHostile() && occupant.IsPlayer() {
 			return true
 		}
 	}
@@ -197,12 +294,22 @@ func (mob *Mob) IsAttacking(targetHandle MobHandle) bool {
 
 // Returns the item with the given ID from the mob's inventory or equipment
 func (mob *Mob) FindItem(id ItemId) (*Item, bool) {
+	// Check inventory
 	index, found := mob.Inventory.FindItemById(id)
 	if found {
 		return &mob.Inventory.Items[index], true
 	}
 
-	// TODO: search equipment
+	// Check equipment
+	if mob.IsPlayer() {
+		for index := range EQUIPMENT_SLOT_COUNT {
+			slot := EquipmentSlot(index)
+			item := mob.Character.Equipment.Get(slot)
+			if item != nil {
+				return item, true
+			}
+		}
+	}
 
 	return nil, false
 }
@@ -228,15 +335,99 @@ func (mob *Mob) Move(world *World, newRoomIndex int) {
 }
 
 func (mob *Mob) update(world *World) {
-	mob.Owner.update(world)
+	if mob.IsNpc() {
+		mob.Npc.update(world)
+	}
 
 	// This is the mob's turn, so any queued action resolves now
 	mob.HasPendingAction = false
 
 	switch mob.Mode {
+		case MOB_MODE_ATTACK: {
+			// Check if target exists
+			if !mob.isTargetValid(world) {
+				mob.SetModeIdle()
+				break
+			}
+
+			// Attack
+			targetMob := mob.getTargetMobIfExists(world)
+			attacks := mob.GetAttacks()
+			for _, attack := range attacks {
+				mob.attackTarget(world, targetMob, attack)
+			}
+		}
+
 		case MOB_MODE_USE_ITEM: {
 			mob.useItem(world)
 			mob.SetModeIdle()
+		}
+	}
+}
+
+func (mob *Mob) attackTarget(world *World, targetMob *Mob, attack MobAttack) {
+	// TODO:
+	// - check for evasion
+	// - check for crit
+	crit := false
+
+	// Check for deflection
+	deflect := false
+	if !crit {
+		deflectChance := (targetMob.getDeflection() - attack.penetration) * MOB_DEFLECTION_PER_POINT
+		deflectChance = max(min(deflectChance, 100), 0)
+		deflect = rand.Float32() < (float32(deflectChance) / 100.0)
+	}
+
+	// On deflect, subtract armor
+	if deflect {
+		attack.damage = (attack.damage * targetMob.getDeflectionAmount()) / 100
+	}
+
+	// Subtract flat-damage resistance
+	attack.damage -= targetMob.getResistance()
+
+	// Calculate final damage
+	attack.damage = max(attack.damage, 1)
+
+	// Deal damage
+	targetMob.Health -= attack.damage
+
+	// Broadcast result to room
+	var message string
+	if crit {
+		message = fmt.Sprintf("<r>Critical hit!</r> <y>%s</y> struck <y>%s</y> for <r>%d damage</r>.", mob.Name, targetMob.Name, attack.damage)
+	} else if deflect {
+		message = fmt.Sprintf("<y>%s's</y> attack glanced off <y>%s</y> for <r>%d damage</r>.", mob.Name, targetMob.Name, attack.damage)
+	} else {
+		message = fmt.Sprintf("<y>%s</y> struck <y>%s</y> for <r>%d damage</r>.", mob.Name, targetMob.Name, attack.damage)
+	}
+	world.MessageRoom(mob.Room, message)
+	if targetMob.isDead() {
+		world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> has <r>slain</r> <y>%s</y>.", mob.Name, targetMob.Name))
+	}
+	// else {
+		// should this be moved into mob.damage()?
+		// targetMob.rollForConcentration(world, damage)
+	// }
+
+	// Reduce weapon durability, unequipping the weapon if it breaks
+	if attack.hasWeaponSlot && mob.Character != nil {
+		mob.Character.subtractDurabilityFromEquipment(world, attack.weaponSlot)
+	}
+
+	if targetMob.IsPlayer() {
+		// Subtract durability from Armor and Shield
+
+		// We don't have to check if outfit is non-nil because
+		// subtractDurabilityFromEquipment will do this for us
+		mob.Character.subtractDurabilityFromEquipment(world, EQUIPMENT_SLOT_OUTFIT)
+
+		// But we do have to check for shield, because the offhand
+		// item might not be a shield
+		shield := targetMob.Character.Equipment.GetShield()
+		if shield != nil {
+			mob.Character.subtractDurabilityFromEquipment(world, EQUIPMENT_SLOT_OFF_HAND)
 		}
 	}
 }
@@ -245,13 +436,13 @@ func (mob *Mob) useItem(world *World) {
 	// Find the item
 	item, found := mob.FindItem(mob.itemToUse)
 	if !found {
-		mob.Owner.Message(world, "You no longer have the item you were going to use.")
+		mob.Message(world, "You no longer have the item you were going to use.")
 		return
 	}
 	itemType := item.ItemType
 
 	if !mob.isTargetValid(world) {
-		mob.Owner.Message(world, fmt.Sprintf("You couldn't use <g>%s</g> because your target is gone.", itemType.Name))
+		mob.Message(world, fmt.Sprintf("You couldn't use <g>%s</g> because your target is gone.", itemType.Name))
 		return
 	}
 
@@ -277,8 +468,8 @@ func (mob *Mob) useItem(world *World) {
 	index, found := mob.Inventory.FindItemById(mob.itemToUse)
 	if found {
 		mob.Inventory.RemoveItem(world, index)
-		if mob.Owner.IsPlayer() {
-			world.PlayerInventoryChanged(mob.Owner.GetPlayerKey())
+		if mob.Character != nil {
+			world.PlayerInventoryChanged(mob.Character.PlayerKey)
 		}
 	}
 }
@@ -333,6 +524,17 @@ func (mob *Mob) isTargetValid(world *World) bool {
 		default:
 			return true
 	}
+}
+
+func (mob *Mob) getTargetMobIfExists(world *World) *Mob {
+	if mob.Target.Type == MOB_TARGET_MOB {
+		targetMob, exists := world.Mobs.GetIfExists(mob.Target.Value.(MobHandle))
+		if exists {
+			return targetMob
+		}
+	}
+
+	return nil
 }
 
 func (mob *Mob) ValidateTarget(world *World, params MobValidateTargetParams) error {

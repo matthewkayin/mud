@@ -48,7 +48,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	// @param message string
 	"message_player": func(frame lua.Frame) lua.Outcome {
 		playerMob := frameGetMobArg(&frame, 0)
-		if !playerMob.Owner.IsPlayer() {
+		if !playerMob.IsPlayer() {
 			frame.ThrowArgError(0, fmt.Sprintf("Tried to message_player %s who is not a player.", playerMob.Name))
 		}
 
@@ -58,7 +58,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 			frame.ThrowArgTypeError(1, lua.StringKind)
 		}
 
-		playerMob.Owner.Message(__world, message)
+		playerMob.Message(__world, message)
 		return frame.Return()
 	},
 
@@ -98,7 +98,7 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 			frame.ThrowArgTypeError(2, lua.StringKind)
 		}
 
-		playerMob.Owner.Message(__world, fmt.Sprintf("<y>%s</y>: '%s'", speaker.Name, message))
+		playerMob.Message(__world, fmt.Sprintf("<y>%s</y>: '%s'", speaker.Name, message))
 		return frame.Return()
 	},
 
@@ -235,7 +235,7 @@ func frameGetMobArg(frame *lua.Frame, index int) *Mob {
 
 func frameGetPlayerArg(frame *lua.Frame, index int) *Mob {
 	mob := frameGetMobArg(frame, index)
-	if !mob.Owner.IsPlayer() {
+	if !mob.IsPlayer() {
 		frame.ThrowArgError(index, fmt.Sprintf("Mob %s is not a Player.", mob.Name))
 	}
 

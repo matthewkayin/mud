@@ -23,8 +23,14 @@ var MENU_WORLD_ENTRIES_COMBAT = map[string]MenuEntry {
 
 			// Check that target is enemy
 			targetMob := gamestate.world.Mobs.Get(targetHandle)
-			if !targetMob.Owner.IsEvil() {
+			if !targetMob.IsEvil() {
 				player.send(fmt.Sprintf("%s is not an enemy.", targetMob.Name))
+				return true
+			}
+
+			// Check that the player has hands free to attack
+			if len(player.character.GetAttacks()) == 0 {
+				player.send("You cannot attack. Your hands are full!")
 				return true
 			}
 

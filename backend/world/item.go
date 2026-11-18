@@ -259,6 +259,10 @@ func (itemType *ItemType) HasArmorData() bool {
 	}
 }
 
+func (item *Item) IsWeapon() bool {
+	return item.IsOneHandedWeapon() || item.IsTwoHandedWeapon()
+}
+
 func (item *Item) IsOneHandedWeapon() bool {
 	switch item.ItemType.Kind {
 	 	case ITEM_KIND_EQUIPMENT_ONE_HANDED_SWORD,
@@ -341,11 +345,11 @@ func (kind ItemKind) requiredSkill() (Skill, bool) {
 
 func (item *Item) EquipmentSlotForItem() (EquipmentSlot, bool) {
 	if item.IsOneHandedWeapon() || item.IsTwoHandedWeapon() {
-			return EQUIPMENT_SLOT_MAIN_HAND, true
+		return EQUIPMENT_SLOT_MAIN_HAND, true
 	} else if item.IsShield() {
-			return EQUIPMENT_SLOT_OFF_HAND, true
+		return EQUIPMENT_SLOT_OFF_HAND, true
 	} else if item.IsOutfit() {
-			return EQUIPMENT_SLOT_OUTFIT, true
+		return EQUIPMENT_SLOT_OUTFIT, true
 	} else if item.IsAccessory(){
 		return EQUIPMENT_SLOT_ACCESSORY, true
 	} else {
