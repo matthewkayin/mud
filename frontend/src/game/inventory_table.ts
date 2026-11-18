@@ -1,4 +1,5 @@
 import { type Inventory } from './socket_message';
+import { formatViewHeader } from './view_format';
 
 // Wide enough for "Damaged Sword of the Forgotten Kingdom"; longer names are truncated
 const ITEM_COLUMN_WIDTH = 38;
@@ -26,10 +27,7 @@ export const formatInventoryTable = (inventory: Inventory): string[] => {
   // Each cell has a space of padding on both sides, and the columns are separated by a '|'
   const innerWidth = widths.reduce((total, width) => total + width + 2, 0) + widths.length - 1;
 
-  const title = ' Inventory ';
-  const leftDashCount = Math.floor((innerWidth - title.length) / 2);
-  const rightDashCount = innerWidth - title.length - leftDashCount;
-  const topBorder = `+${'-'.repeat(leftDashCount)}${title}${'-'.repeat(rightDashCount)}+`;
+  const topBorder = formatViewHeader('Inventory', innerWidth + 2);
   const separator = `|${widths.map((width) => '-'.repeat(width + 2)).join('|')}|`;
   const bottomBorder = `+${'-'.repeat(innerWidth)}+`;
 

@@ -36,6 +36,7 @@ src/
   game/minimap.tsx      SVG map of the rooms around the player
   game/view.tsx         view panel (help, chat, inventory or equipment)
   game/inventory_table.ts formats the server's inventory into the view panel's table
+  game/view_format.ts   the view panel's line width and header format
   game/view_mode.ts     view panel modes
 ```
 
@@ -55,11 +56,11 @@ The game page renders its panels inside an `article.game` in two columns: the te
 
 ## View panel
 
-The view panel (`game/view.tsx`) shows text only, one mode at a time, under a `=== <Mode> ===` title. It shows nothing, in any mode, while the player isn't in the world:
+The view panel (`game/view.tsx`) shows text only, one mode at a time, under a header: a 70-column (`VIEW_WIDTH`) `+---- <Mode> ----+` line with the mode's name centered, built by `formatViewHeader` in `game/view_format.ts`. Headers never wrap; when the panel is narrower than them, the panel scrolls sideways. It shows nothing, in any mode, while the player isn't in the world:
 
 - `help`: explains the panel and the `view` command. The default.
 - `chat`: the chat history.
-- `inventory`: a bordered table that `game/inventory_table.ts` builds from the server's `inv`, with `Item`, `Amount` and `Size (<used> / <capacity>)` columns and the title in the top border instead of a `=== ===` line. The Item column is always 38 characters wide, and longer names are cut off with `...`. The Amount column fits `Amount`, and the Size column fits at least `Size (100 / 100)`, so the table is 70 columns wide for a capacity under 1000. An empty inventory shows one `(empty)` row. Table rows never wrap: when the panel is narrower than the table, the panel scrolls sideways.
+- `inventory`: a bordered table that `game/inventory_table.ts` builds from the server's `inv`, with `Item`, `Amount` and `Size (<used> / <capacity>)` columns and the table's top border as its header. The Item column is always 38 characters wide, and longer names are cut off with `...`. The Amount column fits `Amount`, and the Size column fits at least `Size (100 / 100)`, so the table is 70 columns wide for a capacity under 1000. An empty inventory shows one `(empty)` row. Table rows never wrap: when the panel is narrower than the table, the panel scrolls sideways.
 - `equipment`: the server's `equip` lines.
 
 The client handles `view <mode>` itself in `game.tsx` and never sends it to the server: it switches the mode, or writes an error to the terminal when the player isn't in the world, or a usage line when the mode is missing or unknown. The server has a `view` help topic so `help view` still describes it. The client already holds the lines for every mode:
@@ -101,5 +102,5 @@ All styling lives in `src/styles.css`. The look is a parchment page with serif t
 - Don't add a CSS framework or component library.
 - The `.page` frame sizes to its content, is never narrower than 760px (except on small screens) and never wider than the viewport. Each page's content sets the width:
   - Text pages render a top-level `<article>`, which the stylesheet fixes at 690px, the width of the old 760px column inside the frame.
-  - The game page's `article.game` is a two-column grid with one row. The `.game-main` column holds the terminal (128 columns wide plus room for its scrollbar, which sets the column's width) with the status bar below it, and the `.game-sidebar` takes the fixed-width second column, so together they set the frame's width. The sidebar stretches to the height of the first column: the minimap sits at its top and the view panel grows to fill the rest, lining its bottom edge up with the status bar's. The minimap is as wide as the sidebar with a 17:9 aspect ratio (the map's columns by its visible rows), and the map scales to fit it; the view panel takes the rest of the column, so a taller terminal makes only the view panel taller. On small screens the grid becomes one column.
+  - The game page's `article.game` is a two-column grid with one row. The `.game-main` column holds the terminal (128 columns wide plus room for its scrollbar, which sets the column's width) with the status bar below it, and the `.game-sidebar` takes the fixed-width second column, so together they set the frame's width. The sidebar stretches to the height of the first column: the minimap sits at its top and the view panel grows to fill the rest, lining its bottom edge up with the status bar's. The minimap is as wide as the sidebar with a 17:9 aspect ratio (the map's columns by its visible rows), and the map scales to fit it; the view panel takes the rest of the column, so a taller terminal makes only the view panel taller. The view panel's content never affects the sidebar's height: it scrolls whatever doesn't fit. On small screens the grid becomes one column, and the view panel is a fixed 20em tall.
 - No page may scroll horizontally at phone width; the `@media (max-width: 600px)` block handles small screens.

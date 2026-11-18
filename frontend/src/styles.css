@@ -409,9 +409,12 @@ button[type="submit"]:disabled {
 
 /* View panel */
 
-/* Fills the rest of the sidebar, so its bottom edge lines up with the status bar's */
+/* Fills the rest of the sidebar, so its bottom edge lines up with the status bar's. The explicit 0 height keeps
+   the panel's content from counting toward the sidebar's height, which would otherwise grow the grid row, and
+   flex-grow then stretches it to fill the space, scrolling whatever overflows. */
 .view {
-    flex: 1;
+    flex: 1 1 0;
+    height: 0;
     min-height: 0;
     overflow-y: auto;
     overflow-x: auto;
@@ -420,12 +423,12 @@ button[type="submit"]:disabled {
     background-color: #1e1e1e;
 }
 
-/* Table rows never wrap, so a panel narrower than the table scrolls sideways instead of breaking its borders */
-.view-table {
+/* Headers and table rows never wrap, so a panel narrower than them scrolls sideways instead of breaking their borders */
+.view-preformatted {
     width: max-content;
 }
 
-.view-table .terminal-text {
+.view-preformatted .terminal-text {
     white-space: pre;
     overflow-wrap: normal;
 }
@@ -458,7 +461,8 @@ button[type="submit"]:disabled {
     grid-template-columns: 100%;
   }
 
+  /* The sidebar has its own auto-height row here, so give the panel a fixed height to scroll within */
   .view {
-    min-height: 4em;
+    height: 20em;
   }
 }

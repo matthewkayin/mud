@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { textLineToParagraph } from './text_line';
 import { type ViewMode } from './view_mode';
 import { formatInventoryTable } from './inventory_table';
+import { VIEW_WIDTH, formatViewHeader } from './view_format';
 import { type Inventory } from './socket_message';
 
 const VIEW_TITLES: Record<ViewMode, string> = {
@@ -45,7 +46,7 @@ export const View = ({ mode, isInWorld, chatLines, inventory, equipmentLines }: 
     lines = equipmentLines ?? [];
   }
 
-  // Tables have their own title and must not wrap
+  // Tables include their own header
   const isTable = mode === 'inventory';
 
   // Start each mode scrolled to the bottom
@@ -75,9 +76,9 @@ export const View = ({ mode, isInWorld, chatLines, inventory, equipmentLines }: 
 
   return (
     <div className="view" ref={containerRef} onScroll={onScroll}>
-      {isInWorld && !isTable && <p className="terminal-text">=== {VIEW_TITLES[mode]} ===</p>}
+      {isInWorld && !isTable && <div className="view-preformatted">{textLineToParagraph(formatViewHeader(VIEW_TITLES[mode], VIEW_WIDTH), 0)}</div>}
       {isInWorld && !isTable && lines.map(textLineToParagraph)}
-      {isInWorld && isTable && <div className="view-table">{lines.map(textLineToParagraph)}</div>}
+      {isInWorld && isTable && <div className="view-preformatted">{lines.map(textLineToParagraph)}</div>}
     </div>
   );
 };
