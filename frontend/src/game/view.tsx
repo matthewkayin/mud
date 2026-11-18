@@ -37,9 +37,9 @@ export const View = ({ mode, isInWorld, chatLines, inventoryLines, equipmentLine
     lines = VIEW_HELP_LINES;
   } else if (mode === 'chat') {
     lines = chatLines;
-  } else if (isInWorld && mode === 'inventory') {
+  } else if (mode === 'inventory') {
     lines = inventoryLines ?? [];
-  } else if (isInWorld && mode === 'equipment') {
+  } else if (mode === 'equipment') {
     lines = equipmentLines ?? [];
   }
 
@@ -59,7 +59,7 @@ export const View = ({ mode, isInWorld, chatLines, inventoryLines, equipmentLine
     if (shouldScrollToBottomRef.current) {
       container.scrollTop = container.scrollHeight;
     }
-  }, [mode, chatLines, inventoryLines, equipmentLines]);
+  }, [mode, isInWorld, chatLines, inventoryLines, equipmentLines]);
 
   const onScroll = (event: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;
@@ -70,8 +70,8 @@ export const View = ({ mode, isInWorld, chatLines, inventoryLines, equipmentLine
 
   return (
     <div className="view" ref={containerRef} onScroll={onScroll}>
-      <p className="terminal-text">=== {VIEW_TITLES[mode]} ===</p>
-      {lines.map(textLineToParagraph)}
+      {isInWorld && <p className="terminal-text">=== {VIEW_TITLES[mode]} ===</p>}
+      {isInWorld && lines.map(textLineToParagraph)}
     </div>
   );
 };

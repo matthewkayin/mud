@@ -50,18 +50,18 @@ File names are snake_case; components are PascalCase named exports.
 | `/game`           | `game/game.tsx`                        | Redirects to `/signin` when signed out             |
 | `*`               | `pages/not_found.tsx`                  |                                                    |
 
-The game page renders its panels inside an `article.game` in two columns: the terminal with the status bar below it, and a sidebar to its right holding the minimap and the view panel. The panels are always on the page. The status bar is empty, and the view panel shows no inventory or equipment, until the player is in the world (the server is sending a status), and the minimap is empty until the server sends one. The minimap draws each discovered room as a box with lines for its north, east, south and west exits, and carets in the gap east of the room for up and down exits: a `^` near the top of its east side for up and a `v` near the bottom for down. While the status's `action` is true (the player has queued an action that hasn't resolved yet), the terminal prompt is replaced by a spinner.
+The game page renders its panels inside an `article.game` in two columns: the terminal with the status bar below it, and a sidebar to its right holding the minimap and the view panel. The panels are always on the page. The status bar and view panel are empty until the player is in the world (the server is sending a status), and the minimap is empty until the server sends one. The minimap draws each discovered room as a box with lines for its north, east, south and west exits, and carets in the gap east of the room for up and down exits: a `^` near the top of its east side for up and a `v` near the bottom for down. While the status's `action` is true (the player has queued an action that hasn't resolved yet), the terminal prompt is replaced by a spinner.
 
 ## View panel
 
-The view panel (`game/view.tsx`) shows text only, one mode at a time, under a `=== <Mode> ===` title:
+The view panel (`game/view.tsx`) shows text only, one mode at a time, under a `=== <Mode> ===` title. It shows nothing, in any mode, while the player isn't in the world:
 
 - `help`: explains the panel and the `view` command. The default.
 - `chat`: the chat history.
 - `inventory`: the server's `inv` lines.
 - `equipment`: the server's `equip` lines.
 
-The client handles `view <mode>` itself in `game.tsx` and never sends it to the server: it switches the mode, or writes a usage line to the terminal when the mode is missing or unknown. The server has a `view` help topic so `help view` still describes it. The client already holds the lines for every mode:
+The client handles `view <mode>` itself in `game.tsx` and never sends it to the server: it switches the mode, or writes an error to the terminal when the player isn't in the world, or a usage line when the mode is missing or unknown. The server has a `view` help topic so `help view` still describes it. The client already holds the lines for every mode:
 
 - Any message that starts with a bracketed tag, optionally inside a color tag (such as `<p>[Chat]</p> ...` or `[Whisper] ...`), is also appended to the chat history, which keeps the last 1024 lines. These messages still appear in the terminal. Other server text must not start with a bracketed tag, or it will be taken for chat.
 - The server sends `inv` (item lines, or `<empty>`) and `equip` (one `<Slot>: <item>` line per slot) in a heartbeat whenever the player's inventory or equipment changes, including on entering the world. They are cleared when a status-less heartbeat arrives.

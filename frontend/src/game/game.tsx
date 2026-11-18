@@ -43,6 +43,9 @@ export function GamePage() {
   const [inventoryLines, setInventoryLines] = useState<string[] | null>(null);
   const [equipmentLines, setEquipmentLines] = useState<string[] | null>(null);
 
+  // The player is in the world while the server is sending them a status
+  const isInWorld = playerStatus !== null;
+
   // Websocket
   const websocketRef = useRef<WebSocket | null>(null);
 
@@ -50,6 +53,11 @@ export function GamePage() {
 
   // The client handles the view command itself, since it already has the lines for every mode
   const handleViewCommand = (args: string[]) => {
+    if (!isInWorld) {
+      terminalWriteLine("You can only use 'view' while you are in the world.");
+      return;
+    }
+
     const mode = args.length === 1 ? args[0].toLowerCase() : '';
     if (!isViewMode(mode)) {
       terminalWriteLine(`Usage: view <${VIEW_MODES.join('|')}>`);
@@ -220,7 +228,7 @@ export function GamePage() {
         <Minimap map={minimap} />
         <View
           mode={viewMode}
-          isInWorld={playerStatus !== null}
+          isInWorld={isInWorld}
           chatLines={chatLines}
           inventoryLines={inventoryLines}
           equipmentLines={equipmentLines}
