@@ -7,6 +7,11 @@ const CELL_CENTER = CELL_SIZE / 2;
 
 const MINIMAP_NO_ROOM = -1;
 
+// The map is a square, but the panel only shows its middle rows, so it can be wider than it is tall. Whole rows
+// are cut off, so the exit lines of rooms in the top and bottom visible rows still trail to the panel's border.
+// The count is odd so the player's row stays in the middle, and it must match the .minimap aspect ratio in styles.css.
+const MINIMAP_VISIBLE_ROW_COUNT = 9;
+
 const EXIT_BIT_UP = 4;
 const EXIT_BIT_DOWN = 5;
 
@@ -39,8 +44,8 @@ const DIRECTION_EXIT_LINES = [
 ];
 
 export type MinimapProps = {
-  // Row-major grid of rooms with the player's room in the center. Each cell is -1 for no room, or a bitfield of the room's exits
-  // with bits ordered north, east, south, west, up, down.
+  // Row-major square grid of rooms with the player's room in the center. Each cell is -1 for no room, or a bitfield of the room's exits
+  // with bits ordered north, east, south, west, up, down. Only the middle MINIMAP_VISIBLE_ROW_COUNT rows are drawn.
   map: number[] | null;
 };
 
@@ -52,16 +57,23 @@ export const Minimap = ({ map }: MinimapProps) => {
 
   const width = Math.sqrt(map.length);
   const centerIndex = Math.floor(map.length / 2);
+  const firstVisibleRow = (width - MINIMAP_VISIBLE_ROW_COUNT) / 2;
 
   return (
-    <svg className="minimap" viewBox={`0 0 ${width * CELL_SIZE} ${width * CELL_SIZE}`}>
+    <svg className="minimap" viewBox={`0 0 ${width * CELL_SIZE} ${MINIMAP_VISIBLE_ROW_COUNT * CELL_SIZE}`}>
       {map.map((exits, index) => {
         if (exits === MINIMAP_NO_ROOM) {
           return null;
         }
 
+        // Skip the rows outside the panel. The SVG's overflow is visible, so they would otherwise draw past its edges.
+        const row = Math.floor(index / width);
+        if (row < firstVisibleRow || row >= firstVisibleRow + MINIMAP_VISIBLE_ROW_COUNT) {
+          return null;
+        }
+
         const x = (index % width) * CELL_SIZE;
-        const y = Math.floor(index / width) * CELL_SIZE;
+        const y = (row - firstVisibleRow) * CELL_SIZE;
 
         return (
           <g key={index} transform={`translate(${x} ${y})`}>

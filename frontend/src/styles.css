@@ -133,11 +133,11 @@ code {
 }
 
 /* The game page is as wide as its panels. It has two columns in one row: the terminal with the status bar
-   below it, and the sidebar. The sidebar stretches to the height of the first column. */
+   below it, and the sidebar. The sidebar is 17 minimap cells of 32px wide, and stretches to the height of the first column. */
 .site-main > article.game {
   width: auto;
   display: grid;
-  grid-template-columns: max-content 280px;
+  grid-template-columns: max-content 544px;
   gap: 8px;
 }
 
@@ -285,9 +285,11 @@ button[type="submit"]:disabled {
 /* Terminal */
 
 .terminal {
-    /* 100 columns of monospace text plus the horizontal padding */
+    /* 128 columns of monospace text, about 3 more for the contents' scrollbar, plus the horizontal padding.
+       The font size matches .terminal-text so that ch is one column of terminal text. */
     font-family: monospace;
-    width: calc(100ch + 20px);
+    font-size: 12px;
+    width: calc(131ch + 20px);
     max-width: 100%;
     display: flex;
     flex-direction: column-reverse;
@@ -372,14 +374,15 @@ button[type="submit"]:disabled {
 
 /* Minimap */
 
-/* The panel is a square as wide as the sidebar, and the viewBox scales the map to fit it. It doesn't grow or
-   shrink, so the view panel below it takes the rest of the sidebar. Overflow is visible so the carets of rooms in
-   the last column can draw past the edge. */
+/* The panel is as wide as the sidebar, and the viewBox scales the map to fit it. Its aspect ratio is the map's
+   17 columns by the 9 rows the client shows (MINIMAP_VISIBLE_ROW_COUNT in minimap.tsx), so cells stay square and
+   the exit lines of rooms on every edge reach the border. It doesn't grow or shrink, so the view panel below it
+   takes the rest of the sidebar. Overflow is visible so the carets of rooms in the last column can draw past the edge. */
 .minimap {
     display: block;
     flex: none;
     width: 100%;
-    aspect-ratio: 1 / 1;
+    aspect-ratio: 17 / 9;
     overflow: visible;
     border-radius: 4px;
     background-color: #1e1e1e;
