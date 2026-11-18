@@ -24,11 +24,24 @@ type SocketPlayerStatus struct {
 	PendingAction bool `json:"action"`
 }
 
+type SocketInventoryItem struct {
+	Name string `json:"name"`
+	Amount int32 `json:"amount"`
+	Size int32 `json:"size"`
+}
+
+// The player's inventory, which the client formats into a table for the view panel
+type SocketInventory struct {
+	Size int32 `json:"size"`
+	Capacity int32 `json:"capacity"`
+	Items []SocketInventoryItem `json:"items"`
+}
+
 // A message sent to the client
 type SocketMessage struct {
 	Message *string `json:"message"`
 	Status *SocketPlayerStatus `json:"status,omitempty"`
-	Inventory []string `json:"inv,omitempty"`
+	Inventory *SocketInventory `json:"inv,omitempty"`
 	Equipment []string `json:"equip,omitempty"`
 	Map []int `json:"map,omitempty"`
 }

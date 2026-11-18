@@ -63,7 +63,7 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 			}
 			if player.isInventoryDirty {
 				heartbeat.Equipment = getEquipmentLines(player.character)
-				heartbeat.Inventory = getInventoryLines(player.character)
+				heartbeat.Inventory = getSocketInventory(player.character)
 				player.isInventoryDirty = false
 			}
 		}
@@ -102,20 +102,24 @@ func getEquipmentLines(character *world.Character) []string {
 	return lines
 }
 
-// One line per inventory item, or "<empty>", for the client's inventory view
-// Never returns an empty slice, so that an empty inventory is still sent to the client
-func getInventoryLines(character *world.Character) []string {
-	if len(character.Inventory.Items) == 0 {
-		return []string { "<empty>" }
-	}
-
-	lines := make([]string, 0, len(character.Inventory.Items))
+// The player's inventory, for the client's inventory view
+// Items is never nil, so that an empty inventory is sent as [] rather than null
+func getSocketInventory(character *world.Character) *SocketInventory {
+	items := make([]SocketInventoryItem, 0, len(character.Inventory.Items))
 	for index := range len(character.Inventory.Items) {
 		item := &character.Inventory.Items[index]
-		lines = append(lines, item.NameWithAmount())
+		items = append(items, SocketInventoryItem {
+			Name: item.NameWithCondition(),
+			Amount: item.Amount,
+			Size: item.Size(),
+		})
 	}
 
-	return lines
+	return &SocketInventory {
+		Size: character.Inventory.Size(),
+		Capacity: world.INVENTORY_CAPACITY_PLAYER,
+		Items: items,
+	}
 }
 
 func (player *Player) setMenuLogin(gamestate *GameState) {

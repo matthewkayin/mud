@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { textLineToParagraph } from './text_line';
 import { type ViewMode } from './view_mode';
+import { formatInventoryTable } from './inventory_table';
+import { type Inventory } from './socket_message';
 
 const VIEW_TITLES: Record<ViewMode, string> = {
   help: 'Help',
@@ -23,11 +25,11 @@ type ViewProps = {
   mode: ViewMode;
   isInWorld: boolean;
   chatLines: string[];
-  inventoryLines: string[] | null;
+  inventory: Inventory | null;
   equipmentLines: string[] | null;
 };
 
-export const View = ({ mode, isInWorld, chatLines, inventoryLines, equipmentLines }: ViewProps) => {
+export const View = ({ mode, isInWorld, chatLines, inventory, equipmentLines }: ViewProps) => {
   // A ref rather than state, since changing it never needs a re-render
   const shouldScrollToBottomRef = useRef(true);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -38,10 +40,13 @@ export const View = ({ mode, isInWorld, chatLines, inventoryLines, equipmentLine
   } else if (mode === 'chat') {
     lines = chatLines;
   } else if (mode === 'inventory') {
-    lines = inventoryLines ?? [];
+    lines = inventory === null ? [] : formatInventoryTable(inventory);
   } else if (mode === 'equipment') {
     lines = equipmentLines ?? [];
   }
+
+  // Tables have their own title and must not wrap
+  const isTable = mode === 'inventory';
 
   // Start each mode scrolled to the bottom
   useEffect(() => {
@@ -59,7 +64,7 @@ export const View = ({ mode, isInWorld, chatLines, inventoryLines, equipmentLine
     if (shouldScrollToBottomRef.current) {
       container.scrollTop = container.scrollHeight;
     }
-  }, [mode, isInWorld, chatLines, inventoryLines, equipmentLines]);
+  }, [mode, isInWorld, chatLines, inventory, equipmentLines]);
 
   const onScroll = (event: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;
@@ -70,8 +75,9 @@ export const View = ({ mode, isInWorld, chatLines, inventoryLines, equipmentLine
 
   return (
     <div className="view" ref={containerRef} onScroll={onScroll}>
-      {isInWorld && <p className="terminal-text">=== {VIEW_TITLES[mode]} ===</p>}
-      {isInWorld && lines.map(textLineToParagraph)}
+      {isInWorld && !isTable && <p className="terminal-text">=== {VIEW_TITLES[mode]} ===</p>}
+      {isInWorld && !isTable && lines.map(textLineToParagraph)}
+      {isInWorld && isTable && <div className="view-table">{lines.map(textLineToParagraph)}</div>}
     </div>
   );
 };

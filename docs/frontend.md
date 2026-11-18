@@ -35,6 +35,7 @@ src/
   game/status_bar.tsx   HP and MP meters
   game/minimap.tsx      SVG map of the rooms around the player
   game/view.tsx         view panel (help, chat, inventory or equipment)
+  game/inventory_table.ts formats the server's inventory into the view panel's table
   game/view_mode.ts     view panel modes
 ```
 
@@ -58,13 +59,13 @@ The view panel (`game/view.tsx`) shows text only, one mode at a time, under a `=
 
 - `help`: explains the panel and the `view` command. The default.
 - `chat`: the chat history.
-- `inventory`: the server's `inv` lines.
+- `inventory`: a bordered table that `game/inventory_table.ts` builds from the server's `inv`, with `Item`, `Amount` and `Size (<used> / <capacity>)` columns and the title in the top border instead of a `=== ===` line. The Item column is always 38 characters wide, and longer names are cut off with `...`. The Amount column fits `Amount`, and the Size column fits at least `Size (100 / 100)`, so the table is 70 columns wide for a capacity under 1000. An empty inventory shows one `(empty)` row. Table rows never wrap: when the panel is narrower than the table, the panel scrolls sideways.
 - `equipment`: the server's `equip` lines.
 
 The client handles `view <mode>` itself in `game.tsx` and never sends it to the server: it switches the mode, or writes an error to the terminal when the player isn't in the world, or a usage line when the mode is missing or unknown. The server has a `view` help topic so `help view` still describes it. The client already holds the lines for every mode:
 
 - Any message that starts with a bracketed tag, optionally inside a color tag (such as `<p>[Chat]</p> ...` or `[Whisper] ...`), is also appended to the chat history, which keeps the last 1024 lines. These messages still appear in the terminal. Other server text must not start with a bracketed tag, or it will be taken for chat.
-- The server sends `inv` (item lines, or `<empty>`) and `equip` (one `<Slot>: <item>` line per slot) in a heartbeat whenever the player's inventory or equipment changes, including on entering the world. They are cleared when a status-less heartbeat arrives.
+- The server sends `inv` (an object with the inventory's `size`, its `capacity` and its `items`, each with a `name`, `amount` and `size`, where an item's size is for the whole stack) and `equip` (one `<Slot>: <item>` line per slot) in a heartbeat whenever the player's inventory or equipment changes, including on entering the world. They are cleared when a status-less heartbeat arrives.
 
 While the panel is scrolled to the bottom it follows new lines, like the terminal, and switching modes scrolls to the bottom.
 

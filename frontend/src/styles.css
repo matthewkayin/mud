@@ -414,9 +414,20 @@ button[type="submit"]:disabled {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    overflow-x: auto;
     padding: 10px;
     border-radius: 4px;
     background-color: #1e1e1e;
+}
+
+/* Table rows never wrap, so a panel narrower than the table scrolls sideways instead of breaking its borders */
+.view-table {
+    width: max-content;
+}
+
+.view-table .terminal-text {
+    white-space: pre;
+    overflow-wrap: normal;
 }
 
 @keyframes blink {

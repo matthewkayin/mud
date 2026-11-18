@@ -7,7 +7,7 @@ import { StatusBar } from './status_bar.tsx';
 import { Minimap } from './minimap.tsx';
 import { View } from './view.tsx';
 import { VIEW_MODES, isViewMode, type ViewMode } from './view_mode.ts';
-import { type PlayerStatus, type SocketMessage } from './socket_message';
+import { type Inventory, type PlayerStatus, type SocketMessage } from './socket_message';
 
 const TERMINAL_PROMPT = ">";
 const HEARTBEAT_TIMEOUT_MS = 10000;
@@ -40,7 +40,7 @@ export function GamePage() {
   // View panel
   const [viewMode, setViewMode] = useState<ViewMode>('help');
   const [chatLines, setChatLines] = useState<string[]>([]);
-  const [inventoryLines, setInventoryLines] = useState<string[] | null>(null);
+  const [inventory, setInventory] = useState<Inventory | null>(null);
   const [equipmentLines, setEquipmentLines] = useState<string[] | null>(null);
 
   // The player is in the world while the server is sending them a status
@@ -144,7 +144,7 @@ export function GamePage() {
         // their status, minimap, inventory and equipment
         setPlayerStatus(null);
         setMinimap(null);
-        setInventoryLines(null);
+        setInventory(null);
         setEquipmentLines(null);
       }
 
@@ -155,7 +155,7 @@ export function GamePage() {
       }
 
       if (socketMessage.inv) {
-        setInventoryLines(socketMessage.inv);
+        setInventory(socketMessage.inv);
       }
       if (socketMessage.equip) {
         setEquipmentLines(socketMessage.equip);
@@ -230,7 +230,7 @@ export function GamePage() {
           mode={viewMode}
           isInWorld={isInWorld}
           chatLines={chatLines}
-          inventoryLines={inventoryLines}
+          inventory={inventory}
           equipmentLines={equipmentLines}
         />
       </div>
