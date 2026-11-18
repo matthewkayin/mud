@@ -365,6 +365,16 @@ func (mob *Mob) update(world *World) {
 	}
 }
 
+func (mob *Mob) damage(world *World, attackerHandle MobHandle, damage int32) {
+	mob.Health -= damage
+	// mob.alertness = MOB_ALERTNESS_MAX
+	// targetMob.rollForConcentration(world, damage)
+
+	if mob.IsNpc() {
+		mob.Npc.onAttacked(world, attackerHandle)
+	}
+}
+
 func (mob *Mob) attackTarget(world *World, targetMob *Mob, attack MobAttack) {
 	// TODO:
 	// - check for evasion
@@ -391,7 +401,7 @@ func (mob *Mob) attackTarget(world *World, targetMob *Mob, attack MobAttack) {
 	attack.damage = max(attack.damage, 1)
 
 	// Deal damage
-	targetMob.Health -= attack.damage
+	targetMob.damage(world, mob.Handle, attack.damage)
 
 	// Broadcast result to room
 	var message string
@@ -406,10 +416,6 @@ func (mob *Mob) attackTarget(world *World, targetMob *Mob, attack MobAttack) {
 	if targetMob.isDead() {
 		world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> has <r>slain</r> <y>%s</y>.", mob.Name, targetMob.Name))
 	}
-	// else {
-		// should this be moved into mob.damage()?
-		// targetMob.rollForConcentration(world, damage)
-	// }
 
 	// Reduce weapon durability, unequipping the weapon if it breaks
 	if attack.hasWeaponSlot && mob.Character != nil {
@@ -421,7 +427,7 @@ func (mob *Mob) attackTarget(world *World, targetMob *Mob, attack MobAttack) {
 
 		// We don't have to check if outfit is non-nil because
 		// subtractDurabilityFromEquipment will do this for us
-		mob.Character.subtractDurabilityFromEquipment(world, EQUIPMENT_SLOT_OUTFIT)
+		targetMob.Character.subtractDurabilityFromEquipment(world, EQUIPMENT_SLOT_OUTFIT)
 
 		// But we do have to check for shield, because the offhand
 		// item might not be a shield

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"mud/util"
 	"github.com/mmcdole/lunar"
 )
 
@@ -205,6 +206,36 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		mob := frameGetMobArg(&frame, 0)
 		return frame.ReturnNumber(float64(mob.MaxMana()))
 	},
+
+	// Returns the NPC's disposition
+	//
+	// @param handle MobHandle
+	// @return string
+	"npc_get_disposition": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetNpcArg(&frame, 0)
+		return frame.ReturnString(mob.Npc.disposition.String())
+	},
+
+	// Sets the NPC's disposition
+	//
+	// @param handle MobHandle
+	// @param string
+	"npc_set_disposition": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetNpcArg(&frame, 0)
+		dispositionString, ok := frame.String(1)
+		if !ok {
+			frame.ThrowArgTypeError(1, lua.StringKind)
+		}
+
+		disposition, ok := util.EnumFromString[NpcDisposition](dispositionString, NPC_DISPOSITION_COUNT)
+		if !ok {
+			frame.ThrowArgError(1, fmt.Sprintf("Unrecognized NPC disposition '%s'.", dispositionString))
+		}
+
+		mob.Npc.disposition = disposition
+
+		return frame.ReturnString(mob.Npc.disposition.String())
+	},
 }
 
 // HELPERS
@@ -237,6 +268,15 @@ func frameGetPlayerArg(frame *lua.Frame, index int) *Mob {
 	mob := frameGetMobArg(frame, index)
 	if !mob.IsPlayer() {
 		frame.ThrowArgError(index, fmt.Sprintf("Mob %s is not a Player.", mob.Name))
+	}
+
+	return mob
+}
+
+func frameGetNpcArg(frame *lua.Frame, index int) *Mob {
+	mob := frameGetMobArg(frame, index)
+	if !mob.IsNpc() {
+		frame.ThrowArgError(index, fmt.Sprintf("Mob %s is not an Npc.", mob.Name))
 	}
 
 	return mob

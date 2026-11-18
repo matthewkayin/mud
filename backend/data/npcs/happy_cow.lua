@@ -25,6 +25,10 @@ function npc.init(self)
 end
 
 function npc.update(self, instance)
+    if world.npc_get_disposition(self) == world.NpcDisposition.HOSTILE then
+        return
+    end
+
     instance.moo_timer = instance.moo_timer - 1
     if instance.moo_timer < 0 then
         local room = world.mob_get_room(self)

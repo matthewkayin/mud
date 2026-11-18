@@ -143,6 +143,14 @@ func (npc *Npc) getResistance() int32 {
 	return npc.data.resistance
 }
 
+func (npc *Npc) onAttacked(world *World, attackerHandle MobHandle) {
+	npc.disposition = NPC_DISPOSITION_HOSTILE
+	npcMob := world.Mobs.Get(npc.mobHandle)
+	if npcMob.Mode == MOB_MODE_IDLE {
+		npcMob.SetModeAttack(world, attackerHandle)
+	}
+}
+
 // SCRIPT
 
 func (npc *Npc) getFunctionDesc(name string) string {

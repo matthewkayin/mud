@@ -161,6 +161,18 @@ function world.mob_get_room(handle) end
 ---@return boolean
 function world.mob_is_dead(handle) end
 
+--- Returns the NPC's disposition
+---
+---@param handle MobHandle
+---@return string
+function world.npc_get_disposition(handle) end
+
+--- Sets the NPC's disposition
+---
+---@param handle MobHandle
+---@param string
+function world.npc_set_disposition(handle, string) end
+
 --- Sends a dialog message to a specified player.
 --- Dialog messages are prefixed with the speakers name:
 --- i.e. "Troll: 'This is a message'"
