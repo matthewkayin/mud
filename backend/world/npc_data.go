@@ -43,6 +43,8 @@ type NpcData struct {
 	damage int32
 	// armor penetration score
 	penetration int32
+	attacksPerRound int32
+	initiative int32
 	// flat armor resistance
 	resistance int32
 	// deflection score
@@ -111,6 +113,12 @@ func (parser *ScriptParser) parserNpc(world *World, table *lua.Table) *NpcData {
 
 	npcData.penetration = parser.getOptionalInt32(table, "penetration", 0)
 	parser.checkInt32NonNegative(npcData.penetration, "penetration")
+
+	npcData.attacksPerRound = parser.getOptionalInt32(table, "attacks_per_round", 1)
+	parser.checkInt32Positive(npcData.attacksPerRound, "attacks_per_round")
+
+	npcData.initiative = parser.getOptionalInt32(table, "initiative", 1)
+	parser.checkInt32Positive(npcData.initiative, "initiative")
 
 	npcData.resistance = parser.getOptionalInt32(table, "resistance", 0)
 	parser.checkInt32NonNegative(npcData.resistance, "resistance")

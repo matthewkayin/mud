@@ -60,27 +60,8 @@ func (world *World) NewCharacter(playerKey string, characterSheet *CharacterShee
 	return character
 }
 
-// MOB OWNER FUNCTIONS
-
-func (character *Character) IsPlayer() bool {
-	return true
-}
-
-func (character *Character) IsNpc() bool {
-	return false
-}
-
-func (character *Character) GetPlayerKey() string {
-	return character.PlayerKey
-}
-
-func (character *Character) getMobData() *MobData {
-	return &character.MobData
-}
-
-func (character *Character) GetFaction() MobFaction {
-	return MOB_FACTION_ALLIANCE
-}
+// MOB FUNCTIONS
+// Called through the Mob functions of the same name
 
 func (character *Character) DescribeToPlayer(world *World, playerKey string) {
 	world.MessagePlayer(playerKey, fmt.Sprintf("<y>%s</y> is a level %d %s %s.",
@@ -99,12 +80,62 @@ func (character *Character) InventoryCapacity() int32 {
 	return INVENTORY_CAPACITY_PLAYER
 }
 
-func (character *Character) Message(world *World, message string) {
-	world.MessagePlayer(character.PlayerKey, message)
+func (character *Character) GetAttacks() []MobAttack {
+	attacks := make([]MobAttack, 0, 2)
+
+	// Main hand attack
+	mainItem := character.Equipment.Get(EQUIPMENT_SLOT_MAIN_HAND)
+	if mainItem != nil && mainItem.IsWeapon() {
+		weaponData := mainItem.ItemType.Data.(WeaponData)
+		attacks = append(attacks, MobAttack {
+			damage: weaponData.damage + (character.Stats.Values[STAT_STR] / 2),
+			penetration: weaponData.penetration,
+			hasWeaponSlot: true,
+			weaponSlot: EQUIPMENT_SLOT_MAIN_HAND,
+		})
+	}
+
+	// Off-hand attack
+	offItem := character.Equipment.Get(EQUIPMENT_SLOT_OFF_HAND)
+	mainHandIsTwoHanded := mainItem != nil && mainItem.IsTwoHandedWeapon()
+	if !mainHandIsTwoHanded && offItem != nil && offItem.IsWeapon() {
+		weaponData := offItem.ItemType.Data.(WeaponData)
+		attacks = append(attacks, MobAttack {
+			damage: weaponData.damage + (character.Stats.Values[STAT_STR] / 4),
+			penetration: weaponData.penetration,
+			hasWeaponSlot: true,
+			weaponSlot: EQUIPMENT_SLOT_OFF_HAND,
+		})
+	}
+
+	// Unarmed attack, added only if main and off hand both did not produce an attack and character has a free hand
+	if len(attacks) == 0 && (mainItem == nil || offItem == nil) {
+		attacks = append(attacks, MobAttack {
+			damage: character.Stats.Values[STAT_STR] / 2,
+			penetration: 0,
+		})
+	}
+
+	return attacks
 }
 
-func (character *Character) update(world *World) {
-	// npc-only function, does nothing
+func (character *Character) getInitiative() int32 {
+	return character.Stats.Values[STAT_AGI]
+}
+
+// Characters have no native deflection or resistance
+// TODO: add deflection and resistance from equipped armor
+
+func (character *Character) getDeflection() int32 {
+	return 0
+}
+
+func (character *Character) getDeflectionAmount() int32 {
+	return 60
+}
+
+func (character *Character) getResistance() int32 {
+	return 0
 }
 
 // CHARACTER FUNCTIONS
@@ -165,20 +196,15 @@ func (character *Character) subtractDurabilityFromEquipment(world *World, slot E
 	// If item has become damaged, tell the user
 	itemIsDamaged := item.Durability < maxDurability / 2
 	if itemIsDamaged && !itemWasDamaged {
-		character.Message(world, fmt.Sprintf("Your <g>%s</g> is now damaged.", item.Name))
+		world.MessagePlayer(character.PlayerKey, fmt.Sprintf("Your <g>%s</g> is now damaged.", item.Name))
 		return
 	}
 
 	// If an item has lost its sharpness, tell the user
 	itemLostSharpness := item.Durability == maxDurability
 	if itemLostSharpness {
-		itemIsWeapon :=
-			item.IsOneHandedWeapon() ||
-			item.IsTwoHandedWeapon()
-		if itemIsWeapon {
-			character.Message(world, fmt.Sprintf("Your <g>%s</g> has lost its sharpness.", item.Name))
-		} else {
-			character.Message(world, fmt.Sprintf("Your <g>%s</g> has lost its fortification.", item.Name)) }
+		prefix, _ := item.GetReinforcedPrefix()
+		world.MessagePlayer(character.PlayerKey, fmt.Sprintf("Your <g>%s</g> is no longer %s.", item.Name, prefix))
 	}
 }
 

@@ -49,9 +49,8 @@ func (world *World) spawnNpc(params NpcSpawnParams) MobHandle {
 	}
 
 	// Spawn mob
-	mob := NewMob(npc)
-	world.Mobs.Push(mob)
-	npc.mobHandle = mob.Handle
+	mob := NewNpcMob(npc)
+	npc.mobHandle = world.Mobs.Push(mob)
 
 	// Add to room
 	world.Rooms[npc.Room].AddOccupant(npc.mobHandle)
@@ -63,31 +62,8 @@ func (world *World) spawnNpc(params NpcSpawnParams) MobHandle {
 	return npc.mobHandle
 }
 
-// MOB OWNER FUNCTIONS
-
-func (npc *Npc) IsPlayer() bool {
-	return false
-}
-
-func (npc *Npc) IsNpc() bool {
-	return true
-}
-
-func (npc *Npc) GetPlayerKey() string {
-	// player-only function, returns nothing
-	return ""
-}
-
-func (npc *Npc) getMobData() *MobData {
-	return &npc.MobData
-}
-
-func (npc *Npc) GetFaction() MobFaction {
-	if npc.disposition == NPC_DISPOSITION_FRIENDLY {
-		return MOB_FACTION_ALLIANCE
-	}
-	return MOB_FACTION_HORDE
-}
+// MOB FUNCTIONS
+// Called through the Mob functions of the same name
 
 func (npc *Npc) DescribeToPlayer(world *World, playerKey string) {
 	world.MessagePlayer(playerKey, npc.data.description)
@@ -113,10 +89,6 @@ func (npc *Npc) InventoryCapacity() int32 {
 	return INVENTORY_CAPACITY_UNLIMITED
 }
 
-func (npc *Npc) Message(world *World, message string) {
-	// player-only function, does nothing for NPCs
-}
-
 // UPDATE
 
 func (npc *Npc) update(world *World) {
@@ -131,14 +103,44 @@ func (npc *Npc) update(world *World) {
 		// Find a target enemy
 		targetIndex := slices.IndexFunc(room.Occupants, func (handle MobHandle) bool {
 			occupant := world.Mobs.Get(handle)
-			return !occupant.isDead() && occupant.Owner.GetFaction() != npc.GetFaction()
+			return !occupant.isDead() && occupant.IsPlayer()
 		})
 
 		// If target enemy found, set mode to attack
 		if targetIndex != -1 {
-			npcMob.SetModeAttack(room.Occupants[targetIndex])
+			npcMob.SetModeAttack(world, room.Occupants[targetIndex])
 		}
 	}
+}
+
+// COMBAT
+
+func (npc *Npc) GetAttacks() []MobAttack {
+	attacks := make([]MobAttack, 0, npc.data.attacksPerRound)
+	for _ = range npc.data.attacksPerRound {
+		attacks = append(attacks, MobAttack {
+			damage: npc.data.damage,
+			penetration: npc.data.penetration,
+		})
+	}
+
+	return attacks
+}
+
+func (npc *Npc) getInitiative() int32 {
+	return npc.data.initiative
+}
+
+func (npc *Npc) getDeflection() int32 {
+	return npc.data.deflection
+}
+
+func (npc *Npc) getDeflectionAmount() int32 {
+	return npc.data.deflectionAmount
+}
+
+func (npc *Npc) getResistance() int32 {
+	return npc.data.resistance
 }
 
 // SCRIPT

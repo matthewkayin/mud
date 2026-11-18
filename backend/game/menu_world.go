@@ -25,6 +25,7 @@ var MenuWorld Menu
 var MENU_WORLD_PARAMS = MenuNewParams {
 	entries: util.MergeMaps(
 		MENU_WORLD_ENTRIES_GENERAL,
+		MENU_WORLD_ENTRIES_COMBAT,
 		MENU_WORLD_ENTRIES_SOCIAL,
 		MENU_WORLD_ENTRIES_LOOK,
 		MENU_WORLD_ENTRIES_ITEM,
@@ -212,11 +213,11 @@ func findTarget(gamestate *GameState, player *Player, params FindTargetParams) (
 			}
 
 			targetMob := gamestate.world.Mobs.Get(targetHandle)
-			if params.targetType == world.TARGET_TYPE_ALLY && targetMob.Owner.GetFaction() != player.character.GetFaction() {
+			if params.targetType == world.TARGET_TYPE_ALLY && targetMob.IsEvil() {
 				return world.MobTarget{}, fmt.Errorf("You can only %s that %s on allies.", params.verb, params.noun)
 			}
 
-			if params.targetType == world.TARGET_TYPE_ENEMY && targetMob.Owner.GetFaction() == player.character.GetFaction() {
+			if params.targetType == world.TARGET_TYPE_ENEMY && !targetMob.IsEvil() {
 				return world.MobTarget{}, fmt.Errorf("You can only %s that %s on enemies.", params.verb, params.noun)
 			}
 

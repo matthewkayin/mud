@@ -2,6 +2,8 @@ package world
 
 import (
 	"log"
+	"math/rand"
+	"sort"
 	"slices"
 
 	"mud/util"
@@ -73,7 +75,8 @@ func (room *Room) update(world *World) {
 	}
 
 	// Update occupants
-	for index := range len(room.Occupants) {
+	occupants := room.sortOccupantsByInitiativeOrder(world)
+	for index := range len(occupants) {
 		occupant := world.Mobs.Get(room.Occupants[index])
 		if occupant.isDead() {
 			continue
@@ -92,4 +95,21 @@ func (room *Room) update(world *World) {
 			index++
 		}
 	}
+}
+
+func (room *Room) sortOccupantsByInitiativeOrder(world *World) []MobHandle {
+	occupants := slices.Clone(room.Occupants)
+	sort.Slice(occupants, func(i int, j int) bool {
+		mobI := world.Mobs.Get(occupants[i])
+		mobJ := world.Mobs.Get(occupants[j])
+
+		// If they have the same agility, choose a random one to go first
+		if mobI.getInitiative() == mobJ.getInitiative() {
+			return rand.Intn(2) == 0
+		}
+
+		return mobI.getInitiative() > mobJ.getInitiative()
+	})
+
+	return occupants
 }

@@ -218,7 +218,7 @@ func (gamestate *GameState) getPlayerByKey(playerKey string) *Player {
 }
 
 func (gamestate *GameState) spawnPlayerMob(player *Player) {
-	playerMob := world.NewMob(player.character)
+	playerMob := world.NewCharacterMob(player.character)
 	player.mobHandle = gamestate.world.Mobs.Push(playerMob)
 	playerRoom := &gamestate.world.Rooms[playerMob.Room]
 	playerRoom.AddOccupant(player.mobHandle)
