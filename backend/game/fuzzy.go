@@ -20,7 +20,7 @@ const (
 	FUZZY_RESULT_NUMBER_OUT_OF_RANGE
 )
 
-const FUZZY_NUMBER_NOT_SPECIFIED int = 1
+const FUZZY_NUMBER_NOT_SPECIFIED int = -1
 
 func splitArgsBy(args []string, word string) ([]string, []string, bool) {
 	index := slices.Index(args, word)
@@ -119,7 +119,7 @@ func fuzzyFind(names []string, searchWords []string, fuzzyNumber int) (int, Fuzz
 	}
 
 	// If there's only 1 winner, then return that
-	if len(bestIndices) == 1 && fuzzyNumber == 1 {
+	if len(bestIndices) == 1 && (fuzzyNumber == 1 || fuzzyNumber == FUZZY_NUMBER_NOT_SPECIFIED) {
 		return bestIndices[0], FUZZY_RESULT_OK
 	}
 

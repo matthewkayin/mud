@@ -223,7 +223,8 @@ func (item *Item) Size() int32 {
 
 func (itemType *ItemType) CanStack() bool {
 	switch itemType.Kind {
-		case ITEM_KIND_CONSUMABLE:
+		case ITEM_KIND_CONSUMABLE,
+		  ITEM_KIND_MISC:
 			return true
 		default:
 			return false
