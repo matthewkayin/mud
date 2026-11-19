@@ -1,9 +1,11 @@
 package world
 
 import (
-	"log"
 	"fmt"
+	"log"
+	"mud/util"
 	"slices"
+
 	"github.com/mmcdole/lunar"
 )
 
@@ -14,6 +16,11 @@ const (
 	NPC_MOVEMENT_TYPE_COUNT
 )
 
+type NpcThreat struct {
+	handle MobHandle
+	level int32
+}
+
 type Npc struct {
 	data *NpcData
 	MobData
@@ -22,6 +29,8 @@ type Npc struct {
 	movementType NpcMovementType
 	mobHandle MobHandle
 	instance lua.Value
+
+	threats []NpcThreat
 }
 
 type NpcSpawnParams struct {
@@ -44,6 +53,8 @@ func (world *World) spawnNpc(params NpcSpawnParams) MobHandle {
 
 		disposition: params.data.startingDisposition,
 		movementType: params.movementType,
+
+		threats: make([]NpcThreat, 0, 1),
 	}
 
 	// Spawn mob
@@ -94,7 +105,13 @@ func (npc *Npc) update(world *World) {
 
 	npcMob := world.Mobs.Get(npc.mobHandle)
 
-	// If hostile, find a target to attack
+	// Acquire a target from the threat table
+	highestThreat, hasThreat := npc.getHighestThreat()
+	if hasThreat && !npcMob.isTargeting(highestThreat) {
+		npcMob.SetModeAttack(world, highestThreat)
+	}
+
+	// If hostile and idle, find a target to attack
 	if npc.disposition == NPC_DISPOSITION_HOSTILE && npcMob.Target.Type == MOB_TARGET_NONE {
 		room := &world.Rooms[npc.Room]
 
@@ -107,6 +124,17 @@ func (npc *Npc) update(world *World) {
 		// If target enemy found, set mode to attack
 		if targetIndex != -1 {
 			npcMob.SetModeAttack(world, room.Occupants[targetIndex])
+		}
+	}
+
+	// Update threats
+	index := 0
+	for index < len(npc.threats) {
+		npc.threats[index].level--
+		if npc.threats[index].level <= 0 {
+			npc.threats = util.RemoveAtUnordered(npc.threats, index)
+		} else {
+			index++
 		}
 	}
 }
@@ -141,12 +169,46 @@ func (npc *Npc) getResistance() int32 {
 	return npc.data.resistance
 }
 
-func (npc *Npc) onAttacked(world *World, attackerHandle MobHandle) {
-	npc.disposition = NPC_DISPOSITION_HOSTILE
-	npcMob := world.Mobs.Get(npc.mobHandle)
-	if npcMob.Mode == MOB_MODE_IDLE {
-		npcMob.SetModeAttack(world, attackerHandle)
+func (npc *Npc) onAttacked(attackerHandle MobHandle) {
+	npc.addThreat(attackerHandle, 8)
+}
+
+func (npc *Npc) getThreat(mobHandle MobHandle) int32 {
+	for index := range len(npc.threats) {
+		if npc.threats[index].handle == mobHandle {
+			return npc.threats[index].level
+		}
 	}
+
+	return 0
+}
+
+func (npc *Npc) addThreat(mobHandle MobHandle, amount int32) {
+	for index := range len(npc.threats) {
+		if npc.threats[index].handle == mobHandle {
+			npc.threats[index].level += amount
+		}
+	}
+
+	npc.threats = append(npc.threats, NpcThreat {
+		handle: mobHandle,
+		level: amount,
+	})
+}
+
+func (npc *Npc) getHighestThreat() (MobHandle, bool) {
+	if len(npc.threats) == 0 {
+		return MobHandle{}, false
+	}
+
+	highestIndex := 0
+	for index := 1; index < len(npc.threats); index++ {
+		if npc.threats[index].level > npc.threats[highestIndex].level {
+			highestIndex = index
+		}
+	}
+
+	return npc.threats[highestIndex].handle, true
 }
 
 // SCRIPT

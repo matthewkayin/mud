@@ -347,7 +347,7 @@ func (mob *Mob) damage(world *World, attackerHandle MobHandle, damage int32) {
 	// targetMob.rollForConcentration(world, damage)
 
 	if mob.IsNpc() {
-		mob.Npc.onAttacked(world, attackerHandle)
+		mob.Npc.onAttacked(attackerHandle)
 	}
 }
 
@@ -527,6 +527,10 @@ func (mob *Mob) getTargetMobIfExists(world *World) *Mob {
 	}
 
 	return nil
+}
+
+func (mob *Mob) isTargeting(mobHandle MobHandle) bool {
+	return mob.Target.Type == MOB_TARGET_MOB && mob.Target.Value.(MobHandle) == mobHandle
 }
 
 func (mob *Mob) ValidateTarget(world *World, params MobValidateTargetParams) error {

@@ -161,6 +161,7 @@ func (player *Player) logout(gamestate *GameState) {
 
 	room := &gamestate.world.Rooms[player.character.Room]
 	room.RemoveOccupant(player.mobHandle)
+	gamestate.world.Mobs.Remove(player.mobHandle)
 	gamestate.world.MessageRoom(player.character.Room, fmt.Sprintf("<y>%s</y> has left the world.", player.character.Name))
 	gamestate.world.SaveCharacter(player.character)
 }
