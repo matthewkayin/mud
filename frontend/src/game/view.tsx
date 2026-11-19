@@ -2,8 +2,9 @@ import { useEffect, useRef } from 'react';
 import { textLineToParagraph } from './text_line';
 import { type ViewMode } from './view_mode';
 import { formatInventoryTable } from './inventory_table';
+import { formatEquipmentTable } from './equipment_table';
 import { VIEW_WIDTH, formatViewHeader } from './view_format';
-import { type Inventory } from './socket_message';
+import { type EquipmentSlot, type Inventory } from './socket_message';
 
 const VIEW_TITLES: Record<ViewMode, string> = {
   help: 'Help',
@@ -27,10 +28,10 @@ type ViewProps = {
   isInWorld: boolean;
   chatLines: string[];
   inventory: Inventory | null;
-  equipmentLines: string[] | null;
+  equipment: EquipmentSlot[] | null;
 };
 
-export const View = ({ mode, isInWorld, chatLines, inventory, equipmentLines }: ViewProps) => {
+export const View = ({ mode, isInWorld, chatLines, inventory, equipment }: ViewProps) => {
   // A ref rather than state, since changing it never needs a re-render
   const shouldScrollToBottomRef = useRef(true);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -43,11 +44,11 @@ export const View = ({ mode, isInWorld, chatLines, inventory, equipmentLines }: 
   } else if (mode === 'inventory') {
     lines = inventory === null ? [] : formatInventoryTable(inventory);
   } else if (mode === 'equipment') {
-    lines = equipmentLines ?? [];
+    lines = equipment === null ? [] : formatEquipmentTable(equipment);
   }
 
   // Tables include their own header
-  const isTable = mode === 'inventory';
+  const isTable = mode === 'inventory' || mode === 'equipment';
 
   // Start each mode scrolled to the bottom
   useEffect(() => {
@@ -65,7 +66,7 @@ export const View = ({ mode, isInWorld, chatLines, inventory, equipmentLines }: 
     if (shouldScrollToBottomRef.current) {
       container.scrollTop = container.scrollHeight;
     }
-  }, [mode, isInWorld, chatLines, inventory, equipmentLines]);
+  }, [mode, isInWorld, chatLines, inventory, equipment]);
 
   const onScroll = (event: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;

@@ -62,7 +62,7 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 				player.isMinimapDirty = false
 			}
 			if player.isInventoryDirty {
-				heartbeat.Equipment = getEquipmentLines(player.character)
+				heartbeat.Equipment = getSocketEquipment(player.character)
 				heartbeat.Inventory = getSocketInventory(player.character)
 				player.isInventoryDirty = false
 			}
@@ -77,9 +77,9 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 	}
 }
 
-// One line per equipment slot, for the client's equipment view
-func getEquipmentLines(character *world.Character) []string {
-	lines := make([]string, 0, world.EQUIPMENT_SLOT_COUNT)
+// One entry per equipment slot, for the client's equipment view
+func getSocketEquipment(character *world.Character) []SocketEquipmentSlot {
+	slots := make([]SocketEquipmentSlot, 0, world.EQUIPMENT_SLOT_COUNT)
 
 	mainHandItem := character.Equipment.Get(world.EQUIPMENT_SLOT_MAIN_HAND)
 	isTwoHandedWeaponEquipped := mainHandItem != nil && mainHandItem.IsTwoHandedWeapon()
@@ -92,14 +92,17 @@ func getEquipmentLines(character *world.Character) []string {
 			item = mainHandItem
 		}
 
-		itemName := "<none>"
+		itemName := ""
 		if item != nil {
 			itemName = item.Name
 		}
-		lines = append(lines, fmt.Sprintf("%s: %s", slot.String(), itemName))
+		slots = append(slots, SocketEquipmentSlot {
+			Slot: slot.String(),
+			Name: itemName,
+		})
 	}
 
-	return lines
+	return slots
 }
 
 // The player's inventory, for the client's inventory view

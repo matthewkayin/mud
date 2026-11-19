@@ -37,11 +37,18 @@ type SocketInventory struct {
 	Items []SocketInventoryItem `json:"items"`
 }
 
+// One equipment slot, which the client formats into a table for the view panel
+// Name is empty when nothing is equipped in the slot
+type SocketEquipmentSlot struct {
+	Slot string `json:"slot"`
+	Name string `json:"name"`
+}
+
 // A message sent to the client
 type SocketMessage struct {
 	Message *string `json:"message"`
 	Status *SocketPlayerStatus `json:"status,omitempty"`
 	Inventory *SocketInventory `json:"inv,omitempty"`
-	Equipment []string `json:"equip,omitempty"`
+	Equipment []SocketEquipmentSlot `json:"equip,omitempty"`
 	Map []int `json:"map,omitempty"`
 }
