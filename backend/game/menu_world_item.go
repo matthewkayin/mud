@@ -40,7 +40,14 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 			targetInventory := &room.Inventory
 			containerName := "the room"
 			if userSpecifiedContainer {
-				// TODO: fuzzy find container
+				chest, err := fuzzyFindChest(room, containerWords)
+				if err != nil {
+					player.send(err.Error())
+					return true
+				}
+
+				targetInventory = chest.GetInventory(gamestate.world, player.character)
+				containerName = chest.Name
 			}
 
 			// Special case, if item words is 'all', then loot the container
@@ -111,10 +118,19 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 			}
 
 			// Find target inventory
-			// TODO: replace with fuzzyFindChestInventory
 			room := &gamestate.world.Rooms[player.character.Room]
 			containerName := "the room"
 			targetInventory := &room.Inventory
+			if userSpecifiedContainer {
+				chest, err := fuzzyFindChest(room, containerWords)
+				if err != nil {
+					player.send(err.Error())
+					return true
+				}
+
+				targetInventory = chest.GetInventory(gamestate.world, player.character)
+				containerName = chest.Name
+			}
 
 			// Transfer
 			result, err := gamestate.inventoryTransfer(InventoryTransferParams {

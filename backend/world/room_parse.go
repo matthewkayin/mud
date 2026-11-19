@@ -290,8 +290,9 @@ func (parser *ScriptParser) getRoomChests(world *World, table *lua.Table, key st
 		}
 
 		name := parser.getString(chest, "name")
+		description := parser.getString(chest, "description")
 		loot := parser.getOptionalLootTable(world, chest, "loot")
-		chests = append(chests, NewChest(name, loot))
+		chests = append(chests, NewChest(name, description, &loot))
 	}
 
 	return chests

@@ -10,7 +10,7 @@ npc.max_health = 10
 npc.damage = 2
 npc.starting_disposition = world.NpcDisposition.NEUTRAL
 
-npc.drop_table = {
+npc.loot = {
     {
         item = "Leather",
         amount = 1,

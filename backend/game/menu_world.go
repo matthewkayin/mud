@@ -204,6 +204,16 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 			player.send(fmt.Sprintf("%s %s here.", util.CombineNames(occupantNames), isString))
 		}
 	}
+
+	// Send the list of chests
+	if len(room.Chests) != 0 {
+		chestNames := make([]string, 0, len(room.Chests))
+		for index := range len(room.Chests) {
+			chestNames = append(chestNames, room.Chests[index].Name)
+		}
+
+		player.send(fmt.Sprintf("You see %s.", util.CombineNames(chestNames)))
+	}
 }
 
 func findTarget(gamestate *GameState, player *Player, params FindTargetParams) (world.MobTarget, error) {

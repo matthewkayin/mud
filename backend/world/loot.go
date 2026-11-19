@@ -28,7 +28,7 @@ func (table *LootTable) getLoot(world *World, luck int32) Inventory {
 		entry := &table.Entries[index]
 
 		// Roll to see if this item is dropped
-		droppedItem := rand.Int32N(100) + luck < entry.dropChancePercent
+		droppedItem := rand.Int32N(100) < entry.dropChancePercent + luck
 		if !droppedItem {
 			continue
 		}

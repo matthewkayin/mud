@@ -37,7 +37,14 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				return true
 			}
 
-			// TODO: check for an item
+			// TODO: check for an item, players should be able to "look at" items in their inventory and in their equipment, and in chests, and in the room
+
+			// Check for chest
+			chest, err := fuzzyFindChest(room, searchWords)
+			if err == nil {
+				player.send(chest.Description)
+				return true
+			}
 
 			// Check for room detail
 			description, descriptionFound := room.Details[searchWordsJoined]
@@ -63,12 +70,19 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 		description: "Search the room for items, or type 'search <container>' to search a specific container such as a chest or a corpse.",
 		categories: []string { "exploration", "items" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
-			// TODO: make this do a 'search' role so that some players are better at searching than others
-
 			room := &gamestate.world.Rooms[player.character.Room]
 			targetInventory := &room.Inventory
 
-			// TODO: check for target inventory
+			// Check for chests
+			if len(args) != 0 {
+				chest, err := fuzzyFindChest(room, args)
+				if err != nil {
+					player.send(err.Error())
+					return true
+				}
+
+				targetInventory = chest.GetInventory(gamestate.world, player.character)
+			}
 
 			// Handle no items case
 			if len(targetInventory.Items) == 0 {

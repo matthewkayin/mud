@@ -420,3 +420,39 @@ func fuzzyFindMob(gamestate *GameState, player *Player, searchWords []string) (w
 			return world.MobHandle{}, fmt.Errorf("Something strange happened.")
 	}
 }
+
+func fuzzyFindChest(room *world.Room, searchWords []string) (*world.Chest, error) {
+	// Get fuzzy number
+	var fuzzyNumber int
+	fuzzyNumber, searchWords = getFuzzyNumberFromArgs(searchWords)
+
+	// Check for empty search words
+	if len(searchWords) == 0 {
+		return nil, fmt.Errorf("You must specify a container.")
+	}
+
+	// Build chest names
+	chestNames := make([]string, 0, len(room.Chests))
+	for index := range len(room.Chests) {
+		chest := &room.Chests[index]
+		chestNames = append(chestNames, chest.Name)
+	}
+
+	// Fuzzy find
+	index, result := fuzzyFind(chestNames, searchWords, fuzzyNumber)
+
+	// Handle result
+	switch result {
+		case FUZZY_RESULT_OK:
+			return &room.Chests[index], nil
+		case FUZZY_RESULT_NOT_FOUND:
+			return nil, fmt.Errorf("No container in the room matches the name '%s'.", strings.Join(searchWords, " "))
+		case FUZZY_RESULT_AMBIGUOUS:
+			return nil, fmt.Errorf("There are multiple containers in the room matching the name '%s'.", strings.Join(searchWords, " "))
+		case FUZZY_RESULT_NUMBER_OUT_OF_RANGE:
+			return nil, fmt.Errorf("There is no '%s' matching that number in the room.", strings.Join(searchWords, " "))
+		default:
+			log.Printf("warn: fuzzy result %d not handled in fuzzyFindChest().", result)
+			return nil, fmt.Errorf("Something stranged happened.")
+	}
+}

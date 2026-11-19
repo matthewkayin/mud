@@ -132,11 +132,10 @@ func (room *Room) sortOccupantsByInitiativeOrder(world *World) []MobHandle {
 
 func (room *Room) createCorpse(mob *Mob) {
 	var corpse Chest
-	corpseName := fmt.Sprintf("%s's Corpse", mob.Name)
 	if mob.IsPlayer() {
-		corpse = NewPlayerCorpse(corpseName, mob.Character.Inventory)
+		corpse = NewPlayerCorpse(mob.Character)
 	} else {
-		corpse = NewCorpse(corpseName, mob.Npc.data.loot)
+		corpse = NewCorpse(mob.Name, &mob.Npc.data.loot)
 	}
 	room.Chests = append(room.Chests, corpse)
 }
