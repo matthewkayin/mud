@@ -285,8 +285,16 @@ func (gamestate *GameState) handleCommand(playerKey string, command string) {
 func (gamestate *GameState) update() {
 	gamestate.world.Update()
 
-	// Send heartbeats to players
+	// Player update
 	for index := range len(gamestate.players) {
-		gamestate.players[index].sendHeartbeat(gamestate)
+		player := &gamestate.players[index]
+
+		// Check for player death
+		if player.isLoggedIn() && player.character.Health <= 0 {
+			player.onDeath(gamestate)
+		}
+
+		// Send player heartbeat
+		player.sendHeartbeat(gamestate)
 	}
 }

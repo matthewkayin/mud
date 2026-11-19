@@ -90,10 +90,13 @@ func (room *Room) update(world *World) {
 	// Remove dead occupants
 	index := 0
 	for index < len(room.Occupants) {
-		occupant := world.Mobs.Get(room.Occupants[index])
+		occupantHandle := room.Occupants[index]
+		occupant := world.Mobs.Get(occupantHandle)
 		if occupant.isDead() {
-			util.RemoveAtUnordered(room.Occupants, index)
+			room.Occupants = util.RemoveAtUnordered(room.Occupants, index)
+			room.grantExperienceFrom(world, occupant)
 			room.createCorpse(occupant)
+			world.Mobs.Remove(occupantHandle)
 		} else {
 			index++
 		}
@@ -106,7 +109,7 @@ func (room *Room) update(world *World) {
 		chest.update()
 
 		if chest.isRottedCorpse() {
-			util.RemoveAtUnordered(room.Chests, index)
+			room.Chests = util.RemoveAtUnordered(room.Chests, index)
 		} else {
 			index++
 		}
@@ -133,11 +136,33 @@ func (room *Room) sortOccupantsByInitiativeOrder(world *World) []MobHandle {
 func (room *Room) createCorpse(mob *Mob) {
 	var corpse Chest
 	if mob.IsPlayer() {
+		mob.Character.dumpEquipment()
 		corpse = NewPlayerCorpse(mob.Character)
 	} else {
 		corpse = NewCorpse(mob.Name, &mob.Npc.data.loot)
 	}
 	room.Chests = append(room.Chests, corpse)
+}
+
+func (room *Room) grantExperienceFrom(world *World, deadMob *Mob) {
+	// Don't grant experience for non-NPC kills
+	if !deadMob.IsNpc() {
+		return
+	}
+
+	// Gather a list of all player mobs
+	players := make([]*Mob, 0, len(room.Occupants))
+	for index := range room.Occupants {
+		occupant := world.Mobs.Get(room.Occupants[index])
+		if occupant.IsPlayer() {
+			players = append(players, occupant)
+		}
+	}
+
+	expPerPlayer := deadMob.Npc.data.experienceWorth / int32(len(players))
+	for _, player := range players {
+		player.Character.grantExperience(world, expPerPlayer)
+	}
 }
 
 func (position RoomPosition) String() string {

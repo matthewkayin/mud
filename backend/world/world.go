@@ -119,7 +119,7 @@ func (world *World) RemoveCharacter(character *Character) {
 		log.Printf("Warn: Character %s is being removed but does not exist in playerCharacters list for player %s.", character.Name, character.PlayerKey)
 	}
 
-	delete(world.Characters, character.Name)
+	delete(world.Characters, strings.ToLower(character.Name))
 	deleteCharacter(character)
 }
 

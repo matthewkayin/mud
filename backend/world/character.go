@@ -3,6 +3,7 @@ package world
 import (
 	"fmt"
 	"math"
+	"math/rand"
 	"mud/bitset"
 )
 
@@ -166,6 +167,8 @@ func LevelFromExpTotal(expTotal int32) int32 {
 
 func (character *Character) grantExperience(world *World, amount int32) {
 	character.Experience += amount
+	world.MessagePlayer(character.PlayerKey, fmt.Sprintf("You gained %d experience.", amount))
+
 	for character.Experience > ExpToNextLevel(character.Level) {
 		character.Level++
 		character.calculateStats()
@@ -284,4 +287,23 @@ func (character *Character) FindItem(id ItemId) (*Item, bool) {
 	}
 
 	return nil, false
+}
+
+// Called on death, performs random durability damage to equipment and dumps the equipment into the inventory
+func (character *Character) dumpEquipment() {
+	for index := range EQUIPMENT_SLOT_COUNT {
+		slot := EquipmentSlot(index)
+		item, exists := character.Equipment.Unequip(slot)
+		if !exists {
+			continue
+		}
+
+		halfMaxDurability := item.MaxDurability() / 2
+		item.Durability -= halfMaxDurability + int32(rand.Intn(int(halfMaxDurability)))
+		if item.Durability <= 0 {
+			continue
+		}
+
+		character.Inventory.AddItem(item)
+	}
 }

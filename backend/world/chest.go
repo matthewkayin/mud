@@ -2,7 +2,6 @@ package world
 
 import (
 	"fmt"
-	"log"
 )
 
 const CHEST_REPLENISH_DURATION = (5 * 60) / WORLD_SECONDS_PER_UPDATE
@@ -74,7 +73,6 @@ func NewPlayerCorpse(character *Character) Chest {
 // If the chest hasn't been opened yet, then the loot table will be rolled on based on the looter's Luck
 func (chest *Chest) GetInventory(world *World, looter *Character) *Inventory {
 	if chest.mode == CHEST_MODE_UNBOXED {
-		log.Printf("Chest unboxed bb!")
 		chest.inventory = chest.loot.getLoot(world, looter.Stats.Values[STAT_LCK])
 		chest.setOpen()
 	}

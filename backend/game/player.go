@@ -164,3 +164,10 @@ func (player *Player) logout(gamestate *GameState) {
 	gamestate.world.MessageRoom(player.character.Room, fmt.Sprintf("<y>%s</y> has left the world.", player.character.Name))
 	gamestate.world.SaveCharacter(player.character)
 }
+
+func (player *Player) onDeath(gamestate *GameState) {
+	player.send(fmt.Sprintf("%s has died, and death is forever. RIP", player.character.Name))
+	player.send("\n")
+	gamestate.world.RemoveCharacter(player.character)
+	player.setMenuLogin(gamestate)
+}
