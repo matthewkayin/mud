@@ -4,6 +4,7 @@ export type ViewMode = typeof VIEW_MODES[number];
 // Other names players can use for a mode
 const VIEW_MODE_ALIASES: Record<string, ViewMode> = {
   equipment: 'inventory',
+  inv: 'inventory',
 };
 
 // The mode a 'view' argument names, or null when it names none

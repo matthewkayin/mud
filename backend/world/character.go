@@ -193,6 +193,7 @@ func (character *Character) subtractDurabilityFromEquipment(world *World, slot E
 
 	if item.Durability <= 0 {
 		world.MessageRoom(character.Room, fmt.Sprintf("<y>%s's</y> <g>%s</g> broke!", character.Name, item.Name))
+		world.PlayerInventoryChanged(character.PlayerKey)
 		character.Equipment.Unequip(slot)
 		return
 	}
@@ -201,6 +202,7 @@ func (character *Character) subtractDurabilityFromEquipment(world *World, slot E
 	itemIsDamaged := item.Durability < maxDurability / 2
 	if itemIsDamaged && !itemWasDamaged {
 		world.MessagePlayer(character.PlayerKey, fmt.Sprintf("Your <g>%s</g> is now damaged.", item.Name))
+		world.PlayerInventoryChanged(character.PlayerKey)
 		return
 	}
 
@@ -209,6 +211,7 @@ func (character *Character) subtractDurabilityFromEquipment(world *World, slot E
 	if itemLostSharpness {
 		prefix, _ := item.GetReinforcedPrefix()
 		world.MessagePlayer(character.PlayerKey, fmt.Sprintf("Your <g>%s</g> is no longer %s.", item.Name, prefix))
+		world.PlayerInventoryChanged(character.PlayerKey)
 	}
 }
 

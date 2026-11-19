@@ -99,7 +99,7 @@ func getSocketEquipment(character *world.Character) []SocketEquipmentSlot {
 
 		itemName := ""
 		if item != nil {
-			itemName = item.Name
+			itemName = item.NameWithCondition()
 		}
 		slots = append(slots, SocketEquipmentSlot {
 			Slot: slotName,

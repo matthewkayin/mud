@@ -13,13 +13,14 @@ const VIEW_TITLES: Record<ViewMode, string> = {
 };
 
 const VIEW_HELP_LINES = [
-  'This is the view panel. It can show one of several things at a time.',
-  '\n',
-  "Type 'view <mode>' to change what it shows. The modes are:",
-  '  help      - this explanation',
-  '  chat      - a history of chat messages',
-  '  inventory - the items you have equipped and are carrying',
-  "'view equipment' also shows the inventory.",
+  "This is the view panel. Type 'view <mode>' to change what it shows.",
+  "\n",
+  "The view modes are:",
+  "  help      - the screen you're looking at right now",
+  "  chat      - a history of chat messages",
+  "  inventory - your items and equipment",
+  "\n",
+  "You can also use 'view equipment' and 'view inv' to access the 'inventory' mode.",
 ];
 
 type ViewProps = {
