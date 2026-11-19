@@ -77,7 +77,8 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 	}
 }
 
-// One entry per equipment slot, for the client's equipment view
+// One entry per equipment slot, for the client's equipment table
+// A two-handed weapon is shown once, in a "Both Hands" main hand slot, and the off hand entry is left blank
 func getSocketEquipment(character *world.Character) []SocketEquipmentSlot {
 	slots := make([]SocketEquipmentSlot, 0, world.EQUIPMENT_SLOT_COUNT)
 
@@ -87,9 +88,13 @@ func getSocketEquipment(character *world.Character) []SocketEquipmentSlot {
 		slot := world.EquipmentSlot(index)
 		item := character.Equipment.Get(slot)
 
-		// A two-handed weapon occupies the off hand too
-		if slot == world.EQUIPMENT_SLOT_OFF_HAND && isTwoHandedWeaponEquipped {
-			item = mainHandItem
+		slotName := slot.String()
+		if isTwoHandedWeaponEquipped && slot == world.EQUIPMENT_SLOT_MAIN_HAND {
+			slotName = "Both Hands"
+		}
+		if isTwoHandedWeaponEquipped && slot == world.EQUIPMENT_SLOT_OFF_HAND {
+			slotName = ""
+			item = nil
 		}
 
 		itemName := ""
@@ -97,7 +102,7 @@ func getSocketEquipment(character *world.Character) []SocketEquipmentSlot {
 			itemName = item.Name
 		}
 		slots = append(slots, SocketEquipmentSlot {
-			Slot: slot.String(),
+			Slot: slotName,
 			Name: itemName,
 		})
 	}

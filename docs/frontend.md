@@ -34,11 +34,11 @@ src/
   game/text_color.ts    terminal text colors
   game/status_bar.tsx   HP and MP meters
   game/minimap.tsx      SVG map of the rooms around the player
-  game/view.tsx         view panel (help, chat, inventory or equipment)
+  game/view.tsx         view panel (help, chat or inventory)
   game/inventory_table.ts formats the server's inventory into the view panel's table
-  game/equipment_table.ts formats the server's equipment into the view panel's table
+  game/equipment_table.ts formats the server's equipment into the table above the inventory
   game/view_format.ts   the view panel's line width, header format and table helpers
-  game/view_mode.ts     view panel modes
+  game/view_mode.ts     view panel modes and their aliases
 ```
 
 File names are snake_case; components are PascalCase named exports.
@@ -61,15 +61,17 @@ The view panel (`game/view.tsx`) shows text only, one mode at a time, under a he
 
 - `help`: explains the panel and the `view` command. The default.
 - `chat`: the chat history.
-- `inventory`: a bordered table that `game/inventory_table.ts` builds from the server's `inv`, with `Item`, `Amount` and `Size (<used> / <capacity>)` columns and the table's top border as its header. The Item column is always 38 characters wide, and longer names are cut off with `...`. The Amount column fits `Amount`, and the Size column fits at least `Size (100 / 100)`, so the table is 70 columns wide for a capacity under 1000. An empty inventory shows one `(empty)` row. Table rows never wrap: when the panel is narrower than the table, the panel scrolls sideways.
-- `equipment`: a bordered table that `game/equipment_table.ts` builds from the server's `equip`, with `Slot` and `Item` columns and the table's top border as its header. Each column is only as wide as its longest entry, so the table is usually narrower than the panel. Item names longer than the inventory's 38-character item width are cut off with `...`. An empty slot shows `---`. Item cells, including `---` and the `Item` heading, are centered.
+- `inventory`: two bordered tables, each with its top border as its header: the equipment above the inventory. `equipment` is another name for this mode, so `view equipment` shows it too.
+  - The inventory table (`game/inventory_table.ts`, from the server's `inv`) has `Item`, `Amount` and `Size (<used> / <capacity>)` columns. The Item column is always 38 characters wide, and longer names are cut off with `...`. The Amount column fits `Amount`, and the Size column fits at least `Size (100 / 100)`, so the table is 70 columns wide for a capacity under 1000. An empty inventory shows one `(empty)` row.
+  - The equipment table (`game/equipment_table.ts`, from the server's `equip`) has `Slot` and `Item` columns. The Slot column fits the longest slot name, and the Item column stretches so the table is as wide as the inventory table (`getInventoryTableWidth`). Item names longer than 38 characters are cut off with `...`. An empty slot shows `---`, and an empty slot name (the off hand while a two-handed weapon is equipped) shows `---` centered in the Slot column. Item cells, including `---` and the `Item` heading, are centered.
+  - Table rows never wrap: when the panel is narrower than the tables, the panel scrolls sideways.
 
-The client handles `view <mode>` itself in `game.tsx` and never sends it to the server: it switches the mode, or writes an error to the terminal when the player isn't in the world, or a usage line when the mode is missing or unknown. The server has a `view` help topic so `help view` still describes it. The client already holds the lines for every mode:
+The client handles `view <mode>` itself in `game.tsx` and never sends it to the server: it switches the mode (resolving aliases with `parseViewMode` in `game/view_mode.ts`), or writes an error to the terminal when the player isn't in the world, or a usage line when the mode is missing or unknown. The server has a `view` help topic so `help view` still describes it. The client already holds the lines for every mode:
 
 - Any message that starts with a bracketed tag, optionally inside a color tag (such as `<p>[Chat]</p> ...` or `[Whisper] ...`), is also appended to the chat history, which keeps the last 1024 lines. These messages still appear in the terminal. Other server text must not start with a bracketed tag, or it will be taken for chat.
-- The server sends `inv` (an object with the inventory's `size`, its `capacity` and its `items`, each with a `name`, `amount` and `size`, where an item's size is for the whole stack) and `equip` (an array with one object per slot, each with the slot's name in `slot` and the equipped item's `name`, which is empty for an empty slot; a two-handed weapon appears in both hands) in a heartbeat whenever the player's inventory or equipment changes, including on entering the world. They are cleared when a status-less heartbeat arrives.
+- The server sends `inv` (an object with the inventory's `size`, its `capacity` and its `items`, each with a `name`, `amount` and `size`, where an item's size is for the whole stack) and `equip` (an array with one object per slot, each with the slot's name in `slot` and the equipped item's `name`, which is empty for an empty slot; while a two-handed weapon is equipped, the main hand's `slot` is `Both Hands` and the off hand's `slot` and `name` are both empty) in a heartbeat whenever the player's inventory or equipment changes, including on entering the world. They are cleared when a status-less heartbeat arrives.
 
-While the panel is scrolled to the bottom it follows new lines, like the terminal, and switching modes scrolls to the bottom.
+Switching to `inventory` scrolls to the top, and the panel stays where it is as the tables change, so the equipment stays visible above a long inventory. In the other modes, switching scrolls to the bottom, and while the panel is scrolled to the bottom it follows new lines, like the terminal.
 
 ## Auth
 

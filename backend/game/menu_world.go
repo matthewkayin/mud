@@ -51,8 +51,8 @@ var MENU_WORLD_TOPICS_GENERAL = map[string]MenuHelpTopic {
 			"Type 'view <mode>' to change what it shows. The modes are:",
 			"  help      - explains the view panel",
 			"  chat      - a history of chat messages",
-			"  inventory - the items you are carrying",
-			"  equipment - the items you have equipped",
+			"  inventory - the items you have equipped and are carrying",
+			"'view equipment' also shows the inventory.",
 		},
 	},
 }

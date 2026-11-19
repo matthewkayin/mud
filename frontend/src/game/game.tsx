@@ -6,7 +6,7 @@ import { Terminal } from './terminal.tsx';
 import { StatusBar } from './status_bar.tsx';
 import { Minimap } from './minimap.tsx';
 import { View } from './view.tsx';
-import { VIEW_MODES, isViewMode, type ViewMode } from './view_mode.ts';
+import { VIEW_MODES, parseViewMode, type ViewMode } from './view_mode.ts';
 import { type EquipmentSlot, type Inventory, type PlayerStatus, type SocketMessage } from './socket_message';
 
 const TERMINAL_PROMPT = ">";
@@ -58,8 +58,8 @@ export function GamePage() {
       return;
     }
 
-    const mode = args.length === 1 ? args[0].toLowerCase() : '';
-    if (!isViewMode(mode)) {
+    const mode = parseViewMode(args.length === 1 ? args[0].toLowerCase() : '');
+    if (mode === null) {
       terminalWriteLine(`Usage: view <${VIEW_MODES.join('|')}>`);
       return;
     }

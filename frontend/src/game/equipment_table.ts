@@ -1,18 +1,20 @@
 import { type EquipmentSlot } from './socket_message';
 import { MAX_ITEM_NAME_WIDTH, centerText, formatRow, formatViewHeader, truncate } from './view_format';
 
-const EMPTY_SLOT_TEXT = '---';
+// Shown for an empty slot, and for the slot name of the off hand while a two-handed weapon is equipped
+const EMPTY_CELL_TEXT = '---';
 
-// Builds the view panel's equipment table, one string per line
-// The Item column is only as wide as its longest entry, and its cells are centered
-export const formatEquipmentTable = (equipment: EquipmentSlot[]): string[] => {
-  const itemCells = equipment.map((slot) => (slot.name === '' ? EMPTY_SLOT_TEXT : truncate(slot.name, MAX_ITEM_NAME_WIDTH)));
+// Builds the view panel's equipment table, one string per line, tableWidth columns wide
+// The Slot column fits the longest slot name, and the Item column stretches to fill the rest, with its cells centered
+export const formatEquipmentTable = (equipment: EquipmentSlot[], tableWidth: number): string[] => {
+  const slotCells = equipment.map((slot) => (slot.slot === '' ? EMPTY_CELL_TEXT : slot.slot));
+  const itemCells = equipment.map((slot) => (slot.name === '' ? EMPTY_CELL_TEXT : truncate(slot.name, MAX_ITEM_NAME_WIDTH)));
 
-  const slotWidth = Math.max('Slot'.length, ...equipment.map((slot) => slot.slot.length));
-  const itemWidth = Math.max('Item'.length, ...itemCells.map((cell) => cell.length));
+  const slotWidth = Math.max('Slot'.length, ...slotCells.map((cell) => cell.length));
+  // Each cell has a space of padding on both sides, and the table has a '|' on each side and between the columns
+  const itemWidth = Math.max('Item'.length, tableWidth - slotWidth - 7);
   const widths = [slotWidth, itemWidth];
-  // Each cell has a space of padding on both sides, and the columns are separated by a '|'
-  const innerWidth = widths.reduce((total, width) => total + width + 2, 0) + widths.length - 1;
+  const innerWidth = slotWidth + itemWidth + 5;
 
   const topBorder = formatViewHeader('Equipment', innerWidth + 2);
   const separator = `|${widths.map((width) => '-'.repeat(width + 2)).join('|')}|`;
@@ -20,7 +22,8 @@ export const formatEquipmentTable = (equipment: EquipmentSlot[]): string[] => {
 
   const lines = [topBorder, formatRow(['Slot', centerText('Item', itemWidth)], widths), separator];
   equipment.forEach((slot, index) => {
-    lines.push(formatRow([slot.slot, centerText(itemCells[index], itemWidth)], widths));
+    const slotCell = slot.slot === '' ? centerText(slotCells[index], slotWidth) : slotCells[index];
+    lines.push(formatRow([slotCell, centerText(itemCells[index], itemWidth)], widths));
   });
   lines.push(bottomBorder);
 

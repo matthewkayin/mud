@@ -39,6 +39,7 @@ type SocketInventory struct {
 
 // One equipment slot, which the client formats into a table for the view panel
 // Name is empty when nothing is equipped in the slot
+// When a two-handed weapon is equipped, the main hand's Slot is "Both Hands" and the off hand's Slot and Name are empty
 type SocketEquipmentSlot struct {
 	Slot string `json:"slot"`
 	Name string `json:"name"`
