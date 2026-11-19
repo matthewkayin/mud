@@ -165,35 +165,43 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 
 			// Transfer
 			targetMob := gamestate.world.Mobs.Get(targetHandle)
-			result, err := gamestate.inventoryTransfer(InventoryTransferParams {
-				from: InventoryTransferLocation {
-					inventory: &player.character.Inventory,
-					name: "your inventory",
-					capacity: world.INVENTORY_CAPACITY_PLAYER,
-				},
-				to: InventoryTransferLocation {
-					inventory: &targetMob.Inventory,
-					name: targetMob.Name,
-					capacity: targetMob.InventoryCapacity(),
-				},
-				verb: "give",
-				itemWords: itemWords,
-			})
-			if err != nil {
-				player.send(err.Error())
-				return true
-			}
-			if result.notice != "" {
-				player.send(result.notice)
-			}
-
-			gamestate.world.MessageRoom(player.character.Room, fmt.Sprintf("<y>%s</y> gave <g>%s</g> to <y>%s</y>",
-				player.character.Name, result.item.NameWithAmount(), targetMob.Name))
-			player.isInventoryDirty = true
 			if targetMob.IsPlayer() {
+				result, err := gamestate.inventoryTransfer(InventoryTransferParams {
+					from: InventoryTransferLocation {
+						inventory: &player.character.Inventory,
+						name: "your inventory",
+						capacity: world.INVENTORY_CAPACITY_PLAYER,
+					},
+					to: InventoryTransferLocation {
+						inventory: &targetMob.Character.Inventory,
+						name: targetMob.Name,
+						capacity: targetMob.InventoryCapacity(),
+					},
+					verb: "give",
+					itemWords: itemWords,
+				})
+				if err != nil {
+					player.send(err.Error())
+					return true
+				}
+				if result.notice != "" {
+					player.send(result.notice)
+				}
+
+				// Announce gift
+				gamestate.world.MessageRoom(player.character.Room, fmt.Sprintf("<y>%s</y> gave <g>%s</g> to <y>%s</y>",
+					player.character.Name, result.item.NameWithAmount(), targetMob.Name))
+
+				// Set giver and receivers inventory to dirty
 				targetPlayerIndex := gamestate.playerKeyToIndexMap[targetMob.Character.PlayerKey]
+				player.isInventoryDirty = true
 				gamestate.players[targetPlayerIndex].isInventoryDirty = true
 			}
+			if targetMob.IsNpc() {
+				player.send("Oops! NPCs cannot receive gitfs yet!")
+				return true
+			}
+
 			return true
 		},
 	},

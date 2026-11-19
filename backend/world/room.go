@@ -1,6 +1,7 @@
 package world
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
 	"sort"
@@ -37,6 +38,7 @@ type Room struct {
 
 	State lua.Value
 	Occupants []MobHandle
+	Chests []Chest
 }
 
 func (room *Room) AddOccupant(handle MobHandle) {
@@ -61,7 +63,7 @@ func (room *Room) removeOccupantByIndex(index int) {
 }
 
 func (room *Room) Reset(world *World) {
-	room.lootTable.replenish(world, &room.Inventory)
+	room.lootTable.replenish(world, &room.Inventory, 0)
 
 	if room.reset != nil {
 		world.ScriptCall(room.reset.Value(), "reset")
@@ -91,6 +93,20 @@ func (room *Room) update(world *World) {
 		occupant := world.Mobs.Get(room.Occupants[index])
 		if occupant.isDead() {
 			util.RemoveAtUnordered(room.Occupants, index)
+			room.createCorpse(occupant)
+		} else {
+			index++
+		}
+	}
+
+	// Update chests
+	index = 0
+	for index < len(room.Chests) {
+		chest := &room.Chests[index]
+		chest.update()
+
+		if chest.isRottedCorpse() {
+			util.RemoveAtUnordered(room.Chests, index)
 		} else {
 			index++
 		}
@@ -112,4 +128,19 @@ func (room *Room) sortOccupantsByInitiativeOrder(world *World) []MobHandle {
 	})
 
 	return occupants
+}
+
+func (room *Room) createCorpse(mob *Mob) {
+	var corpse Chest
+	corpseName := fmt.Sprintf("%s's Corpse", mob.Name)
+	if mob.IsPlayer() {
+		corpse = NewPlayerCorpse(corpseName, mob.Character.Inventory)
+	} else {
+		corpse = NewCorpse(corpseName, mob.Npc.data.loot)
+	}
+	room.Chests = append(room.Chests, corpse)
+}
+
+func (position RoomPosition) String() string {
+	return fmt.Sprintf("<%d, %d, %d>", position.X, position.Y, position.Z)
 }

@@ -20,7 +20,7 @@ type LootTable struct {
 	Entries []LootTableEntry
 }
 
-func (table *LootTable) getLoot(world *World) Inventory {
+func (table *LootTable) getLoot(world *World, luck int32) Inventory {
 	inventory := NewInventory()
 
 	// Roll items and add them to the inventory
@@ -28,7 +28,7 @@ func (table *LootTable) getLoot(world *World) Inventory {
 		entry := &table.Entries[index]
 
 		// Roll to see if this item is dropped
-		droppedItem := rand.Int32N(100) < entry.dropChancePercent
+		droppedItem := rand.Int32N(100) + luck < entry.dropChancePercent
 		if !droppedItem {
 			continue
 		}
@@ -63,8 +63,8 @@ func (table *LootTable) getLoot(world *World) Inventory {
 }
 
 // Rolls on the drop table and tops up the target inventory without removing any items
-func (table *LootTable) replenish(world *World, inventory *Inventory) {
-	loot := table.getLoot(world)
+func (table *LootTable) replenish(world *World, inventory *Inventory, luck int32) {
+	loot := table.getLoot(world, luck)
 	for _, item := range loot.Items {
 		missingAmount := loot.AmountOf(item.ItemType) - inventory.AmountOf(item.ItemType)
 		if missingAmount <= 0 {

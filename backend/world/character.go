@@ -19,6 +19,7 @@ type Character struct {
 	Skills SkillFlags
 
 	Equipment Equipment
+	Inventory Inventory
 
 	RoomsDiscovered []byte
 
@@ -264,4 +265,23 @@ func (character *Character) UnequipToInventory(slot EquipmentSlot) (Item, error)
 	character.Inventory.AddItem(item)
 
 	return item, nil
+}
+
+func (character *Character) FindItem(id ItemId) (*Item, bool) {
+	// Check inventory
+	index, found := character.Inventory.FindItemById(id)
+	if found {
+		return &character.Inventory.Items[index], true
+	}
+
+	// Check equipment
+	for index := range EQUIPMENT_SLOT_COUNT {
+		slot := EquipmentSlot(index)
+		item := character.Equipment.Get(slot)
+		if item != nil {
+			return item, true
+		}
+	}
+
+	return nil, false
 }

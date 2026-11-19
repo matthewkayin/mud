@@ -40,8 +40,6 @@ func (world *World) spawnNpc(params NpcSpawnParams) MobHandle {
 
 			Health: params.data.maxHealth,
 			Mana: params.data.maxMana,
-
-			Inventory: params.data.loot.getLoot(world),
 		},
 
 		disposition: params.data.startingDisposition,

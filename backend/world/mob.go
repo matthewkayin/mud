@@ -290,30 +290,6 @@ func (mob *Mob) IsAttacking(targetHandle MobHandle) bool {
 	return mob.Target.Value.(MobHandle) == targetHandle
 }
 
-// Items
-
-// Returns the item with the given ID from the mob's inventory or equipment
-func (mob *Mob) FindItem(id ItemId) (*Item, bool) {
-	// Check inventory
-	index, found := mob.Inventory.FindItemById(id)
-	if found {
-		return &mob.Inventory.Items[index], true
-	}
-
-	// Check equipment
-	if mob.IsPlayer() {
-		for index := range EQUIPMENT_SLOT_COUNT {
-			slot := EquipmentSlot(index)
-			item := mob.Character.Equipment.Get(slot)
-			if item != nil {
-				return item, true
-			}
-		}
-	}
-
-	return nil, false
-}
-
 // Behavior
 
 func (mob *Mob) Move(world *World, newRoomIndex int) {
@@ -439,8 +415,13 @@ func (mob *Mob) attackTarget(world *World, targetMob *Mob, attack MobAttack) {
 }
 
 func (mob *Mob) useItem(world *World) {
+	if !mob.IsPlayer() {
+		log.Printf("warn: NPC %s tried to call useItem()", mob.Name)
+		return
+	}
+
 	// Find the item
-	item, found := mob.FindItem(mob.itemToUse)
+	item, found := mob.Character.FindItem(mob.itemToUse)
 	if !found {
 		mob.Message(world, "You no longer have the item you were going to use.")
 		return
@@ -471,9 +452,9 @@ func (mob *Mob) useItem(world *World) {
 	}
 
 	// Consume the item. Find it again in case the hook changed the mob's inventory
-	index, found := mob.Inventory.FindItemById(mob.itemToUse)
+	index, found := mob.Character.Inventory.FindItemById(mob.itemToUse)
 	if found {
-		mob.Inventory.RemoveItem(world, index)
+		mob.Character.Inventory.RemoveItem(world, index)
 		if mob.Character != nil {
 			world.PlayerInventoryChanged(mob.Character.PlayerKey)
 		}
@@ -523,7 +504,12 @@ func (mob *Mob) isTargetValid(world *World) bool {
 				return false
 			}
 
-			_, found := targetMob.FindItem(itemTarget.Id)
+			if !targetMob.IsPlayer() {
+				log.Printf("warn: in isTargetValid(), target is MOB_TARGET_ITEM but the item-holding mob %s is an NPC", targetMob.Name)
+				return false
+			}
+
+			_, found := targetMob.Character.FindItem(itemTarget.Id)
 			return found
 		}
 
@@ -595,7 +581,14 @@ func (mob *Mob) buildTargetHookArgs(world *World, target MobTarget) ([]lua.Value
 				return args, false
 			}
 
-			_, found := targetMob.FindItem(itemTarget.Id)
+			// TODO: we have to change much of this code on both buildTargetHookArgs and isTargetValid
+			// we should combine the logic somehow to avoid this
+			if !targetMob.IsPlayer() {
+				log.Printf("warn: in buildTargetHookArgs(), target is MOB_TARGET_ITEM but the item-holding mob %s is an NPC", targetMob.Name)
+				return args, false
+			}
+
+			_, found := targetMob.Character.FindItem(itemTarget.Id)
 			if !found {
 				return args, false
 			}
