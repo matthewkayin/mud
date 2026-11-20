@@ -7,6 +7,18 @@ import (
 	"github.com/mmcdole/lunar"
 )
 
+// Escape chance starts at 1.0, meaning you have full escape chance
+// After an escape attempt fails, your escape chance gets dropped to 0.0
+// It will recover a little each tick. At a rate of 0.1, your recovery chance recovers in 30s
+const MOB_ESCAPE_CHANCE_MAX float32 = 1.0
+const MOB_ESCAPE_CHANCE_RECOVERY_RATE float32 = 0.1
+
+const MOB_ALERTNESS_MAX float32 = 1.0
+const MOB_ALERTNESS_COOLDOWN_RATE float32 = 0.05
+
+const MOB_TAUNT_COOLDOWN_MAX float32 = 1.0
+const MOB_TAUNT_COOLDOWN_RATE float32 = 0.05
+
 // Each point of deflection above the attack's penetration adds this much percent chance to deflect
 const MOB_DEFLECTION_PER_POINT = 5
 
@@ -16,6 +28,7 @@ const (
 	MOB_MODE_ATTACK
 	MOB_MODE_CAST
 	MOB_MODE_USE_ITEM
+	MOB_MODE_TAUNT
 )
 
 // Target
@@ -79,6 +92,10 @@ type Mob struct {
 
 	// Set when an action is queued and cleared on the mob's turn (Mob.update)
 	HasPendingAction bool
+
+	escapeChance float32
+	alertness float32
+	tauntCooldown float32
 }
 
 func NewCharacterMob(character *Character) Mob {
@@ -147,18 +164,62 @@ func (mob *Mob) DescribeToPlayer(world *World, playerKey string) {
 	mob.Npc.DescribeToPlayer(world, playerKey)
 }
 
-func (mob *Mob) MaxHealth() int32 {
+// SECONDARY STATS
+
+// Characters cache stats calculated from their attributes and gear, NPCs read them from their data
+func (mob *Mob) Stats() *StatBlock {
 	if mob.IsPlayer() {
-		return mob.Character.MaxHealth()
+		return &mob.Character.Stats
 	}
-	return mob.Npc.MaxHealth()
+	return &mob.Npc.data.stats
+}
+
+func (mob *Mob) MaxHealth() int32 {
+	return mob.Stats().Values[STAT_MAX_HEALTH]
 }
 
 func (mob *Mob) MaxMana() int32 {
-	if mob.IsPlayer() {
-		return mob.Character.MaxMana()
-	}
-	return mob.Npc.MaxMana()
+	return mob.Stats().Values[STAT_MAX_MANA]
+}
+
+// Initiative determines who goes first in combat
+func (mob *Mob) getInitiative() int32 {
+	return mob.Stats().Values[STAT_INITIATIVE]
+}
+
+// Accuracy determines how likely someone is to hit an attack
+func (mob *Mob) getAccuracy() int32 {
+	return mob.Stats().Values[STAT_ACCURACY]
+}
+
+// Evasion determines how likely someone is to dodge an attack
+func (mob *Mob) getEvasion() int32 {
+	return mob.Stats().Values[STAT_EVASION]
+}
+
+// Deflection determines the chance to deflect an attack
+func (mob *Mob) getDeflection() int32 {
+	return mob.Stats().Values[STAT_DEFLECTION]
+}
+
+// Deflection amount determines the percent of damage reduced on a deflection
+func (mob *Mob) getDeflectionAmount() int32 {
+	return mob.Stats().Values[STAT_DEFLECTION_AMOUNT]
+}
+
+// Resistance is a flat damage reduction that is applied to each attack
+func (mob *Mob) getResistance() int32 {
+	return mob.Stats().Values[STAT_RESISTANCE]
+}
+
+// Magic resistance is a flat damage reduction that is applied when magic damage is dealt
+func (mob *Mob) getMagicResistance() int32 {
+	return mob.Stats().Values[STAT_MAGIC_RESISTANCE]
+}
+
+// Focus determines how well someone keeps concentration, as well as how well they resist mental effects like taunt or charm
+func (mob *Mob) getFocus() int32 {
+	return mob.Stats().Values[STAT_FOCUS]
 }
 
 func (mob *Mob) InventoryCapacity() int32 {
@@ -173,34 +234,6 @@ func (mob *Mob) GetAttacks() []MobAttack {
 		return mob.Character.GetAttacks()
 	}
 	return mob.Npc.GetAttacks()
-}
-
-func (mob *Mob) getInitiative() int32 {
-	if mob.IsPlayer() {
-		return mob.Character.getInitiative()
-	}
-	return mob.Npc.getInitiative()
-}
-
-func (mob *Mob) getDeflection() int32 {
-	if mob.IsPlayer() {
-		return mob.Character.getDeflection()
-	}
-	return mob.Npc.getDeflection()
-}
-
-func (mob *Mob) getDeflectionAmount() int32 {
-	if mob.IsPlayer() {
-		return mob.Character.getDeflectionAmount()
-	}
-	return mob.Npc.getDeflectionAmount()
-}
-
-func (mob *Mob) getResistance() int32 {
-	if mob.Character != nil {
-		return mob.Character.getResistance()
-	}
-	return mob.Npc.getResistance()
 }
 
 func (mob *Mob) isDead() bool {
@@ -250,6 +283,13 @@ func (mob *Mob) SetModeAttack(world *World, targetHandle MobHandle) {
 func (mob *Mob) SetModeUseItem(world *World, itemToUse ItemId, target MobTarget) {
 	mob.beginAction(world, MOB_MODE_USE_ITEM, target)
 	mob.itemToUse = itemToUse
+}
+
+func (mob *Mob) SetModeTaunt(world *World, targetHandle MobHandle) {
+	mob.beginAction(world, MOB_MODE_TAUNT, MobTarget {
+		Type: MOB_TARGET_MOB,
+		Value: targetHandle,
+	})
 }
 
 // Every mode the mob chooses to start (attack, cast, use item) must be set through here,
@@ -310,6 +350,8 @@ func (mob *Mob) Move(world *World, newRoomIndex int) {
 	world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> entered the room.", mob.Name))
 }
 
+// UPDATE
+
 func (mob *Mob) update(world *World) {
 	if mob.IsNpc() {
 		mob.Npc.update(world)
@@ -318,7 +360,14 @@ func (mob *Mob) update(world *World) {
 	// This is the mob's turn, so any queued action resolves now
 	mob.HasPendingAction = false
 
+	// Update cooldowns
+	mob.escapeChance = min(mob.escapeChance + MOB_ESCAPE_CHANCE_RECOVERY_RATE, MOB_ESCAPE_CHANCE_MAX)
+	mob.alertness = max(mob.alertness - MOB_ALERTNESS_COOLDOWN_RATE, 0.0)
+	mob.tauntCooldown = max(mob.tauntCooldown - MOB_TAUNT_COOLDOWN_RATE, 0.0)
+
 	switch mob.Mode {
+		// ATTACK
+
 		case MOB_MODE_ATTACK: {
 			// Check if target exists
 			if !mob.isTargetValid(world) {
@@ -334,16 +383,32 @@ func (mob *Mob) update(world *World) {
 			}
 		}
 
+		// USE ITEM
+
 		case MOB_MODE_USE_ITEM: {
 			mob.useItem(world)
 			mob.SetModeIdle()
 		}
+
+		// TAUNT
+
+		case MOB_MODE_TAUNT: {
+			// Check if target exists
+			if !mob.isTargetValid(world) {
+				mob.SetModeIdle()
+				break
+			}
+
+			// Taunt
+			targetMob := mob.getTargetMobIfExists(world)
+			world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> taunted <y>%s</y>!", mob.Name, targetMob.Name))
+		}
 	}
 }
 
-func (mob *Mob) damage(world *World, attackerHandle MobHandle, damage int32) {
+func (mob *Mob) damage(attackerHandle MobHandle, damage int32) {
 	mob.Health -= damage
-	// mob.alertness = MOB_ALERTNESS_MAX
+	mob.alertness = MOB_ALERTNESS_MAX
 	// targetMob.rollForConcentration(world, damage)
 
 	if mob.IsNpc() {
@@ -367,7 +432,7 @@ func (mob *Mob) attackTarget(world *World, targetMob *Mob, attack MobAttack) {
 
 	// On deflect, subtract armor
 	if deflect {
-		attack.damage = (attack.damage * targetMob.getDeflectionAmount()) / 100
+		attack.damage -= (attack.damage * targetMob.getDeflectionAmount()) / 100
 	}
 
 	// Subtract flat-damage resistance
@@ -377,7 +442,7 @@ func (mob *Mob) attackTarget(world *World, targetMob *Mob, attack MobAttack) {
 	attack.damage = max(attack.damage, 1)
 
 	// Deal damage
-	targetMob.damage(world, mob.Handle, attack.damage)
+	targetMob.damage(mob.Handle, attack.damage)
 
 	// Broadcast result to room
 	var message string

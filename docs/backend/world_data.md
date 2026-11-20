@@ -74,7 +74,7 @@ Kinds with a required skill (all weapons, `SHIELD`, `LIGHT_ARMOR` and `HEAVY_ARM
 
 Weapon kinds also need `damage` and `penetration`, both integers and not negative.
 
-Armor kinds also need `deflection_chance`, `deflection_bonus` and `damage_resistance` (integers, not negative), plus `evade_modifier`, `sneak_modifier` and `initiative_modifier` (integers).
+Armor kinds also need `deflection`, `deflection_bonus` and `resistance` (integers, not negative), plus `evade_modifier`, `sneak_modifier` and `initiative_modifier` (integers). A character's stats add these up over every equipped item with armor data (see [stats.md](stats.md)).
 Each item instance in the game has an `ItemId` that is unique while the server runs. IDs aren't saved: loaded items get new ones. Consumables stack.
 
 #### Consumables
@@ -108,13 +108,10 @@ Queuing an action (`SetModeUseItem`, `SetModeAttack`) sets `Mob.HasPendingAction
 | `name` | string | Required. |
 | `description` | string | Required. |
 | `starting_disposition` | `world.NpcDisposition.*` | Required. |
-| `max_health` | integer | Optional, defaults to 1. Greater than 0. |
-| `max_mana` | integer | Optional, defaults to 0. Not negative. |
+| `stats` | table | Optional. Keys are `world.Stat.*`, values are integers (see [stats.md](stats.md)). Stats not given, or given as 0, are 0, except `MAX_HEALTH` (defaults to 1) and `DEFLECTION_AMOUNT` (defaults to 40, the percent of damage deflected on a successful deflect, from 1 to 100). No stat may be negative. |
 | `damage` | integer | Optional, defaults to 1. Not negative. |
 | `penetration` | integer | Optional, defaults to 0. Armor penetration score. Not negative. |
-| `resistance` | integer | Optional, defaults to 0. Flat armor resistance. Not negative. |
-| `deflection` | integer | Optional, defaults to 0. Deflection score. Not negative. |
-| `deflection_amount` | integer | Optional, defaults to 60. Percent of damage deflected on a successful deflect, from 1 to 100. |
+| `attacks_per_round` | integer | Optional, defaults to 1. Greater than 0. Each attack deals `damage` with `penetration`. |
 | `experience_worth` | integer | Optional, defaults to 0. Not negative. |
 | `loot` | array | Optional. Items the NPC drops, in the same format as a room's `loot`. |
 | `wares` | array | Optional. Item names the NPC sells. |

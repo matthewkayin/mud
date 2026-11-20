@@ -152,20 +152,20 @@ type CreateItemParams struct {
 	durability int32
 }
 
-type ArmorData struct {
+type ItemDataArmor struct {
 	maxDurability int32
 	reinforcedPrefix string
 
-	deflectChance int32
+	deflection int32
 	deflectBonus int32
-	damageResistance int32
+	resistance int32
 
 	sneakModifier int32
 	evadeModifier int32
 	initiativeModifier int32
 }
 
-type WeaponData struct {
+type ItemDataWeapon struct {
 	maxDurability int32
 	reinforcedPrefix string
 
@@ -361,10 +361,10 @@ func (item *Item) EquipmentSlotForItem() (EquipmentSlot, bool) {
 // Returns 0 for item types which have no durability
 func (itemType *ItemType) MaxDurability() int32 {
 	if itemType.HasWeaponData() {
-		return itemType.Data.(WeaponData).maxDurability
+		return itemType.Data.(ItemDataWeapon).maxDurability
 	}
 	if itemType.HasArmorData() {
-		return itemType.Data.(ArmorData).maxDurability
+		return itemType.Data.(ItemDataArmor).maxDurability
 	}
 
 	return 0
@@ -373,10 +373,10 @@ func (itemType *ItemType) MaxDurability() int32 {
 // Returns the prefix shown on an item whose durability is above its max durability
 func (itemType *ItemType) GetReinforcedPrefix() (string, bool) {
 	if itemType.HasWeaponData() {
-		return itemType.Data.(WeaponData).reinforcedPrefix, true
+		return itemType.Data.(ItemDataWeapon).reinforcedPrefix, true
 	}
 	if itemType.HasArmorData() {
-		return itemType.Data.(ArmorData).reinforcedPrefix, true
+		return itemType.Data.(ItemDataArmor).reinforcedPrefix, true
 	}
 
 	return "", false

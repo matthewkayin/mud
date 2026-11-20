@@ -83,7 +83,8 @@ var MENU_WORLD_ENTRIES_GENERAL = map[string]MenuEntry {
 			player.send(fmt.Sprintf("Level      : %d", player.character.Level))
 			player.send(fmt.Sprintf("Experience : %d / %d", player.character.ExpTowardNextLevel(), world.ExpToNextLevel(player.character.Level)))
 			player.send("\n")
-			player.send(fmt.Sprintf("Attributes : %s", player.character.Stats.ToString(false)))
+			player.send(fmt.Sprintf("Attributes : %s", player.character.Attributes.ToString(false)))
+			player.send(fmt.Sprintf("Stats      : %s", player.character.Stats.ToString()))
 			player.send(fmt.Sprintf("Skills     : %s", util.CombineNames(player.character.Skills.ToStringArray())))
 
 			return true

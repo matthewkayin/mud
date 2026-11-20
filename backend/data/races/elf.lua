@@ -3,9 +3,9 @@ local race = {}
 race.name = "Elf"
 race.description = "Pointy-eared bastards."
 
-race.stats = {
-    [world.Stat.AGI] = 1,
-    [world.Stat.INT] = 1,
+race.attributes = {
+    [world.Attribute.AGI] = 1,
+    [world.Attribute.INT] = 1,
 }
 
 race.skills = {

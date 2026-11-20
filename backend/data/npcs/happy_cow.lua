@@ -6,7 +6,9 @@ npc.description = "Lives a life of total bovine simplicity."
 
 npc.experience_worth = 10
 
-npc.max_health = 10
+npc.stats = {
+    [world.Stat.MAX_HEALTH] = 10,
+}
 npc.damage = 2
 npc.starting_disposition = world.NpcDisposition.NEUTRAL
 

@@ -16,6 +16,8 @@ type Character struct {
 	Level int32
 	Experience int32
 
+	// Attributes and Stats are calculated on load, level up, and (for Stats) equipment change. They are not saved
+	Attributes AttributeBlock
 	Stats StatBlock
 	Skills SkillFlags
 
@@ -44,7 +46,7 @@ func (world *World) NewCharacter(playerKey string, characterSheet *CharacterShee
 
 	// Set attributes and skills
 	character.Level = 1
-	character.Stats = character.Race.Stats.Add(&character.Class.Stats)
+	character.calculateAttributes()
 	character.Skills = character.Race.Skills | character.Class.Skills
 
 	character.RoomsDiscovered = bitset.New(len(world.Rooms))
@@ -53,11 +55,12 @@ func (world *World) NewCharacter(playerKey string, characterSheet *CharacterShee
 	character.Room = world.StartRoom
 	bitset.Set(character.RoomsDiscovered, character.Room, true)
 
-	// Set health and mana
-	character.Health = character.MaxHealth()
-	character.Mana = character.MaxMana()
-
 	character.Equipment = NewEquipment()
+	character.calculateStats()
+
+	// Set health and mana
+	character.Health = character.Stats.Values[STAT_MAX_HEALTH]
+	character.Mana = character.Stats.Values[STAT_MAX_MANA]
 
 	return character
 }
@@ -70,14 +73,6 @@ func (character *Character) DescribeToPlayer(world *World, playerKey string) {
 		character.Name, character.Level, character.Race.Name, character.Class.Name))
 }
 
-func (character *Character) MaxHealth() int32 {
-	return 10 * character.Stats.Values[STAT_VIT]
-}
-
-func (character *Character) MaxMana() int32 {
-	return 10 * character.Stats.Values[STAT_INT]
-}
-
 func (character *Character) InventoryCapacity() int32 {
 	return INVENTORY_CAPACITY_PLAYER
 }
@@ -88,9 +83,9 @@ func (character *Character) GetAttacks() []MobAttack {
 	// Main hand attack
 	mainItem := character.Equipment.Get(EQUIPMENT_SLOT_MAIN_HAND)
 	if mainItem != nil && mainItem.IsWeapon() {
-		weaponData := mainItem.ItemType.Data.(WeaponData)
+		weaponData := mainItem.ItemType.Data.(ItemDataWeapon)
 		attacks = append(attacks, MobAttack {
-			damage: weaponData.damage + (character.Stats.Values[STAT_STR] / 2),
+			damage: weaponData.damage + (character.Attributes.Values[ATTR_STR] / 2),
 			penetration: weaponData.penetration,
 			hasWeaponSlot: true,
 			weaponSlot: EQUIPMENT_SLOT_MAIN_HAND,
@@ -101,9 +96,9 @@ func (character *Character) GetAttacks() []MobAttack {
 	offItem := character.Equipment.Get(EQUIPMENT_SLOT_OFF_HAND)
 	mainHandIsTwoHanded := mainItem != nil && mainItem.IsTwoHandedWeapon()
 	if !mainHandIsTwoHanded && offItem != nil && offItem.IsWeapon() {
-		weaponData := offItem.ItemType.Data.(WeaponData)
+		weaponData := offItem.ItemType.Data.(ItemDataWeapon)
 		attacks = append(attacks, MobAttack {
-			damage: weaponData.damage + (character.Stats.Values[STAT_STR] / 4),
+			damage: weaponData.damage + (character.Attributes.Values[ATTR_STR] / 4),
 			penetration: weaponData.penetration,
 			hasWeaponSlot: true,
 			weaponSlot: EQUIPMENT_SLOT_OFF_HAND,
@@ -113,7 +108,7 @@ func (character *Character) GetAttacks() []MobAttack {
 	// Unarmed attack, added only if main and off hand both did not produce an attack and character has a free hand
 	if len(attacks) == 0 && (mainItem == nil || offItem == nil) {
 		attacks = append(attacks, MobAttack {
-			damage: character.Stats.Values[STAT_STR] / 2,
+			damage: character.Attributes.Values[ATTR_STR] / 2,
 			penetration: 0,
 		})
 	}
@@ -121,29 +116,10 @@ func (character *Character) GetAttacks() []MobAttack {
 	return attacks
 }
 
-func (character *Character) getInitiative() int32 {
-	return character.Stats.Values[STAT_AGI]
-}
-
-// Characters have no native deflection or resistance
-// TODO: add deflection and resistance from equipped armor
-
-func (character *Character) getDeflection() int32 {
-	return 0
-}
-
-func (character *Character) getDeflectionAmount() int32 {
-	return 60
-}
-
-func (character *Character) getResistance() int32 {
-	return 0
-}
-
 // CHARACTER FUNCTIONS
 
 func (character *Character) MaxSpellSlots() int32 {
-	return int32(character.Stats.Values[STAT_INT] / 4)
+	return int32(character.Attributes.Values[ATTR_INT] / 4)
 }
 
 func ExpToNextLevel(level int32) int32 {
@@ -171,14 +147,49 @@ func (character *Character) grantExperience(world *World, amount int32) {
 
 	for character.Experience > ExpToNextLevel(character.Level) {
 		character.Level++
+		character.calculateAttributes()
 		character.calculateStats()
 		world.MessagePlayer(character.PlayerKey, fmt.Sprintf("Level up! You are now level %d.", character.Level))
 	}
 }
 
+func (character *Character) calculateAttributes() {
+	baseAttributes := character.Race.Attributes.Add(&character.Class.Attributes)
+	character.Attributes = baseAttributes.ScaledToLevel(character.Level)
+}
+
+// Must be called whenever the character's attributes or equipment change
 func (character *Character) calculateStats() {
-	baseStats := character.Race.Stats.Add(&character.Class.Stats)
-	character.Stats = baseStats.ScaledToLevel(character.Level)
+	attributes := &character.Attributes
+	stats := StatBlock{}
+
+	stats.Values[STAT_MAX_HEALTH] = 10 * attributes.Values[ATTR_VIT]
+	stats.Values[STAT_MAX_MANA] = 10 * attributes.Values[ATTR_INT]
+	stats.Values[STAT_INITIATIVE] = attributes.Values[ATTR_AGI]
+	stats.Values[STAT_ACCURACY] = attributes.Values[ATTR_AGI]
+	stats.Values[STAT_EVASION] = attributes.Values[ATTR_AGI]
+	stats.Values[STAT_DEFLECTION] = 0
+	stats.Values[STAT_DEFLECTION_AMOUNT] = 40
+	stats.Values[STAT_RESISTANCE] = 0
+	stats.Values[STAT_MAGIC_RESISTANCE] = attributes.Values[ATTR_FTH] / 2
+	stats.Values[STAT_FOCUS] = attributes.Values[ATTR_INT] / 2
+
+	// Add armor from each equipped item that has armor data (outfit, shield)
+	for index := range EQUIPMENT_SLOT_COUNT {
+		item := character.Equipment.Get(EquipmentSlot(index))
+		if item == nil || !item.HasArmorData() {
+			continue
+		}
+
+		armorData := item.ItemType.Data.(ItemDataArmor)
+		stats.Values[STAT_INITIATIVE] += armorData.initiativeModifier
+		stats.Values[STAT_EVASION] += armorData.evadeModifier
+		stats.Values[STAT_DEFLECTION] += armorData.deflection
+		stats.Values[STAT_DEFLECTION_AMOUNT] += armorData.deflectBonus
+		stats.Values[STAT_RESISTANCE] += armorData.resistance
+	}
+
+	character.Stats = stats
 }
 
 func (character *Character) subtractDurabilityFromEquipment(world *World, slot EquipmentSlot) {
@@ -195,6 +206,7 @@ func (character *Character) subtractDurabilityFromEquipment(world *World, slot E
 		world.MessageRoom(character.Room, fmt.Sprintf("<y>%s's</y> <g>%s</g> broke!", character.Name, item.Name))
 		world.PlayerInventoryChanged(character.PlayerKey)
 		character.Equipment.Unequip(slot)
+		character.calculateStats()
 		return
 	}
 
@@ -249,6 +261,7 @@ func (character *Character) EquipFromInventory(world *World, itemIndex int, slot
 		character.Inventory.AddItem(unequippedItem)
 		messages = append(messages, fmt.Sprintf("<g>%s</g> was unequipped and added to your inventory.", unequippedItem.NameWithCondition()))
 	}
+	character.calculateStats()
 
 	return item, messages, nil
 }
@@ -269,6 +282,7 @@ func (character *Character) UnequipToInventory(slot EquipmentSlot) (Item, error)
 
 	item, _ := character.Equipment.Unequip(slot)
 	character.Inventory.AddItem(item)
+	character.calculateStats()
 
 	return item, nil
 }
@@ -309,4 +323,6 @@ func (character *Character) dumpEquipment() {
 
 		character.Inventory.AddItem(item)
 	}
+
+	character.calculateStats()
 }

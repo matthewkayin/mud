@@ -67,7 +67,7 @@ func (parser *ScriptParser) parseItemType(table *lua.Table) *ItemType {
 	}
 
 	if itemType.HasWeaponData() {
-		var weaponData WeaponData
+		var weaponData ItemDataWeapon
 
 		weaponData.maxDurability = parser.getInt32(table, "max_durability")
 		parser.checkInt32NonNegative(weaponData.maxDurability, "max_durability")
@@ -81,16 +81,16 @@ func (parser *ScriptParser) parseItemType(table *lua.Table) *ItemType {
 	}
 
 	if itemType.HasArmorData() {
-		var armorData ArmorData
+		var armorData ItemDataArmor
 
 		armorData.maxDurability = parser.getInt32(table, "max_durability")
 		parser.checkInt32NonNegative(armorData.maxDurability, "max_durability")
-		armorData.deflectChance = parser.getInt32(table, "deflection_chance")
-		parser.checkInt32NonNegative(armorData.deflectChance, "deflection_chance")
+		armorData.deflection = parser.getInt32(table, "deflection")
+		parser.checkInt32NonNegative(armorData.deflection, "deflection")
 		armorData.deflectBonus = parser.getInt32(table, "deflection_bonus")
 		parser.checkInt32NonNegative(armorData.deflectBonus, "deflection_bonus")
-		armorData.damageResistance = parser.getInt32(table, "damage_resistance")
-		parser.checkInt32NonNegative(armorData.damageResistance, "damage_resistance")
+		armorData.resistance = parser.getInt32(table, "resistance")
+		parser.checkInt32NonNegative(armorData.resistance, "resistance")
 		armorData.evadeModifier = parser.getInt32(table, "evade_modifier")
 		armorData.initiativeModifier = parser.getInt32(table, "initiative_modifier")
 		armorData.sneakModifier = parser.getInt32(table, "sneak_modifier")

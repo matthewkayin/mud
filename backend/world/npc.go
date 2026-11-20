@@ -47,8 +47,8 @@ func (world *World) spawnNpc(params NpcSpawnParams) MobHandle {
 			Name: params.data.name,
 			Room: params.room,
 
-			Health: params.data.maxHealth,
-			Mana: params.data.maxMana,
+			Health: params.data.stats.Values[STAT_MAX_HEALTH],
+			Mana: params.data.stats.Values[STAT_MAX_MANA],
 		},
 
 		disposition: params.data.startingDisposition,
@@ -84,14 +84,6 @@ func (npc *Npc) DescribeToPlayer(world *World, playerKey string) {
 		case NPC_DISPOSITION_HOSTILE:
 			world.MessagePlayer(playerKey, "They appear <r>hostile</r>.")
 	}
-}
-
-func (npc *Npc) MaxHealth() int32 {
-	return npc.data.maxHealth
-}
-
-func (npc *Npc) MaxMana() int32 {
-	return npc.data.maxMana
 }
 
 func (npc *Npc) InventoryCapacity() int32 {
@@ -155,22 +147,6 @@ func (npc *Npc) GetAttacks() []MobAttack {
 	}
 
 	return attacks
-}
-
-func (npc *Npc) getInitiative() int32 {
-	return npc.data.initiative
-}
-
-func (npc *Npc) getDeflection() int32 {
-	return npc.data.deflection
-}
-
-func (npc *Npc) getDeflectionAmount() int32 {
-	return npc.data.deflectionAmount
-}
-
-func (npc *Npc) getResistance() int32 {
-	return npc.data.resistance
 }
 
 func (npc *Npc) onAttacked(attackerHandle MobHandle) {

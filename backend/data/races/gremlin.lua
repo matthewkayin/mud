@@ -3,9 +3,9 @@ local race = {}
 race.name = "Gremlin"
 race.description = "Chewing on the wires of the server as we speak"
 
-race.stats = {
-    [world.Stat.AGI] = 1,
-    [world.Stat.LCK] = 1,
+race.attributes = {
+    [world.Attribute.AGI] = 1,
+    [world.Attribute.LCK] = 1,
 }
 
 race.skills = {

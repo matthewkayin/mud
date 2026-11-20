@@ -51,14 +51,28 @@ world.Direction = {
 	DOWN = "down",
 }
 
----@enum Stat
-world.Stat = {
+---@enum Attribute
+world.Attribute = {
 	VIT = "VIT",
 	STR = "STR",
 	AGI = "AGI",
 	INT = "INT",
 	FTH = "FTH",
 	LCK = "LCK",
+}
+
+---@enum Stat
+world.Stat = {
+	MAX_HEALTH = "Max Health",
+	MAX_MANA = "Max Mana",
+	INITIATIVE = "Initiative",
+	ACCURACY = "Accuracy",
+	EVASION = "Evasion",
+	DEFLECTION = "Deflection",
+	DEFLECTION_AMOUNT = "Deflection Amount",
+	RESISTANCE = "Resistance",
+	MAGIC_RESISTANCE = "Magic Resistance",
+	FOCUS = "Focus",
 }
 
 ---@enum Skill
