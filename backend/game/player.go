@@ -52,9 +52,9 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 		if exists {
 			heartbeat.Status = &SocketPlayerStatus {
 				Health: playerMob.Health,
-				MaxHealth: playerMob.MaxHealth(),
+				MaxHealth: playerMob.Stat(world.STAT_MAX_HEALTH),
 				Mana: playerMob.Mana,
-				MaxMana: playerMob.MaxMana(),
+				MaxMana: playerMob.Stat(world.STAT_MAX_MANA),
 				PendingAction: playerMob.HasPendingAction,
 			}
 			if player.isMinimapDirty {

@@ -4,7 +4,7 @@
 
 A `Mob` (`backend/world/mob.go`) belongs to exactly one `Character` or `Npc`, held in `Mob.Character` or `Mob.Npc`; the other is nil. `Mob.MobData` points to the owner's `MobData` (name, room, health, mana, inventory).
 
-`Mob` methods hide the difference where both kinds of mob have an answer: `IsPlayer`, `IsEvil`, `IsHostile`, `Message` (does nothing for NPCs), `DescribeToPlayer`, `MaxHealth`, `MaxMana`, `InventoryCapacity`, `GetAttacks` and the combat stat getters. The stat getters read `Mob.GetStats()`: a character's cached `Stats`, calculated from its attributes and equipment, or the NPC's `NpcData.stats` (see [stats.md](stats.md)). Logic that applies to only one kind of mob, such as equipment durability or the player key, checks `mob.Character` or `mob.Npc` directly.
+`Mob` methods hide the difference where both kinds of mob have an answer: `IsPlayer`, `IsEvil`, `IsHostile`, `Message` (does nothing for NPCs), `DescribeToPlayer`, `InventoryCapacity` and `GetAttacks`. Stats such as max health and deflection don't need this: both kinds of mob keep them on `MobData.Stats`, read with `Mob.Stat` (see [stats.md](stats.md)). Logic that applies to only one kind of mob, such as equipment durability or the player key, checks `mob.Character` or `mob.Npc` directly.
 
 ## Attacks
 

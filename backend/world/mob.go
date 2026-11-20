@@ -166,60 +166,9 @@ func (mob *Mob) DescribeToPlayer(world *World, playerKey string) {
 
 // SECONDARY STATS
 
-// Characters cache stats calculated from their attributes and gear, NPCs read them from their data
-func (mob *Mob) Stats() *StatBlock {
-	if mob.IsPlayer() {
-		return &mob.Character.Stats
-	}
-	return &mob.Npc.data.stats
-}
-
-func (mob *Mob) MaxHealth() int32 {
-	return mob.Stats().Values[STAT_MAX_HEALTH]
-}
-
-func (mob *Mob) MaxMana() int32 {
-	return mob.Stats().Values[STAT_MAX_MANA]
-}
-
-// Initiative determines who goes first in combat
-func (mob *Mob) getInitiative() int32 {
-	return mob.Stats().Values[STAT_INITIATIVE]
-}
-
-// Accuracy determines how likely someone is to hit an attack
-func (mob *Mob) getAccuracy() int32 {
-	return mob.Stats().Values[STAT_ACCURACY]
-}
-
-// Evasion determines how likely someone is to dodge an attack
-func (mob *Mob) getEvasion() int32 {
-	return mob.Stats().Values[STAT_EVASION]
-}
-
-// Deflection determines the chance to deflect an attack
-func (mob *Mob) getDeflection() int32 {
-	return mob.Stats().Values[STAT_DEFLECTION]
-}
-
-// Deflection amount determines the percent of damage reduced on a deflection
-func (mob *Mob) getDeflectionAmount() int32 {
-	return mob.Stats().Values[STAT_DEFLECTION_AMOUNT]
-}
-
-// Resistance is a flat damage reduction that is applied to each attack
-func (mob *Mob) getResistance() int32 {
-	return mob.Stats().Values[STAT_RESISTANCE]
-}
-
-// Magic resistance is a flat damage reduction that is applied when magic damage is dealt
-func (mob *Mob) getMagicResistance() int32 {
-	return mob.Stats().Values[STAT_MAGIC_RESISTANCE]
-}
-
-// Focus determines how well someone keeps concentration, as well as how well they resist mental effects like taunt or charm
-func (mob *Mob) getFocus() int32 {
-	return mob.Stats().Values[STAT_FOCUS]
+// Stats live on MobData. Characters calculate them from their attributes and gear, NPCs copy them from their data on spawn
+func (mob *Mob) Stat(stat Stat) int32 {
+	return mob.Stats.Values[stat]
 }
 
 func (mob *Mob) InventoryCapacity() int32 {
@@ -425,18 +374,18 @@ func (mob *Mob) attackTarget(world *World, targetMob *Mob, attack MobAttack) {
 	// Check for deflection
 	deflect := false
 	if !crit {
-		deflectChance := (targetMob.getDeflection() - attack.penetration) * MOB_DEFLECTION_PER_POINT
+		deflectChance := (targetMob.Stat(STAT_DEFLECTION) - attack.penetration) * MOB_DEFLECTION_PER_POINT
 		deflectChance = max(min(deflectChance, 100), 0)
 		deflect = rand.Float32() < (float32(deflectChance) / 100.0)
 	}
 
 	// On deflect, subtract armor
 	if deflect {
-		attack.damage -= (attack.damage * targetMob.getDeflectionAmount()) / 100
+		attack.damage -= (attack.damage * targetMob.Stat(STAT_DEFLECTION_AMOUNT)) / 100
 	}
 
 	// Subtract flat-damage resistance
-	attack.damage -= targetMob.getResistance()
+	attack.damage -= targetMob.Stat(STAT_RESISTANCE)
 
 	// Calculate final damage
 	attack.damage = max(attack.damage, 1)

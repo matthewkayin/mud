@@ -16,9 +16,8 @@ type Character struct {
 	Level int32
 	Experience int32
 
-	// Attributes and Stats are calculated on load, level up, and (for Stats) equipment change. They are not saved
+	// Calculated on load and level up. Not saved
 	Attributes AttributeBlock
-	Stats StatBlock
 	Skills SkillFlags
 
 	Equipment Equipment

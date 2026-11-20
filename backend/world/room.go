@@ -123,11 +123,11 @@ func (room *Room) sortOccupantsByInitiativeOrder(world *World) []MobHandle {
 		mobJ := world.Mobs.Get(occupants[j])
 
 		// If they have the same agility, choose a random one to go first
-		if mobI.getInitiative() == mobJ.getInitiative() {
+		if mobI.Stat(STAT_INITIATIVE) == mobJ.Stat(STAT_INITIATIVE) {
 			return rand.Intn(2) == 0
 		}
 
-		return mobI.getInitiative() > mobJ.getInitiative()
+		return mobI.Stat(STAT_INITIATIVE) > mobJ.Stat(STAT_INITIATIVE)
 	})
 
 	return occupants

@@ -180,15 +180,6 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.ReturnNumber(float64(mob.Health))
 	},
 
-	// Returns the mob's max health
-	//
-	// @param handle MobHandle
-	// @return integer
-	"mob_get_max_health": func(frame lua.Frame) lua.Outcome {
-		mob := frameGetMobArg(&frame, 0)
-		return frame.ReturnNumber(float64(mob.MaxHealth()))
-	},
-
 	// Returns the mob's current mana
 	//
 	// @param handle MobHandle
@@ -198,13 +189,23 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 		return frame.ReturnNumber(float64(mob.Mana))
 	},
 
-	// Returns the mob's max mana
+	// Returns mob's value in the specified stat
 	//
 	// @param handle MobHandle
+	// @param stat string
 	// @return integer
-	"mob_get_max_mana": func(frame lua.Frame) lua.Outcome {
+	"mob_get_stat": func(frame lua.Frame) lua.Outcome {
 		mob := frameGetMobArg(&frame, 0)
-		return frame.ReturnNumber(float64(mob.MaxMana()))
+		statName, ok := frame.String(1)
+		if !ok {
+			frame.ThrowArgTypeError(1, lua.StringKind)
+		}
+		stat, ok := util.EnumFromString[Stat](statName, STAT_COUNT)
+		if !ok {
+			frame.ThrowArgError(1, fmt.Sprintf("Unrecognized stat '%s'.", statName))
+		}
+
+		return frame.ReturnNumber(float64(mob.Stat(stat)))
 	},
 
 	// Returns the NPC's disposition

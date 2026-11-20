@@ -22,11 +22,13 @@ Mobs have two kinds of numbers:
 
 ## Reading stats
 
-`Mob.GetStats()` returns the mob's `*StatBlock`. The `Mob` getters (`MaxHealth`, `MaxMana`, `getInitiative`, `getAccuracy`, `getEvasion`, `getDeflection`, `getDeflectionAmount`, `getResistance`, `getMagicResistance`, `getFocus`) each read one value from it.
+Every mob's current stats are in `MobData.Stats`, which `Character`, `Npc` and `Mob` all reach through `MobData`. Read one stat with `mob.Stat(STAT_X)`, or the whole block with `mob.Stats`. Lua reads a stat with `world.mob_get_stat(handle, world.Stat.X)`.
+
+`MobData.Stats` is never saved. Characters recalculate it, and NPCs copy it from their data when they spawn.
 
 ## Characters
 
-A character's attributes and stats are cached on `Character` and are not saved in the character's JSON. Both are recalculated on load.
+A character's attributes (`Character.Attributes`) and stats (`MobData.Stats`) are cached and are not saved in the character's JSON. Both are recalculated on load.
 
 - `calculateAttributes()`: the race's and class's attributes added together, then scaled to the character's level (`AttributeBlock.ScaledToLevel`). Called on creation, load and level up.
 - `calculateStats()`: built from attributes and equipment. Must be called whenever attributes or equipment change. It is called on creation, load (after equipment is restored), level up, `EquipFromInventory`, `UnequipToInventory`, when an equipped item breaks, and when equipment is dumped on death.
@@ -48,7 +50,7 @@ A character's attributes and stats are cached on `Character` and are not saved i
 
 ## NPCs
 
-An NPC's stats come from the `stats` table in its data file and are stored on `NpcData.stats`. `ScriptParser.getOptionalStatBlock` parses a stat table, and every stat it isn't given is 0. The NPC parser then treats 0 as "not given" for the two stats with other defaults: max health becomes 1 and deflection amount becomes 40. See [world_data.md](world_data.md#npcs).
+An NPC's base stats come from the `stats` table in its data file and are stored on `NpcData.stats`, shared by every NPC of that type. `spawnNpc` copies them into the new NPC's `MobData.Stats` (and sets its health and mana to the maximums), so each NPC instance can have its stats changed on its own. `ScriptParser.getOptionalStatBlock` parses a stat table, and every stat it isn't given is 0. The NPC parser then treats 0 as "not given" for the two stats with other defaults: max health becomes 1 and deflection amount becomes 40. See [world_data.md](world_data.md#npcs).
 
 ```lua
 npc.stats = {

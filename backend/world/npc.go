@@ -49,6 +49,7 @@ func (world *World) spawnNpc(params NpcSpawnParams) MobHandle {
 
 			Health: params.data.stats.Values[STAT_MAX_HEALTH],
 			Mana: params.data.stats.Values[STAT_MAX_MANA],
+			Stats: params.data.stats,
 		},
 
 		disposition: params.data.startingDisposition,
