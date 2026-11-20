@@ -121,7 +121,7 @@ func (gamestate *GameState) Run(ctx context.Context) {
 					}
 
 					default: {
-						log.Printf("Warn: Socket event type %d not handled!", event.Type)
+						log.Printf("warn: socket event type %d not handled!", event.Type)
 					}
 				}
 			}
@@ -180,7 +180,7 @@ func (gamestate *GameState) removePlayer(playerKey string, playerInbox *chan Soc
 	// Get the player index (and double-check that they event exist)
 	playerIndex, exists := gamestate.playerKeyToIndexMap[playerKey]
 	if !exists {
-		log.Printf("Warn: Tried to remove player %s, but they don't exist.", playerKey)
+		log.Printf("warn: tried to remove player %s, but they don't exist.", playerKey)
 		return
 	}
 
@@ -273,7 +273,7 @@ func (gamestate *GameState) handleCommand(playerKey string, command string) {
 	// Lookup player index
 	player := gamestate.getPlayerByKey(playerKey)
 	if player == nil {
-		log.Printf("Warn: Received command from player %s, but they don't exist.", playerKey)
+		log.Printf("warn: received command from player %s, but they don't exist.", playerKey)
 	}
 
 	player.menu.handleCommand(gamestate, player, command)

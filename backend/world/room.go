@@ -50,7 +50,7 @@ func (room *Room) RemoveOccupant(handle MobHandle) {
 		return handle == occupantHandle
 	})
 	if occupantIndex == -1 {
-		log.Printf("Warn: Tried to remove occupant with handle %s from %s, but no such occupant was found.",
+		log.Printf("warn: tried to remove occupant with handle %s from %s, but no such occupant was found.",
 			handle.String(), room.Name)
 		return
 	}

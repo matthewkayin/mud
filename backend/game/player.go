@@ -164,7 +164,7 @@ func (player *Player) logout(gamestate *GameState) {
 		gamestate.playerCharacterNames = util.RemoveAtUnordered(gamestate.playerCharacterNames, index)
 		gamestate.playerCharacterKeys = util.RemoveAtUnordered(gamestate.playerCharacterKeys, index)
 	} else {
-		log.Printf("Warn: On logout, player key %s not found in playerCharacterKeys.", player.key)
+		log.Printf("warn: on logout, player key %s not found in playerCharacterKeys.", player.key)
 	}
 
 	room := &gamestate.world.Rooms[player.character.Room]

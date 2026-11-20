@@ -25,6 +25,7 @@ Every mob (player character or NPC) has a `Mode` and a `Target` (`backend/world/
 | `MOB_MODE_ATTACK` | `SetModeAttack` (`attack` command, hostile NPCs) | Keeps going until the target is gone or the mob stops. |
 | `MOB_MODE_CAST` | not yet implemented | Uses `spellTimer`. |
 | `MOB_MODE_USE_ITEM` | `SetModeUseItem` (`use` command) | Resolves once in `Mob.update`, then goes idle. |
+| `MOB_MODE_TAUNT` | `SetModeTaunt` (no command yet) | Resolves once in `Mob.update`, then goes idle. See [Threat and taunt](#threat-and-taunt). |
 
 ## Pending actions
 
@@ -43,3 +44,11 @@ Every mode a mob chooses to start must go through `Mob.beginAction`. It announce
 `SetModeIdle` is the silent reset. Use it when the action ends by itself: an item use resolving, a target becoming invalid, or the mob leaving the room. `Mob.Move` silently ends attacks and casts, because their targets are in the old room. A queued item use survives the move, and `useItem` checks its target when it resolves.
 
 `attack` on the target the player is already attacking changes nothing and replies "You are already attacking X." This teaches players that attacks continue on their own.
+
+## Threat and taunt
+
+Each NPC keeps a threat table (`Npc.threats`, `backend/world/npc.go`) of the mobs that have attacked it. Each hit adds its damage plus `NPC_THREAT_OFFSET` to the attacker's threat, so that the NPC remembers attacks for a while. Every tick, `Npc.update` lowers each threat by 1 and drops threats that reach 0 or whose mob is dead or gone.
+
+`getHighestThreat` only considers threats that are alive and in the NPC's room. A threat who leaves stays in the table and is picked up again if they come back before it decays. Each tick, `shouldSwitchTargets` switches the NPC's attack to the highest threat, unless the NPC's current valid target is within `NPC_THREAT_SWITCH_PERCENT` (10%) of it, so that NPCs don't flip between targets. A hostile NPC with no target attacks the first player in the room.
+
+A taunt (`MOB_MODE_TAUNT`) is made by a player against an evil (non-friendly) NPC. It is a contested check (`rollTaunt` in `backend/world/mob_checks.go`) of the taunter's STR against the target's `STAT_FOCUS`, multiplied by `1 - tauntCooldown`. On success, `setHighestThreat` sets the taunter's threat 10% above the NPC's highest threat, plus the taunter's STR, and the NPC attacks the taunter. Every taunt, successful or not, sets the taunter's cooldown to `MOB_TAUNT_COOLDOWN_MAX`, so that an immediate retaunt can't succeed. The cooldown recovers by `MOB_TAUNT_COOLDOWN_RATE` each tick.

@@ -244,8 +244,8 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 	// @return MobHandle|nil
 	"npc_get_highest_threat": func(frame lua.Frame) lua.Outcome {
 		mob := frameGetNpcArg(&frame, 0)
-		threatHandle, hasThreat := mob.Npc.getHighestThreat()
-		if !hasThreat {
+		threatHandle, threatLevel := mob.Npc.getHighestThreat(__world)
+		if threatLevel == 0 {
 			return frame.ReturnNil()
 		}
 

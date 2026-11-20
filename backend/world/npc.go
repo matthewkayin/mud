@@ -9,6 +9,14 @@ import (
 	"github.com/mmcdole/lunar"
 )
 
+// This offset is added to threat levels so that NPCs do not forget attacks as easily
+// This offset also helps to ensure NPCs do not ping-pong between targets too easily
+const NPC_THREAT_OFFSET int32 = (3 * 60) / WORLD_SECONDS_PER_UPDATE
+
+// This percent is used to decide whether to switch threats. In order for an NPC to switch to a higher
+// threat target, the target must have 10% more threat than the NPC's current target
+const NPC_THREAT_SWITCH_PERCENT float32 = 0.10
+
 type NpcMovementType int
 const (
 	NPC_MOVEMENT_TYPE_STATIONARY NpcMovementType = iota
@@ -101,9 +109,10 @@ func (npc *Npc) update(world *World) {
 		npc.threats[index].level--
 
 		// Check if mob is still alive
-		_, threatExists := world.Mobs.GetIfExists(npc.threats[index].handle)
+		threatMob, threatExists := world.Mobs.GetIfExists(npc.threats[index].handle)
+		threatIsAlive := threatExists && !threatMob.isDead()
 
-		if npc.threats[index].level <= 0 || !threatExists {
+		if npc.threats[index].level <= 0 || !threatIsAlive {
 			npc.threats = util.RemoveAtUnordered(npc.threats, index)
 		} else {
 			index++
@@ -114,9 +123,9 @@ func (npc *Npc) update(world *World) {
 	npcMob := world.Mobs.Get(npc.mobHandle)
 
 	// Acquire a target from the threat table
-	highestThreat, hasThreat := npc.getHighestThreat()
-	if hasThreat && !npcMob.isTargeting(highestThreat) {
-		npcMob.SetModeAttack(world, highestThreat)
+	target, shouldSwitchTargets := npc.shouldSwitchTargets(world)
+	if shouldSwitchTargets {
+		npcMob.SetModeAttack(world, target)
 	}
 
 	// If hostile and idle, find a target to attack
@@ -150,8 +159,8 @@ func (npc *Npc) GetAttacks() []MobAttack {
 	return attacks
 }
 
-func (npc *Npc) onAttacked(attackerHandle MobHandle) {
-	npc.addThreat(attackerHandle, 8)
+func (npc *Npc) onAttacked(attackerHandle MobHandle, damage int32) {
+	npc.addThreat(attackerHandle, damage)
 }
 
 func (npc *Npc) getThreat(mobHandle MobHandle) int32 {
@@ -165,9 +174,12 @@ func (npc *Npc) getThreat(mobHandle MobHandle) int32 {
 }
 
 func (npc *Npc) addThreat(mobHandle MobHandle, amount int32) {
+	amount += NPC_THREAT_OFFSET
+
 	for index := range len(npc.threats) {
 		if npc.threats[index].handle == mobHandle {
 			npc.threats[index].level += amount
+			return
 		}
 	}
 
@@ -177,19 +189,75 @@ func (npc *Npc) addThreat(mobHandle MobHandle, amount int32) {
 	})
 }
 
-func (npc *Npc) getHighestThreat() (MobHandle, bool) {
-	if len(npc.threats) == 0 {
-		return MobHandle{}, false
+func (npc *Npc) setThreat(mobHandle MobHandle, amount int32) {
+	for index := range len(npc.threats) {
+		if npc.threats[index].handle == mobHandle {
+			npc.threats[index].level = amount
+			return
+		}
 	}
 
-	highestIndex := 0
-	for index := 1; index < len(npc.threats); index++ {
-		if npc.threats[index].level > npc.threats[highestIndex].level {
+	npc.threats = append(npc.threats, NpcThreat {
+		handle: mobHandle,
+		level: amount,
+	})
+}
+
+// Returns the highest threat that is alive and in the NPC's room, or a level of 0 if there is none.
+// Threats outside the room stay in the table so that the NPC remembers them if they come back
+func (npc *Npc) getHighestThreat(world *World) (MobHandle, int32) {
+	highestIndex := -1
+	for index := range len(npc.threats) {
+		threatMob, threatExists := world.Mobs.GetIfExists(npc.threats[index].handle)
+		if !threatExists || threatMob.isDead() || threatMob.Room != npc.Room {
+			continue
+		}
+
+		if highestIndex == -1 || npc.threats[index].level > npc.threats[highestIndex].level {
 			highestIndex = index
 		}
 	}
 
-	return npc.threats[highestIndex].handle, true
+	if highestIndex == -1 {
+		return MobHandle{}, 0
+	}
+
+	return npc.threats[highestIndex].handle, npc.threats[highestIndex].level
+}
+
+func (npc *Npc) setHighestThreat(world *World, mobHandle MobHandle, bonus int32) {
+	_, highestThreatLevel := npc.getHighestThreat(world)
+	threatLevel := int32(float32(highestThreatLevel) * (1.0 + NPC_THREAT_SWITCH_PERCENT)) + bonus
+	npc.setThreat(mobHandle, threatLevel)
+}
+
+func (npc *Npc) shouldSwitchTargets(world *World) (MobHandle, bool) {
+	highestThreat, highestThreatLevel := npc.getHighestThreat(world)
+
+	// If we have no highest threat, then don't switch targets
+	if highestThreatLevel == 0 {
+		return MobHandle{}, false
+	}
+
+	// If we are already targeting the highest threat, then don't switch targets
+	npcMob := world.Mobs.Get(npc.mobHandle)
+	if npcMob.isTargeting(highestThreat) {
+		return MobHandle{}, false
+	}
+
+	// If the NPC has a current target whose threat is close to the highest threat, don't switch targets
+	if npcMob.Target.Type == MOB_TARGET_MOB && npcMob.isTargetValid(world) {
+		targetThreatLevel := npc.getThreat(npcMob.Target.Value.(MobHandle))
+		if targetThreatLevel != 0 {
+			difference := highestThreatLevel - targetThreatLevel
+			percentDifference := float32(difference) / float32(targetThreatLevel)
+			if percentDifference < NPC_THREAT_SWITCH_PERCENT {
+				return MobHandle{}, false
+			}
+		}
+	}
+
+	return highestThreat, true
 }
 
 // SCRIPT
@@ -217,7 +285,7 @@ func (npc *Npc) callInit(world *World) lua.Value {
 		return lua.Nil()
 	}
 	if result.Kind() != lua.TableKind {
-		log.Printf("Warn: %s returned a %s instead of a table.", functionDesc, result.Kind().String())
+		log.Printf("warn: %s returned a %s instead of a table.", functionDesc, result.Kind().String())
 		return lua.Nil()
 	}
 

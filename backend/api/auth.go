@@ -97,7 +97,7 @@ func (apiState *ApiState) HandleAuthRegister(writer http.ResponseWriter, request
 		return
 	}
 	if err != nil {
-		log.Printf("Warn - failed to create account %s: %s", credentials.Username, err.Error())
+		log.Printf("warn: failed to create account %s: %s", credentials.Username, err.Error())
 		writeAuthError(writer, http.StatusInternalServerError, "Could not create the account.")
 		return
 	}
@@ -214,6 +214,6 @@ func writeJson(writer http.ResponseWriter, status int, value any) {
 	writer.WriteHeader(status)
 	err := json.NewEncoder(writer).Encode(value)
 	if err != nil {
-		log.Printf("Warn - failed to write JSON response: %s", err.Error())
+		log.Printf("warn: failed to write JSON response: %s", err.Error())
 	}
 }

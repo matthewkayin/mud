@@ -36,7 +36,7 @@ func (table *LootTable) getLoot(world *World, luck int32) Inventory {
 		// Roll for item amount
 		amount := entry.amountRange.ChooseRandom()
 		if amount <= 0 {
-			log.Printf("Warn: Drop table item %s amount %d is not positive.", entry.itemType.Name, amount)
+			log.Printf("warn: drop table item %s amount %d is not positive.", entry.itemType.Name, amount)
 			continue
 		}
 

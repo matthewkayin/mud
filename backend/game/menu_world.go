@@ -314,7 +314,7 @@ func findTarget(gamestate *GameState, player *Player, params FindTargetParams) (
 		}
 
 		default: {
-			log.Printf("Warn - target type %d is not handled in findTarget()", params.targetType)
+			log.Printf("warn: target type %d is not handled in findTarget()", params.targetType)
 			return world.MobTarget{}, fmt.Errorf("Something strange happened.")
 		}
 	}

@@ -214,7 +214,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 				gamestate.players[targetPlayerIndex].isInventoryDirty = true
 			}
 			if targetMob.IsNpc() {
-				player.send("Oops! NPCs cannot receive gitfs yet!")
+				player.send("Oops! NPCs cannot receive gifts yet!")
 				return true
 			}
 

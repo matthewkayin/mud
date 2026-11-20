@@ -127,14 +127,14 @@ func loadAccount(username string) (*Account, error) {
 		return nil, errAccountNotFound
 	}
 	if err != nil {
-		log.Printf("Warn - failed to read account file %s: %s", path, err.Error())
+		log.Printf("warn: failed to read account file %s: %s", path, err.Error())
 		return nil, err
 	}
 
 	var account Account
 	err = json.Unmarshal(data, &account)
 	if err != nil {
-		log.Printf("Warn - failed to parse account file %s: %s", path, err.Error())
+		log.Printf("warn: failed to parse account file %s: %s", path, err.Error())
 		return nil, err
 	}
 

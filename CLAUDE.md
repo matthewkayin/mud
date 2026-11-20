@@ -63,7 +63,7 @@ These rules came from the old implementation. Follow them when rebuilding the ma
 - Persistence is JSON. Saved files reference script-loaded data by name, not by load-order ID.
 
 ## Style
-Go code uses long descriptive camelCase names, `SCREAMING_SNAKE_CASE` constants/enums declared with `iota`, and `log.Printf("Warn - ...")` for recoverable problems. Types should be defined at the top of the file and should not be interleved with function definitions (excepting types which are defined only within the scope of a function).
+Go code uses long descriptive camelCase names, `SCREAMING_SNAKE_CASE` constants/enums declared with `iota`, and `log.Printf("warn: ...")` for recoverable problems. Types should be defined at the top of the file and should not be interleved with function definitions (excepting types which are defined only within the scope of a function).
 
 In Go code, **never** combine statements with if statements (i.e. `if _, value := myFunc(); value == 5 {}`)
 

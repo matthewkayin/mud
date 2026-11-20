@@ -64,6 +64,10 @@ func (world *World) NewCharacter(playerKey string, characterSheet *CharacterShee
 	return character
 }
 
+func (character *Character) Attribute(attr Attribute) int32 {
+	return character.Attributes.Values[attr]
+}
+
 // MOB FUNCTIONS
 // Called through the Mob functions of the same name
 
@@ -84,7 +88,7 @@ func (character *Character) GetAttacks() []MobAttack {
 	if mainItem != nil && mainItem.IsWeapon() {
 		weaponData := mainItem.ItemType.Data.(ItemDataWeapon)
 		attacks = append(attacks, MobAttack {
-			damage: weaponData.damage + (character.Attributes.Values[ATTR_STR] / 2),
+			damage: weaponData.damage + (character.Attribute(ATTR_STR) / 2),
 			penetration: weaponData.penetration,
 			hasWeaponSlot: true,
 			weaponSlot: EQUIPMENT_SLOT_MAIN_HAND,
@@ -97,7 +101,7 @@ func (character *Character) GetAttacks() []MobAttack {
 	if !mainHandIsTwoHanded && offItem != nil && offItem.IsWeapon() {
 		weaponData := offItem.ItemType.Data.(ItemDataWeapon)
 		attacks = append(attacks, MobAttack {
-			damage: weaponData.damage + (character.Attributes.Values[ATTR_STR] / 4),
+			damage: weaponData.damage + (character.Attribute(ATTR_STR) / 4),
 			penetration: weaponData.penetration,
 			hasWeaponSlot: true,
 			weaponSlot: EQUIPMENT_SLOT_OFF_HAND,
@@ -107,7 +111,7 @@ func (character *Character) GetAttacks() []MobAttack {
 	// Unarmed attack, added only if main and off hand both did not produce an attack and character has a free hand
 	if len(attacks) == 0 && (mainItem == nil || offItem == nil) {
 		attacks = append(attacks, MobAttack {
-			damage: character.Attributes.Values[ATTR_STR] / 2,
+			damage: character.Attribute(ATTR_STR) / 2,
 			penetration: 0,
 		})
 	}
@@ -118,7 +122,7 @@ func (character *Character) GetAttacks() []MobAttack {
 // CHARACTER FUNCTIONS
 
 func (character *Character) MaxSpellSlots() int32 {
-	return int32(character.Attributes.Values[ATTR_INT] / 4)
+	return character.Attribute(ATTR_INT) / 4
 }
 
 func ExpToNextLevel(level int32) int32 {

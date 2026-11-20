@@ -17,7 +17,7 @@ const MOB_ALERTNESS_MAX float32 = 1.0
 const MOB_ALERTNESS_COOLDOWN_RATE float32 = 0.05
 
 const MOB_TAUNT_COOLDOWN_MAX float32 = 1.0
-const MOB_TAUNT_COOLDOWN_RATE float32 = 0.05
+const MOB_TAUNT_COOLDOWN_RATE float32 = 0.1
 
 // Each point of deflection above the attack's penetration adds this much percent chance to deflect
 const MOB_DEFLECTION_PER_POINT = 5
@@ -348,9 +348,37 @@ func (mob *Mob) update(world *World) {
 				break
 			}
 
-			// Taunt
+			// Check to make sure taunter is a player
+			if !mob.IsPlayer() {
+				log.Printf("warn: mob %s tried to taunt, but they are not a player.", mob.Name)
+				mob.SetModeIdle()
+				break
+			}
+
+			// Check to make sure target is evil
 			targetMob := mob.getTargetMobIfExists(world)
+			if !targetMob.IsEvil() {
+				log.Printf("warn: tried to taunt against %s, but they are not an evil NPC.", targetMob.Name)
+				mob.SetModeIdle()
+				break
+			}
+
+			// Narrate taunt
 			world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> taunted <y>%s</y>!", mob.Name, targetMob.Name))
+
+			// Roll taunt
+			success := mob.rollTaunt(targetMob)
+			if success {
+				targetMob.Npc.setHighestThreat(world, mob.Handle, mob.Character.Attribute(ATTR_STR))
+				targetMob.SetModeAttack(world, mob.Handle)
+				world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> is now angry at <y>%s</y>!", targetMob.Name, mob.Name))
+			} else {
+				world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> ignored the taunt.", targetMob.Name))
+			}
+
+			// The taunt resolves once. Taunting again right away has no chance until the cooldown recovers
+			mob.tauntCooldown = MOB_TAUNT_COOLDOWN_MAX
+			mob.SetModeIdle()
 		}
 	}
 }
@@ -361,7 +389,7 @@ func (mob *Mob) damage(attackerHandle MobHandle, damage int32) {
 	// targetMob.rollForConcentration(world, damage)
 
 	if mob.IsNpc() {
-		mob.Npc.onAttacked(attackerHandle)
+		mob.Npc.onAttacked(attackerHandle, damage)
 	}
 }
 
@@ -423,7 +451,7 @@ func (mob *Mob) attackTarget(world *World, targetMob *Mob, attack MobAttack) {
 		// item might not be a shield
 		shield := targetMob.Character.Equipment.GetShield()
 		if shield != nil {
-			mob.Character.subtractDurabilityFromEquipment(world, EQUIPMENT_SLOT_OFF_HAND)
+			targetMob.Character.subtractDurabilityFromEquipment(world, EQUIPMENT_SLOT_OFF_HAND)
 		}
 	}
 }
@@ -456,7 +484,7 @@ func (mob *Mob) useItem(world *World) {
 			success = mob.callOnUse(world, consumableData, itemType.Name)
 		}
 		default: {
-			log.Printf("Warn - %s tried to use item %s of kind %s, which can't be used.", mob.Name, itemType.Name, itemType.Kind.String())
+			log.Printf("warn: %s tried to use item %s of kind %s, which can't be used.", mob.Name, itemType.Name, itemType.Kind.String())
 		}
 	}
 
@@ -620,7 +648,7 @@ func (mob *Mob) buildTargetHookArgs(world *World, target MobTarget) ([]lua.Value
 		}
 
 		default: {
-			log.Printf("Warn - target type %d not handled in buildTargetHookArgs", target.Type)
+			log.Printf("warn: target type %d not handled in buildTargetHookArgs", target.Type)
 			return args, false
 		}
 	}

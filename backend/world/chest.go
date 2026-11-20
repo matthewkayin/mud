@@ -73,11 +73,11 @@ func NewPlayerCorpse(character *Character) Chest {
 // If the chest hasn't been opened yet, then the loot table will be rolled on based on the looter's Luck
 func (chest *Chest) GetInventory(world *World, looter *Character) *Inventory {
 	if chest.mode == CHEST_MODE_UNBOXED {
-		chest.inventory = chest.loot.getLoot(world, looter.Attributes.Values[ATTR_LCK])
+		chest.inventory = chest.loot.getLoot(world, looter.Attribute(ATTR_LCK))
 		chest.setOpen()
 	}
 	if chest.mode == CHEST_MODE_REPLENISH {
-		chest.inventory = chest.loot.getLoot(world, looter.Attributes.Values[ATTR_LCK])
+		chest.inventory = chest.loot.getLoot(world, looter.Attribute(ATTR_LCK))
 		chest.setOpen()
 	}
 

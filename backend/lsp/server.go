@@ -146,7 +146,7 @@ func (lspServer *server) handleMessage(message *rpcMessage) {
 		var params didOpenParams
 		err := json.Unmarshal(message.Params, &params)
 		if err != nil {
-			log.Printf("Warn - Invalid didOpen params: %s", err.Error())
+			log.Printf("warn: invalid didOpen params: %s", err.Error())
 			return
 		}
 		lspServer.setDocument(params.TextDocument.Uri, params.TextDocument.Text)
@@ -154,7 +154,7 @@ func (lspServer *server) handleMessage(message *rpcMessage) {
 		var params didChangeParams
 		err := json.Unmarshal(message.Params, &params)
 		if err != nil {
-			log.Printf("Warn - Invalid didChange params: %s", err.Error())
+			log.Printf("warn: invalid didChange params: %s", err.Error())
 			return
 		}
 		// With full sync, the last change holds the whole document
@@ -166,7 +166,7 @@ func (lspServer *server) handleMessage(message *rpcMessage) {
 		var params didCloseParams
 		err := json.Unmarshal(message.Params, &params)
 		if err != nil {
-			log.Printf("Warn - Invalid didClose params: %s", err.Error())
+			log.Printf("warn: invalid didClose params: %s", err.Error())
 			return
 		}
 		path, ok := lspServer.uriToDataPath(params.TextDocument.Uri)
