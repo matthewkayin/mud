@@ -167,6 +167,17 @@ function world.mob_is_dead(handle) end
 ---@return string
 function world.npc_get_disposition(handle) end
 
+--- Returns the mob who has pulled the most aggro (has the highest threat level) on this NPC
+--- If the mob has no threats, this will return nil instead
+---@param handle MobHandle
+---@return MobHandle|nil
+function world.npc_get_highest_threat(handle) end
+
+--- Returns true if the NPC has any threats
+---@param handle MobHandle
+---@return bool
+function world.npc_has_threats(handle) end
+
 --- Sets the NPC's disposition
 ---
 ---@param handle MobHandle

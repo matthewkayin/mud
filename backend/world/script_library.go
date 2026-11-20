@@ -236,6 +236,33 @@ var SCRIPT_LIBRARY = map[string]lua.NativeFunc {
 
 		return frame.ReturnString(mob.Npc.disposition.String())
 	},
+
+	// Returns the mob who has pulled the most aggro (has the highest threat level) on this NPC
+	// If the mob has no threats, this will return nil instead
+	// @param handle MobHandle
+	// @return MobHandle|nil
+	"npc_get_highest_threat": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetNpcArg(&frame, 0)
+		threatHandle, hasThreat := mob.Npc.getHighestThreat()
+		if !hasThreat {
+			return frame.ReturnNil()
+		}
+
+		threatLuaHandle, ok := __world.GetMobLuaHandle(threatHandle)
+		if !ok {
+			frame.ThrowError(fmt.Errorf("Failed to alloc threat lua handle."))
+		}
+
+		return frame.ReturnValue(threatLuaHandle)
+	},
+
+	// Returns true if the NPC has any threats
+	// @param handle MobHandle
+	// @return bool
+	"npc_has_threats": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetNpcArg(&frame, 0)
+		return frame.ReturnBool(len(mob.Npc.threats) != 0)
+	},
 }
 
 // HELPERS

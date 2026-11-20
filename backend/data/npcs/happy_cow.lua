@@ -25,7 +25,7 @@ function npc.init(self)
 end
 
 function npc.update(self, instance)
-    if world.npc_get_disposition(self) == world.NpcDisposition.HOSTILE then
+    if world.npc_has_threats(self) then
         return
     end
 

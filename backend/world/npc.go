@@ -101,8 +101,23 @@ func (npc *Npc) InventoryCapacity() int32 {
 // UPDATE
 
 func (npc *Npc) update(world *World) {
-	npc.callUpdate(world)
+	// Update threats
+	index := 0
+	for index < len(npc.threats) {
+		// Decrement threat level
+		npc.threats[index].level--
 
+		// Check if mob is still alive
+		_, threatExists := world.Mobs.GetIfExists(npc.threats[index].handle)
+
+		if npc.threats[index].level <= 0 || !threatExists {
+			npc.threats = util.RemoveAtUnordered(npc.threats, index)
+		} else {
+			index++
+		}
+	}
+
+	npc.callUpdate(world)
 	npcMob := world.Mobs.Get(npc.mobHandle)
 
 	// Acquire a target from the threat table
@@ -124,17 +139,6 @@ func (npc *Npc) update(world *World) {
 		// If target enemy found, set mode to attack
 		if targetIndex != -1 {
 			npcMob.SetModeAttack(world, room.Occupants[targetIndex])
-		}
-	}
-
-	// Update threats
-	index := 0
-	for index < len(npc.threats) {
-		npc.threats[index].level--
-		if npc.threats[index].level <= 0 {
-			npc.threats = util.RemoveAtUnordered(npc.threats, index)
-		} else {
-			index++
 		}
 	}
 }
