@@ -3,13 +3,13 @@ local class = {}
 class.name = "Warrior"
 class.description = "Likes to hit stuff"
 
-class.stats = {
-    [world.Stat.STR] = 10,
-    [world.Stat.VIT] = 8,
-    [world.Stat.AGI] = 4,
-    [world.Stat.INT] = 4,
-    [world.Stat.FTH] = 8,
-    [world.Stat.LCK] = 4,
+class.attributes = {
+    [world.Attribute.STR] = 10,
+    [world.Attribute.VIT] = 8,
+    [world.Attribute.AGI] = 4,
+    [world.Attribute.INT] = 4,
+    [world.Attribute.FTH] = 8,
+    [world.Attribute.LCK] = 4,
 }
 
 class.skills = {

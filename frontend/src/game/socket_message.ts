@@ -18,10 +18,16 @@ export type Inventory = {
   items: InventoryItem[];
 };
 
+// name is empty when nothing is equipped in the slot
+export type EquipmentSlot = {
+  slot: string;
+  name: string;
+};
+
 export type SocketMessage = {
   message: string | null;
   status?: PlayerStatus;
   map?: number[];
   inv?: Inventory;
-  equip?: string[];
+  equip?: EquipmentSlot[];
 };

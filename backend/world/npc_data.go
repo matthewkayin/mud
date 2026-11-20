@@ -37,20 +37,14 @@ type NpcData struct {
 
 	// STATS
 
-	maxHealth int32
-	maxMana int32
+	stats StatBlock
+
+	// ATTACKS
 
 	damage int32
 	// armor penetration score
 	penetration int32
 	attacksPerRound int32
-	initiative int32
-	// flat armor resistance
-	resistance int32
-	// deflection score
-	deflection int32
-	// amount of damage to deflect on a successful deflect
-	deflectionAmount int32
 
 	// LOOT
 
@@ -102,11 +96,33 @@ func (parser *ScriptParser) parserNpc(world *World, table *lua.Table) *NpcData {
 
 	// Stats
 
-	npcData.maxHealth = parser.getOptionalInt32(table, "max_health", 1)
-	parser.checkInt32Positive(npcData.maxHealth, "max_health")
+	// A stat of 0 means it was not provided
+	npcData.stats = parser.getOptionalStatBlock(table, "stats")
+	if npcData.stats.Values[STAT_MAX_HEALTH] == 0 {
+		npcData.stats.Values[STAT_MAX_HEALTH] = 1
+	}
+	if npcData.stats.Values[STAT_DEFLECTION_AMOUNT] == 0 {
+		npcData.stats.Values[STAT_DEFLECTION_AMOUNT] = 40
+	}
+	for index := range STAT_COUNT {
+		value := npcData.stats.Values[index]
+		switch index {
+			case STAT_MAX_HEALTH:
+				if value <= 0 {
+					parser.addProblem("stats", fmt.Errorf("stat '%s' must be greater than 0, got %d", index.String(), value))
+				}
+			case STAT_DEFLECTION_AMOUNT:
+				if value <= 0 || value > 100 {
+					parser.addProblem("stats", fmt.Errorf("stat '%s' must be a percent value from 1 to 100, got %d", index.String(), value))
+				}
+			default:
+				if value < 0 {
+					parser.addProblem("stats", fmt.Errorf("stat '%s' must be greater than or equal to 0, got %d", index.String(), value))
+				}
+		}
+	}
 
-	npcData.maxMana = parser.getOptionalInt32(table, "max_mana", 0)
-	parser.checkInt32NonNegative(npcData.maxMana, "max_mana")
+	// Attacks
 
 	npcData.damage = parser.getOptionalInt32(table, "damage", 1)
 	parser.checkInt32NonNegative(npcData.damage, "damage")
@@ -116,18 +132,6 @@ func (parser *ScriptParser) parserNpc(world *World, table *lua.Table) *NpcData {
 
 	npcData.attacksPerRound = parser.getOptionalInt32(table, "attacks_per_round", 1)
 	parser.checkInt32Positive(npcData.attacksPerRound, "attacks_per_round")
-
-	npcData.initiative = parser.getOptionalInt32(table, "initiative", 1)
-	parser.checkInt32Positive(npcData.initiative, "initiative")
-
-	npcData.resistance = parser.getOptionalInt32(table, "resistance", 0)
-	parser.checkInt32NonNegative(npcData.resistance, "resistance")
-
-	npcData.deflection = parser.getOptionalInt32(table, "deflection", 0)
-	parser.checkInt32NonNegative(npcData.deflection, "deflection")
-
-	npcData.deflectionAmount = parser.getOptionalInt32(table, "deflection_amount", 60)
-	parser.checkInt32IsPositivePercent(npcData.deflectionAmount, "deflection_amount")
 
 	// Loot
 

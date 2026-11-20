@@ -6,11 +6,13 @@ npc.description = "Lives a life of total bovine simplicity."
 
 npc.experience_worth = 10
 
-npc.max_health = 10
+npc.stats = {
+    [world.Stat.MAX_HEALTH] = 10,
+}
 npc.damage = 2
 npc.starting_disposition = world.NpcDisposition.NEUTRAL
 
-npc.drop_table = {
+npc.loot = {
     {
         item = "Leather",
         amount = 1,
@@ -25,6 +27,10 @@ function npc.init(self)
 end
 
 function npc.update(self, instance)
+    if world.npc_has_threats(self) then
+        return
+    end
+
     instance.moo_timer = instance.moo_timer - 1
     if instance.moo_timer < 0 then
         local room = world.mob_get_room(self)

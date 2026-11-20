@@ -10,7 +10,7 @@ import (
 type ClassData struct {
 	Name string
 	Description string
-	Stats StatBlock
+	Attributes AttributeBlock
 	Skills SkillFlags
 }
 
@@ -49,7 +49,7 @@ func (parser *ScriptParser) parseClass(table *lua.Table) *ClassData {
 
 	classData.Name = parser.getString(table, "name")
 	classData.Description = parser.getString(table, "description")
-	classData.Stats = parser.getStatBlock(table, "stats")
+	classData.Attributes = parser.getAttributeBlock(table, "attributes")
 	classData.Skills = parser.getSkillFlags(table, "skills")
 
 	if len(parser.problems) != 0 {

@@ -116,10 +116,10 @@ func (world *World) RemoveCharacter(character *Character) {
 	if index < len(world.PlayerCharacters[character.PlayerKey]) {
 		world.PlayerCharacters[character.PlayerKey] = append(playerCharacters[:index], playerCharacters[index + 1:]...)
 	} else {
-		log.Printf("Warn: Character %s is being removed but does not exist in playerCharacters list for player %s.", character.Name, character.PlayerKey)
+		log.Printf("warn: character %s is being removed but does not exist in playerCharacters list for player %s.", character.Name, character.PlayerKey)
 	}
 
-	delete(world.Characters, character.Name)
+	delete(world.Characters, strings.ToLower(character.Name))
 	deleteCharacter(character)
 }
 

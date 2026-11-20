@@ -37,7 +37,7 @@ func NewMobArray() MobArray {
 
 func (array *MobArray) GetIfExists(handle MobHandle) (*Mob, bool) {
 	if int(handle.Id) > len(array.idToIndex) - 1 {
-		log.Printf("Warn: Tried to get Mob with ID %d which is greater than the list of IDs which has length %d", handle.Id, len(array.idToIndex))
+		log.Printf("warn: tried to get Mob with ID %d which is greater than the list of IDs which has length %d", handle.Id, len(array.idToIndex))
 		return nil, false
 	}
 	if array.idToIndex[handle.Id].generation != handle.Generation {

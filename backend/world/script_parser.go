@@ -209,14 +209,40 @@ func (parser *ScriptParser) checkInt32IsPositivePercent(number int32, key string
 	parser.checkInt32Positive(number, key)
 }
 
-func (parser *ScriptParser) getStatBlock(table *lua.Table, key string) StatBlock {
-	stats := StatBlock{}
+func (parser *ScriptParser) getAttributeBlock(table *lua.Table, key string) AttributeBlock {
+	attributes := AttributeBlock{}
 
 	parser.forEachInOptionalTable(table, key, func (abbreviation string, value lua.Value) bool {
 		// Validate that the key is an attribute
-		statName, ok := util.EnumFromString[StatName](abbreviation, STAT_COUNT)
+		attribute, ok := util.EnumFromString[Attribute](abbreviation, ATTR_COUNT)
 		if !ok {
-			parser.addProblem(key, fmt.Errorf("'%s' is not a valid stat.", abbreviation))
+			parser.addProblem(key, fmt.Errorf("'%s' is not a valid attribute.", abbreviation))
+			return false
+		}
+
+		attributeValue, ok := value.AsNumber()
+		if !ok {
+			parser.addProblem(key, fmt.Errorf("Values in the attribute block table must be numbers."))
+			return false
+		}
+
+		parser.checkNumberIsInt32(attributeValue, key, abbreviation)
+		attributes.Values[attribute] = int32(attributeValue)
+		return true
+	})
+
+	return attributes
+}
+
+// Returns the stat block at key. Stats that are not provided, or a missing table, default to 0
+func (parser *ScriptParser) getOptionalStatBlock(table *lua.Table, key string) StatBlock {
+	stats := StatBlock{}
+
+	parser.forEachInOptionalTable(table, key, func (statName string, value lua.Value) bool {
+		// Validate that the key is a stat
+		stat, ok := util.EnumFromString[Stat](statName, STAT_COUNT)
+		if !ok {
+			parser.addProblem(key, fmt.Errorf("'%s' is not a valid stat.", statName))
 			return false
 		}
 
@@ -226,8 +252,8 @@ func (parser *ScriptParser) getStatBlock(table *lua.Table, key string) StatBlock
 			return false
 		}
 
-		parser.checkNumberIsInt32(statValue, key, abbreviation)
-		stats.Values[statName] = int32(statValue)
+		parser.checkNumberIsInt32(statValue, key, statName)
+		stats.Values[stat] = int32(statValue)
 		return true
 	})
 

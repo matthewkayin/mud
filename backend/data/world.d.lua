@@ -51,14 +51,28 @@ world.Direction = {
 	DOWN = "down",
 }
 
----@enum Stat
-world.Stat = {
+---@enum Attribute
+world.Attribute = {
 	VIT = "VIT",
 	STR = "STR",
 	AGI = "AGI",
 	INT = "INT",
 	FTH = "FTH",
 	LCK = "LCK",
+}
+
+---@enum Stat
+world.Stat = {
+	MAX_HEALTH = "Max Health",
+	MAX_MANA = "Max Mana",
+	INITIATIVE = "Initiative",
+	ACCURACY = "Accuracy",
+	EVASION = "Evasion",
+	DEFLECTION = "Deflection",
+	DEFLECTION_AMOUNT = "Deflection Amount",
+	RESISTANCE = "Resistance",
+	MAGIC_RESISTANCE = "Magic Resistance",
+	FOCUS = "Focus",
 }
 
 ---@enum Skill
@@ -160,6 +174,29 @@ function world.mob_get_room(handle) end
 ---@param handle MobHandle
 ---@return boolean
 function world.mob_is_dead(handle) end
+
+--- Returns the NPC's disposition
+---
+---@param handle MobHandle
+---@return string
+function world.npc_get_disposition(handle) end
+
+--- Returns the mob who has pulled the most aggro (has the highest threat level) on this NPC
+--- If the mob has no threats, this will return nil instead
+---@param handle MobHandle
+---@return MobHandle|nil
+function world.npc_get_highest_threat(handle) end
+
+--- Returns true if the NPC has any threats
+---@param handle MobHandle
+---@return bool
+function world.npc_has_threats(handle) end
+
+--- Sets the NPC's disposition
+---
+---@param handle MobHandle
+---@param string
+function world.npc_set_disposition(handle, string) end
 
 --- Sends a dialog message to a specified player.
 --- Dialog messages are prefixed with the speakers name:

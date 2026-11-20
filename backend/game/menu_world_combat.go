@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"mud/world"
 )
 
 var MENU_WORLD_ENTRIES_COMBAT = map[string]MenuEntry {
@@ -41,6 +42,42 @@ var MENU_WORLD_ENTRIES_COMBAT = map[string]MenuEntry {
 			}
 
 			playerMob.SetModeAttack(gamestate.world, targetHandle)
+
+			return true
+		},
+	},
+
+	"taunt": {
+		usage: "taunt <target>",
+		description: "Taunt an enemy in the room, provoking it into attacking you instead of your allies. Requires the Taunt skill.",
+		categories: []string { "combat" },
+		handler: func (gamestate *GameState, player *Player, args []string) bool {
+			if len(args) == 0 {
+				return false
+			}
+
+			// Check that the player knows how to taunt
+			if !player.character.Skills.Has(world.SKILL_TAUNT) {
+				player.send("You don't know how to do that.")
+				return true
+			}
+
+			// Find target
+			targetHandle, err := fuzzyFindMob(gamestate, player, args)
+			if err != nil {
+				player.send(err.Error())
+				return true
+			}
+
+			// Check that target is enemy
+			targetMob := gamestate.world.Mobs.Get(targetHandle)
+			if !targetMob.IsEvil() {
+				player.send(fmt.Sprintf("<y>%s</y> is not an enemy.", targetMob.Name))
+				return true
+			}
+
+			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+			playerMob.SetModeTaunt(gamestate.world, targetHandle)
 
 			return true
 		},

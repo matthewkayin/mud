@@ -52,9 +52,9 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 		if exists {
 			heartbeat.Status = &SocketPlayerStatus {
 				Health: playerMob.Health,
-				MaxHealth: playerMob.MaxHealth(),
+				MaxHealth: playerMob.Stat(world.STAT_MAX_HEALTH),
 				Mana: playerMob.Mana,
-				MaxMana: playerMob.MaxMana(),
+				MaxMana: playerMob.Stat(world.STAT_MAX_MANA),
 				PendingAction: playerMob.HasPendingAction,
 			}
 			if player.isMinimapDirty {
@@ -62,7 +62,7 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 				player.isMinimapDirty = false
 			}
 			if player.isInventoryDirty {
-				heartbeat.Equipment = getEquipmentLines(player.character)
+				heartbeat.Equipment = getSocketEquipment(player.character)
 				heartbeat.Inventory = getSocketInventory(player.character)
 				player.isInventoryDirty = false
 			}
@@ -77,9 +77,10 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 	}
 }
 
-// One line per equipment slot, for the client's equipment view
-func getEquipmentLines(character *world.Character) []string {
-	lines := make([]string, 0, world.EQUIPMENT_SLOT_COUNT)
+// One entry per equipment slot, for the client's equipment table
+// A two-handed weapon is shown once, in a "Both Hands" main hand slot, and the off hand entry is left blank
+func getSocketEquipment(character *world.Character) []SocketEquipmentSlot {
+	slots := make([]SocketEquipmentSlot, 0, world.EQUIPMENT_SLOT_COUNT)
 
 	mainHandItem := character.Equipment.Get(world.EQUIPMENT_SLOT_MAIN_HAND)
 	isTwoHandedWeaponEquipped := mainHandItem != nil && mainHandItem.IsTwoHandedWeapon()
@@ -87,19 +88,26 @@ func getEquipmentLines(character *world.Character) []string {
 		slot := world.EquipmentSlot(index)
 		item := character.Equipment.Get(slot)
 
-		// A two-handed weapon occupies the off hand too
-		if slot == world.EQUIPMENT_SLOT_OFF_HAND && isTwoHandedWeaponEquipped {
-			item = mainHandItem
+		slotName := slot.String()
+		if isTwoHandedWeaponEquipped && slot == world.EQUIPMENT_SLOT_MAIN_HAND {
+			slotName = "Both Hands"
+		}
+		if isTwoHandedWeaponEquipped && slot == world.EQUIPMENT_SLOT_OFF_HAND {
+			slotName = ""
+			item = nil
 		}
 
-		itemName := "<none>"
+		itemName := ""
 		if item != nil {
-			itemName = item.Name
+			itemName = item.NameWithCondition()
 		}
-		lines = append(lines, fmt.Sprintf("%s: %s", slot.String(), itemName))
+		slots = append(slots, SocketEquipmentSlot {
+			Slot: slotName,
+			Name: itemName,
+		})
 	}
 
-	return lines
+	return slots
 }
 
 // The player's inventory, for the client's inventory view
@@ -156,11 +164,19 @@ func (player *Player) logout(gamestate *GameState) {
 		gamestate.playerCharacterNames = util.RemoveAtUnordered(gamestate.playerCharacterNames, index)
 		gamestate.playerCharacterKeys = util.RemoveAtUnordered(gamestate.playerCharacterKeys, index)
 	} else {
-		log.Printf("Warn: On logout, player key %s not found in playerCharacterKeys.", player.key)
+		log.Printf("warn: on logout, player key %s not found in playerCharacterKeys.", player.key)
 	}
 
 	room := &gamestate.world.Rooms[player.character.Room]
 	room.RemoveOccupant(player.mobHandle)
+	gamestate.world.Mobs.Remove(player.mobHandle)
 	gamestate.world.MessageRoom(player.character.Room, fmt.Sprintf("<y>%s</y> has left the world.", player.character.Name))
 	gamestate.world.SaveCharacter(player.character)
+}
+
+func (player *Player) onDeath(gamestate *GameState) {
+	player.send(fmt.Sprintf("%s has died, and death is forever. RIP", player.character.Name))
+	player.send("\n")
+	gamestate.world.RemoveCharacter(player.character)
+	player.setMenuLogin(gamestate)
 }

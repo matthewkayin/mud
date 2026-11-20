@@ -1,6 +1,7 @@
 package world
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
 	"sort"
@@ -37,6 +38,7 @@ type Room struct {
 
 	State lua.Value
 	Occupants []MobHandle
+	Chests []Chest
 }
 
 func (room *Room) AddOccupant(handle MobHandle) {
@@ -48,7 +50,7 @@ func (room *Room) RemoveOccupant(handle MobHandle) {
 		return handle == occupantHandle
 	})
 	if occupantIndex == -1 {
-		log.Printf("Warn: Tried to remove occupant with handle %s from %s, but no such occupant was found.",
+		log.Printf("warn: tried to remove occupant with handle %s from %s, but no such occupant was found.",
 			handle.String(), room.Name)
 		return
 	}
@@ -61,7 +63,7 @@ func (room *Room) removeOccupantByIndex(index int) {
 }
 
 func (room *Room) Reset(world *World) {
-	room.lootTable.replenish(world, &room.Inventory)
+	room.lootTable.replenish(world, &room.Inventory, 0)
 
 	if room.reset != nil {
 		world.ScriptCall(room.reset.Value(), "reset")
@@ -88,9 +90,26 @@ func (room *Room) update(world *World) {
 	// Remove dead occupants
 	index := 0
 	for index < len(room.Occupants) {
-		occupant := world.Mobs.Get(room.Occupants[index])
+		occupantHandle := room.Occupants[index]
+		occupant := world.Mobs.Get(occupantHandle)
 		if occupant.isDead() {
-			util.RemoveAtUnordered(room.Occupants, index)
+			room.Occupants = util.RemoveAtUnordered(room.Occupants, index)
+			room.grantExperienceFrom(world, occupant)
+			room.createCorpse(occupant)
+			world.Mobs.Remove(occupantHandle)
+		} else {
+			index++
+		}
+	}
+
+	// Update chests
+	index = 0
+	for index < len(room.Chests) {
+		chest := &room.Chests[index]
+		chest.update()
+
+		if chest.isRottedCorpse() {
+			room.Chests = util.RemoveAtUnordered(room.Chests, index)
 		} else {
 			index++
 		}
@@ -104,12 +123,48 @@ func (room *Room) sortOccupantsByInitiativeOrder(world *World) []MobHandle {
 		mobJ := world.Mobs.Get(occupants[j])
 
 		// If they have the same agility, choose a random one to go first
-		if mobI.getInitiative() == mobJ.getInitiative() {
+		if mobI.Stat(STAT_INITIATIVE) == mobJ.Stat(STAT_INITIATIVE) {
 			return rand.Intn(2) == 0
 		}
 
-		return mobI.getInitiative() > mobJ.getInitiative()
+		return mobI.Stat(STAT_INITIATIVE) > mobJ.Stat(STAT_INITIATIVE)
 	})
 
 	return occupants
+}
+
+func (room *Room) createCorpse(mob *Mob) {
+	var corpse Chest
+	if mob.IsPlayer() {
+		mob.Character.dumpEquipment()
+		corpse = NewPlayerCorpse(mob.Character)
+	} else {
+		corpse = NewCorpse(mob.Name, &mob.Npc.data.loot)
+	}
+	room.Chests = append(room.Chests, corpse)
+}
+
+func (room *Room) grantExperienceFrom(world *World, deadMob *Mob) {
+	// Don't grant experience for non-NPC kills
+	if !deadMob.IsNpc() {
+		return
+	}
+
+	// Gather a list of all player mobs
+	players := make([]*Mob, 0, len(room.Occupants))
+	for index := range room.Occupants {
+		occupant := world.Mobs.Get(room.Occupants[index])
+		if occupant.IsPlayer() {
+			players = append(players, occupant)
+		}
+	}
+
+	expPerPlayer := deadMob.Npc.data.experienceWorth / int32(len(players))
+	for _, player := range players {
+		player.Character.grantExperience(world, expPerPlayer)
+	}
+}
+
+func (position RoomPosition) String() string {
+	return fmt.Sprintf("<%d, %d, %d>", position.X, position.Y, position.Z)
 }

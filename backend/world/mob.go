@@ -7,6 +7,18 @@ import (
 	"github.com/mmcdole/lunar"
 )
 
+// Escape chance starts at 1.0, meaning you have full escape chance
+// After an escape attempt fails, your escape chance gets dropped to 0.0
+// It will recover a little each tick. At a rate of 0.1, your recovery chance recovers in 30s
+const MOB_ESCAPE_CHANCE_MAX float32 = 1.0
+const MOB_ESCAPE_CHANCE_RECOVERY_RATE float32 = 0.1
+
+const MOB_ALERTNESS_MAX float32 = 1.0
+const MOB_ALERTNESS_COOLDOWN_RATE float32 = 0.05
+
+const MOB_TAUNT_COOLDOWN_MAX float32 = 1.0
+const MOB_TAUNT_COOLDOWN_RATE float32 = 0.1
+
 // Each point of deflection above the attack's penetration adds this much percent chance to deflect
 const MOB_DEFLECTION_PER_POINT = 5
 
@@ -16,6 +28,7 @@ const (
 	MOB_MODE_ATTACK
 	MOB_MODE_CAST
 	MOB_MODE_USE_ITEM
+	MOB_MODE_TAUNT
 )
 
 // Target
@@ -79,6 +92,10 @@ type Mob struct {
 
 	// Set when an action is queued and cleared on the mob's turn (Mob.update)
 	HasPendingAction bool
+
+	escapeChance float32
+	alertness float32
+	tauntCooldown float32
 }
 
 func NewCharacterMob(character *Character) Mob {
@@ -147,18 +164,11 @@ func (mob *Mob) DescribeToPlayer(world *World, playerKey string) {
 	mob.Npc.DescribeToPlayer(world, playerKey)
 }
 
-func (mob *Mob) MaxHealth() int32 {
-	if mob.IsPlayer() {
-		return mob.Character.MaxHealth()
-	}
-	return mob.Npc.MaxHealth()
-}
+// SECONDARY STATS
 
-func (mob *Mob) MaxMana() int32 {
-	if mob.IsPlayer() {
-		return mob.Character.MaxMana()
-	}
-	return mob.Npc.MaxMana()
+// Stats live on MobData. Characters calculate them from their attributes and gear, NPCs copy them from their data on spawn
+func (mob *Mob) Stat(stat Stat) int32 {
+	return mob.Stats.Values[stat]
 }
 
 func (mob *Mob) InventoryCapacity() int32 {
@@ -173,34 +183,6 @@ func (mob *Mob) GetAttacks() []MobAttack {
 		return mob.Character.GetAttacks()
 	}
 	return mob.Npc.GetAttacks()
-}
-
-func (mob *Mob) getInitiative() int32 {
-	if mob.IsPlayer() {
-		return mob.Character.getInitiative()
-	}
-	return mob.Npc.getInitiative()
-}
-
-func (mob *Mob) getDeflection() int32 {
-	if mob.IsPlayer() {
-		return mob.Character.getDeflection()
-	}
-	return mob.Npc.getDeflection()
-}
-
-func (mob *Mob) getDeflectionAmount() int32 {
-	if mob.IsPlayer() {
-		return mob.Character.getDeflectionAmount()
-	}
-	return mob.Npc.getDeflectionAmount()
-}
-
-func (mob *Mob) getResistance() int32 {
-	if mob.Character != nil {
-		return mob.Character.getResistance()
-	}
-	return mob.Npc.getResistance()
 }
 
 func (mob *Mob) isDead() bool {
@@ -252,6 +234,13 @@ func (mob *Mob) SetModeUseItem(world *World, itemToUse ItemId, target MobTarget)
 	mob.itemToUse = itemToUse
 }
 
+func (mob *Mob) SetModeTaunt(world *World, targetHandle MobHandle) {
+	mob.beginAction(world, MOB_MODE_TAUNT, MobTarget {
+		Type: MOB_TARGET_MOB,
+		Value: targetHandle,
+	})
+}
+
 // Every mode the mob chooses to start (attack, cast, use item) must be set through here,
 // so that replacing an in-progress action always announces its cancellation
 func (mob *Mob) beginAction(world *World, mode MobMode, target MobTarget) {
@@ -290,30 +279,6 @@ func (mob *Mob) IsAttacking(targetHandle MobHandle) bool {
 	return mob.Target.Value.(MobHandle) == targetHandle
 }
 
-// Items
-
-// Returns the item with the given ID from the mob's inventory or equipment
-func (mob *Mob) FindItem(id ItemId) (*Item, bool) {
-	// Check inventory
-	index, found := mob.Inventory.FindItemById(id)
-	if found {
-		return &mob.Inventory.Items[index], true
-	}
-
-	// Check equipment
-	if mob.IsPlayer() {
-		for index := range EQUIPMENT_SLOT_COUNT {
-			slot := EquipmentSlot(index)
-			item := mob.Character.Equipment.Get(slot)
-			if item != nil {
-				return item, true
-			}
-		}
-	}
-
-	return nil, false
-}
-
 // Behavior
 
 func (mob *Mob) Move(world *World, newRoomIndex int) {
@@ -334,6 +299,8 @@ func (mob *Mob) Move(world *World, newRoomIndex int) {
 	world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> entered the room.", mob.Name))
 }
 
+// UPDATE
+
 func (mob *Mob) update(world *World) {
 	if mob.IsNpc() {
 		mob.Npc.update(world)
@@ -342,7 +309,14 @@ func (mob *Mob) update(world *World) {
 	// This is the mob's turn, so any queued action resolves now
 	mob.HasPendingAction = false
 
+	// Update cooldowns
+	mob.escapeChance = min(mob.escapeChance + MOB_ESCAPE_CHANCE_RECOVERY_RATE, MOB_ESCAPE_CHANCE_MAX)
+	mob.alertness = max(mob.alertness - MOB_ALERTNESS_COOLDOWN_RATE, 0.0)
+	mob.tauntCooldown = max(mob.tauntCooldown - MOB_TAUNT_COOLDOWN_RATE, 0.0)
+
 	switch mob.Mode {
+		// ATTACK
+
 		case MOB_MODE_ATTACK: {
 			// Check if target exists
 			if !mob.isTargetValid(world) {
@@ -358,10 +332,64 @@ func (mob *Mob) update(world *World) {
 			}
 		}
 
+		// USE ITEM
+
 		case MOB_MODE_USE_ITEM: {
 			mob.useItem(world)
 			mob.SetModeIdle()
 		}
+
+		// TAUNT
+
+		case MOB_MODE_TAUNT: {
+			// Check if target exists
+			if !mob.isTargetValid(world) {
+				mob.SetModeIdle()
+				break
+			}
+
+			// Check to make sure taunter is a player
+			if !mob.IsPlayer() {
+				log.Printf("warn: mob %s tried to taunt, but they are not a player.", mob.Name)
+				mob.SetModeIdle()
+				break
+			}
+
+			// Check to make sure target is evil
+			targetMob := mob.getTargetMobIfExists(world)
+			if !targetMob.IsEvil() {
+				log.Printf("warn: tried to taunt against %s, but they are not an evil NPC.", targetMob.Name)
+				mob.SetModeIdle()
+				break
+			}
+
+			// Narrate taunt
+			world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> taunted <y>%s</y>!", mob.Name, targetMob.Name))
+
+			// Roll taunt
+			success := mob.rollTaunt(targetMob)
+			if success {
+				targetMob.Npc.setHighestThreat(world, mob.Handle, mob.Character.Attribute(ATTR_STR))
+				targetMob.SetModeAttack(world, mob.Handle)
+				world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> is now angry at <y>%s</y>!", targetMob.Name, mob.Name))
+			} else {
+				world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> ignored the taunt.", targetMob.Name))
+			}
+
+			// The taunt resolves once. Taunting again right away has no chance until the cooldown recovers
+			mob.tauntCooldown = MOB_TAUNT_COOLDOWN_MAX
+			mob.SetModeIdle()
+		}
+	}
+}
+
+func (mob *Mob) damage(attackerHandle MobHandle, damage int32) {
+	mob.Health -= damage
+	mob.alertness = MOB_ALERTNESS_MAX
+	// targetMob.rollForConcentration(world, damage)
+
+	if mob.IsNpc() {
+		mob.Npc.onAttacked(attackerHandle, damage)
 	}
 }
 
@@ -374,24 +402,24 @@ func (mob *Mob) attackTarget(world *World, targetMob *Mob, attack MobAttack) {
 	// Check for deflection
 	deflect := false
 	if !crit {
-		deflectChance := (targetMob.getDeflection() - attack.penetration) * MOB_DEFLECTION_PER_POINT
+		deflectChance := (targetMob.Stat(STAT_DEFLECTION) - attack.penetration) * MOB_DEFLECTION_PER_POINT
 		deflectChance = max(min(deflectChance, 100), 0)
 		deflect = rand.Float32() < (float32(deflectChance) / 100.0)
 	}
 
 	// On deflect, subtract armor
 	if deflect {
-		attack.damage = (attack.damage * targetMob.getDeflectionAmount()) / 100
+		attack.damage -= (attack.damage * targetMob.Stat(STAT_DEFLECTION_AMOUNT)) / 100
 	}
 
 	// Subtract flat-damage resistance
-	attack.damage -= targetMob.getResistance()
+	attack.damage -= targetMob.Stat(STAT_RESISTANCE)
 
 	// Calculate final damage
 	attack.damage = max(attack.damage, 1)
 
 	// Deal damage
-	targetMob.Health -= attack.damage
+	targetMob.damage(mob.Handle, attack.damage)
 
 	// Broadcast result to room
 	var message string
@@ -406,10 +434,6 @@ func (mob *Mob) attackTarget(world *World, targetMob *Mob, attack MobAttack) {
 	if targetMob.isDead() {
 		world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> has <r>slain</r> <y>%s</y>.", mob.Name, targetMob.Name))
 	}
-	// else {
-		// should this be moved into mob.damage()?
-		// targetMob.rollForConcentration(world, damage)
-	// }
 
 	// Reduce weapon durability, unequipping the weapon if it breaks
 	if attack.hasWeaponSlot && mob.Character != nil {
@@ -421,20 +445,25 @@ func (mob *Mob) attackTarget(world *World, targetMob *Mob, attack MobAttack) {
 
 		// We don't have to check if outfit is non-nil because
 		// subtractDurabilityFromEquipment will do this for us
-		mob.Character.subtractDurabilityFromEquipment(world, EQUIPMENT_SLOT_OUTFIT)
+		targetMob.Character.subtractDurabilityFromEquipment(world, EQUIPMENT_SLOT_OUTFIT)
 
 		// But we do have to check for shield, because the offhand
 		// item might not be a shield
 		shield := targetMob.Character.Equipment.GetShield()
 		if shield != nil {
-			mob.Character.subtractDurabilityFromEquipment(world, EQUIPMENT_SLOT_OFF_HAND)
+			targetMob.Character.subtractDurabilityFromEquipment(world, EQUIPMENT_SLOT_OFF_HAND)
 		}
 	}
 }
 
 func (mob *Mob) useItem(world *World) {
+	if !mob.IsPlayer() {
+		log.Printf("warn: NPC %s tried to call useItem()", mob.Name)
+		return
+	}
+
 	// Find the item
-	item, found := mob.FindItem(mob.itemToUse)
+	item, found := mob.Character.FindItem(mob.itemToUse)
 	if !found {
 		mob.Message(world, "You no longer have the item you were going to use.")
 		return
@@ -455,7 +484,7 @@ func (mob *Mob) useItem(world *World) {
 			success = mob.callOnUse(world, consumableData, itemType.Name)
 		}
 		default: {
-			log.Printf("Warn - %s tried to use item %s of kind %s, which can't be used.", mob.Name, itemType.Name, itemType.Kind.String())
+			log.Printf("warn: %s tried to use item %s of kind %s, which can't be used.", mob.Name, itemType.Name, itemType.Kind.String())
 		}
 	}
 
@@ -465,9 +494,9 @@ func (mob *Mob) useItem(world *World) {
 	}
 
 	// Consume the item. Find it again in case the hook changed the mob's inventory
-	index, found := mob.Inventory.FindItemById(mob.itemToUse)
+	index, found := mob.Character.Inventory.FindItemById(mob.itemToUse)
 	if found {
-		mob.Inventory.RemoveItem(world, index)
+		mob.Character.Inventory.RemoveItem(world, index)
 		if mob.Character != nil {
 			world.PlayerInventoryChanged(mob.Character.PlayerKey)
 		}
@@ -517,7 +546,12 @@ func (mob *Mob) isTargetValid(world *World) bool {
 				return false
 			}
 
-			_, found := targetMob.FindItem(itemTarget.Id)
+			if !targetMob.IsPlayer() {
+				log.Printf("warn: in isTargetValid(), target is MOB_TARGET_ITEM but the item-holding mob %s is an NPC", targetMob.Name)
+				return false
+			}
+
+			_, found := targetMob.Character.FindItem(itemTarget.Id)
 			return found
 		}
 
@@ -535,6 +569,10 @@ func (mob *Mob) getTargetMobIfExists(world *World) *Mob {
 	}
 
 	return nil
+}
+
+func (mob *Mob) isTargeting(mobHandle MobHandle) bool {
+	return mob.Target.Type == MOB_TARGET_MOB && mob.Target.Value.(MobHandle) == mobHandle
 }
 
 func (mob *Mob) ValidateTarget(world *World, params MobValidateTargetParams) error {
@@ -589,7 +627,14 @@ func (mob *Mob) buildTargetHookArgs(world *World, target MobTarget) ([]lua.Value
 				return args, false
 			}
 
-			_, found := targetMob.FindItem(itemTarget.Id)
+			// TODO: we have to change much of this code on both buildTargetHookArgs and isTargetValid
+			// we should combine the logic somehow to avoid this
+			if !targetMob.IsPlayer() {
+				log.Printf("warn: in buildTargetHookArgs(), target is MOB_TARGET_ITEM but the item-holding mob %s is an NPC", targetMob.Name)
+				return args, false
+			}
+
+			_, found := targetMob.Character.FindItem(itemTarget.Id)
 			if !found {
 				return args, false
 			}
@@ -603,7 +648,7 @@ func (mob *Mob) buildTargetHookArgs(world *World, target MobTarget) ([]lua.Value
 		}
 
 		default: {
-			log.Printf("Warn - target type %d not handled in buildTargetHookArgs", target.Type)
+			log.Printf("warn: target type %d not handled in buildTargetHookArgs", target.Type)
 			return args, false
 		}
 	}

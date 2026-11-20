@@ -223,7 +223,7 @@ func (world *World) characterFromJson(characterJson *CharacterJson) (*Character,
 	// If we change the level scaling, character levels will automatically update to match
 	character.Level = LevelFromExpTotal(characterJson.ExpTotal)
 	character.Experience = characterJson.Experience
-	character.calculateStats()
+	character.calculateAttributes()
 
 	character.Health = characterJson.Health
 	character.Mana = characterJson.Mana
@@ -266,6 +266,9 @@ func (world *World) characterFromJson(characterJson *CharacterJson) (*Character,
 			return nil, fmt.Errorf("Character has item %s equipped in slot %s, but it cannot be equipped there.", item.Name, slot.String())
 		}
 	}
+
+	// Stats depend on attributes and equipment, so they are calculated once both are loaded
+	character.calculateStats()
 
 	return character, nil
 }

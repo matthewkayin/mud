@@ -7,5 +7,6 @@ type MobData struct {
 	Health int32
 	Mana int32
 
-	Inventory Inventory
+	// Calculated from attributes and gear for characters, copied from NpcData on spawn for NPCs. Not saved
+	Stats StatBlock
 }

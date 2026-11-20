@@ -58,7 +58,7 @@ func main() {
 	env := env.Get()
 	log.Printf("Starting %s version %s...", env.NAME, version)
 	if env.ENABLE_DEBUG_AUTH {
-		log.Printf("Warn: Debug auth is enabled. Anyone can sign in as any username. Never enable this in production.")
+		log.Printf("warn: debug auth is enabled. Anyone can sign in as any username. Never enable this in production.")
 	}
 
 	// Create save folders

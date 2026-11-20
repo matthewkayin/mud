@@ -3,9 +3,9 @@ local race = {}
 race.name = "Dwarf"
 race.description = "Fantasy land's short kings."
 
-race.stats = {
-    [world.Stat.STR] = 1,
-    [world.Stat.VIT] = 1,
+race.attributes = {
+    [world.Attribute.STR] = 1,
+    [world.Attribute.VIT] = 1,
 }
 
 race.skills = {

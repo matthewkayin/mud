@@ -51,8 +51,8 @@ var MENU_WORLD_TOPICS_GENERAL = map[string]MenuHelpTopic {
 			"Type 'view <mode>' to change what it shows. The modes are:",
 			"  help      - explains the view panel",
 			"  chat      - a history of chat messages",
-			"  inventory - the items you are carrying",
-			"  equipment - the items you have equipped",
+			"  inventory - the items you have equipped and are carrying",
+			"'view equipment' also shows the inventory.",
 		},
 	},
 }
@@ -83,7 +83,8 @@ var MENU_WORLD_ENTRIES_GENERAL = map[string]MenuEntry {
 			player.send(fmt.Sprintf("Level      : %d", player.character.Level))
 			player.send(fmt.Sprintf("Experience : %d / %d", player.character.ExpTowardNextLevel(), world.ExpToNextLevel(player.character.Level)))
 			player.send("\n")
-			player.send(fmt.Sprintf("Attributes : %s", player.character.Stats.ToString(false)))
+			player.send(fmt.Sprintf("Attributes : %s", player.character.Attributes.ToString(false)))
+			player.send(fmt.Sprintf("Stats      : %s", player.character.Stats.ToString()))
 			player.send(fmt.Sprintf("Skills     : %s", util.CombineNames(player.character.Skills.ToStringArray())))
 
 			return true
@@ -204,6 +205,16 @@ func describeRoomToPlayer(gamestate *GameState, player *Player, room *world.Room
 			player.send(fmt.Sprintf("%s %s here.", util.CombineNames(occupantNames), isString))
 		}
 	}
+
+	// Send the list of chests
+	if len(room.Chests) != 0 {
+		chestNames := make([]string, 0, len(room.Chests))
+		for index := range len(room.Chests) {
+			chestNames = append(chestNames, room.Chests[index].Name)
+		}
+
+		player.send(fmt.Sprintf("You see %s.", util.CombineNames(chestNames)))
+	}
 }
 
 func findTarget(gamestate *GameState, player *Player, params FindTargetParams) (world.MobTarget, error) {
@@ -303,7 +314,7 @@ func findTarget(gamestate *GameState, player *Player, params FindTargetParams) (
 		}
 
 		default: {
-			log.Printf("Warn - target type %d is not handled in findTarget()", params.targetType)
+			log.Printf("warn: target type %d is not handled in findTarget()", params.targetType)
 			return world.MobTarget{}, fmt.Errorf("Something strange happened.")
 		}
 	}

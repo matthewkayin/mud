@@ -129,7 +129,7 @@ func (submenu *SubmenuCreate) setMode(gamestate *GameState, player *Player, mode
 			for _, raceData := range gamestate.world.RaceData {
 				player.send(fmt.Sprintf("--- %s ---", strings.ToUpper(raceData.Name)))
 				player.send(fmt.Sprintf("Description : %s", raceData.Description))
-				player.send(fmt.Sprintf("Attributes  : %s", raceData.Stats.ToString(true)))
+				player.send(fmt.Sprintf("Attributes  : %s", raceData.Attributes.ToString(true)))
 				player.send(fmt.Sprintf("Skills      : %s", util.CombineNames(raceData.Skills.ToStringArray())))
 				player.send("\n")
 			}
@@ -145,7 +145,7 @@ func (submenu *SubmenuCreate) setMode(gamestate *GameState, player *Player, mode
 			for _, classData := range gamestate.world.ClassData {
 				player.send(fmt.Sprintf("--- %s ---", strings.ToUpper(classData.Name)))
 				player.send(fmt.Sprintf("Description : %s", classData.Description))
-				player.send(fmt.Sprintf("Attributes  : %s", classData.Stats.ToString(true)))
+				player.send(fmt.Sprintf("Attributes  : %s", classData.Attributes.ToString(true)))
 				player.send(fmt.Sprintf("Skills      : %s", util.CombineNames(classData.Skills.ToStringArray())))
 				player.send("\n")
 			}
@@ -154,7 +154,7 @@ func (submenu *SubmenuCreate) setMode(gamestate *GameState, player *Player, mode
 		}
 
 		case SUBMENU_CREATE_MODE_SUMMARY: {
-			stats := submenu.characterSheet.Race.Stats.Add(&submenu.characterSheet.Class.Stats)
+			stats := submenu.characterSheet.Race.Attributes.Add(&submenu.characterSheet.Class.Attributes)
 			skills := submenu.characterSheet.Race.Skills | submenu.characterSheet.Class.Skills
 
 			player.send("=== CHARACTER SHEET ===")

@@ -61,14 +61,26 @@ func ScriptConstantTables() []ScriptConstantTable {
 	}
 
 	// Attribute
+	attributeTable := ScriptConstantTable {
+		Name: "Attribute",
+		Constants: make([]ScriptConstant, 0, ATTR_COUNT),
+	}
+	for index := range ATTR_COUNT {
+		attributeTable.Constants = append(attributeTable.Constants, ScriptConstant {
+			Name: index.String(),
+			Value: lua.String(index.String()),
+		})
+	}
+
+	// Stat
 	statTable := ScriptConstantTable {
 		Name: "Stat",
 		Constants: make([]ScriptConstant, 0, STAT_COUNT),
 	}
 	for index := range STAT_COUNT {
 		statTable.Constants = append(statTable.Constants, ScriptConstant {
-			Name: StatName(index).String(),
-			Value: lua.String(StatName(index).String()),
+			Name: strings.ReplaceAll(strings.ToUpper(index.String()), " ", "_"),
+			Value: lua.String(index.String()),
 		})
 	}
 
@@ -101,6 +113,7 @@ func ScriptConstantTables() []ScriptConstantTable {
 		itemKindTable,
 		targetTypeTable,
 		directionTable,
+		attributeTable,
 		statTable,
 		skillTable,
 		npcDispositionTable,

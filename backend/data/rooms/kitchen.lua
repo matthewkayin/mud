@@ -21,6 +21,7 @@ room.loot = {
     {
         item = "Test Armor",
         amount = 1,
+        durability_percent = 51,
         drop_chance_percent = 100
     },
     {
@@ -29,15 +30,21 @@ room.loot = {
         drop_chance_percent = 100
     },
     {
-            item = "Test Shield",
-            amount = 1,
-            drop_chance_percent = 100
-        },
-        {
-            item = "Test Broadsword",
-            amount = 1,
-            drop_chance_percent = 100
-        },
+        item = "Test Shield",
+        amount = 1,
+        drop_chance_percent = 100
+    },
+    {
+        item = "Test Broadsword",
+        amount = 1,
+        drop_chance_percent = 100
+    },
+    {
+        item = "Test Broadsword",
+        amount = 1,
+        durability_percent = 1,
+        drop_chance_percent = 100
+    },
 }
 
 room.interactions = {

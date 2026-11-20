@@ -6,8 +6,8 @@ import { Terminal } from './terminal.tsx';
 import { StatusBar } from './status_bar.tsx';
 import { Minimap } from './minimap.tsx';
 import { View } from './view.tsx';
-import { VIEW_MODES, isViewMode, type ViewMode } from './view_mode.ts';
-import { type Inventory, type PlayerStatus, type SocketMessage } from './socket_message';
+import { VIEW_MODES, parseViewMode, type ViewMode } from './view_mode.ts';
+import { type EquipmentSlot, type Inventory, type PlayerStatus, type SocketMessage } from './socket_message';
 
 const TERMINAL_PROMPT = ">";
 const HEARTBEAT_TIMEOUT_MS = 10000;
@@ -41,7 +41,7 @@ export function GamePage() {
   const [viewMode, setViewMode] = useState<ViewMode>('help');
   const [chatLines, setChatLines] = useState<string[]>([]);
   const [inventory, setInventory] = useState<Inventory | null>(null);
-  const [equipmentLines, setEquipmentLines] = useState<string[] | null>(null);
+  const [equipment, setEquipment] = useState<EquipmentSlot[] | null>(null);
 
   // The player is in the world while the server is sending them a status
   const isInWorld = playerStatus !== null;
@@ -58,8 +58,8 @@ export function GamePage() {
       return;
     }
 
-    const mode = args.length === 1 ? args[0].toLowerCase() : '';
-    if (!isViewMode(mode)) {
+    const mode = parseViewMode(args.length === 1 ? args[0].toLowerCase() : '');
+    if (mode === null) {
       terminalWriteLine(`Usage: view <${VIEW_MODES.join('|')}>`);
       return;
     }
@@ -145,7 +145,7 @@ export function GamePage() {
         setPlayerStatus(null);
         setMinimap(null);
         setInventory(null);
-        setEquipmentLines(null);
+        setEquipment(null);
       }
 
       // Get minimap from socketMessage
@@ -158,7 +158,7 @@ export function GamePage() {
         setInventory(socketMessage.inv);
       }
       if (socketMessage.equip) {
-        setEquipmentLines(socketMessage.equip);
+        setEquipment(socketMessage.equip);
       }
     };
 
@@ -231,7 +231,7 @@ export function GamePage() {
           isInWorld={isInWorld}
           chatLines={chatLines}
           inventory={inventory}
-          equipmentLines={equipmentLines}
+          equipment={equipment}
         />
       </div>
     </article>
