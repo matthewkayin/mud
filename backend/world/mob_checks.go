@@ -9,7 +9,7 @@ const CHECK_CHANCE_MAX float32 = 0.95
 
 func contestedCheckChance(rank int32, difficulty int32, weight float32) float32 {
 	if rank == 0 && difficulty == 0 {
-		return CHECK_CHANCE_MIN
+		return CHECK_CHANCE_MAX
 	}
 	chance := float32(rank) / (float32(rank) + (float32(difficulty) * weight))
 	return max(min(chance, CHECK_CHANCE_MAX), CHECK_CHANCE_MIN)
