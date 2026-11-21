@@ -24,6 +24,8 @@ type Player struct {
 	mobHandle world.MobHandle
 	isMinimapDirty bool
 	isInventoryDirty bool
+	// The room mobs last sent to the client, so they are only sent again when they change
+	lastSentRoomMobs []SocketRoomMob
 }
 
 func playerInit(key string, inbox *chan SocketMessage) Player {
@@ -66,6 +68,13 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 				heartbeat.Inventory = getSocketInventory(player.character)
 				player.isInventoryDirty = false
 			}
+			// Room mobs change too often for a dirty flag (health, targets, arrivals, and fuzzy numbers when occupants are
+			// reordered), so compare against what was last sent instead
+			roomMobs := getSocketRoomMobs(gamestate, &gamestate.world.Rooms[player.character.Room])
+			if !slices.Equal(roomMobs, player.lastSentRoomMobs) {
+				heartbeat.RoomMobs = roomMobs
+				player.lastSentRoomMobs = roomMobs
+			}
 		}
 	}
 
@@ -75,6 +84,35 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 		case *player.inbox <- heartbeat:
 		default:
 	}
+}
+
+// One entry per mob in the room, in room.Occupants order, for the client's mobs table
+func getSocketRoomMobs(gamestate *GameState, room *world.Room) []SocketRoomMob {
+	labels := getRoomMobLabels(getRoomMobNames(gamestate, room))
+
+	labelsByHandle := make(map[world.MobHandle]string, len(room.Occupants))
+	for index, handle := range room.Occupants {
+		labelsByHandle[handle] = labels[index]
+	}
+
+	roomMobs := make([]SocketRoomMob, 0, len(room.Occupants))
+	for index, handle := range room.Occupants {
+		occupant := gamestate.world.Mobs.Get(handle)
+
+		// Only mob targets are shown, and only when the target is in the room
+		target := ""
+		if occupant.Target.Type == world.MOB_TARGET_MOB {
+			target = labelsByHandle[occupant.Target.Value.(world.MobHandle)]
+		}
+
+		roomMobs = append(roomMobs, SocketRoomMob {
+			Name: labels[index],
+			Condition: occupant.Condition().String(),
+			Target: target,
+		})
+	}
+
+	return roomMobs
 }
 
 // One entry per equipment slot, for the client's equipment table

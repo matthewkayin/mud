@@ -45,6 +45,15 @@ type SocketEquipmentSlot struct {
 	Name string `json:"name"`
 }
 
+// One mob in the player's room, for the client's mobs table
+// Name and Target include the mob's fuzzy number when several mobs in the room share its name (see getRoomMobLabels)
+// Target is empty when the mob isn't targeting a mob in the room
+type SocketRoomMob struct {
+	Name string `json:"name"`
+	Condition string `json:"condition"`
+	Target string `json:"target"`
+}
+
 // A message sent to the client
 type SocketMessage struct {
 	Message *string `json:"message"`
@@ -52,4 +61,5 @@ type SocketMessage struct {
 	Inventory *SocketInventory `json:"inv,omitempty"`
 	Equipment []SocketEquipmentSlot `json:"equip,omitempty"`
 	Map []int `json:"map,omitempty"`
+	RoomMobs []SocketRoomMob `json:"mobs,omitempty"`
 }

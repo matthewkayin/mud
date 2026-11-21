@@ -52,6 +52,7 @@ var MENU_WORLD_TOPICS_GENERAL = map[string]MenuHelpTopic {
 			"  help      - explains the view panel",
 			"  chat      - a history of chat messages",
 			"  inventory - the items you have equipped and are carrying",
+			"  mobs      - the mobs in your room, their condition and who they are targeting",
 			"'view equipment' also shows the inventory.",
 		},
 	},

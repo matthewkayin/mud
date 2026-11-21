@@ -548,18 +548,9 @@ func fuzzyFindMob(gamestate *GameState, player *Player, searchWords []string) (w
 		return world.MobHandle{}, fmt.Errorf("You must specify a target.")
 	}
 
-	// Put all room occupants in an array
-	room := &gamestate.world.Rooms[player.character.Room]
-	mobNames := make([]string, 0, len(room.Occupants))
-	for _, handle := range room.Occupants {
-		occupant := gamestate.world.Mobs.Get(handle)
-
-		// TODO: check hidden occupants
-		mobNames = append(mobNames, occupant.Name)
-	}
-
 	// Fuzzy find the mob
-	index, result := fuzzyFind(mobNames, searchWords, fuzzyNumber)
+	room := &gamestate.world.Rooms[player.character.Room]
+	index, result := fuzzyFind(getRoomMobNames(gamestate, room), searchWords, fuzzyNumber)
 
 	// Handle result
 	switch result {
@@ -575,6 +566,47 @@ func fuzzyFindMob(gamestate *GameState, player *Player, searchWords []string) (w
 			log.Printf("warn: fuzzy result %d not handled in fuzzyFindMob().", result)
 			return world.MobHandle{}, fmt.Errorf("Something strange happened.")
 	}
+}
+
+// The names fuzzyFindMob searches, parallel to room.Occupants
+func getRoomMobNames(gamestate *GameState, room *world.Room) []string {
+	mobNames := make([]string, 0, len(room.Occupants))
+	for _, handle := range room.Occupants {
+		occupant := gamestate.world.Mobs.Get(handle)
+
+		// TODO: check hidden occupants
+		mobNames = append(mobNames, occupant.Name)
+	}
+
+	return mobNames
+}
+
+// Labels each mob name the way a player would type it to target that mob with fuzzyFindMob.
+// A name shared (ignoring case) by several mobs gets its fuzzy number appended, its 1-based position among
+// the mobs with that name, since identical names are exactly the best matches fuzzyFind numbers. Unique names are unchanged
+func getRoomMobLabels(mobNames []string) []string {
+	labels := make([]string, len(mobNames))
+	for index, name := range mobNames {
+		sameNameCount := 0
+		fuzzyNumber := 0
+		for otherIndex, otherName := range mobNames {
+			if !strings.EqualFold(name, otherName) {
+				continue
+			}
+			sameNameCount++
+			if otherIndex <= index {
+				fuzzyNumber++
+			}
+		}
+
+		if sameNameCount > 1 {
+			labels[index] = fmt.Sprintf("%s %d", name, fuzzyNumber)
+		} else {
+			labels[index] = name
+		}
+	}
+
+	return labels
 }
 
 func fuzzyFindChest(room *world.Room, searchWords []string) (*world.Chest, error) {

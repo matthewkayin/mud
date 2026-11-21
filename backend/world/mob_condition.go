@@ -34,7 +34,7 @@ func (condition MobCondition) String() string {
 	}
 }
 
-func (mob *Mob) condition() MobCondition {
+func (mob *Mob) Condition() MobCondition {
 	healthPercent := (mob.Health * 100) / mob.Stat(STAT_MAX_HEALTH)
 	if healthPercent == 100 {
 		return MOB_CONDITION_UNHARMED

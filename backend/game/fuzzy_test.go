@@ -4,6 +4,7 @@ import (
 	"errors"
 	"mud/world"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -116,5 +117,39 @@ func TestFuzzyFindTargetItemAmbiguity(test *testing.T) {
 	expectedMessage := "There are multiple items matching 'sword' in the room."
 	if err == nil || err.Error() != expectedMessage {
 		test.Fatalf("Expected %q, got %v.", expectedMessage, err)
+	}
+}
+
+func TestGetRoomMobLabels(test *testing.T) {
+	testCases := []struct {
+		name string
+		mobNames []string
+		expectedLabels []string
+	}{
+		{ "unique names", []string { "Goblin", "Rat" }, []string { "Goblin", "Rat" } },
+		{ "two duplicates", []string { "Goblin", "Rat", "Goblin" }, []string { "Goblin 1", "Rat", "Goblin 2" } },
+		{ "three duplicates", []string { "Rat", "Rat", "Rat" }, []string { "Rat 1", "Rat 2", "Rat 3" } },
+		{ "duplicates ignore case", []string { "Rat", "rat" }, []string { "Rat 1", "rat 2" } },
+		{ "longer names are not grouped", []string { "Goblin", "Goblin Chief" }, []string { "Goblin", "Goblin Chief" } },
+	}
+
+	for _, testCase := range testCases {
+		labels := getRoomMobLabels(testCase.mobNames)
+		if !slices.Equal(labels, testCase.expectedLabels) {
+			test.Errorf("%s: expected %v, got %v", testCase.name, testCase.expectedLabels, labels)
+		}
+	}
+}
+
+// Each label must find its own mob through fuzzyFind
+func TestGetRoomMobLabelsMatchFuzzyFind(test *testing.T) {
+	mobNames := []string { "Goblin", "Goblin Chief", "goblin", "Rat", "Goblin" }
+	labels := getRoomMobLabels(mobNames)
+	for expectedIndex, label := range labels {
+		fuzzyNumber, searchWords := getFuzzyNumberFromArgs(strings.Fields(strings.ToLower(label)))
+		index, result := fuzzyFind(mobNames, searchWords, fuzzyNumber)
+		if result != FUZZY_RESULT_OK || index != expectedIndex {
+			test.Errorf("label '%s': expected index %d, got index %d with result %d", label, expectedIndex, index, result)
+		}
 	}
 }

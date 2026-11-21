@@ -158,7 +158,7 @@ func (mob *Mob) DescribeToPlayer(world *World, playerKey string) {
 		mob.Npc.DescribeToPlayer(world, playerKey)
 	}
 
-	world.MessagePlayer(playerKey, fmt.Sprintf("%s is %s.", mob.Name, strings.ToLower(mob.condition().String())))
+	world.MessagePlayer(playerKey, fmt.Sprintf("%s is %s.", mob.Name, strings.ToLower(mob.Condition().String())))
 }
 
 // SECONDARY STATS
@@ -368,9 +368,9 @@ func (mob *Mob) update(world *World) {
 			if success {
 				targetMob.Npc.setHighestThreat(world, mob.Handle, mob.Character.Attribute(ATTR_STR))
 				targetMob.SetModeAttack(world, mob.Handle)
-				world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> is now angry at <y>%s</y>!", targetMob.NameWithCondition(), mob.NameWithCondition()))
+				world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> is now angry at <y>%s</y>!", targetMob.Name, mob.Name))
 			} else {
-				world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> ignored the taunt.", targetMob.NameWithCondition()))
+				world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> ignored the taunt.", targetMob.Name))
 			}
 
 			// The taunt resolves once. Taunting again right away has no chance until the cooldown recovers
