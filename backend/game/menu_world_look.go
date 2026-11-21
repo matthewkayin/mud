@@ -1,6 +1,7 @@
 package game
 
 import (
+	"errors"
 	"fmt"
 	"mud/util"
 	"strings"
@@ -26,9 +27,9 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				return false
 			}
 
-			// Split args by "in"
-			searchWords, itemLocationWords, userSpecifiedIn := splitArgsBy(args[1:], "in")
-			if len(searchWords) == 0 || (userSpecifiedIn && len(itemLocationWords) == 0) {
+			// Split args by "in", if the words after it name an item location
+			searchWords, itemLocationWords, userSpecifiedIn := splitArgsByItemLocation(room, args[1:])
+			if len(searchWords) == 0 {
 				return false
 			}
 
@@ -62,6 +63,14 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				return true
 			}
 
+			// Check for room detail
+			// Details are checked before items so that an exact detail such as 'door' isn't taken by a fuzzy item match such as a door key
+			description, descriptionFound := room.Details[searchWordsJoined]
+			if descriptionFound {
+				player.send(description)
+				return true
+			}
+
 			// Check for an item in the player's inventory, their equipment, or the room
 			item, _, err := fuzzyFindTargetItem(gamestate, player, searchWords, []string{}, false)
 			if err == nil {
@@ -69,11 +78,14 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				return true
 			}
 
-			// Check for room detail
-			description, descriptionFound := room.Details[searchWordsJoined]
-			if descriptionFound {
-				player.send(description)
-				return true
+			// If items matched but the player must narrow the search down, tell them so instead of falling through
+			var fuzzyFindError *FuzzyFindError
+			if errors.As(err, &fuzzyFindError) {
+				switch fuzzyFindError.result {
+					case FUZZY_RESULT_AMBIGUOUS, FUZZY_RESULT_AMBIGUOUS_LOCATION, FUZZY_RESULT_NUMBER_OUT_OF_RANGE:
+						player.send(fuzzyFindError.Error())
+						return true
+				}
 			}
 
 			// Fallback to matching on the room description

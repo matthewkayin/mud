@@ -261,7 +261,8 @@ func findTarget(gamestate *GameState, player *Player, params FindTargetParams) (
 			}
 
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-			itemWords, locationWords, userSpecifiedLocation := splitArgsBy(params.targetWords, "in")
+			room := &gamestate.world.Rooms[player.character.Room]
+			itemWords, locationWords, userSpecifiedLocation := splitArgsByItemLocation(room, params.targetWords)
 			_, itemTarget, err := fuzzyFindTargetItem(gamestate, player, itemWords, locationWords, userSpecifiedLocation)
 			if err != nil {
 				return world.MobTarget{}, err

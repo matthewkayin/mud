@@ -4,16 +4,22 @@ import (
 	"strings"
 )
 
+// Joins names into a list such as "a, b, and c"
 func CombineNames(names []string) string {
+	return CombineNamesWithConjunction(names, "and")
+}
+
+// Joins names into a list ending with conjunction, such as "a, b, or c" for "or"
+func CombineNamesWithConjunction(names []string, conjunction string) string {
 	switch len(names) {
 		case 0:
 			return ""
 		case 1:
 			return names[0]
 		case 2:
-			return names[0] + " and " + names[1]
+			return names[0] + " " + conjunction + " " + names[1]
 		default:
-			return strings.Join(names[:len(names) - 1], ", ") + ", and " + names[len(names) - 1]
+			return strings.Join(names[:len(names) - 1], ", ") + ", " + conjunction + " " + names[len(names) - 1]
 	}
 }
 
