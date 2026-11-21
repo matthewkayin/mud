@@ -18,6 +18,28 @@ func TestStatBlockToStringArrayBonusSkipsZeros(t *testing.T) {
 	}
 }
 
+func TestStatBlockToStringArrayBonusPercentages(t *testing.T) {
+	stats := StatBlock{}
+	stats.Values[STAT_CRIT_CHANCE] = 5
+	stats.Values[STAT_DEFLECTION_AMOUNT] = -4
+
+	lines := stats.ToStringArray(true)
+	expected := []string{"+5% Crit Chance | -4% Deflection Amount"}
+	if !slices.Equal(lines, expected) {
+		t.Errorf("expected %q, got %q", expected, lines)
+	}
+}
+
+func TestStatIsPercentage(t *testing.T) {
+	percentageStats := []Stat{STAT_CRIT_CHANCE, STAT_DEFLECTION_AMOUNT}
+	for index := range STAT_COUNT {
+		expected := slices.Contains(percentageStats, index)
+		if index.IsPercentage() != expected {
+			t.Errorf("expected %s IsPercentage() to be %t", index.String(), expected)
+		}
+	}
+}
+
 func TestStatBlockToStringArrayBonusEmpty(t *testing.T) {
 	stats := StatBlock{}
 	lines := stats.ToStringArray(true)
@@ -35,8 +57,8 @@ func TestStatBlockToStringArrayWrapsLines(t *testing.T) {
 		t.Fatalf("expected %d lines, got %d: %q", expectedLineCount, len(lines), lines)
 	}
 	expectedLines := []string{
-		"Max Health 0 | Max Mana 0          | Initiative 0 | Accuracy 0         | Evasion 0 | Stealth 0",
-		"Deflection 0 | Deflection Amount 0 | Resistance 0 | Magic Resistance 0 | Focus 0",
+		"Max Health 0 | Max Mana 0   | Initiative 0         | Accuracy 0   | Evasion 0          | Crit Chance 0%",
+		"Stealth 0    | Deflection 0 | Deflection Amount 0% | Resistance 0 | Magic Resistance 0 | Focus 0",
 	}
 	if !slices.Equal(lines, expectedLines) {
 		t.Errorf("expected\n%s\ngot\n%s", strings.Join(expectedLines, "\n"), strings.Join(lines, "\n"))

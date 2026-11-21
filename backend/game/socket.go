@@ -55,9 +55,11 @@ type SocketRoomMob struct {
 }
 
 // A named number on the character sheet, such as an attribute or stat
+// IsPercentage is true when the client should show the value with a "%" after it
 type SocketSheetValue struct {
 	Name string `json:"name"`
 	Value int32 `json:"value"`
+	IsPercentage bool `json:"percent"`
 }
 
 // The player's character sheet, which the client formats for the view panel's stats mode

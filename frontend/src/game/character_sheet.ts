@@ -12,21 +12,30 @@ const STAT_COLUMN_GAP = '   ';
 
 const formatLabel = (label: string, value: string): string => `${label.padEnd(LABEL_WIDTH)} : ${value}`;
 
-const formatSheetValue = (sheetValue: SheetValue): string => `${sheetValue.name} ${sheetValue.value}`;
+const formatSheetNumber = (sheetValue: SheetValue): string => `${sheetValue.value}${sheetValue.percent ? '%' : ''}`;
 
-// The stats in STAT_COLUMN_COUNT columns, each padded to its widest entry so the columns line up
+const formatSheetValue = (sheetValue: SheetValue): string => `${sheetValue.name} ${formatSheetNumber(sheetValue)}`;
+
+// The stats in STAT_COLUMN_COUNT columns. In each column the names are padded to the widest name
+// and the numbers are right-aligned to the widest number, so the numbers line up
 const formatStatLines = (stats: SheetValue[]): string[] => {
-  const entries = stats.map(formatSheetValue);
-  const columnWidths = Array<number>(STAT_COLUMN_COUNT).fill(0);
-  entries.forEach((entry, index) => {
+  const numbers = stats.map(formatSheetNumber);
+  const nameWidths = Array<number>(STAT_COLUMN_COUNT).fill(0);
+  const numberWidths = Array<number>(STAT_COLUMN_COUNT).fill(0);
+  stats.forEach((stat, index) => {
     const column = index % STAT_COLUMN_COUNT;
-    columnWidths[column] = Math.max(columnWidths[column], entry.length);
+    nameWidths[column] = Math.max(nameWidths[column], stat.name.length);
+    numberWidths[column] = Math.max(numberWidths[column], numbers[index].length);
+  });
+
+  const entries = stats.map((stat, index) => {
+    const column = index % STAT_COLUMN_COUNT;
+    return `${stat.name.padEnd(nameWidths[column])} ${numbers[index].padStart(numberWidths[column])}`;
   });
 
   const lines: string[] = [];
   for (let index = 0; index < entries.length; index += STAT_COLUMN_COUNT) {
-    const rowEntries = entries.slice(index, index + STAT_COLUMN_COUNT);
-    const row = rowEntries.map((entry, column) => column === rowEntries.length - 1 ? entry : entry.padEnd(columnWidths[column])).join(STAT_COLUMN_GAP);
+    const row = entries.slice(index, index + STAT_COLUMN_COUNT).join(STAT_COLUMN_GAP);
     lines.push(index === 0 ? formatLabel('Stats', row) : CONTINUATION_INDENT + row);
   }
 

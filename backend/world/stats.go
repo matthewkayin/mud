@@ -63,6 +63,17 @@ func (stat Stat) String() string {
 	}
 }
 
+// Whether the stat's value is a percent, so it is shown to players with a "%" after the number
+func (stat Stat) IsPercentage() bool {
+	switch stat {
+		case STAT_CRIT_CHANCE,
+		  STAT_DEFLECTION_AMOUNT:
+			return true
+		default:
+			return false
+	}
+}
+
 func (stats *StatBlock) Add(other *StatBlock) StatBlock {
 	result := *stats
 	for index := range STAT_COUNT {
@@ -75,7 +86,7 @@ func (stats *StatBlock) Add(other *StatBlock) StatBlock {
 // Returns the stats as display lines of at most STATS_PER_LINE stats each, so callers can indent them.
 // Each column is padded to its widest entry so the " | " separators line up between lines.
 // When isBonus is true, zero-valued stats are skipped and the rest are written as "+X Stat" or "-X Stat".
-// Otherwise every stat is written as "Stat X".
+// Otherwise every stat is written as "Stat X". Percentage stats have a "%" after X.
 func (stats *StatBlock) ToStringArray(isBonus bool) []string {
 	entries := []string{}
 	for index := range STAT_COUNT {
@@ -84,14 +95,19 @@ func (stats *StatBlock) ToStringArray(isBonus bool) []string {
 			continue
 		}
 
+		percentSign := ""
+		if index.IsPercentage() {
+			percentSign = "%"
+		}
+
 		if isBonus {
 			sign := ""
 			if value > 0 {
 				sign = "+"
 			}
-			entries = append(entries, fmt.Sprintf("%s%d %s", sign, value, index.String()))
+			entries = append(entries, fmt.Sprintf("%s%d%s %s", sign, value, percentSign, index.String()))
 		} else {
-			entries = append(entries, fmt.Sprintf("%s %d", index.String(), value))
+			entries = append(entries, fmt.Sprintf("%s %d%s", index.String(), value, percentSign))
 		}
 	}
 

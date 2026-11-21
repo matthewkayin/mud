@@ -139,6 +139,7 @@ func getSocketCharacterSheet(character *world.Character) SocketCharacterSheet {
 		stats = append(stats, SocketSheetValue {
 			Name: index.String(),
 			Value: character.Stats.Values[index],
+			IsPercentage: index.IsPercentage(),
 		})
 	}
 
