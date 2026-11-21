@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"fmt"
 	"mud/util"
 	"mud/world"
 	"time"
@@ -254,6 +255,10 @@ func (gamestate *GameState) messageWorld(message string) {
 			player.send(message)
 		}
 	}
+}
+
+func (gamestate *GameState) worldAnnouncement(message string) {
+	gamestate.messageWorld(fmt.Sprintf("[World] %s", message))
 }
 
 func (gamestate *GameState) savePlayers() {

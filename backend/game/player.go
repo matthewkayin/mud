@@ -238,7 +238,7 @@ func (player *Player) setMenuWorld(gamestate *GameState) {
 	gamestate.playerCharacterKeys = append(gamestate.playerCharacterKeys, player.key)
 
 	// Send a message to the room announcing the player's login
-	gamestate.world.MessageRoom(player.character.Room, fmt.Sprintf("<y>%s</y> has joined the room.", player.character.Name))
+	gamestate.worldAnnouncement(fmt.Sprintf("<y>%s</y> has joined the world.", player.character.Name))
 
 	// Spawn player mob
 	gamestate.spawnPlayerMob(player)
@@ -265,12 +265,12 @@ func (player *Player) logout(gamestate *GameState) {
 	room := &gamestate.world.Rooms[player.character.Room]
 	room.RemoveOccupant(player.mobHandle)
 	gamestate.world.Mobs.Remove(player.mobHandle)
-	gamestate.world.MessageRoom(player.character.Room, fmt.Sprintf("<y>%s</y> has left the world.", player.character.Name))
+	gamestate.worldAnnouncement(fmt.Sprintf("<y>%s</y> has left the world.", player.character.Name))
 	gamestate.world.SaveCharacter(player.character)
 }
 
 func (player *Player) onDeath(gamestate *GameState) {
-	player.send(fmt.Sprintf("%s has died, and death is forever. RIP", player.character.Name))
+	gamestate.worldAnnouncement(fmt.Sprintf("<y>%s</y> has died, and death is forever. RIP.", player.character.Name))
 	player.send("\n")
 	gamestate.world.RemoveCharacter(player.character)
 	player.setMenuLogin(gamestate)
