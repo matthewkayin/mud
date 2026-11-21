@@ -13,7 +13,7 @@ func newFuzzyTestItem(id world.ItemId, name string) world.Item {
 		ItemType: &world.ItemType {
 			Name: name,
 			Kind: world.ITEM_KIND_EQUIPMENT_ACCESSORY,
-			Data: world.ItemDataArmor{},
+			Data: world.ItemDataEquipment{},
 		},
 		Amount: 1,
 	}

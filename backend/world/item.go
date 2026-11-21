@@ -3,7 +3,6 @@ package world
 import (
 	"fmt"
 	"log"
-	"strings"
 	"github.com/mmcdole/lunar"
 )
 
@@ -159,25 +158,15 @@ type CreateItemParams struct {
 	durability int32
 }
 
-type ItemDataArmor struct {
+type ItemDataEquipment struct {
 	maxDurability int32
 	reinforcedPrefix string
 
-	deflection int32
-	deflectBonus int32
-	resistance int32
-
-	sneakModifier int32
-	evadeModifier int32
-	initiativeModifier int32
-}
-
-type ItemDataWeapon struct {
-	maxDurability int32
-	reinforcedPrefix string
-
+	// Weapon-only stats
 	damage int32
 	penetration int32
+
+	stats StatBlock
 }
 
 // Creates a new item and assigns it a unique ID. All Item instances should be created this way
@@ -229,28 +218,13 @@ func (item *Item) DescribeToPlayer(world *World, playerKey string) {
 	world.MessagePlayer(playerKey, fmt.Sprintf("<g>%s</g> (%s).", item.NameWithAmount(), item.Kind.String()))
 	world.MessagePlayer(playerKey, item.Description)
 
-	if item.HasWeaponData() {
-		weaponData := item.Data.(ItemDataWeapon)
-		world.MessagePlayer(playerKey, fmt.Sprintf("Damage: %d, Penetration: %d.", weaponData.damage, weaponData.penetration))
-	}
-
-	if item.HasArmorData() {
-		armorData := item.Data.(ItemDataArmor)
-		world.MessagePlayer(playerKey, fmt.Sprintf("Deflection: %d, Deflection Bonus: %d, Resistance: %d.",
-			armorData.deflection, armorData.deflectBonus, armorData.resistance))
-
-		modifiers := make([]string, 0, 3)
-		if armorData.evadeModifier != 0 {
-			modifiers = append(modifiers, fmt.Sprintf("Evade: %+d", armorData.evadeModifier))
+	if item.IsEquipment() {
+		data := item.Data.(ItemDataEquipment)
+		if item.IsWeapon() {
+			world.MessagePlayer(playerKey, fmt.Sprintf("Damage: %d | Penetration: %d", data.damage, data.penetration))
 		}
-		if armorData.sneakModifier != 0 {
-			modifiers = append(modifiers, fmt.Sprintf("Sneak: %+d", armorData.sneakModifier))
-		}
-		if armorData.initiativeModifier != 0 {
-			modifiers = append(modifiers, fmt.Sprintf("Initiative: %+d", armorData.initiativeModifier))
-		}
-		if len(modifiers) != 0 {
-			world.MessagePlayer(playerKey, strings.Join(modifiers, ", ") + ".")
+		for _, line := range data.stats.ToStringArray(true) {
+			world.MessagePlayer(playerKey, line)
 		}
 	}
 }
@@ -269,41 +243,33 @@ func (itemType *ItemType) CanStack() bool {
 	}
 }
 
-func (itemType *ItemType) HasWeaponData() bool {
-switch itemType.Kind {
-	case ITEM_KIND_EQUIPMENT_ONE_HANDED_SWORD,
-	ITEM_KIND_EQUIPMENT_ONE_HANDED_AXE,
-	ITEM_KIND_EQUIPMENT_ONE_HANDED_BLUNT,
-	ITEM_KIND_EQUIPMENT_ONE_HANDED_DAGGER,
-	ITEM_KIND_EQUIPMENT_TWO_HANDED_SWORD,
-	ITEM_KIND_EQUIPMENT_TWO_HANDED_AXE,
-	ITEM_KIND_EQUIPMENT_TWO_HANDED_BLUNT,
-	ITEM_KIND_EQUIPMENT_TWO_HANDED_BOW:
-		return true
-	default:
-		return false
-	}
-}
-
-func (itemType *ItemType) HasArmorData() bool {
+func (itemType *ItemType) IsEquipment() bool {
 	switch itemType.Kind {
-		case ITEM_KIND_EQUIPMENT_OUTFIT_CLOTHING,
-   		 ITEM_KIND_EQUIPMENT_OUTFIT_LIGHT_ARMOR,
-		 ITEM_KIND_EQUIPMENT_OUTFIT_HEAVY_ARMOR,
-		 ITEM_KIND_EQUIPMENT_SHIELD,
-		 ITEM_KIND_EQUIPMENT_ACCESSORY:
-		 return true
-	default:
-		 return false
+		case ITEM_KIND_EQUIPMENT_ONE_HANDED_SWORD,
+		ITEM_KIND_EQUIPMENT_ONE_HANDED_AXE,
+		ITEM_KIND_EQUIPMENT_ONE_HANDED_BLUNT,
+		ITEM_KIND_EQUIPMENT_ONE_HANDED_DAGGER,
+		ITEM_KIND_EQUIPMENT_TWO_HANDED_SWORD,
+		ITEM_KIND_EQUIPMENT_TWO_HANDED_AXE,
+		ITEM_KIND_EQUIPMENT_TWO_HANDED_BLUNT,
+		ITEM_KIND_EQUIPMENT_TWO_HANDED_BOW,
+		ITEM_KIND_EQUIPMENT_OUTFIT_CLOTHING,
+		ITEM_KIND_EQUIPMENT_OUTFIT_LIGHT_ARMOR,
+		ITEM_KIND_EQUIPMENT_OUTFIT_HEAVY_ARMOR,
+		ITEM_KIND_EQUIPMENT_SHIELD,
+		ITEM_KIND_EQUIPMENT_ACCESSORY:
+			return true
+		default:
+			return false
 	}
 }
 
-func (item *Item) IsWeapon() bool {
-	return item.IsOneHandedWeapon() || item.IsTwoHandedWeapon()
+func (itemType *ItemType) IsWeapon() bool {
+	return itemType.IsOneHandedWeapon() || itemType.IsTwoHandedWeapon()
 }
 
-func (item *Item) IsOneHandedWeapon() bool {
-	switch item.ItemType.Kind {
+func (itemType *ItemType) IsOneHandedWeapon() bool {
+	switch itemType.Kind {
 	 	case ITEM_KIND_EQUIPMENT_ONE_HANDED_SWORD,
 	   		 ITEM_KIND_EQUIPMENT_ONE_HANDED_AXE,
 			 ITEM_KIND_EQUIPMENT_ONE_HANDED_BLUNT,
@@ -314,8 +280,8 @@ func (item *Item) IsOneHandedWeapon() bool {
 	}
 }
 
-func (item *Item) IsTwoHandedWeapon() bool {
-	switch item.ItemType.Kind {
+func (itemType *ItemType) IsTwoHandedWeapon() bool {
+	switch itemType.Kind {
 	 	case ITEM_KIND_EQUIPMENT_TWO_HANDED_SWORD,
 	   		 ITEM_KIND_EQUIPMENT_TWO_HANDED_AXE,
 			 ITEM_KIND_EQUIPMENT_TWO_HANDED_BLUNT,
@@ -326,8 +292,8 @@ func (item *Item) IsTwoHandedWeapon() bool {
 	}
 }
 
-func (item *Item) IsOutfit() bool {
-	switch item.ItemType.Kind {
+func (itemType *ItemType) IsOutfit() bool {
+	switch itemType.Kind {
 	 	case ITEM_KIND_EQUIPMENT_OUTFIT_CLOTHING,
 	   		 ITEM_KIND_EQUIPMENT_OUTFIT_LIGHT_ARMOR,
 			 ITEM_KIND_EQUIPMENT_OUTFIT_HEAVY_ARMOR:
@@ -337,8 +303,8 @@ func (item *Item) IsOutfit() bool {
 	}
 }
 
-func (item *Item) IsShield() bool {
-	switch item.ItemType.Kind {
+func (itemType *ItemType) IsShield() bool {
+	switch itemType.Kind {
 		case ITEM_KIND_EQUIPMENT_SHIELD:
 			return true
 		default:
@@ -346,8 +312,8 @@ func (item *Item) IsShield() bool {
 	}
 }
 
-func (item *Item) IsAccessory() bool {
-	switch item.ItemType.Kind {
+func (itemType *ItemType) IsAccessory() bool {
+	switch itemType.Kind {
 		case ITEM_KIND_EQUIPMENT_ACCESSORY:
 			return true
 		default:
@@ -382,14 +348,14 @@ func (kind ItemKind) requiredSkill() (Skill, bool) {
 	}
 }
 
-func (item *Item) EquipmentSlotForItem() (EquipmentSlot, bool) {
-	if item.IsOneHandedWeapon() || item.IsTwoHandedWeapon() {
+func (itemType *ItemType) EquipmentSlotForItem() (EquipmentSlot, bool) {
+	if itemType.IsWeapon() {
 		return EQUIPMENT_SLOT_MAIN_HAND, true
-	} else if item.IsShield() {
+	} else if itemType.IsShield() {
 		return EQUIPMENT_SLOT_OFF_HAND, true
-	} else if item.IsOutfit() {
+	} else if itemType.IsOutfit() {
 		return EQUIPMENT_SLOT_OUTFIT, true
-	} else if item.IsAccessory(){
+	} else if itemType.IsAccessory(){
 		return EQUIPMENT_SLOT_ACCESSORY, true
 	} else {
 		return EQUIPMENT_SLOT_COUNT, false
@@ -398,11 +364,8 @@ func (item *Item) EquipmentSlotForItem() (EquipmentSlot, bool) {
 
 // Returns 0 for item types which have no durability
 func (itemType *ItemType) MaxDurability() int32 {
-	if itemType.HasWeaponData() {
-		return itemType.Data.(ItemDataWeapon).maxDurability
-	}
-	if itemType.HasArmorData() {
-		return itemType.Data.(ItemDataArmor).maxDurability
+	if itemType.IsEquipment() {
+		return itemType.Data.(ItemDataEquipment).maxDurability
 	}
 
 	return 0
@@ -410,11 +373,8 @@ func (itemType *ItemType) MaxDurability() int32 {
 
 // Returns the prefix shown on an item whose durability is above its max durability
 func (itemType *ItemType) GetReinforcedPrefix() (string, bool) {
-	if itemType.HasWeaponData() {
-		return itemType.Data.(ItemDataWeapon).reinforcedPrefix, true
-	}
-	if itemType.HasArmorData() {
-		return itemType.Data.(ItemDataArmor).reinforcedPrefix, true
+	if itemType.IsEquipment() {
+		return itemType.Data.(ItemDataEquipment).reinforcedPrefix, true
 	}
 
 	return "", false

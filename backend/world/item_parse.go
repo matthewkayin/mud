@@ -66,37 +66,23 @@ func (parser *ScriptParser) parseItemType(table *lua.Table) *ItemType {
 		parser.addProblem("kind", fmt.Errorf("Invalid item kind '%s'.", kindString))
 	}
 
-	if itemType.HasWeaponData() {
-		var weaponData ItemDataWeapon
+	if itemType.IsEquipment() {
+		var data ItemDataEquipment
 
-		weaponData.maxDurability = parser.getInt32(table, "max_durability")
-		parser.checkInt32NonNegative(weaponData.maxDurability, "max_durability")
-		weaponData.damage = parser.getInt32(table, "damage")
-		parser.checkInt32NonNegative(weaponData.damage, "damage")
-		weaponData.penetration = parser.getInt32(table, "penetration")
-		parser.checkInt32NonNegative(weaponData.penetration, "penetration")
-		weaponData.reinforcedPrefix = parser.getString(table, "reinforced_prefix")
+		data.maxDurability = parser.getInt32(table, "max_durability")
+		parser.checkInt32NonNegative(data.maxDurability, "max_durability")
+		data.reinforcedPrefix = parser.getString(table, "reinforced_prefix")
 
-		itemType.Data = weaponData
-	}
+		if itemType.IsWeapon() {
+			data.damage = parser.getInt32(table, "damage")
+			parser.checkInt32NonNegative(data.damage, "damage")
+			data.penetration = parser.getInt32(table, "penetration")
+			parser.checkInt32NonNegative(data.penetration, "penetration")
+		}
 
-	if itemType.HasArmorData() {
-		var armorData ItemDataArmor
+		data.stats = parser.getOptionalStatBlock(table, "stats")
 
-		armorData.maxDurability = parser.getInt32(table, "max_durability")
-		parser.checkInt32NonNegative(armorData.maxDurability, "max_durability")
-		armorData.deflection = parser.getInt32(table, "deflection")
-		parser.checkInt32NonNegative(armorData.deflection, "deflection")
-		armorData.deflectBonus = parser.getInt32(table, "deflection_bonus")
-		parser.checkInt32NonNegative(armorData.deflectBonus, "deflection_bonus")
-		armorData.resistance = parser.getInt32(table, "resistance")
-		parser.checkInt32NonNegative(armorData.resistance, "resistance")
-		armorData.evadeModifier = parser.getInt32(table, "evade_modifier")
-		armorData.initiativeModifier = parser.getInt32(table, "initiative_modifier")
-		armorData.sneakModifier = parser.getInt32(table, "sneak_modifier")
-		armorData.reinforcedPrefix = parser.getString(table, "reinforced_prefix")
-
-		itemType.Data = armorData
+		itemType.Data = data
 	}
 
 	if itemType.Kind == ITEM_KIND_CONSUMABLE {

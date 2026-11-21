@@ -17,7 +17,7 @@ func newItemTargetTestState() itemTargetTestState {
 	itemType := &ItemType {
 		Name: "Ring",
 		Kind: ITEM_KIND_EQUIPMENT_ACCESSORY,
-		Data: ItemDataArmor{},
+		Data: ItemDataEquipment{},
 	}
 	createParams := CreateItemParams {
 		itemType: itemType,
