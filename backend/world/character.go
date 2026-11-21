@@ -171,6 +171,7 @@ func (character *Character) calculateStats() {
 	stats.Values[STAT_INITIATIVE] = attributes.Values[ATTR_AGI]
 	stats.Values[STAT_ACCURACY] = attributes.Values[ATTR_AGI]
 	stats.Values[STAT_EVASION] = attributes.Values[ATTR_AGI]
+	stats.Values[STAT_CRIT_CHANCE] = attributes.Values[ATTR_AGI] / 2
 	stats.Values[STAT_DEFLECTION] = 0
 	stats.Values[STAT_DEFLECTION_AMOUNT] = 40
 	stats.Values[STAT_RESISTANCE] = 0

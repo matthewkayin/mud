@@ -15,6 +15,7 @@ const (
 	STAT_INITIATIVE
 	STAT_ACCURACY
 	STAT_EVASION
+	STAT_CRIT_CHANCE
 	STAT_STEALTH
 	STAT_DEFLECTION
 	STAT_DEFLECTION_AMOUNT
@@ -42,6 +43,8 @@ func (stat Stat) String() string {
 			return "Accuracy"
 		case STAT_EVASION:
 			return "Evasion"
+		case STAT_CRIT_CHANCE:
+			return "Crit Chance"
 		case STAT_STEALTH:
 			return "Stealth"
 		case STAT_DEFLECTION:

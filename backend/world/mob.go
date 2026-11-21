@@ -391,10 +391,15 @@ func (mob *Mob) damage(attackerHandle MobHandle, damage int32) {
 }
 
 func (mob *Mob) attackTarget(world *World, targetMob *Mob, attack MobAttack) {
-	// TODO:
-	// - check for evasion
-	// - check for crit
-	crit := false
+	// Roll to hit
+	hit := mob.rollToHit(targetMob)
+	if !hit {
+		world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> dodged <y>%s's</y> attack!", targetMob.Name, mob.Name))
+		return
+	}
+
+	// Roll crit
+	crit := mob.rollCrit()
 
 	// Check for deflection
 	deflect := false
