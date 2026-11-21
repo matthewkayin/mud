@@ -86,7 +86,7 @@ func (character *Character) GetAttacks() []MobAttack {
 	// Main hand attack
 	mainItem := character.Equipment.Get(EQUIPMENT_SLOT_MAIN_HAND)
 	if mainItem != nil && mainItem.IsWeapon() {
-		weaponData := mainItem.ItemType.Data.(ItemDataWeapon)
+		weaponData := mainItem.ItemType.Data.(ItemDataEquipment)
 		attacks = append(attacks, MobAttack {
 			damage: weaponData.damage + (character.Attribute(ATTR_STR) / 2),
 			penetration: weaponData.penetration,
@@ -99,7 +99,7 @@ func (character *Character) GetAttacks() []MobAttack {
 	offItem := character.Equipment.Get(EQUIPMENT_SLOT_OFF_HAND)
 	mainHandIsTwoHanded := mainItem != nil && mainItem.IsTwoHandedWeapon()
 	if !mainHandIsTwoHanded && offItem != nil && offItem.IsWeapon() {
-		weaponData := offItem.ItemType.Data.(ItemDataWeapon)
+		weaponData := offItem.ItemType.Data.(ItemDataEquipment)
 		attacks = append(attacks, MobAttack {
 			damage: weaponData.damage + (character.Attribute(ATTR_STR) / 4),
 			penetration: weaponData.penetration,
@@ -180,16 +180,12 @@ func (character *Character) calculateStats() {
 	// Add armor from each equipped item that has armor data (outfit, shield)
 	for index := range EQUIPMENT_SLOT_COUNT {
 		item := character.Equipment.Get(EquipmentSlot(index))
-		if item == nil || !item.HasArmorData() {
+		if item == nil || !item.IsEquipment() {
 			continue
 		}
 
-		armorData := item.ItemType.Data.(ItemDataArmor)
-		stats.Values[STAT_INITIATIVE] += armorData.initiativeModifier
-		stats.Values[STAT_EVASION] += armorData.evadeModifier
-		stats.Values[STAT_DEFLECTION] += armorData.deflection
-		stats.Values[STAT_DEFLECTION_AMOUNT] += armorData.deflectBonus
-		stats.Values[STAT_RESISTANCE] += armorData.resistance
+		equipmentStats := item.ItemType.Data.(ItemDataEquipment).stats
+		stats = stats.Add(&equipmentStats)
 	}
 
 	character.Stats = stats
@@ -206,7 +202,7 @@ func (character *Character) subtractDurabilityFromEquipment(world *World, slot E
 	item.Durability--
 
 	if item.Durability <= 0 {
-		world.MessageRoom(character.Room, fmt.Sprintf("<y>%s's</y> <g>%s</g> broke!", character.Name, item.Name))
+		world.MessageRoom(character.Room, fmt.Sprintf("Your <g>%s</g> broke!", item.Name))
 		world.PlayerInventoryChanged(character.PlayerKey)
 		character.Equipment.Unequip(slot)
 		character.calculateStats()
@@ -301,7 +297,7 @@ func (character *Character) FindItem(id ItemId) (*Item, bool) {
 	for index := range EQUIPMENT_SLOT_COUNT {
 		slot := EquipmentSlot(index)
 		item := character.Equipment.Get(slot)
-		if item != nil {
+		if item != nil && item.Id == id {
 			return item, true
 		}
 	}

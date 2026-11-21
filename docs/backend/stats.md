@@ -20,6 +20,8 @@ Mobs have two kinds of numbers:
 
 `Stat.String()` gives the display name ("Max Health"), which is also the value of the Lua constant. Lua constant names are the upper-case display name with spaces replaced by underscores. Attributes use their abbreviation for both.
 
+`StatBlock.ToStringArray(isBonus)` formats a block for players as lines of at most `STATS_PER_LINE` (6) stats joined by ` | `, so the caller can indent each line. Each column is padded to its widest entry so the ` | ` separators line up from line to line. With `isBonus` true (equipment), zero stats are left out and the rest read `+X Stat` or `-X Stat`. With it false, every stat is shown as `Stat X`. The character sheet doesn't use it: the server sends each stat's name and value in the heartbeat's `sheet`, and the client lays them out (see [frontend.md](../frontend.md#view-panel)).
+
 ## Reading stats
 
 Every mob's current stats are in `MobData.Stats`, which `Character`, `Npc` and `Mob` all reach through `MobData`. Read one stat with `mob.Stat(STAT_X)`, or the whole block with `mob.Stats`. Lua reads a stat with `world.mob_get_stat(handle, world.Stat.X)`.

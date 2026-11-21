@@ -42,7 +42,6 @@ room.loot = {
     {
         item = "Test Broadsword",
         amount = 1,
-        durability_percent = 1,
         drop_chance_percent = 100
     },
 }

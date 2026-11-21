@@ -88,4 +88,4 @@ language-servers = ["vscode-json-language-server", "mud"]
 
 ## Tests
 
-`backend/lsp/testdata/data/` is a small data folder with deliberate errors. `server_test.go` checks the diagnostics produced for it, and also drives a whole session through the protocol. `lines_test.go` and `overlay_test.go` test line finding and the overlay filesystem on their own.
+`lines_test.go` and `overlay_test.go` test line finding and the overlay filesystem with in-memory data. There are no tests that read a data folder from disk.

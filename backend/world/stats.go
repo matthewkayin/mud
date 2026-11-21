@@ -1,8 +1,8 @@
 package world
 
 import (
+	"fmt"
 	"log"
-	"strconv"
 	"strings"
 )
 
@@ -15,6 +15,7 @@ const (
 	STAT_INITIATIVE
 	STAT_ACCURACY
 	STAT_EVASION
+	STAT_STEALTH
 	STAT_DEFLECTION
 	STAT_DEFLECTION_AMOUNT
 	STAT_RESISTANCE
@@ -22,6 +23,8 @@ const (
 	STAT_FOCUS
 	STAT_COUNT
 )
+
+const STATS_PER_LINE = 6
 
 type StatBlock struct {
 	Values [STAT_COUNT]int32
@@ -39,6 +42,8 @@ func (stat Stat) String() string {
 			return "Accuracy"
 		case STAT_EVASION:
 			return "Evasion"
+		case STAT_STEALTH:
+			return "Stealth"
 		case STAT_DEFLECTION:
 			return "Deflection"
 		case STAT_DEFLECTION_AMOUNT:
@@ -64,19 +69,48 @@ func (stats *StatBlock) Add(other *StatBlock) StatBlock {
 	return result
 }
 
-func (stats *StatBlock) ToString() string {
-	var builder strings.Builder
-	builder.Grow(20 * int(STAT_COUNT))
-
+// Returns the stats as display lines of at most STATS_PER_LINE stats each, so callers can indent them.
+// Each column is padded to its widest entry so the " | " separators line up between lines.
+// When isBonus is true, zero-valued stats are skipped and the rest are written as "+X Stat" or "-X Stat".
+// Otherwise every stat is written as "Stat X".
+func (stats *StatBlock) ToStringArray(isBonus bool) []string {
+	entries := []string{}
 	for index := range STAT_COUNT {
-		builder.WriteString(index.String())
-		builder.WriteByte(' ')
-		builder.WriteString(strconv.Itoa(int(stats.Values[index])))
+		value := stats.Values[index]
+		if isBonus && value == 0 {
+			continue
+		}
 
-		if index < STAT_COUNT - 1 {
-			builder.Write([]byte(" | "))
+		if isBonus {
+			sign := ""
+			if value > 0 {
+				sign = "+"
+			}
+			entries = append(entries, fmt.Sprintf("%s%d %s", sign, value, index.String()))
+		} else {
+			entries = append(entries, fmt.Sprintf("%s %d", index.String(), value))
 		}
 	}
 
-	return builder.String()
+	columnWidths := [STATS_PER_LINE]int{}
+	for entryIndex, entry := range entries {
+		column := entryIndex % STATS_PER_LINE
+		columnWidths[column] = max(columnWidths[column], len(entry))
+	}
+
+	lines := []string{}
+	var builder strings.Builder
+	for entryIndex, entry := range entries {
+		column := entryIndex % STATS_PER_LINE
+		isLastInLine := column == STATS_PER_LINE - 1 || entryIndex == len(entries) - 1
+		if isLastInLine {
+			builder.WriteString(entry)
+			lines = append(lines, builder.String())
+			builder.Reset()
+		} else {
+			builder.WriteString(fmt.Sprintf("%-*s | ", columnWidths[column], entry))
+		}
+	}
+
+	return lines
 }
