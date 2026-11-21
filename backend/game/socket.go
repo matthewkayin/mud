@@ -54,6 +54,26 @@ type SocketRoomMob struct {
 	Target string `json:"target"`
 }
 
+// A named number on the character sheet, such as an attribute or stat
+type SocketSheetValue struct {
+	Name string `json:"name"`
+	Value int32 `json:"value"`
+}
+
+// The player's character sheet, which the client formats for the view panel's stats mode
+// Experience is the experience earned toward the next level, out of ExperienceToNextLevel
+type SocketCharacterSheet struct {
+	Name string `json:"name"`
+	Race string `json:"race"`
+	Class string `json:"class"`
+	Level int32 `json:"level"`
+	Experience int32 `json:"exp"`
+	ExperienceToNextLevel int32 `json:"expNext"`
+	Attributes []SocketSheetValue `json:"attributes"`
+	Stats []SocketSheetValue `json:"stats"`
+	Skills []string `json:"skills"`
+}
+
 // A message sent to the client
 type SocketMessage struct {
 	Message *string `json:"message"`
@@ -62,4 +82,5 @@ type SocketMessage struct {
 	Equipment []SocketEquipmentSlot `json:"equip,omitempty"`
 	Map []int `json:"map,omitempty"`
 	RoomMobs []SocketRoomMob `json:"mobs,omitempty"`
+	Sheet *SocketCharacterSheet `json:"sheet,omitempty"`
 }

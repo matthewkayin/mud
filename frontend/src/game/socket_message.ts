@@ -32,6 +32,25 @@ export type RoomMob = {
   target: string;
 };
 
+// A named number on the character sheet, such as an attribute or stat
+export type SheetValue = {
+  name: string;
+  value: number;
+};
+
+// exp is the experience earned toward the next level, out of expNext
+export type CharacterSheet = {
+  name: string;
+  race: string;
+  class: string;
+  level: number;
+  exp: number;
+  expNext: number;
+  attributes: SheetValue[];
+  stats: SheetValue[];
+  skills: string[];
+};
+
 export type SocketMessage = {
   message: string | null;
   status?: PlayerStatus;
@@ -39,4 +58,5 @@ export type SocketMessage = {
   inv?: Inventory;
   equip?: EquipmentSlot[];
   mobs?: RoomMob[];
+  sheet?: CharacterSheet;
 };

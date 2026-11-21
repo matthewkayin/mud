@@ -7,7 +7,7 @@ import { StatusBar } from './status_bar.tsx';
 import { Minimap } from './minimap.tsx';
 import { View } from './view.tsx';
 import { VIEW_MODES, parseViewMode, type ViewMode } from './view_mode.ts';
-import { type EquipmentSlot, type Inventory, type PlayerStatus, type RoomMob, type SocketMessage } from './socket_message';
+import { type EquipmentSlot, type Inventory, type PlayerStatus, type RoomMob, type CharacterSheet, type SocketMessage } from './socket_message';
 
 const TERMINAL_PROMPT = ">";
 const HEARTBEAT_TIMEOUT_MS = 10000;
@@ -43,6 +43,7 @@ export function GamePage() {
   const [inventory, setInventory] = useState<Inventory | null>(null);
   const [equipment, setEquipment] = useState<EquipmentSlot[] | null>(null);
   const [roomMobs, setRoomMobs] = useState<RoomMob[] | null>(null);
+  const [characterSheet, setCharacterSheet] = useState<CharacterSheet | null>(null);
 
   // The player is in the world while the server is sending them a status
   const isInWorld = playerStatus !== null;
@@ -142,12 +143,13 @@ export function GamePage() {
       } else if (socketMessage.message === null) {
         // If we receive no status and message is null, then this is a status-less heartbeat,
         // which means the player is receiving a heartbeat but they aren't in game, so clear
-        // their status, minimap, inventory, equipment and room mobs
+        // their status, minimap, inventory, equipment, room mobs and character sheet
         setPlayerStatus(null);
         setMinimap(null);
         setInventory(null);
         setEquipment(null);
         setRoomMobs(null);
+        setCharacterSheet(null);
       }
 
       // Get minimap from socketMessage
@@ -165,6 +167,10 @@ export function GamePage() {
       // The server only sends the room mobs when they change
       if (socketMessage.mobs) {
         setRoomMobs(socketMessage.mobs);
+      }
+      // The server only sends the character sheet when it changes
+      if (socketMessage.sheet) {
+        setCharacterSheet(socketMessage.sheet);
       }
     };
 
@@ -239,6 +245,7 @@ export function GamePage() {
           inventory={inventory}
           equipment={equipment}
           roomMobs={roomMobs}
+          characterSheet={characterSheet}
         />
       </div>
     </article>

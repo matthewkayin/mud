@@ -4,14 +4,16 @@ import { type ViewMode } from './view_mode';
 import { formatInventoryTable, getInventoryTableWidth } from './inventory_table';
 import { formatEquipmentTable } from './equipment_table';
 import { formatMobTable } from './mob_table';
+import { formatCharacterSheet } from './character_sheet';
 import { VIEW_WIDTH, formatViewHeader } from './view_format';
-import { type EquipmentSlot, type Inventory, type RoomMob } from './socket_message';
+import { type EquipmentSlot, type Inventory, type RoomMob, type CharacterSheet } from './socket_message';
 
 const VIEW_TITLES: Record<ViewMode, string> = {
   help: 'Help',
   chat: 'Chat',
   inventory: 'Inventory',
   mobs: 'Mobs',
+  stats: 'Stats',
 };
 
 const VIEW_HELP_LINES = [
@@ -22,6 +24,7 @@ const VIEW_HELP_LINES = [
   "  chat      - a history of chat messages",
   "  inventory - your items and equipment",
   "  mobs      - the mobs in your room, their condition and who they are targeting",
+  "  stats     - your character sheet",
   "\n",
   "You can also use 'view equipment' and 'view inv' to access the 'inventory' mode.",
 ];
@@ -33,9 +36,10 @@ type ViewProps = {
   inventory: Inventory | null;
   equipment: EquipmentSlot[] | null;
   roomMobs: RoomMob[] | null;
+  characterSheet: CharacterSheet | null;
 };
 
-export const View = ({ mode, isInWorld, chatLines, inventory, equipment, roomMobs }: ViewProps) => {
+export const View = ({ mode, isInWorld, chatLines, inventory, equipment, roomMobs, characterSheet }: ViewProps) => {
   // A ref rather than state, since changing it never needs a re-render
   const shouldScrollToBottomRef = useRef(true);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -50,12 +54,14 @@ export const View = ({ mode, isInWorld, chatLines, inventory, equipment, roomMob
     lines = [...formatEquipmentTable(equipment, getInventoryTableWidth(inventory)), ...formatInventoryTable(inventory)];
   } else if (mode === 'mobs' && roomMobs !== null) {
     lines = formatMobTable(roomMobs);
+  } else if (mode === 'stats' && characterSheet !== null) {
+    lines = formatCharacterSheet(characterSheet);
   }
 
-  // Tables include their own header
-  const isTable = mode === 'inventory' || mode === 'mobs';
+  // Tables and the character sheet include their own header
+  const isTable = mode === 'inventory' || mode === 'mobs' || mode === 'stats';
 
-  // Start the tables scrolled to the top, so the first rows (such as the equipment) stay visible, and every other mode scrolled to the bottom
+  // Start the tables and the character sheet scrolled to the top, so the first rows (such as the equipment) stay visible, and every other mode scrolled to the bottom
   useEffect(() => {
     shouldScrollToBottomRef.current = !isTable;
     const container = containerRef.current;
@@ -75,7 +81,7 @@ export const View = ({ mode, isInWorld, chatLines, inventory, equipment, roomMob
     if (shouldScrollToBottomRef.current) {
       container.scrollTop = container.scrollHeight;
     }
-  }, [mode, isTable, isInWorld, chatLines, inventory, equipment, roomMobs]);
+  }, [mode, isTable, isInWorld, chatLines, inventory, equipment, roomMobs, characterSheet]);
 
   const onScroll = (event: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;

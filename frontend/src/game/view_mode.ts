@@ -1,4 +1,4 @@
-export const VIEW_MODES = ['help', 'chat', 'inventory', 'mobs'] as const;
+export const VIEW_MODES = ['help', 'chat', 'inventory', 'mobs', 'stats'] as const;
 export type ViewMode = typeof VIEW_MODES[number];
 
 // Other names players can use for a mode

@@ -26,6 +26,8 @@ type Player struct {
 	isInventoryDirty bool
 	// The room mobs last sent to the client, so they are only sent again when they change
 	lastSentRoomMobs []SocketRoomMob
+	// The character sheet last sent to the client, so it is only sent again when it changes
+	lastSentCharacterSheet *SocketCharacterSheet
 }
 
 func playerInit(key string, inbox *chan SocketMessage) Player {
@@ -75,6 +77,12 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 				heartbeat.RoomMobs = roomMobs
 				player.lastSentRoomMobs = roomMobs
 			}
+			// The sheet changes in world (experience, level ups, equipment), so compare against what was last sent instead of using a dirty flag
+			characterSheet := getSocketCharacterSheet(player.character)
+			if player.lastSentCharacterSheet == nil || !isCharacterSheetEqual(&characterSheet, player.lastSentCharacterSheet) {
+				heartbeat.Sheet = &characterSheet
+				player.lastSentCharacterSheet = &characterSheet
+			}
 		}
 	}
 
@@ -113,6 +121,55 @@ func getSocketRoomMobs(gamestate *GameState, room *world.Room) []SocketRoomMob {
 	}
 
 	return roomMobs
+}
+
+// The player's character sheet, for the client's stats view
+// Skills is never nil, so that a character with no skills is sent [] rather than null
+func getSocketCharacterSheet(character *world.Character) SocketCharacterSheet {
+	attributes := make([]SocketSheetValue, 0, world.ATTR_COUNT)
+	for index := range world.ATTR_COUNT {
+		attributes = append(attributes, SocketSheetValue {
+			Name: index.String(),
+			Value: character.Attributes.Values[index],
+		})
+	}
+
+	stats := make([]SocketSheetValue, 0, world.STAT_COUNT)
+	for index := range world.STAT_COUNT {
+		stats = append(stats, SocketSheetValue {
+			Name: index.String(),
+			Value: character.Stats.Values[index],
+		})
+	}
+
+	skills := character.Skills.ToStringArray()
+	if skills == nil {
+		skills = []string{}
+	}
+
+	return SocketCharacterSheet {
+		Name: character.Name,
+		Race: character.Race.Name,
+		Class: character.Class.Name,
+		Level: character.Level,
+		Experience: character.ExpTowardNextLevel(),
+		ExperienceToNextLevel: world.ExpToNextLevel(character.Level),
+		Attributes: attributes,
+		Stats: stats,
+		Skills: skills,
+	}
+}
+
+func isCharacterSheetEqual(sheet *SocketCharacterSheet, other *SocketCharacterSheet) bool {
+	return sheet.Name == other.Name &&
+		sheet.Race == other.Race &&
+		sheet.Class == other.Class &&
+		sheet.Level == other.Level &&
+		sheet.Experience == other.Experience &&
+		sheet.ExperienceToNextLevel == other.ExperienceToNextLevel &&
+		slices.Equal(sheet.Attributes, other.Attributes) &&
+		slices.Equal(sheet.Stats, other.Stats) &&
+		slices.Equal(sheet.Skills, other.Skills)
 }
 
 // One entry per equipment slot, for the client's equipment table

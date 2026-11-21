@@ -225,6 +225,7 @@ func (gamestate *GameState) spawnPlayerMob(player *Player) {
 	player.isMinimapDirty = true
 	player.isInventoryDirty = true
 	player.lastSentRoomMobs = nil
+	player.lastSentCharacterSheet = nil
 }
 
 func (gamestate *GameState) messagePlayer(playerKey string, message string) {

@@ -53,6 +53,7 @@ var MENU_WORLD_TOPICS_GENERAL = map[string]MenuHelpTopic {
 			"  chat      - a history of chat messages",
 			"  inventory - the items you have equipped and are carrying",
 			"  mobs      - the mobs in your room, their condition and who they are targeting",
+			"  stats     - your character sheet",
 			"'view equipment' also shows the inventory.",
 		},
 	},
@@ -66,34 +67,6 @@ var MENU_WORLD_ENTRIES_GENERAL = map[string]MenuEntry {
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
 			player.logout(gamestate)
 			player.setMenuLogin(gamestate)
-			return true
-		},
-	},
-
-	"stats": {
-		usage: "stats",
-		description: "Show your current stats",
-		categories: []string { "general" },
-		handler: func (gamestate *GameState, player *Player, args []string) bool {
-			player.send("=== CHARACTER SHEET ===")
-			player.send("\n")
-			player.send(fmt.Sprintf("Name       : <y>%s</y>", player.character.Name))
-			player.send(fmt.Sprintf("Race       : %s", player.character.Race.Name))
-			player.send(fmt.Sprintf("Class      : %s", player.character.Class.Name))
-			player.send("\n")
-			player.send(fmt.Sprintf("Level      : %d", player.character.Level))
-			player.send(fmt.Sprintf("Experience : %d / %d", player.character.ExpTowardNextLevel(), world.ExpToNextLevel(player.character.Level)))
-			player.send("\n")
-			player.send(fmt.Sprintf("Attributes : %s", player.character.Attributes.ToString(false)))
-			for lineIndex, line := range player.character.Stats.ToStringArray(false) {
-				if lineIndex == 0 {
-					player.send(fmt.Sprintf("Stats      : %s", line))
-				} else {
-					player.send(fmt.Sprintf("             %s", line))
-				}
-			}
-			player.send(fmt.Sprintf("Skills     : %s", util.CombineNames(player.character.Skills.ToStringArray())))
-
 			return true
 		},
 	},
