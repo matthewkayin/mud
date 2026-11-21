@@ -3,6 +3,7 @@ package world
 import (
 	"fmt"
 	"log"
+	"strings"
 	"math/rand/v2"
 	"github.com/mmcdole/lunar"
 )
@@ -153,9 +154,11 @@ func (mob *Mob) Message(world *World, message string) {
 func (mob *Mob) DescribeToPlayer(world *World, playerKey string) {
 	if mob.IsPlayer() {
 		mob.Character.DescribeToPlayer(world, playerKey)
-		return
+	} else {
+		mob.Npc.DescribeToPlayer(world, playerKey)
 	}
-	mob.Npc.DescribeToPlayer(world, playerKey)
+
+	world.MessagePlayer(playerKey, fmt.Sprintf("%s is %s.", mob.Name, strings.ToLower(mob.condition().String())))
 }
 
 // SECONDARY STATS
@@ -365,9 +368,9 @@ func (mob *Mob) update(world *World) {
 			if success {
 				targetMob.Npc.setHighestThreat(world, mob.Handle, mob.Character.Attribute(ATTR_STR))
 				targetMob.SetModeAttack(world, mob.Handle)
-				world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> is now angry at <y>%s</y>!", targetMob.Name, mob.Name))
+				world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> is now angry at <y>%s</y>!", targetMob.NameWithCondition(), mob.NameWithCondition()))
 			} else {
-				world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> ignored the taunt.", targetMob.Name))
+				world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> ignored the taunt.", targetMob.NameWithCondition()))
 			}
 
 			// The taunt resolves once. Taunting again right away has no chance until the cooldown recovers

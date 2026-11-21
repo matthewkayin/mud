@@ -202,7 +202,7 @@ func (character *Character) subtractDurabilityFromEquipment(world *World, slot E
 	item.Durability--
 
 	if item.Durability <= 0 {
-		world.MessageRoom(character.Room, fmt.Sprintf("<y>%s's</y> <g>%s</g> broke!", character.Name, item.Name))
+		world.MessageRoom(character.Room, fmt.Sprintf("Your <g>%s</g> broke!", item.Name))
 		world.PlayerInventoryChanged(character.PlayerKey)
 		character.Equipment.Unequip(slot)
 		character.calculateStats()

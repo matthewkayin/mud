@@ -205,6 +205,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 				}
 
 				// Announce gift
+				playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 				gamestate.world.MessageRoom(player.character.Room, fmt.Sprintf("<y>%s</y> gave <g>%s</g> to <y>%s</y>",
 					player.character.Name, result.item.NameWithAmount(), targetMob.Name))
 
