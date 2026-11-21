@@ -106,4 +106,15 @@ func TestFuzzyFindTargetItemAmbiguity(test *testing.T) {
 	if err != nil || target.Id != 2 {
 		test.Fatalf("Expected 'sword 2' to find item 2, got %v, %v.", target, err)
 	}
+
+	// Two swords on the floor is an ambiguous item, and the message names only the room
+	gamestate, player = newFuzzyTestState()
+	gamestate.world.Rooms[0].Inventory.AddItem(newFuzzyTestItem(1, "Sword"))
+	gamestate.world.Rooms[0].Inventory.AddItem(newFuzzyTestItem(2, "Sword"))
+
+	_, _, err = fuzzyFindTargetItem(gamestate, player, []string { "sword" }, []string{}, false)
+	expectedMessage := "There are multiple items matching 'sword' in the room."
+	if err == nil || err.Error() != expectedMessage {
+		test.Fatalf("Expected %q, got %v.", expectedMessage, err)
+	}
 }

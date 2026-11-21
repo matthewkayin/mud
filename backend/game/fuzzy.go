@@ -436,6 +436,9 @@ func fuzzyFindTargetItem(gamestate *GameState, player *Player, itemWords []strin
 
 	// If the best matches are in more than one location, make the player name the location.
 	// This is checked even when a number was given, so that a number never picks between locations
+	// searchedLocationsDescription names where the player is told the search looked. It's narrowed to a single
+	// location when all the best matches are there, so that "multiple items matching" names the right place
+	searchedLocationsDescription := "your inventory, your equipment, or the room"
 	bestScore, bestIndices := fuzzyFindBestIndices(itemNames, itemWords)
 	if bestScore > 0 {
 		matchingLocations := make([]string, 0, 1)
@@ -459,13 +462,15 @@ func fuzzyFindTargetItem(gamestate *GameState, player *Player, itemWords []strin
 					strings.Join(itemWords, " "), util.CombineNames(locationDescriptions), util.CombineNamesWithConjunction(locationSuggestions, "or")),
 			}
 		}
+
+		searchedLocationsDescription = describeItemLocation(matchingLocations[0])
 	}
 
 	index, result := fuzzyFind(itemNames, itemWords, fuzzyNumber)
 	if result != FUZZY_RESULT_OK {
 		return nil, world.ItemTarget{}, &FuzzyFindError {
 			result: result,
-			message: fuzzyFindInventoryItemResultString(result, "your inventory, your equipment, or the room", itemWords),
+			message: fuzzyFindInventoryItemResultString(result, searchedLocationsDescription, itemWords),
 		}
 	}
 
