@@ -9,10 +9,8 @@ const CHEST_DECAY_DURATION = (5 * 60) / WORLD_SECONDS_PER_UPDATE
 
 type ChestMode int
 const (
-	// Unboxed means the chest has never been opened and we should roll fresh loot when they open it
+	// Unboxed means the chest has not been opened and we should roll fresh loot when they open it
 	CHEST_MODE_UNBOXED ChestMode = iota
-	// Replenish means the chest reset timer has gone off and the chest should replenish its loot on the next open
-	CHEST_MODE_REPLENISH
 	// Open means the chest has been opened
 	CHEST_MODE_OPENED
 )
@@ -73,11 +71,7 @@ func NewPlayerCorpse(character *Character) Chest {
 // If the chest hasn't been opened yet, then the loot table will be rolled on based on the looter's Luck
 func (chest *Chest) GetInventory(world *World, looter *Character) *Inventory {
 	if chest.mode == CHEST_MODE_UNBOXED {
-		chest.inventory = chest.loot.getLoot(world, looter.Attribute(ATTR_LCK))
-		chest.setOpen()
-	}
-	if chest.mode == CHEST_MODE_REPLENISH {
-		chest.inventory = chest.loot.getLoot(world, looter.Attribute(ATTR_LCK))
+		chest.loot.replenish(world, &chest.inventory, looter.Attribute(ATTR_LCK))
 		chest.setOpen()
 	}
 
@@ -99,7 +93,7 @@ func (chest *Chest) update() {
 	if chest.timer > 0 {
 		chest.timer--
 		if chest.timer == 0 && chest.kind == CHEST_KIND_CHEST {
-			chest.mode = CHEST_MODE_REPLENISH
+			chest.mode = CHEST_MODE_UNBOXED
 		}
 	}
 }

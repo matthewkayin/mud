@@ -93,10 +93,14 @@ Items with `kind = world.ItemKind.CONSUMABLE` also have:
 |---|---|
 | `NONE` | Not passed. The player can't name a target. |
 | `ALLY`, `ENEMY` | The target's `MobHandle`. Must be in the user's faction (`ALLY`) or not in it (`ENEMY`). |
-| `ITEM` | The `ItemId` (an integer) of an item in the user's inventory. |
+| `ITEM` | The `ItemId` (an integer) of an item in the user's inventory or equipment, on the room floor, or in a container in the room. Without `in <location>`, the player's inventory, equipment and the room floor are searched. Containers are only searched when named, as in `use kit on sword in chest`. |
 | `ARGUMENT` | The words after `on`, lowercased, as a string. |
 
 Using an item is a combat action. The `use` command checks the target (calling `validate_target` if the item has it) and sets the mob to `MOB_MODE_USE_ITEM`. On the next world tick, `Mob.useItem` checks that the item and target still exist and calls `validate_target` again. Then it calls `on_use`, and if that doesn't error, removes one of the item from the user's inventory.
+
+An item target is a `world.ItemTarget`: the item's `ItemId` and its holder, which is a mob (inventory or equipment), a room's floor, or the chests in a room. Chests are matched by searching every chest in the room for the ID, because chest indices change when corpses rot. `Mob.findTargetItem` resolves a target and also checks reach: a floor or chest item must be in the user's current room, and a mob holder other than the user must be in that room. So an item that is picked up, moved or left behind makes the queued use fail.
+
+Players can also `look at <item> [in <location>]` to see an item's name, kind, description and weapon or armor numbers (not its durability). It finds items the same way, with `fuzzyFindTargetItem` in `backend/game/fuzzy.go`. The location is `inventory`, `room`, an equipment slot, or a container in the room.
 
 Queuing an action (`SetModeUseItem`, `SetModeAttack`) sets `Mob.HasPendingAction`, and the mob's turn (`Mob.update`, once per tick) clears it before resolving the mode. The player's status heartbeat reports it as `action`, which the client shows as an animated prompt.
 

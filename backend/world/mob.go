@@ -46,12 +46,6 @@ type MobTarget struct {
 	Value any
 }
 
-// An item in a mob's inventory or equipment, found by its instance ID
-type MobItemTarget struct {
-	Mob MobHandle
-	Id ItemId
-}
-
 type MobValidateTargetParams struct {
 	Hook *lua.Function
 	Target MobTarget
@@ -540,18 +534,7 @@ func (mob *Mob) isTargetValid(world *World) bool {
 		}
 
 		case MOB_TARGET_ITEM: {
-			itemTarget := mob.Target.Value.(MobItemTarget)
-			targetMob, exists := world.Mobs.GetIfExists(itemTarget.Mob)
-			if !exists {
-				return false
-			}
-
-			if !targetMob.IsPlayer() {
-				log.Printf("warn: in isTargetValid(), target is MOB_TARGET_ITEM but the item-holding mob %s is an NPC", targetMob.Name)
-				return false
-			}
-
-			_, found := targetMob.Character.FindItem(itemTarget.Id)
+			_, found := mob.findTargetItem(world, mob.Target.Value.(ItemTarget))
 			return found
 		}
 
@@ -621,20 +604,8 @@ func (mob *Mob) buildTargetHookArgs(world *World, target MobTarget) ([]lua.Value
 		}
 
 		case MOB_TARGET_ITEM: {
-			itemTarget := target.Value.(MobItemTarget)
-			targetMob, exists := world.Mobs.GetIfExists(itemTarget.Mob)
-			if !exists {
-				return args, false
-			}
-
-			// TODO: we have to change much of this code on both buildTargetHookArgs and isTargetValid
-			// we should combine the logic somehow to avoid this
-			if !targetMob.IsPlayer() {
-				log.Printf("warn: in buildTargetHookArgs(), target is MOB_TARGET_ITEM but the item-holding mob %s is an NPC", targetMob.Name)
-				return args, false
-			}
-
-			_, found := targetMob.Character.FindItem(itemTarget.Id)
+			itemTarget := target.Value.(ItemTarget)
+			_, found := mob.findTargetItem(world, itemTarget)
 			if !found {
 				return args, false
 			}

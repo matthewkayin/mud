@@ -301,7 +301,7 @@ func (character *Character) FindItem(id ItemId) (*Item, bool) {
 	for index := range EQUIPMENT_SLOT_COUNT {
 		slot := EquipmentSlot(index)
 		item := character.Equipment.Get(slot)
-		if item != nil {
+		if item != nil && item.Id == id {
 			return item, true
 		}
 	}

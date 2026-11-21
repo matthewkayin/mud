@@ -8,8 +8,8 @@ import (
 
 var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 	"look": {
-		usage: "look [at <detail|target|item>]",
-		description: "Describe the current room, or 'look at' something to get information about it.",
+		usage: "look [at <detail|target|item>] [in <location>]",
+		description: "Describe the current room, or 'look at' something to get information about it. When looking at items, you can specify a location to look at by adding 'in <location>' to the end of your command. The <location> can be 'room', 'inventory', the name of a chest, or the name of an equipment slot ('main hand', 'off hand', 'outfit', and 'accessory').",
 		categories: []string { "exploration" },
 		handler: func(gamestate *GameState, player *Player, args []string) bool {
 			room := &gamestate.world.Rooms[player.character.Room]
@@ -26,8 +26,25 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				return false
 			}
 
-			searchWords := args[1:]
+			// Split args by "in"
+			searchWords, itemLocationWords, userSpecifiedIn := splitArgsBy(args[1:], "in")
+			if len(searchWords) == 0 || (userSpecifiedIn && len(itemLocationWords) == 0) {
+				return false
+			}
+
 			searchWordsJoined := strings.ToLower(strings.Join(searchWords, " "))
+
+			// If the user specified a location with 'in', then only search for items
+			if userSpecifiedIn {
+				item, _, err := fuzzyFindTargetItem(gamestate, player, searchWords, itemLocationWords, true)
+				if err != nil {
+					player.send(err.Error())
+					return true
+				}
+
+				item.DescribeToPlayer(gamestate.world, player.key)
+				return true
+			}
 
 			// Check for a target
 			targetHandle, err := fuzzyFindMob(gamestate, player, searchWords)
@@ -37,12 +54,18 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				return true
 			}
 
-			// TODO: check for an item, players should be able to "look at" items in their inventory and in their equipment, and in chests, and in the room
-
 			// Check for chest
+			// Chests are checked before items so that 'look at chest' isn't taken by an item such as a chest key
 			chest, err := fuzzyFindChest(room, searchWords)
 			if err == nil {
 				player.send(chest.Description)
+				return true
+			}
+
+			// Check for an item in the player's inventory, their equipment, or the room
+			item, _, err := fuzzyFindTargetItem(gamestate, player, searchWords, []string{}, false)
+			if err == nil {
+				item.DescribeToPlayer(gamestate.world, player.key)
 				return true
 			}
 
@@ -60,7 +83,7 @@ var MENU_WORLD_ENTRIES_LOOK = map[string]MenuEntry {
 				return true
 			}
 
-			player.send(fmt.Sprintf("You don't see any '%s' in the room.", searchWords))
+			player.send(fmt.Sprintf("You don't see any '%s' in the room.", searchWordsJoined))
 			return true
 		},
 	},

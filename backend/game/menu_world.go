@@ -257,11 +257,12 @@ func findTarget(gamestate *GameState, player *Player, params FindTargetParams) (
 
 		case world.TARGET_TYPE_ITEM: {
 			if !params.userSpecifiedTarget {
-				return world.MobTarget{}, fmt.Errorf("%s targets an item. You must specify an item in your inventory or equipment to target.", params.name)
+				return world.MobTarget{}, fmt.Errorf("%s targets an item. You must specify an item in your inventory, your equipment, or the room to target.", params.name)
 			}
 
 			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
-			itemTarget, err := fuzzyFindPlayerItem(player, params.targetWords)
+			itemWords, locationWords, userSpecifiedLocation := splitArgsBy(params.targetWords, "in")
+			_, itemTarget, err := fuzzyFindTargetItem(gamestate, player, itemWords, locationWords, userSpecifiedLocation)
 			if err != nil {
 				return world.MobTarget{}, err
 			}

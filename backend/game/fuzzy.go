@@ -22,6 +22,13 @@ const (
 
 const FUZZY_NUMBER_NOT_SPECIFIED int = -1
 
+// Where parseItemLocation says to look for an item. slot is set for ITEM_LOCATION_EQUIPMENT, chest for ITEM_LOCATION_CHEST
+type ItemLocationResult struct {
+	location world.ItemLocation
+	slot world.EquipmentSlot
+	chest *world.Chest
+}
+
 func splitArgsBy(args []string, word string) ([]string, []string, bool) {
 	index := slices.Index(args, word)
 	if index == -1 {
@@ -276,61 +283,83 @@ func fuzzyFindEquipmentSlotByItem(equipment *world.Equipment, searchWords []stri
 	return equipmentSlots[index], nil
 }
 
-func fuzzyFindPlayerItem(player *Player, searchWords []string) (world.MobItemTarget, error) {
-	// Split args
-	itemWords, locationWords, userSpecifiedLocation := splitArgsBy(searchWords, "in")
+// Finds an item that a player can target: in their inventory or equipment, on the room floor, or in a chest in the room.
+// itemWords and locationWords are the words before and after 'in'. Without a location, the player's inventory, equipment
+// and the room floor are searched together. Chests are only searched when named as the location, since opening a chest
+// rolls its loot.
+func fuzzyFindTargetItem(gamestate *GameState, player *Player, itemWords []string, locationWords []string, userSpecifiedLocation bool) (*world.Item, world.ItemTarget, error) {
 	if len(itemWords) == 0 {
-		return world.MobItemTarget{}, fmt.Errorf("You must specify an item.")
+		return nil, world.ItemTarget{}, fmt.Errorf("You must specify an item.")
 	}
 
-	// If user specified location, search just inventory or just equipment
+	room := &gamestate.world.Rooms[player.character.Room]
+	playerTarget := world.ItemTarget {
+		Holder: world.ITEM_TARGET_HOLDER_MOB,
+		Mob: player.mobHandle,
+	}
+	roomTarget := world.ItemTarget {
+		Holder: world.ITEM_TARGET_HOLDER_ROOM,
+		Room: player.character.Room,
+	}
+
+	// If user specified location, search only that location
 	if userSpecifiedLocation {
-		location, slot, isLocation := parseItemLocation(locationWords)
-		if !isLocation {
-			return world.MobItemTarget{}, fmt.Errorf("'%s' is not your 'inventory' or an equipment slot.", strings.Join(locationWords, " "))
+		location, ok := parseItemLocation(room, locationWords)
+		if !ok {
+			return nil, world.ItemTarget{}, fmt.Errorf("'%s' is not 'room', 'inventory', an equipment slot, or a container in the room.", strings.Join(locationWords, " "))
 		}
 
-		switch location {
+		switch location.location {
 			case world.ITEM_LOCATION_INVENTORY: {
-				index, result := fuzzyFindInventoryItem(&player.character.Inventory, itemWords)
-				if result != FUZZY_RESULT_OK {
-					return world.MobItemTarget{}, fmt.Errorf("%s", fuzzyFindInventoryItemResultString(result, "your inventory", itemWords))
-				}
+				return fuzzyFindTargetItemInInventory(&player.character.Inventory, "your inventory", playerTarget, itemWords)
+			}
 
-				return world.MobItemTarget {
-					Mob: player.mobHandle,
-					Id: player.character.Inventory.Items[index].Id,
-				}, nil
+			case world.ITEM_LOCATION_ROOM: {
+				return fuzzyFindTargetItemInInventory(&room.Inventory, "the room", roomTarget, itemWords)
+			}
+
+			case world.ITEM_LOCATION_CHEST: {
+				chestInventory := location.chest.GetInventory(gamestate.world, player.character)
+				chestTarget := world.ItemTarget {
+					Holder: world.ITEM_TARGET_HOLDER_CHEST,
+					Room: player.character.Room,
+				}
+				return fuzzyFindTargetItemInInventory(chestInventory, location.chest.Name, chestTarget, itemWords)
 			}
 
 			case world.ITEM_LOCATION_EQUIPMENT: {
-				item := player.character.Equipment.Get(slot)
-				if item == nil {
-					return world.MobItemTarget{}, fmt.Errorf("There is no item called '%s' in your %s.", strings.Join(itemWords, " "), strings.ToLower(slot.String()))
+				item := player.character.Equipment.Get(location.slot)
+				if item == nil || scoreFuzzyMatch(item.NameWithCondition(), itemWords) == 0 {
+					return nil, world.ItemTarget{}, fmt.Errorf("There is no item called '%s' in your %s.", strings.Join(itemWords, " "), strings.ToLower(location.slot.String()))
 				}
 
-				return world.MobItemTarget {
-					Mob: player.mobHandle,
-					Id: item.Id,
-				}, nil
+				playerTarget.Id = item.Id
+				return item, playerTarget, nil
+			}
+
+			default: {
+				log.Printf("warn: item location %d not handled in fuzzyFindTargetItem()", location.location)
+				return nil, world.ItemTarget{}, fmt.Errorf("Something strange happened.")
 			}
 		}
 	}
 
-	// If user did not specify location, search both inventory and equipment
+	// If user did not specify location, search inventory, equipment and the room floor
 	fuzzyNumber, itemWords := getFuzzyNumberFromArgs(itemWords)
 	if len(itemWords) == 0 {
-		return world.MobItemTarget{}, fmt.Errorf("You must specify an item.")
+		return nil, world.ItemTarget{}, fmt.Errorf("You must specify an item.")
 	}
 
-	// Create parallel arrays of item name and item, inventory first and then equipment
-	capacity := len(player.character.Inventory.Items) + world.EQUIPMENT_SLOT_COUNT
+	// Create parallel arrays of item name, item and target, in the order inventory, equipment, room floor
+	capacity := len(player.character.Inventory.Items) + world.EQUIPMENT_SLOT_COUNT + len(room.Inventory.Items)
 	itemNames := make([]string, 0, capacity)
 	items := make([]*world.Item, 0, capacity)
+	targets := make([]world.ItemTarget, 0, capacity)
 	for index := range len(player.character.Inventory.Items) {
 		item := &player.character.Inventory.Items[index]
 		itemNames = append(itemNames, item.NameWithCondition())
 		items = append(items, item)
+		targets = append(targets, playerTarget)
 	}
 
 	for index := range world.EQUIPMENT_SLOT_COUNT {
@@ -341,30 +370,58 @@ func fuzzyFindPlayerItem(player *Player, searchWords []string) (world.MobItemTar
 		}
 		itemNames = append(itemNames, item.NameWithCondition())
 		items = append(items, item)
+		targets = append(targets, playerTarget)
+	}
+
+	for index := range len(room.Inventory.Items) {
+		item := &room.Inventory.Items[index]
+		itemNames = append(itemNames, item.NameWithCondition())
+		items = append(items, item)
+		targets = append(targets, roomTarget)
 	}
 
 	index, result := fuzzyFind(itemNames, itemWords, fuzzyNumber)
-	if result == FUZZY_RESULT_OK {
-		return world.MobItemTarget {
-			Mob: player.mobHandle,
-			Id: items[index].Id,
-		}, nil
+	if result != FUZZY_RESULT_OK {
+		return nil, world.ItemTarget{}, fmt.Errorf("%s", fuzzyFindInventoryItemResultString(result, "your inventory, your equipment, or the room", itemWords))
 	}
 
-	return world.MobItemTarget{}, fmt.Errorf("%s", fuzzyFindInventoryItemResultString(result, "your inventory", itemWords))
+	target := targets[index]
+	target.Id = items[index].Id
+	return items[index], target, nil
 }
 
-func parseItemLocation(locationWords []string) (world.ItemLocation, world.EquipmentSlot, bool) {
+// Fuzzy finds an item in a single inventory. target is the holder of the inventory, and gets the found item's ID
+func fuzzyFindTargetItemInInventory(inventory *world.Inventory, inventoryName string, target world.ItemTarget, itemWords []string) (*world.Item, world.ItemTarget, error) {
+	index, result := fuzzyFindInventoryItem(inventory, itemWords)
+	if result != FUZZY_RESULT_OK {
+		return nil, world.ItemTarget{}, fmt.Errorf("%s", fuzzyFindInventoryItemResultString(result, inventoryName, itemWords))
+	}
+
+	item := &inventory.Items[index]
+	target.Id = item.Id
+	return item, target, nil
+}
+
+func parseItemLocation(room *world.Room, locationWords []string) (ItemLocationResult, bool) {
 	if len(locationWords) == 1 && strings.EqualFold(locationWords[0], "inventory") {
-		return world.ITEM_LOCATION_INVENTORY, 0, true
+		return ItemLocationResult { location: world.ITEM_LOCATION_INVENTORY }, true
+	}
+
+	if len(locationWords) == 1 && strings.EqualFold(locationWords[0], "room") {
+		return ItemLocationResult { location: world.ITEM_LOCATION_ROOM }, true
 	}
 
 	slot, err := fuzzyFindEquipmentSlot(locationWords)
 	if err == nil {
-	    return world.ITEM_LOCATION_EQUIPMENT, slot, true
+		return ItemLocationResult { location: world.ITEM_LOCATION_EQUIPMENT, slot: slot }, true
 	}
 
-	return 0, 0, false
+	chest, err := fuzzyFindChest(room, locationWords)
+	if err == nil {
+		return ItemLocationResult { location: world.ITEM_LOCATION_CHEST, chest: chest }, true
+	}
+
+	return ItemLocationResult{}, false
 }
 
 func fuzzyFindMob(gamestate *GameState, player *Player, searchWords []string) (world.MobHandle, error) {

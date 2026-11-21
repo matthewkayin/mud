@@ -3,6 +3,7 @@ package world
 import (
 	"fmt"
 	"log"
+	"strings"
 	"github.com/mmcdole/lunar"
 )
 
@@ -21,6 +22,8 @@ type ItemLocation int
 const (
 	ITEM_LOCATION_INVENTORY ItemLocation = iota
 	ITEM_LOCATION_EQUIPMENT
+	ITEM_LOCATION_ROOM
+	ITEM_LOCATION_CHEST
 )
 
 type ItemKind int
@@ -49,6 +52,10 @@ func (location ItemLocation) String() string {
 			return "Inventory"
 		case ITEM_LOCATION_EQUIPMENT:
 			return "Equipment"
+		case ITEM_LOCATION_ROOM:
+			return "Room"
+		case ITEM_LOCATION_CHEST:
+			return "Chest"
 		default:
 			panic(fmt.Sprintf("Item location %d not handled.", location))
 	}
@@ -215,6 +222,37 @@ func (item *Item) NameWithAmount() string {
 		return item.NameWithCondition()
 	}
 	return fmt.Sprintf("%d %s", item.Amount, item.NameWithCondition())
+}
+
+// Durability is deliberately not shown. Players only see an item's condition through NameWithCondition
+func (item *Item) DescribeToPlayer(world *World, playerKey string) {
+	world.MessagePlayer(playerKey, fmt.Sprintf("<g>%s</g> (%s).", item.NameWithAmount(), item.Kind.String()))
+	world.MessagePlayer(playerKey, item.Description)
+
+	if item.HasWeaponData() {
+		weaponData := item.Data.(ItemDataWeapon)
+		world.MessagePlayer(playerKey, fmt.Sprintf("Damage: %d, Penetration: %d.", weaponData.damage, weaponData.penetration))
+	}
+
+	if item.HasArmorData() {
+		armorData := item.Data.(ItemDataArmor)
+		world.MessagePlayer(playerKey, fmt.Sprintf("Deflection: %d, Deflection Bonus: %d, Resistance: %d.",
+			armorData.deflection, armorData.deflectBonus, armorData.resistance))
+
+		modifiers := make([]string, 0, 3)
+		if armorData.evadeModifier != 0 {
+			modifiers = append(modifiers, fmt.Sprintf("Evade: %+d", armorData.evadeModifier))
+		}
+		if armorData.sneakModifier != 0 {
+			modifiers = append(modifiers, fmt.Sprintf("Sneak: %+d", armorData.sneakModifier))
+		}
+		if armorData.initiativeModifier != 0 {
+			modifiers = append(modifiers, fmt.Sprintf("Initiative: %+d", armorData.initiativeModifier))
+		}
+		if len(modifiers) != 0 {
+			world.MessagePlayer(playerKey, strings.Join(modifiers, ", ") + ".")
+		}
+	}
 }
 
 func (item *Item) Size() int32 {
