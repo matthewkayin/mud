@@ -42,6 +42,8 @@ const (
 	ITEM_KIND_EQUIPMENT_OUTFIT_LIGHT_ARMOR
 	ITEM_KIND_EQUIPMENT_OUTFIT_HEAVY_ARMOR
 	ITEM_KIND_EQUIPMENT_ACCESSORY
+	ITEM_KIND_EQUIPMENT_FOCUS
+	ITEM_KIND_SPELLBOOK
 	ITEM_KIND_COUNT
 )
 
@@ -88,6 +90,10 @@ func (kind ItemKind) String() string {
 		return "Heavy Armor"
 	case ITEM_KIND_EQUIPMENT_ACCESSORY:
 		return "Accessory"
+	case ITEM_KIND_EQUIPMENT_FOCUS:
+		return "Magic Focus"
+	case ITEM_KIND_SPELLBOOK:
+		return "Spellbook"
 	case ITEM_KIND_CONSUMABLE:
 		return "Consumable"
 	case ITEM_KIND_MISC:
@@ -126,6 +132,10 @@ func (kind ItemKind) toScriptEnum() string {
 		return "HEAVY_ARMOR"
 	case ITEM_KIND_EQUIPMENT_ACCESSORY:
 		return "ACCESSORY"
+	case ITEM_KIND_EQUIPMENT_FOCUS:
+		return "FOCUS"
+	case ITEM_KIND_SPELLBOOK:
+		return "SPELLBOOK"
 	case ITEM_KIND_CONSUMABLE:
 		return "CONSUMABLE"
 	case ITEM_KIND_MISC:
@@ -151,13 +161,6 @@ type ItemDataConsumable struct {
 	onUse *lua.Function
 }
 
-type CreateItemParams struct {
-	itemType *ItemType
-	amount int32
-	durabilityPercent int32
-	durability int32
-}
-
 type ItemDataEquipment struct {
 	maxDurability int32
 	reinforcedPrefix string
@@ -167,6 +170,17 @@ type ItemDataEquipment struct {
 	penetration int32
 
 	stats StatBlock
+}
+
+type ItemDataSpellbook struct {
+	Spell *Spell
+}
+
+type CreateItemParams struct {
+	itemType *ItemType
+	amount int32
+	durabilityPercent int32
+	durability int32
 }
 
 // Creates a new item and assigns it a unique ID. All Item instances should be created this way
@@ -257,7 +271,8 @@ func (itemType *ItemType) IsEquipment() bool {
 		ITEM_KIND_EQUIPMENT_OUTFIT_LIGHT_ARMOR,
 		ITEM_KIND_EQUIPMENT_OUTFIT_HEAVY_ARMOR,
 		ITEM_KIND_EQUIPMENT_SHIELD,
-		ITEM_KIND_EQUIPMENT_ACCESSORY:
+		ITEM_KIND_EQUIPMENT_ACCESSORY,
+		ITEM_KIND_EQUIPMENT_FOCUS:
 			return true
 		default:
 			return false
@@ -351,11 +366,11 @@ func (kind ItemKind) requiredSkill() (Skill, bool) {
 func (itemType *ItemType) EquipmentSlotForItem() (EquipmentSlot, bool) {
 	if itemType.IsWeapon() {
 		return EQUIPMENT_SLOT_MAIN_HAND, true
-	} else if itemType.IsShield() {
+	} else if itemType.IsShield() || itemType.Kind == ITEM_KIND_EQUIPMENT_FOCUS {
 		return EQUIPMENT_SLOT_OFF_HAND, true
 	} else if itemType.IsOutfit() {
 		return EQUIPMENT_SLOT_OUTFIT, true
-	} else if itemType.IsAccessory(){
+	} else if itemType.IsAccessory() {
 		return EQUIPMENT_SLOT_ACCESSORY, true
 	} else {
 		return EQUIPMENT_SLOT_COUNT, false

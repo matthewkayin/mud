@@ -15,10 +15,12 @@ const (
 	STAT_INITIATIVE
 	STAT_ACCURACY
 	STAT_EVASION
+	STAT_CRIT_CHANCE
 	STAT_STEALTH
 	STAT_DEFLECTION
 	STAT_DEFLECTION_AMOUNT
 	STAT_RESISTANCE
+	STAT_MAGIC_DAMAGE
 	STAT_MAGIC_RESISTANCE
 	STAT_FOCUS
 	STAT_COUNT
@@ -42,6 +44,8 @@ func (stat Stat) String() string {
 			return "Accuracy"
 		case STAT_EVASION:
 			return "Evasion"
+		case STAT_CRIT_CHANCE:
+			return "Crit Chance"
 		case STAT_STEALTH:
 			return "Stealth"
 		case STAT_DEFLECTION:
@@ -50,6 +54,8 @@ func (stat Stat) String() string {
 			return "Deflection Amount"
 		case STAT_RESISTANCE:
 			return "Resistance"
+		case STAT_MAGIC_DAMAGE:
+			return "Magic Damage"
 		case STAT_MAGIC_RESISTANCE:
 			return "Magic Resistance"
 		case STAT_FOCUS:
@@ -57,6 +63,17 @@ func (stat Stat) String() string {
 		default:
 			log.Printf("warn: stat %d not handled in String()", stat)
 			return ""
+	}
+}
+
+// Whether the stat's value is a percent, so it is shown to players with a "%" after the number
+func (stat Stat) IsPercentage() bool {
+	switch stat {
+		case STAT_CRIT_CHANCE,
+		  STAT_DEFLECTION_AMOUNT:
+			return true
+		default:
+			return false
 	}
 }
 
@@ -72,7 +89,7 @@ func (stats *StatBlock) Add(other *StatBlock) StatBlock {
 // Returns the stats as display lines of at most STATS_PER_LINE stats each, so callers can indent them.
 // Each column is padded to its widest entry so the " | " separators line up between lines.
 // When isBonus is true, zero-valued stats are skipped and the rest are written as "+X Stat" or "-X Stat".
-// Otherwise every stat is written as "Stat X".
+// Otherwise every stat is written as "Stat X". Percentage stats have a "%" after X.
 func (stats *StatBlock) ToStringArray(isBonus bool) []string {
 	entries := []string{}
 	for index := range STAT_COUNT {
@@ -81,14 +98,19 @@ func (stats *StatBlock) ToStringArray(isBonus bool) []string {
 			continue
 		}
 
+		percentSign := ""
+		if index.IsPercentage() {
+			percentSign = "%"
+		}
+
 		if isBonus {
 			sign := ""
 			if value > 0 {
 				sign = "+"
 			}
-			entries = append(entries, fmt.Sprintf("%s%d %s", sign, value, index.String()))
+			entries = append(entries, fmt.Sprintf("%s%d%s %s", sign, value, percentSign, index.String()))
 		} else {
-			entries = append(entries, fmt.Sprintf("%s %d", index.String(), value))
+			entries = append(entries, fmt.Sprintf("%s %d%s", index.String(), value, percentSign))
 		}
 	}
 

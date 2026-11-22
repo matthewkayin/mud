@@ -3,6 +3,7 @@ package world
 import (
 	"fmt"
 	"math"
+	"slices"
 	"math/rand"
 	"mud/bitset"
 )
@@ -22,6 +23,9 @@ type Character struct {
 
 	Equipment Equipment
 	Inventory Inventory
+
+	SpellsKnown []*Spell
+	SpellsPrepared []*Spell
 
 	RoomsDiscovered []byte
 
@@ -55,6 +59,8 @@ func (world *World) NewCharacter(playerKey string, characterSheet *CharacterShee
 	bitset.Set(character.RoomsDiscovered, character.Room, true)
 
 	character.Equipment = NewEquipment()
+	character.SpellsKnown = make([]*Spell, 0, 1)
+	character.SpellsPrepared = make([]*Spell, 0, 1)
 	character.calculateStats()
 
 	// Set health and mana
@@ -121,8 +127,8 @@ func (character *Character) GetAttacks() []MobAttack {
 
 // CHARACTER FUNCTIONS
 
-func (character *Character) MaxSpellSlots() int32 {
-	return character.Attribute(ATTR_INT) / 4
+func (character *Character) SpellSlots() int {
+	return int(character.Attribute(ATTR_INT)) / 4
 }
 
 func ExpToNextLevel(level int32) int32 {
@@ -171,9 +177,11 @@ func (character *Character) calculateStats() {
 	stats.Values[STAT_INITIATIVE] = attributes.Values[ATTR_AGI]
 	stats.Values[STAT_ACCURACY] = attributes.Values[ATTR_AGI]
 	stats.Values[STAT_EVASION] = attributes.Values[ATTR_AGI]
+	stats.Values[STAT_CRIT_CHANCE] = attributes.Values[ATTR_AGI] / 2
 	stats.Values[STAT_DEFLECTION] = 0
 	stats.Values[STAT_DEFLECTION_AMOUNT] = 40
 	stats.Values[STAT_RESISTANCE] = 0
+	stats.Values[STAT_MAGIC_DAMAGE] = attributes.Values[ATTR_FTH] / 2
 	stats.Values[STAT_MAGIC_RESISTANCE] = attributes.Values[ATTR_FTH] / 2
 	stats.Values[STAT_FOCUS] = attributes.Values[ATTR_INT] / 2
 
@@ -324,4 +332,12 @@ func (character *Character) dumpEquipment() {
 	}
 
 	character.calculateStats()
+}
+
+func (character *Character) HasKnownSpell(spell *Spell) bool {
+	return slices.Index(character.SpellsKnown, spell) != -1
+}
+
+func (character *Character) HasPreparedSpell(spell *Spell) bool {
+	return slices.Index(character.SpellsPrepared, spell) != -1
 }

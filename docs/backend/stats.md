@@ -12,6 +12,8 @@ Mobs have two kinds of numbers:
 | `STAT_INITIATIVE` | `world.Stat.INITIATIVE` | Who goes first in combat. Room occupants update in descending initiative. |
 | `STAT_ACCURACY` | `world.Stat.ACCURACY` | How likely an attack is to hit. |
 | `STAT_EVASION` | `world.Stat.EVASION` | How likely an attack is to be dodged. |
+| `STAT_CRIT_CHANCE` | `world.Stat.CRIT_CHANCE` | Percent chance for an attack to crit. |
+| `STAT_STEALTH` | `world.Stat.STEALTH` | Not used by any game rule yet. |
 | `STAT_DEFLECTION` | `world.Stat.DEFLECTION` | Chance to deflect an attack. Each point above the attack's penetration adds `MOB_DEFLECTION_PER_POINT` percent. |
 | `STAT_DEFLECTION_AMOUNT` | `world.Stat.DEFLECTION_AMOUNT` | Percent of damage removed on a deflect. |
 | `STAT_RESISTANCE` | `world.Stat.RESISTANCE` | Flat damage reduction on each attack. |
@@ -20,7 +22,9 @@ Mobs have two kinds of numbers:
 
 `Stat.String()` gives the display name ("Max Health"), which is also the value of the Lua constant. Lua constant names are the upper-case display name with spaces replaced by underscores. Attributes use their abbreviation for both.
 
-`StatBlock.ToStringArray(isBonus)` formats a block for players as lines of at most `STATS_PER_LINE` (6) stats joined by ` | `, so the caller can indent each line. Each column is padded to its widest entry so the ` | ` separators line up from line to line. With `isBonus` true (equipment), zero stats are left out and the rest read `+X Stat` or `-X Stat`. With it false, every stat is shown as `Stat X`. The character sheet doesn't use it: the server sends each stat's name and value in the heartbeat's `sheet`, and the client lays them out (see [frontend.md](../frontend.md#view-panel)).
+`StatBlock.ToStringArray(isBonus)` formats a block for players as lines of at most `STATS_PER_LINE` (6) stats joined by ` | `, so the caller can indent each line. Each column is padded to its widest entry so the ` | ` separators line up from line to line. With `isBonus` true (equipment), zero stats are left out and the rest read `+X Stat` or `-X Stat`. With it false, every stat is shown as `Stat X`.
+
+`Stat.IsPercentage()` is true for stats whose value is a percent (`STAT_CRIT_CHANCE` and `STAT_DEFLECTION_AMOUNT`). Those are shown with a `%` after the number everywhere players see them: `ToStringArray` writes `+X% Stat` or `Stat X%`, and the character sheet sends the flag as each stat's `percent`. The character sheet doesn't use `ToStringArray`: the server sends each stat's name, value and `percent` flag in the heartbeat's `sheet`, and the client lays them out (see [frontend.md](../frontend.md#view-panel)).
 
 ## Reading stats
 
@@ -42,6 +46,7 @@ A character's attributes (`Character.Attributes`) and stats (`MobData.Stats`) ar
 | Initiative | AGI + Σ armor `initiative_modifier` |
 | Accuracy | AGI |
 | Evasion | AGI + Σ armor `evade_modifier` |
+| Crit chance | AGI / 2 |
 | Deflection | Σ armor `deflection` |
 | Deflection amount | 40 + Σ armor `deflection_bonus` |
 | Resistance | Σ armor `resistance` |

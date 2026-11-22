@@ -30,13 +30,14 @@ var MENU_WORLD_PARAMS = MenuNewParams {
 		MENU_WORLD_ENTRIES_LOOK,
 		MENU_WORLD_ENTRIES_ITEM,
 		MENU_WORLD_ENTRIES_EQUIP,
+		MENU_WORLD_ENTRIES_SPELLS,
 		makeMoveEntries(),
 	),
 	topics: util.MergeMaps(
 		MENU_WORLD_TOPICS_GENERAL,
 		MENU_WORLD_TOPICS_SOCIAL,
 		MENU_WORLD_TOPICS_ITEM,
-		MENU_WORLD_TOPICS_EQUIP,
+		MENU_WORLD_TOPICS_SPELLS,
 	),
 	interceptCommand: menuWorldInterceptCommand,
 }
@@ -54,6 +55,7 @@ var MENU_WORLD_TOPICS_GENERAL = map[string]MenuHelpTopic {
 			"  inventory - the items you have equipped and are carrying",
 			"  mobs      - the mobs in your room, their condition and who they are targeting",
 			"  stats     - your character sheet",
+			"  spells    - your prepared and known spells",
 			"'view equipment' also shows the inventory.",
 		},
 	},

@@ -644,3 +644,27 @@ func fuzzyFindChest(room *world.Room, searchWords []string) (*world.Chest, error
 			return nil, fmt.Errorf("Something stranged happened.")
 	}
 }
+
+func fuzzyFindSpell(world *world.World, spells []*world.Spell, spellDescription string, searchWords []string) (*world.Spell, error) {
+	// Check for empty search words
+	if len(searchWords) == 0 {
+		return nil, fmt.Errorf("You must specify a spell.")
+	}
+
+	// Fuzzy find
+	spellNames := world.SpellListToStringArray(spells)
+	index, result := fuzzyFind(spellNames, searchWords, FUZZY_NUMBER_NOT_SPECIFIED)
+
+	// Handle result
+	switch result {
+		case FUZZY_RESULT_OK:
+			return spells[index], nil
+		case FUZZY_RESULT_NOT_FOUND:
+			return nil, fmt.Errorf("You have no %s spell named '%s'.", spellDescription, strings.Join(searchWords, " "))
+		case FUZZY_RESULT_AMBIGUOUS:
+			return nil, fmt.Errorf("You have multiple %s spells matching the name '%s'.", spellDescription, strings.Join(searchWords, " "))
+		default:
+			log.Printf("warn: fuzzy result %d not handled in fuzzyFindSpell().", result)
+			return nil, fmt.Errorf("Something strange happened.")
+	}
+}

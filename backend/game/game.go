@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"fmt"
 	"mud/util"
 	"mud/world"
 	"time"
@@ -226,6 +227,7 @@ func (gamestate *GameState) spawnPlayerMob(player *Player) {
 	player.isInventoryDirty = true
 	player.lastSentRoomMobs = nil
 	player.lastSentCharacterSheet = nil
+	player.lastSentSpells = nil
 }
 
 func (gamestate *GameState) messagePlayer(playerKey string, message string) {
@@ -254,6 +256,10 @@ func (gamestate *GameState) messageWorld(message string) {
 			player.send(message)
 		}
 	}
+}
+
+func (gamestate *GameState) worldAnnouncement(message string) {
+	gamestate.messageWorld(fmt.Sprintf("[World] %s", message))
 }
 
 func (gamestate *GameState) savePlayers() {

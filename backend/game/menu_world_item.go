@@ -284,7 +284,7 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 			item := &player.character.Inventory.Items[index]
 			switch item.Kind {
 				case world.ITEM_KIND_CONSUMABLE: {
-					consumableData := item.Data.(*world.ItemDataConsumable)
+					consumableData := item.Data.(world.ItemDataConsumable)
 
 					// Find target
 					target, err := findTarget(gamestate, player, FindTargetParams {
@@ -303,6 +303,27 @@ var MENU_WORLD_ENTRIES_ITEM = map[string]MenuEntry {
 
 					playerMob := gamestate.world.Mobs.Get(player.mobHandle)
 					playerMob.SetModeUseItem(gamestate.world, item.Id, target)
+				}
+
+				case world.ITEM_KIND_SPELLBOOK: {
+					spellbookData := item.Data.(world.ItemDataSpellbook)
+
+					// Check skill
+					if !player.character.Skills.Has(spellbookData.Spell.RequiredSkill) {
+						player.send(fmt.Sprintf("You need the %s skill to learn that spell.", spellbookData.Spell.RequiredSkill.String()))
+						return true
+					}
+
+					// Check for already-known spell
+					if player.character.HasKnownSpell(spellbookData.Spell) {
+						player.send(fmt.Sprintf("You already know the spell <g>%s</g>.", spellbookData.Spell.Name))
+						return true
+					}
+
+					player.character.SpellsKnown = append(player.character.SpellsKnown, spellbookData.Spell)
+					player.character.Inventory.RemoveItem(gamestate.world, index)
+					player.send(fmt.Sprintf("You learned <g>%s</g>!", spellbookData.Spell.Name))
+					return true
 				}
 
 				default: {

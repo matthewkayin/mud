@@ -55,6 +55,15 @@ type MobValidateTargetParams struct {
 	Name string
 }
 
+type MobOnUseOrCastParams struct {
+	targetType TargetType
+	hook *lua.Function
+	validateTarget *lua.Function
+	noun string
+	verb string
+	name string
+}
+
 type MobAttack struct {
 	damage int32
 	penetration int32
@@ -83,6 +92,7 @@ type Mob struct {
 	itemToUse ItemId
 
 	// MOB_MODE_CAST state
+	spellToCast *Spell
 	spellTimer int
 
 	// Set when an action is queued and cleared on the mob's turn (Mob.update)
@@ -226,6 +236,12 @@ func (mob *Mob) SetModeAttack(world *World, targetHandle MobHandle) {
 	})
 }
 
+func (mob *Mob) SetModeCast(world *World, spellToCast *Spell, target MobTarget) {
+	mob.beginAction(world, MOB_MODE_CAST, target)
+	mob.spellToCast = spellToCast
+	mob.spellTimer = int(spellToCast.CastTime)
+}
+
 func (mob *Mob) SetModeUseItem(world *World, itemToUse ItemId, target MobTarget) {
 	mob.beginAction(world, MOB_MODE_USE_ITEM, target)
 	mob.itemToUse = itemToUse
@@ -329,6 +345,39 @@ func (mob *Mob) update(world *World) {
 			}
 		}
 
+		// CAST
+
+		case MOB_MODE_CAST: {
+			// Check if target exists
+			if !mob.isTargetValid(world) {
+				mob.SetModeIdle()
+				break
+			}
+
+			// Check if caster has enough mana
+			if mob.Mana < mob.spellToCast.ManaCost {
+				mob.SetModeIdle()
+				world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> tried to cast <g>%s</g>, but they don't have enough mana.", mob.Name, mob.spellToCast.Name))
+				break
+			}
+
+			// Check spell timer
+			if mob.spellTimer > 0 {
+				mob.spellTimer--
+				world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> is casting a spell...", mob.Name))
+				break
+			}
+
+			// Cast spell
+			world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> cast <g>%s</g>!", mob.Name, mob.spellToCast.Name))
+			success := mob.spellcast(world)
+			if success {
+				mob.Mana -= mob.spellToCast.ManaCost
+			}
+
+			mob.SetModeIdle()
+		}
+
 		// USE ITEM
 
 		case MOB_MODE_USE_ITEM: {
@@ -390,11 +439,48 @@ func (mob *Mob) damage(attackerHandle MobHandle, damage int32) {
 	}
 }
 
+// Returns the amount of damage dealt
+func (mob *Mob) magicDamage(attacker *Mob, baseDamage int32) int32 {
+	damage := max(1, baseDamage + attacker.Stat(STAT_MAGIC_DAMAGE) - mob.Stat(STAT_MAGIC_RESISTANCE))
+	mob.damage(attacker.Handle, damage)
+
+	return damage
+}
+
+// Returns the amount of HP healed
+func (mob *Mob) magicHeal(world *World, caster *Mob, baseHealing int32) int32 {
+	missingHealth := mob.Stat(STAT_MAX_HEALTH) - mob.Health
+	healing := min(missingHealth, baseHealing + caster.Stat(STAT_MAGIC_DAMAGE))
+	mob.Health += healing
+
+	// Raise threat on the healer
+	if caster.IsPlayer() {
+		threatAmount := healing / 2
+		room := &world.Rooms[caster.Room]
+		for _, handle := range room.Occupants {
+			occupant := world.Mobs.Get(handle)
+			if !occupant.IsNpc() {
+				continue
+			}
+			if len(occupant.Npc.threats) != 0 {
+				occupant.Npc.addThreat(caster.Handle, threatAmount)
+			}
+		}
+	}
+
+	return healing
+}
+
 func (mob *Mob) attackTarget(world *World, targetMob *Mob, attack MobAttack) {
-	// TODO:
-	// - check for evasion
-	// - check for crit
-	crit := false
+	// Roll to hit
+	hit := mob.rollToHit(targetMob)
+	if !hit {
+		world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> dodged <y>%s's</y> attack!", targetMob.Name, mob.Name))
+		return
+	}
+
+	// Roll crit
+	crit := mob.rollCrit()
 
 	// Check for deflection
 	deflect := false
@@ -453,6 +539,20 @@ func (mob *Mob) attackTarget(world *World, targetMob *Mob, attack MobAttack) {
 	}
 }
 
+func (mob *Mob) spellcast(world *World) bool {
+	mob.alertness = MOB_ALERTNESS_MAX
+	// TODO: mob.SetFlag(MOB_FLAG_HIDDEN, false)
+
+	return mob.onUseOrCast(world, MobOnUseOrCastParams {
+		targetType: mob.spellToCast.TargetType,
+		hook: mob.spellToCast.onCast,
+		validateTarget: mob.spellToCast.ValidateTarget,
+		noun: "spell",
+		verb: "cast",
+		name: mob.spellToCast.Name,
+	})
+}
+
 func (mob *Mob) useItem(world *World) {
 	if !mob.IsPlayer() {
 		log.Printf("warn: NPC %s tried to call useItem()", mob.Name)
@@ -478,7 +578,14 @@ func (mob *Mob) useItem(world *World) {
 	switch itemType.Kind {
 		case ITEM_KIND_CONSUMABLE: {
 			consumableData := itemType.Data.(*ItemDataConsumable)
-			success = mob.callOnUse(world, consumableData, itemType.Name)
+			success = mob.onUseOrCast(world, MobOnUseOrCastParams {
+				targetType: consumableData.TargetType,
+				hook: consumableData.onUse,
+				validateTarget: consumableData.ValidateTarget,
+				noun: "item",
+				verb: "use",
+				name: itemType.Name,
+			})
 		}
 		default: {
 			log.Printf("warn: %s tried to use item %s of kind %s, which can't be used.", mob.Name, itemType.Name, itemType.Kind.String())
@@ -500,16 +607,15 @@ func (mob *Mob) useItem(world *World) {
 	}
 }
 
-// Calls a consumable's on_use() on the mob's target. Returns false if the target was refused or the hook failed
-func (mob *Mob) callOnUse(world *World, consumableData *ItemDataConsumable, itemName string) bool {
+func (mob *Mob) onUseOrCast(world *World, params MobOnUseOrCastParams) bool {
 	// Validate the target again, since the world may have changed since the item was queued
-	if consumableData.ValidateTarget != nil {
+	if params.validateTarget != nil {
 		err := mob.ValidateTarget(world, MobValidateTargetParams {
-			Hook: consumableData.ValidateTarget,
+			Hook: params.validateTarget,
 			Target: mob.Target,
-			Verb: "use",
-			Name: itemName,
-			Noun: "item",
+			Verb: params.verb,
+			Name: params.name,
+			Noun: params.noun,
 		})
 		if err != nil {
 			return false
@@ -521,8 +627,8 @@ func (mob *Mob) callOnUse(world *World, consumableData *ItemDataConsumable, item
 		return false
 	}
 
-	functionDesc := fmt.Sprintf("item.%s.on_use()", itemName)
-	_, ok = world.ScriptCall(consumableData.onUse.Value(), functionDesc, args...)
+	functionDesc := fmt.Sprintf("%s.%s.on_%s()", params.noun, params.name, params.verb)
+	_, ok = world.ScriptCall(params.hook.Value(), functionDesc, args...)
 	return ok
 }
 

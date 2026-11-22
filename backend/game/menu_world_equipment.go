@@ -5,17 +5,6 @@ import (
 	"mud/world"
 )
 
-var MENU_WORLD_TOPICS_EQUIP = map[string]MenuHelpTopic {
-	"equipment": {
-		categories: []string { "gear" },
-		lines: []string {
-			"=== Equipping Items ===",
-			"Something.",
-			"And something else.",
-		},
-	},
-}
-
 var MENU_WORLD_ENTRIES_EQUIP = map[string]MenuEntry {
 	"equip": {
 		usage: "equip <item> [in <slot>]",
@@ -98,12 +87,11 @@ var MENU_WORLD_ENTRIES_EQUIP = map[string]MenuEntry {
 			// bother writing the code for it
 
 			// Check if they are in combat
-			/*
-			if player.character.IsInCombat(gamestate.world) {
+			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+			if playerMob.IsInCombat(gamestate.world) {
 				player.send("You cannot remove items while you are in combat.")
 				return true
 			}
-			*/
 
 			itemWords, slotWords, userSpecifiedSlot := splitArgsBy(args, "from")
 

@@ -55,9 +55,11 @@ type SocketRoomMob struct {
 }
 
 // A named number on the character sheet, such as an attribute or stat
+// IsPercentage is true when the client should show the value with a "%" after it
 type SocketSheetValue struct {
 	Name string `json:"name"`
 	Value int32 `json:"value"`
+	IsPercentage bool `json:"percent"`
 }
 
 // The player's character sheet, which the client formats for the view panel's stats mode
@@ -74,6 +76,15 @@ type SocketCharacterSheet struct {
 	Skills []string `json:"skills"`
 }
 
+// The player's spells, which the client formats into tables for the view panel's spells mode
+// Prepared and Known are never nil, so empty lists are sent as [] rather than null
+// Slots is the number of spells the character can have prepared at once
+type SocketSpells struct {
+	Prepared []string `json:"prepared"`
+	Known []string `json:"known"`
+	Slots int32 `json:"slots"`
+}
+
 // A message sent to the client
 type SocketMessage struct {
 	Message *string `json:"message"`
@@ -83,4 +94,5 @@ type SocketMessage struct {
 	Map []int `json:"map,omitempty"`
 	RoomMobs []SocketRoomMob `json:"mobs,omitempty"`
 	Sheet *SocketCharacterSheet `json:"sheet,omitempty"`
+	Spells *SocketSpells `json:"spells,omitempty"`
 }

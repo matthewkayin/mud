@@ -339,3 +339,30 @@ func (parser *ScriptParser) getTargetType(table *lua.Table, key string) TargetTy
 
 	return targetType
 }
+
+func (parser *ScriptParser) getSkill(table *lua.Table, key string) Skill {
+	value := table.RawGetString(key)
+	skillName, ok := value.AsString()
+	if !ok {
+		parser.addProblem(key, fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, lua.StringKind.String(), value.Kind().String()))
+		return SKILL_COUNT
+	}
+
+	skill, ok := util.EnumFromString[Skill](skillName, SKILL_COUNT)
+	if !ok {
+		parser.addProblem(key, fmt.Errorf("Unrecognized skill '%s'.", skill))
+	}
+
+	return skill
+}
+
+func (parser *ScriptParser) getSpell(world *World, table *lua.Table, key string) *Spell {
+	spellName := parser.getString(table, key)
+	spell, exists := world.Spells[spellName]
+	if !exists {
+		parser.addProblem(key, fmt.Errorf("Unrecognized spell '%s'.", spellName))
+		return nil
+	}
+
+	return spell
+}

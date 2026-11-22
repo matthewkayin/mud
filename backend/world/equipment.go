@@ -27,7 +27,7 @@ func NewEquipment() Equipment {
 
 func ItemMatchesEquipmentSlot(item Item, slot EquipmentSlot) bool {
 
-	if item.IsOneHandedWeapon() {
+	if item.IsOneHandedWeapon() || item.Kind == ITEM_KIND_EQUIPMENT_FOCUS {
 		return slot == EQUIPMENT_SLOT_MAIN_HAND || slot == EQUIPMENT_SLOT_OFF_HAND
 	} else if item.IsShield() {
 		return slot == EQUIPMENT_SLOT_OFF_HAND
@@ -182,4 +182,20 @@ func (equipment *Equipment) Unequip(slot EquipmentSlot) (Item, bool) {
 	//equipment.CalculateStatBonuses()
 
 	return item, true
+}
+
+func (equipment *Equipment) HasMagicFocus() bool {
+	// Check main hand
+	item := equipment.Get(EQUIPMENT_SLOT_MAIN_HAND)
+	if item != nil && item.Kind == ITEM_KIND_EQUIPMENT_FOCUS {
+		return true
+	}
+
+	// Check off hand
+	item = equipment.Get(EQUIPMENT_SLOT_OFF_HAND)
+	if item != nil && item.Kind == ITEM_KIND_EQUIPMENT_FOCUS {
+		return true
+	}
+
+	return false
 }

@@ -7,6 +7,8 @@ import (
 const CHECK_CHANCE_MIN float32 = 0.05
 const CHECK_CHANCE_MAX float32 = 0.95
 
+const CHECK_TO_HIT_WEIGHT float32 = 1.0 / 6.0
+
 func contestedCheckChance(rank int32, difficulty int32, weight float32) float32 {
 	if rank == 0 && difficulty == 0 {
 		return CHECK_CHANCE_MAX
@@ -29,4 +31,13 @@ func (mob *Mob) rollTaunt(targetMob *Mob) bool {
 	chance *= (1.0 - mob.tauntCooldown)
 
 	return rollCheck(chance)
+}
+
+func (mob *Mob) rollToHit(defender *Mob) bool {
+	chance := contestedCheckChance(mob.Stat(STAT_ACCURACY), defender.Stat(STAT_EVASION), CHECK_TO_HIT_WEIGHT)
+	return rollCheck(chance)
+}
+
+func (mob *Mob) rollCrit() bool {
+	return rollCheck(float32(mob.Stat(STAT_CRIT_CHANCE)) / 100.0)
 }
