@@ -20,6 +20,7 @@ const (
 	STAT_DEFLECTION
 	STAT_DEFLECTION_AMOUNT
 	STAT_RESISTANCE
+	STAT_MAGIC_DAMAGE
 	STAT_MAGIC_RESISTANCE
 	STAT_FOCUS
 	STAT_COUNT
@@ -53,6 +54,8 @@ func (stat Stat) String() string {
 			return "Deflection Amount"
 		case STAT_RESISTANCE:
 			return "Resistance"
+		case STAT_MAGIC_DAMAGE:
+			return "Magic Damage"
 		case STAT_MAGIC_RESISTANCE:
 			return "Magic Resistance"
 		case STAT_FOCUS:

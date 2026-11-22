@@ -2,6 +2,9 @@ package game
 
 import (
 	"fmt"
+	"log"
+	"mud/util"
+	"slices"
 )
 
 var MENU_WORLD_TOPICS_SPELLS = map[string]MenuHelpTopic {
@@ -55,6 +58,13 @@ var MENU_WORLD_ENTRIES_SPELLS = map[string]MenuEntry {
 				return false
 			}
 
+			// Check that players are not in-combat
+			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+			if playerMob.IsInCombat(gamestate.world) {
+				player.send("You cannot prepare spells while you are in combat.")
+				return true
+			}
+
 			// Fuzzy find spell
 			spell, err := fuzzyFindSpell(gamestate.world, player.character.SpellsKnown, "known", args)
 			if err != nil {
@@ -80,11 +90,97 @@ var MENU_WORLD_ENTRIES_SPELLS = map[string]MenuEntry {
 		},
 	},
 
+	"forget": {
+		usage: "forget <spell>",
+		description: "Removes a spell you know from your prepared spells list. Spells forgotten this way are not forgotten forever and can be re-prepared later.",
+		categories: []string { "magic" },
+		handler: func (gamestate *GameState, player *Player, args []string) bool {
+			if len(args) == 0 {
+				return false
+			}
+
+			// Check that players are not in-combat
+			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+			if playerMob.IsInCombat(gamestate.world) {
+				player.send("You cannot forget spells while you are in combat.")
+				return true
+			}
+
+			// Fuzzy find spell
+			spell, err := fuzzyFindSpell(gamestate.world, player.character.SpellsPrepared, "prepared", args)
+			if err != nil {
+				player.send(err.Error())
+				return true
+			}
+
+			// Get index of spell
+			index := slices.Index(player.character.SpellsPrepared, spell)
+			if index == -1 {
+				log.Printf("warn: index of fuzzy-found spell %s is -1 in forget command.", spell.Name)
+				player.send("Something strange happened.")
+				return true
+			}
+
+			// Remove spell
+			player.character.SpellsPrepared = util.RemoveAtUnordered(player.character.SpellsPrepared, index)
+			player.send(fmt.Sprintf("You forgot <g>%s</g>.", spell.Name))
+			return true
+		},
+	},
+
 	"cast": {
 		usage: "cast <spell> [on <target>]",
 		description: "Cast a spell",
 		categories: []string { "combat", "magic" },
 		handler: func (gamestate *GameState, player *Player, args []string) bool {
+			// Split args
+			spellWords, targetWords, userSpecifiedTarget := splitArgsBy(args, "on")
+			if len(spellWords) == 0 {
+				return false
+			}
+			if userSpecifiedTarget && len(targetWords) == 0 {
+				player.send("When specifying 'on' you must specify a target.")
+				return false
+			}
+
+			// Check that player has a magic focus
+			if !player.character.Equipment.HasMagicFocus() {
+				player.send("You must be wielding a magic focus in order to cast spells.")
+				return true
+			}
+
+			// Find spell
+			spell, err := fuzzyFindSpell(gamestate.world, player.character.SpellsPrepared, "prepared", spellWords)
+			if err != nil {
+				player.send(err.Error())
+				return true
+			}
+
+			// Check that player has enough mana
+			if player.character.Mana < spell.ManaCost {
+				player.send("Not enough mana!")
+				return true
+			}
+
+			// Find target
+			target, err := findTarget(gamestate, player, FindTargetParams {
+				targetType: spell.TargetType,
+				userSpecifiedTarget: userSpecifiedTarget,
+				targetWords: targetWords,
+				verb: "cast",
+				name: "spell",
+				noun: spell.Name,
+				validateTarget: spell.ValidateTarget,
+			})
+			if err != nil {
+				player.send(err.Error())
+				return true
+			}
+
+			playerMob := gamestate.world.Mobs.Get(player.mobHandle)
+			playerMob.SetModeCast(gamestate.world, spell, target)
+
+			return true
 		},
 	},
 }

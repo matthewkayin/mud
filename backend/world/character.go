@@ -181,6 +181,7 @@ func (character *Character) calculateStats() {
 	stats.Values[STAT_DEFLECTION] = 0
 	stats.Values[STAT_DEFLECTION_AMOUNT] = 40
 	stats.Values[STAT_RESISTANCE] = 0
+	stats.Values[STAT_MAGIC_DAMAGE] = attributes.Values[ATTR_FTH] / 2
 	stats.Values[STAT_MAGIC_RESISTANCE] = attributes.Values[ATTR_FTH] / 2
 	stats.Values[STAT_FOCUS] = attributes.Values[ATTR_INT] / 2
 

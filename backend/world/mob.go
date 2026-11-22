@@ -439,6 +439,38 @@ func (mob *Mob) damage(attackerHandle MobHandle, damage int32) {
 	}
 }
 
+// Returns the amount of damage dealt
+func (mob *Mob) magicDamage(attacker *Mob, baseDamage int32) int32 {
+	damage := max(1, baseDamage + attacker.Stat(STAT_MAGIC_DAMAGE) - mob.Stat(STAT_MAGIC_RESISTANCE))
+	mob.damage(attacker.Handle, damage)
+
+	return damage
+}
+
+// Returns the amount of HP healed
+func (mob *Mob) magicHeal(world *World, caster *Mob, baseHealing int32) int32 {
+	missingHealth := mob.Stat(STAT_MAX_HEALTH) - mob.Health
+	healing := min(missingHealth, baseHealing + caster.Stat(STAT_MAGIC_DAMAGE))
+	mob.Health += healing
+
+	// Raise threat on the healer
+	if caster.IsPlayer() {
+		threatAmount := healing / 2
+		room := &world.Rooms[caster.Room]
+		for _, handle := range room.Occupants {
+			occupant := world.Mobs.Get(handle)
+			if !occupant.IsNpc() {
+				continue
+			}
+			if len(occupant.Npc.threats) != 0 {
+				occupant.Npc.addThreat(caster.Handle, threatAmount)
+			}
+		}
+	}
+
+	return healing
+}
+
 func (mob *Mob) attackTarget(world *World, targetMob *Mob, attack MobAttack) {
 	// Roll to hit
 	hit := mob.rollToHit(targetMob)

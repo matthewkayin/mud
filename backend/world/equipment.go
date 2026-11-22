@@ -183,3 +183,19 @@ func (equipment *Equipment) Unequip(slot EquipmentSlot) (Item, bool) {
 
 	return item, true
 }
+
+func (equipment *Equipment) HasMagicFocus() bool {
+	// Check main hand
+	item := equipment.Get(EQUIPMENT_SLOT_MAIN_HAND)
+	if item != nil && item.Kind == ITEM_KIND_EQUIPMENT_FOCUS {
+		return true
+	}
+
+	// Check off hand
+	item = equipment.Get(EQUIPMENT_SLOT_OFF_HAND)
+	if item != nil && item.Kind == ITEM_KIND_EQUIPMENT_FOCUS {
+		return true
+	}
+
+	return false
+}
