@@ -28,6 +28,8 @@ type Player struct {
 	lastSentRoomMobs []SocketRoomMob
 	// The character sheet last sent to the client, so it is only sent again when it changes
 	lastSentCharacterSheet *SocketCharacterSheet
+	// The spells last sent to the client, so they are only sent again when they change
+	lastSentSpells *SocketSpells
 }
 
 func playerInit(key string, inbox *chan SocketMessage) Player {
@@ -82,6 +84,12 @@ func (player *Player) sendHeartbeat(gamestate *GameState) {
 			if player.lastSentCharacterSheet == nil || !isCharacterSheetEqual(&characterSheet, player.lastSentCharacterSheet) {
 				heartbeat.Sheet = &characterSheet
 				player.lastSentCharacterSheet = &characterSheet
+			}
+			// Spell slots change with the character's stats, so compare against what was last sent instead of using a dirty flag
+			spells := getSocketSpells(player.character)
+			if player.lastSentSpells == nil || !isSocketSpellsEqual(&spells, player.lastSentSpells) {
+				heartbeat.Spells = &spells
+				player.lastSentSpells = &spells
 			}
 		}
 	}
@@ -171,6 +179,31 @@ func isCharacterSheetEqual(sheet *SocketCharacterSheet, other *SocketCharacterSh
 		slices.Equal(sheet.Attributes, other.Attributes) &&
 		slices.Equal(sheet.Stats, other.Stats) &&
 		slices.Equal(sheet.Skills, other.Skills)
+}
+
+// The player's prepared and known spells, in list order, for the client's spells view
+func getSocketSpells(character *world.Character) SocketSpells {
+	prepared := make([]string, 0, len(character.SpellsPrepared))
+	for _, spell := range character.SpellsPrepared {
+		prepared = append(prepared, spell.Name)
+	}
+
+	known := make([]string, 0, len(character.SpellsKnown))
+	for _, spell := range character.SpellsKnown {
+		known = append(known, spell.Name)
+	}
+
+	return SocketSpells {
+		Prepared: prepared,
+		Known: known,
+		Slots: int32(character.SpellSlots()),
+	}
+}
+
+func isSocketSpellsEqual(spells *SocketSpells, other *SocketSpells) bool {
+	return spells.Slots == other.Slots &&
+		slices.Equal(spells.Prepared, other.Prepared) &&
+		slices.Equal(spells.Known, other.Known)
 }
 
 // One entry per equipment slot, for the client's equipment table

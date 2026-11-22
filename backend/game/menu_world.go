@@ -55,6 +55,7 @@ var MENU_WORLD_TOPICS_GENERAL = map[string]MenuHelpTopic {
 			"  inventory - the items you have equipped and are carrying",
 			"  mobs      - the mobs in your room, their condition and who they are targeting",
 			"  stats     - your character sheet",
+			"  spells    - your prepared and known spells",
 			"'view equipment' also shows the inventory.",
 		},
 	},

@@ -7,7 +7,7 @@ import { StatusBar } from './status_bar.tsx';
 import { Minimap } from './minimap.tsx';
 import { View } from './view.tsx';
 import { VIEW_MODES, parseViewMode, type ViewMode } from './view_mode.ts';
-import { type EquipmentSlot, type Inventory, type PlayerStatus, type RoomMob, type CharacterSheet, type SocketMessage } from './socket_message';
+import { type EquipmentSlot, type Inventory, type PlayerStatus, type RoomMob, type CharacterSheet, type Spells, type SocketMessage } from './socket_message';
 
 const TERMINAL_PROMPT = ">";
 const HEARTBEAT_TIMEOUT_MS = 10000;
@@ -44,6 +44,7 @@ export function GamePage() {
   const [equipment, setEquipment] = useState<EquipmentSlot[] | null>(null);
   const [roomMobs, setRoomMobs] = useState<RoomMob[] | null>(null);
   const [characterSheet, setCharacterSheet] = useState<CharacterSheet | null>(null);
+  const [spells, setSpells] = useState<Spells | null>(null);
 
   // The player is in the world while the server is sending them a status
   const isInWorld = playerStatus !== null;
@@ -143,13 +144,14 @@ export function GamePage() {
       } else if (socketMessage.message === null) {
         // If we receive no status and message is null, then this is a status-less heartbeat,
         // which means the player is receiving a heartbeat but they aren't in game, so clear
-        // their status, minimap, inventory, equipment, room mobs and character sheet
+        // their status, minimap, inventory, equipment, room mobs, character sheet and spells
         setPlayerStatus(null);
         setMinimap(null);
         setInventory(null);
         setEquipment(null);
         setRoomMobs(null);
         setCharacterSheet(null);
+        setSpells(null);
       }
 
       // Get minimap from socketMessage
@@ -171,6 +173,10 @@ export function GamePage() {
       // The server only sends the character sheet when it changes
       if (socketMessage.sheet) {
         setCharacterSheet(socketMessage.sheet);
+      }
+      // The server only sends the spells when they change
+      if (socketMessage.spells) {
+        setSpells(socketMessage.spells);
       }
     };
 
@@ -246,6 +252,7 @@ export function GamePage() {
           equipment={equipment}
           roomMobs={roomMobs}
           characterSheet={characterSheet}
+          spells={spells}
         />
       </div>
     </article>

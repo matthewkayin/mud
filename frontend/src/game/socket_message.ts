@@ -53,6 +53,13 @@ export type CharacterSheet = {
   skills: string[];
 };
 
+// The player's prepared and known spells, and slots, the number of spells they can have prepared at once
+export type Spells = {
+  prepared: string[];
+  known: string[];
+  slots: number;
+};
+
 export type SocketMessage = {
   message: string | null;
   status?: PlayerStatus;
@@ -61,4 +68,5 @@ export type SocketMessage = {
   equip?: EquipmentSlot[];
   mobs?: RoomMob[];
   sheet?: CharacterSheet;
+  spells?: Spells;
 };
