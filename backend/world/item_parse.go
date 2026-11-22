@@ -28,7 +28,7 @@ func (world *World) loadItemTypes() []ScriptProblem {
 	for _, file := range files {
 		// Parse item type
 		parser := ScriptParser{ path: file.path }
-		itemType := parser.parseItemType(file.table)
+		itemType := parser.parseItemType(world, file.table)
 		if itemType == nil {
 			problems = append(problems, parser.problems...)
 			continue
@@ -48,7 +48,7 @@ func (world *World) loadItemTypes() []ScriptProblem {
 	return problems
 }
 
-func (parser *ScriptParser) parseItemType(table *lua.Table) *ItemType {
+func (parser *ScriptParser) parseItemType(world *World, table *lua.Table) *ItemType {
 	itemType := &ItemType{}
 
 	itemType.Name = parser.getString(table, "name")
@@ -86,7 +86,7 @@ func (parser *ScriptParser) parseItemType(table *lua.Table) *ItemType {
 	}
 
 	if itemType.Kind == ITEM_KIND_CONSUMABLE {
-		data := &ItemDataConsumable{}
+		var data ItemDataConsumable
 
 		data.TargetType = parser.getTargetType(table, "target_type")
 		if data.TargetType == TARGET_TYPE_ITEM || data.TargetType == TARGET_TYPE_ARGUMENT {
@@ -97,6 +97,13 @@ func (parser *ScriptParser) parseItemType(table *lua.Table) *ItemType {
 		}
 
 		data.onUse = parser.getFunction(table, "on_use")
+		itemType.Data = data
+	}
+
+	if itemType.Kind == ITEM_KIND_SPELLBOOK {
+		var data ItemDataSpellbook
+
+		data.Spell = parser.getSpell(world, table, "spell")
 		itemType.Data = data
 	}
 

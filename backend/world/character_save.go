@@ -33,6 +33,8 @@ type CharacterJson struct {
 
 	Inventory []ItemJson
 	Equipment []EquipmentSlotJson
+	SpellsKnown []string
+	SpellsPrepared []string
 }
 
 type ItemJson struct {
@@ -148,6 +150,8 @@ func (world *World) characterToJson(character *Character) CharacterJson {
 
 		Inventory: make([]ItemJson, 0, len(character.Inventory.Items)),
 		Equipment: make([]EquipmentSlotJson, 0, EQUIPMENT_SLOT_COUNT),
+		SpellsKnown: world.SpellListToStringArray(character.SpellsKnown),
+		SpellsPrepared: make([]string, 0, len(character.SpellsPrepared)),
 	}
 
 	// Rooms discovered
@@ -265,6 +269,16 @@ func (world *World) characterFromJson(characterJson *CharacterJson) (*Character,
 		if !wasEquipped {
 			return nil, fmt.Errorf("Character has item %s equipped in slot %s, but it cannot be equipped there.", item.Name, slot.String())
 		}
+	}
+
+	// Spells
+	character.SpellsKnown, err = world.spellListFromStringArray(characterJson.SpellsKnown)
+	if err != nil {
+		return nil, err
+	}
+	character.SpellsPrepared, err = world.spellListFromStringArray(characterJson.SpellsPrepared)
+	if err != nil {
+		return nil, err
 	}
 
 	// Stats depend on attributes and equipment, so they are calculated once both are loaded
