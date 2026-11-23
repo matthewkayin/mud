@@ -31,7 +31,7 @@ func (world *World) loadClassData() []ScriptProblem {
 		}
 
 		// Check for duplicates
-		_, duplicateName := world.ClassData[classData.Name]
+		_, duplicateName := world.ClassData[strings.ToLower(classData.Name)]
 		if duplicateName {
 			parser.addProblem("name", fmt.Errorf("Class has name '%s' which is a duplicate of another class.", classData.Name))
 			problems = append(problems, parser.problems...)

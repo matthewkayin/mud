@@ -2,7 +2,8 @@
 
 Scenario tests that don't exist yet, roughly in priority order. See `docs/backend/testing.md` for how to write one.
 Fixture notes say what each scenario needs that the `arena` world doesn't have. Add those things to a fixture world
-(extend `arena`, or add a new world under `testdata/worlds/` when a scenario needs a different layout). Remove an
+(extend `arena`, or add a new world under `testdata/` when a scenario needs a different layout; it gets the races,
+classes and spells in `testdata/base/` for free). Remove an
 entry once its scenario exists.
 
 ## Known bugs (these should fail until the bug is fixed)

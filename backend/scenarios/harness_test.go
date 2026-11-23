@@ -2,6 +2,7 @@ package scenarios
 
 import (
 	"io"
+	"io/fs"
 	"fmt"
 	"math/rand/v2"
 	"mud/game"
@@ -10,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"testing/fstest"
 )
 
 // A game for scenario tests. Tests drive it through the same calls the game loop makes (RegisterPlayer, HandleCommand,
@@ -34,15 +36,17 @@ type testClient struct {
 
 const TEST_RANDOM_SEED = 1
 const TEST_CLIENT_INBOX_SIZE = 4096
+// Scripts every fixture world shares. A fixture world's own files are laid over these
+const TEST_BASE_WORLD_FOLDER = "testdata/base"
 
 var testColorTagPattern = regexp.MustCompile(`</?[a-z]+>`)
 
-// Loads the world in worldFolder (relative to backend/scenarios), seeds its RNG, and points character saves
-// at a temporary folder. Fails the test if the world data has any errors
+// Loads the world in worldFolder (relative to backend/scenarios) on top of the base world, seeds its RNG, and points
+// character saves at a temporary folder. Fails the test if the world data has any errors
 func newTestGame(t *testing.T, worldFolder string) *testGame {
 	t.Helper()
 
-	testWorld, problems, err := world.NewWorld(os.DirFS(worldFolder), io.Discard)
+	testWorld, problems, err := world.NewWorld(newLayeredWorldFS(t, worldFolder), io.Discard)
 	if err != nil {
 		t.Fatalf("Failed to load test world %s: %s", worldFolder, err.Error())
 	}
@@ -66,6 +70,36 @@ func newTestGame(t *testing.T, worldFolder string) *testGame {
 		gamestate: game.NewGameState("test", nil, testWorld),
 		clients: make([]*testClient, 0, 1),
 	}
+}
+
+// Builds a world data folder from the base world with worldFolder laid over it. A file in worldFolder replaces the
+// base world's file at the same path
+func newLayeredWorldFS(t *testing.T, worldFolder string) fstest.MapFS {
+	t.Helper()
+
+	layeredFS := fstest.MapFS{}
+	for _, folder := range []string{TEST_BASE_WORLD_FOLDER, worldFolder} {
+		folderFS := os.DirFS(folder)
+		err := fs.WalkDir(folderFS, ".", func(path string, entry fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if entry.IsDir() {
+				return nil
+			}
+			data, err := fs.ReadFile(folderFS, path)
+			if err != nil {
+				return err
+			}
+			layeredFS[path] = &fstest.MapFile{ Data: data }
+			return nil
+		})
+		if err != nil {
+			t.Fatalf("Failed to read test world folder %s: %s", folder, err.Error())
+		}
+	}
+
+	return layeredFS
 }
 
 // Connects a new player with the given account key. They start at the login menu

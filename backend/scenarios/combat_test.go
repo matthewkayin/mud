@@ -5,25 +5,36 @@ import (
 )
 
 func TestPlayerKillsNpcAndGetsExperienceAndCorpse(test *testing.T) {
-	game := newTestGame(test, "testdata/worlds/arena")
-	alice := game.connect("alice")
-	alice.createCharacter("Hero", "human", "warrior")
-	alice.login("Hero")
+	game := newTestGame(test, "testdata/arena")
+	player := game.connect("alice")
+	player.createCharacter("Hero", "human", "warrior")
+	player.login("Hero")
 
-	// The arena's spawner spawns the dummy on the first update
+	// Wait for first update so that the dummy is spawned
 	game.tick(1)
-	alice.do("look")
-	alice.expectSaw("Training Dummy is here")
+	player.do("look")
+	player.expectSaw("Training Dummy is here")
 
-	alice.do("attack dummy")
-	alice.tickUntilSaw("Hero has slain Training Dummy", 30)
+	player.do("attack dummy")
+	player.tickUntilSaw("Hero has slain Training Dummy", 30)
 
 	// The dead dummy is removed and leaves a corpse at the end of the update it died in
-	alice.do("look")
-	alice.expectSaw("Training Dummy's Corpse")
-	alice.expectNotSaw("Training Dummy is here")
+	player.do("look")
+	player.expectSaw("Training Dummy's Corpse")
+	player.expectNotSaw("Training Dummy is here")
 
-	if alice.lastSheet == nil || alice.lastSheet.Experience != 10 {
-		test.Fatalf("Expected Hero to have 10 experience after killing the dummy, got sheet %+v.\n%s", alice.lastSheet, alice.transcript())
+	if player.lastSheet == nil || player.lastSheet.Experience != 10 {
+		test.Fatalf("Expected Hero to have 10 experience after killing the dummy, got sheet %+v.\n%s", player.lastSheet, player.transcript())
 	}
+}
+
+func TestInitiative(test *testing.T) {
+	game := newTestGame(test, "testdata/arena")
+	player := game.connect("bufo")
+	player.createCharacter("Bufo", "human", "warrior")
+	player.login("Bufo")
+
+	// Wait for first update so that the dummy is spawned
+	game.tick(1)
+	player.do("attack")
 }

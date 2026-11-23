@@ -23,7 +23,7 @@ Scenario tests are their own package, `backend/scenarios/`, which has only test 
 The harness is in `backend/scenarios/harness_test.go`. It calls those handlers directly on the test's goroutine, so there are no channels, tickers or timing involved. A scenario that needs something the exported API doesn't offer should get a new exported method on `GameState` or `World` that a player-facing feature could also use, not access to internals.
 
 ```go
-game := newTestGame(test, "testdata/worlds/arena")
+game := newTestGame(test, "testdata/arena")
 alice := game.connect("alice")                   // a new connection, at the login menu
 alice.createCharacter("Hero", "human", "warrior") // create → name → race → class → finish
 alice.login("Hero")
@@ -37,7 +37,7 @@ alice.expectSaw("Training Dummy's Corpse")
 
 | Helper | What it does |
 |---|---|
-| `newTestGame(test, worldFolder)` | Loads a fixture world. Fails the test with every problem if the world data has errors. |
+| `newTestGame(test, worldFolder)` | Loads a fixture world on top of the base world. Fails the test with every problem if the world data has errors. |
 | `game.connect(key)` | Connects a player with account key `key`. |
 | `game.tick(count)` | Runs `count` world updates. |
 | `client.do(command)` | Sends a command. |
@@ -53,11 +53,21 @@ The harness doesn't cover `Run` itself, the websocket read and write loops, or t
 
 ## Fixture worlds
 
-Scenario tests load small worlds from `backend/scenarios/testdata/worlds/<name>/`, not from `backend/data/`, so changing game content doesn't break tests. A fixture world has the same layout as the real data folder (see [world_data.md](world_data.md)), and every core folder (`classes`, `items`, `npcs`, `races`, `rooms`, `spells`) must have at least one script, because a missing folder is a load error. Keep fixtures minimal and name their contents for what the test needs (e.g. a "Training Dummy" with known health and damage).
+Scenario tests load small worlds from `backend/scenarios/testdata/<name>/`, not from `backend/data/`, so changing game content doesn't break tests. `newTestGame` builds each world from two folders:
 
-| World | Contents |
+- `testdata/base/` holds the scripts most scenarios use without asserting on them, such as the races and classes that character creation needs.
+- The fixture world's own folder (e.g. `testdata/arena/`) holds `layout.json` and everything its scenarios check: rooms, NPCs, items.
+
+The harness (`newLayeredWorldFS`) reads the base folder, then the world folder, into one in-memory filesystem that it passes to `world.NewWorld`. A file in the world folder replaces the base file at the same path (e.g. `classes/warrior.lua`). A script at a different path that uses the same name as a base script is a duplicate and fails to load, so overriding is always deliberate. A world can't remove a base file.
+
+The combined world has the same layout as the real data folder (see [world_data.md](world_data.md)), and every core folder (`classes`, `items`, `npcs`, `races`, `rooms`, `spells`) must have at least one script between the two layers, because a missing folder is a load error. Load problems report paths within the combined world, so look in both folders to find the file.
+
+Keep fixtures minimal and name their contents for what the test needs (e.g. a "Training Dummy" with known health and damage). When a scenario needs a different layout or different NPCs, add a new world folder with just those files rather than piling more onto an existing world. Keep the base small: everything in it is in every fixture world, so a change to it can change many scenarios at once. Never put `layout.json` in the base, so a world without its own layout fails to load.
+
+| Folder | Contents |
 |---|---|
-| `arena` | One room, "Arena", with no exits. It spawns one neutral "Training Dummy" (15 HP, 1 damage, worth 10 experience, drops 1 Leather). It has the human race, the warrior class, Leather and Firebolt. |
+| `base` | The human race, the warrior class and the Firebolt spell. |
+| `arena` | One room, "Arena", with no exits. It spawns one neutral "Training Dummy" (15 HP, 1 damage, worth 10 experience, drops 1 Leather). It has the Leather item. |
 
 ## Determinism
 
