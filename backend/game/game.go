@@ -287,6 +287,7 @@ func (gamestate *GameState) handleCommand(playerKey string, command string) {
 	player := gamestate.getPlayerByKey(playerKey)
 	if player == nil {
 		log.Printf("warn: received command from player %s, but they don't exist.", playerKey)
+		return
 	}
 
 	player.menu.handleCommand(gamestate, player, command)
