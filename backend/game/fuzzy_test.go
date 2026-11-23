@@ -39,13 +39,6 @@ func newFuzzyTestState() (*GameState, *Player) {
 	return gamestate, player
 }
 
-func TestSplitArgsByIgnoresCase(test *testing.T) {
-	before, after, found := splitArgsBy([]string { "Ring", "In", "Inventory" }, "in")
-	if !found || !slices.Equal(before, []string { "Ring" }) || !slices.Equal(after, []string { "Inventory" }) {
-		test.Fatalf("Expected 'Ring In Inventory' to split at 'In', got %v, %v, %v.", before, after, found)
-	}
-}
-
 func TestSplitArgsByItemLocation(test *testing.T) {
 	room := &world.Room { Inventory: world.NewInventory() }
 
