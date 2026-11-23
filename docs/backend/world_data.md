@@ -106,9 +106,10 @@ Queuing an action (`SetModeUseItem`, `SetModeAttack`) sets `Mob.HasPendingAction
 
 ### npcs
 
+An NPC's ID is its script's filename without `.lua` (`npcs/happy_cow.lua` is `happy_cow`). Rooms refer to the NPC by this ID. It must be unique across `npcs/` and its subfolders.
+
 | Field | Type | Notes |
 |---|---|---|
-| `id` | string | Required. Rooms refer to the NPC by this id. Must be unique. |
 | `name` | string | Required. |
 | `description` | string | Required. |
 | `starting_disposition` | `world.NpcDisposition.*` | Required. |

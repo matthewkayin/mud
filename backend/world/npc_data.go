@@ -3,6 +3,8 @@ package world
 import (
 	"fmt"
 	"mud/util"
+	"path"
+	"strings"
 
 	"github.com/mmcdole/lunar"
 )
@@ -65,18 +67,21 @@ func (world *World) loadNpcData() []ScriptProblem {
 	world.NpcData = make(map[string]*NpcData)
 
 	for _, file := range files {
+		// The NPC's ID is its filename without the extension, e.g. "npcs/happy_cow.lua" is "happy_cow"
+		id := strings.TrimSuffix(path.Base(file.path), ".lua")
+
 		// Parse NPC data
 		parser := ScriptParser{ path: file.path }
-		npcData := parser.parserNpc(world, file.table)
+		npcData := parser.parserNpc(world, file.table, id)
 		if npcData == nil {
 			problems = append(problems, parser.problems...)
 			continue
 		}
 
-		// Check for duplicate IDs
+		// Check for duplicate IDs. Scripts in different subfolders can share a filename
 		_, duplicateNpcId := world.NpcData[npcData.id]
 		if duplicateNpcId {
-			parser.addProblem("id", fmt.Errorf("NPC has ID '%s' which is a duplicate of another NPC.", npcData.id))
+			parser.addProblem("", fmt.Errorf("NPC ID '%s' (from the filename) is a duplicate of another NPC.", npcData.id))
 			problems = append(problems, parser.problems...)
 			continue
 		}
@@ -87,10 +92,10 @@ func (world *World) loadNpcData() []ScriptProblem {
 	return problems
 }
 
-func (parser *ScriptParser) parserNpc(world *World, table *lua.Table) *NpcData {
+func (parser *ScriptParser) parserNpc(world *World, table *lua.Table, id string) *NpcData {
 	npcData := &NpcData{}
 
-	npcData.id = parser.getString(table, "id")
+	npcData.id = id
 	npcData.name = parser.getString(table, "name")
 	npcData.description = parser.getString(table, "description")
 

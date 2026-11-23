@@ -1,6 +1,5 @@
 local npc = {}
 
-npc.id = "training_dummy"
 npc.name = "Training Dummy"
 npc.description = "A straw dummy that hits back, gently."
 

@@ -1,6 +1,5 @@
 local npc = {}
 
-npc.id = "happy_cow"
 npc.name = "Happy Cow"
 npc.description = "Lives a life of total bovine simplicity."
 
