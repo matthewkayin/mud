@@ -130,7 +130,7 @@ func (world *World) MessageRoom(roomIndex int, message string) {
 	room := &world.Rooms[roomIndex]
 	for _, handle := range room.Occupants {
 		mob := world.Mobs.Get(handle)
-		mob.Message(__world, message)
+		mob.Message(world, message)
 	}
 }
 

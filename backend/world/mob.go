@@ -146,13 +146,6 @@ func (mob *Mob) IsEvil() bool {
 	return mob.Npc.disposition != NPC_DISPOSITION_FRIENDLY
 }
 
-func (mob *Mob) IsHostile() bool {
-	if mob.IsPlayer() {
-		return false
-	}
-	return mob.Npc.disposition == NPC_DISPOSITION_HOSTILE
-}
-
 // Sends a message to the mob's player. Does nothing for NPCs
 func (mob *Mob) Message(world *World, message string) {
 	if mob.Character == nil {
@@ -196,14 +189,26 @@ func (mob *Mob) isDead() bool {
 	return mob.Health <= 0
 }
 
+// Returns true if mob is an NPC that wants to fight the other mob
+func (mob *Mob) isHostileTo(other *Mob) bool {
+	if mob.Handle == other.Handle || mob.isDead() || other.isDead() {
+		return false
+	}
+	if !mob.IsNpc() {
+		return false
+	}
+	if mob.Npc.disposition == NPC_DISPOSITION_HOSTILE && other.IsPlayer() {
+		return true
+	}
+	return mob.Npc.getThreat(other.Handle) > 0
+}
+
+// Returns true if any mob in the room is an enemy of this mob, or this mob is an enemy of any mob in the room
 func (mob *Mob) IsInCombat(world *World) bool {
 	room := &world.Rooms[mob.Room]
 	for _, occupantHandle := range room.Occupants {
 		occupant := world.Mobs.Get(occupantHandle)
-		if mob.IsPlayer() && occupant.IsHostile() {
-			return true
-		}
-		if mob.IsHostile() && occupant.IsPlayer() {
+		if occupant.isHostileTo(mob) || mob.isHostileTo(occupant) {
 			return true
 		}
 	}

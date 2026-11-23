@@ -122,6 +122,14 @@ func (npc *Npc) update(world *World) {
 	npc.callUpdate(world)
 	npcMob := world.Mobs.Get(npc.mobHandle)
 
+	// Give up on a target the NPC no longer has a reason to fight, such as a taunter whose threat decayed
+	if npcMob.Mode == MOB_MODE_ATTACK && npcMob.isTargetValid(world) {
+		targetMob := npcMob.getTargetMobIfExists(world)
+		if !npcMob.isHostileTo(targetMob) {
+			npcMob.Stop(world)
+		}
+	}
+
 	// Acquire a target from the threat table
 	target, shouldSwitchTargets := npc.shouldSwitchTargets(world)
 	if shouldSwitchTargets {
@@ -134,8 +142,7 @@ func (npc *Npc) update(world *World) {
 
 		// Find a target enemy
 		targetIndex := slices.IndexFunc(room.Occupants, func (handle MobHandle) bool {
-			occupant := world.Mobs.Get(handle)
-			return !occupant.isDead() && occupant.IsPlayer()
+			return npcMob.isHostileTo(world.Mobs.Get(handle))
 		})
 
 		// If target enemy found, set mode to attack
