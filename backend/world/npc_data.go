@@ -90,7 +90,7 @@ func (world *World) loadNpcData() []ScriptProblem {
 func (parser *ScriptParser) parserNpc(world *World, table *lua.Table) *NpcData {
 	npcData := &NpcData{}
 
-	npcData. id = parser.getString(table, "id")
+	npcData.id = parser.getString(table, "id")
 	npcData.name = parser.getString(table, "name")
 	npcData.description = parser.getString(table, "description")
 

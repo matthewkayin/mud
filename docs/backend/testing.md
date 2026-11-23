@@ -47,7 +47,7 @@ alice.expectSaw("Training Dummy's Corpse")
 | `client.createCharacter(name, race, class)`, `client.login(name)` | Go through character creation and login. |
 | `client.lastSheet` | The last character sheet the server sent in a heartbeat. |
 
-Messages are stored with color tags removed (`<y>Hero</y>` becomes `Hero`), so assertions match what the player reads. When an expectation fails, the test prints the client's whole transcript and marks where the search started.
+Messages are stored with color tags removed (`<y>Hero</y>` becomes `Hero`), so assertions match what the player reads. Only the single-letter color tags (`w`, `r`, `g`, `b`, `y`, `p`, from `frontend/src/game/text_color.ts`) are removed, so other text in angle brackets, such as `<target>` in usage messages, is kept. When an expectation fails, the test prints the client's whole transcript and marks where the search started.
 
 The harness doesn't cover `Run` itself, the websocket read and write loops, or the HTTP routes.
 

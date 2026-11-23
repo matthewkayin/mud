@@ -77,8 +77,8 @@ func (room *Room) update(world *World) {
 
 	// Update occupants
 	occupants := room.sortOccupantsByInitiativeOrder(world)
-	for index := range len(occupants) {
-		occupant := world.Mobs.Get(room.Occupants[index])
+	for _, occupantHandle := range occupants {
+		occupant := world.Mobs.Get(occupantHandle)
 		if occupant.isDead() {
 			continue
 		}

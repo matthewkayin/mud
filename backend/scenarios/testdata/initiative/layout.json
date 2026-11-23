@@ -1,0 +1,6 @@
+{
+    "start": { "x": 0, "y": 0, "z": 0 },
+    "rooms": [
+        { "position": { "x": 0, "y": 0, "z": 0 }, "path": "arena.lua", "exits": [] }
+    ]
+}

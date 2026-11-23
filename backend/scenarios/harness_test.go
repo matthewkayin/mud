@@ -34,16 +34,17 @@ type testClient struct {
 	lastSheet *game.SocketCharacterSheet
 }
 
-const TEST_RANDOM_SEED = 1
 const TEST_CLIENT_INBOX_SIZE = 4096
 // Scripts every fixture world shares. A fixture world's own files are laid over these
 const TEST_BASE_WORLD_FOLDER = "testdata/base"
 
-var testColorTagPattern = regexp.MustCompile(`</?[a-z]+>`)
+// Matches only the color tags, which are the client's TextColor values in frontend/src/game/text_color.ts, so that
+// other text in angle brackets (such as "<target>" in usage messages) is kept
+var testColorTagPattern = regexp.MustCompile(`</?[wrgbyp]>`)
 
 // Loads the world in worldFolder (relative to backend/scenarios) on top of the base world, seeds its RNG, and points
 // character saves at a temporary folder. Fails the test if the world data has any errors
-func newTestGame(t *testing.T, worldFolder string) *testGame {
+func newTestGame(t *testing.T, worldFolder string, randomSeed uint64) *testGame {
 	t.Helper()
 
 	testWorld, problems, err := world.NewWorld(newLayeredWorldFS(t, worldFolder), io.Discard)
@@ -60,7 +61,7 @@ func newTestGame(t *testing.T, worldFolder string) *testGame {
 	}
 	t.Cleanup(testWorld.Quit)
 
-	testWorld.Random = rand.New(rand.NewPCG(TEST_RANDOM_SEED, TEST_RANDOM_SEED))
+	testWorld.Random = rand.New(rand.NewPCG(randomSeed, randomSeed))
 	testWorld.CharacterSavesFolder = t.TempDir()
 	testWorld.Characters = make(map[string]*world.Character)
 	testWorld.PlayerCharacters = make(map[string][]string)
