@@ -11,6 +11,8 @@ There are two kinds of backend tests:
 
 When you fix a bug, first write a test that reproduces it and watch it fail.
 
+`backend/scenarios/todo.md` lists scenarios that still need to be written, including ones for known bugs and ones that should replace existing unit tests.
+
 ## Scenario harness
 
 Scenario tests are their own package, `backend/scenarios/`, which has only test files, so they stay out of the way of the game code. Being outside `game`, they can only use its exported API:
