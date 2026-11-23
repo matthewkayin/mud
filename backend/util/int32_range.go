@@ -14,9 +14,9 @@ func (int32range *Int32Range) Length() int32 {
 }
 
 // Returns a random number within the range
-func (int32range *Int32Range) ChooseRandom() int32 {
+func (int32range *Int32Range) ChooseRandom(random *rand.Rand) int32 {
 	if int32range.Max - int32range.Min <= 0 {
 		return int32range.Min
 	}
-	return int32range.Min + rand.Int32N(int32range.Length())
+	return int32range.Min + random.Int32N(int32range.Length())
 }

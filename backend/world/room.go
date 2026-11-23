@@ -3,7 +3,6 @@ package world
 import (
 	"fmt"
 	"log"
-	"math/rand"
 	"sort"
 	"slices"
 
@@ -95,7 +94,7 @@ func (room *Room) update(world *World) {
 		if occupant.isDead() {
 			room.Occupants = util.RemoveAtUnordered(room.Occupants, index)
 			room.grantExperienceFrom(world, occupant)
-			room.createCorpse(occupant)
+			room.createCorpse(world, occupant)
 			world.Mobs.Remove(occupantHandle)
 		} else {
 			index++
@@ -124,7 +123,7 @@ func (room *Room) sortOccupantsByInitiativeOrder(world *World) []MobHandle {
 
 		// If they have the same agility, choose a random one to go first
 		if mobI.Stat(STAT_INITIATIVE) == mobJ.Stat(STAT_INITIATIVE) {
-			return rand.Intn(2) == 0
+			return world.Random.IntN(2) == 0
 		}
 
 		return mobI.Stat(STAT_INITIATIVE) > mobJ.Stat(STAT_INITIATIVE)
@@ -133,10 +132,10 @@ func (room *Room) sortOccupantsByInitiativeOrder(world *World) []MobHandle {
 	return occupants
 }
 
-func (room *Room) createCorpse(mob *Mob) {
+func (room *Room) createCorpse(world *World, mob *Mob) {
 	var corpse Chest
 	if mob.IsPlayer() {
-		mob.Character.dumpEquipment()
+		mob.Character.dumpEquipment(world)
 		corpse = NewPlayerCorpse(mob.Character)
 	} else {
 		corpse = NewCorpse(mob.Name, &mob.Npc.data.loot)

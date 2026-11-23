@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"mud/util"
-	"math/rand/v2"
 
 	"github.com/mmcdole/lunar"
 )
@@ -28,13 +27,13 @@ func (table *LootTable) getLoot(world *World, luck int32) Inventory {
 		entry := &table.Entries[index]
 
 		// Roll to see if this item is dropped
-		droppedItem := rand.Int32N(100) < entry.dropChancePercent + luck
+		droppedItem := world.Random.Int32N(100) < entry.dropChancePercent + luck
 		if !droppedItem {
 			continue
 		}
 
 		// Roll for item amount
-		amount := entry.amountRange.ChooseRandom()
+		amount := entry.amountRange.ChooseRandom(world.Random)
 		if amount <= 0 {
 			log.Printf("warn: drop table item %s amount %d is not positive.", entry.itemType.Name, amount)
 			continue
@@ -52,7 +51,7 @@ func (table *LootTable) getLoot(world *World, luck int32) Inventory {
 				item := world.createItem(CreateItemParams {
 					itemType: entry.itemType,
 					amount: 1,
-					durabilityPercent: entry.durabilityPercentRange.ChooseRandom(),
+					durabilityPercent: entry.durabilityPercentRange.ChooseRandom(world.Random),
 				})
 				inventory.AddItem(item)
 			}
