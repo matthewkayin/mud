@@ -2,6 +2,8 @@
 
 Run the backend tests from `backend/` with `go test ./...`.
 
+CI (`.github/workflows/ci.yml`) runs on every pull request and every push to `main`. It runs `go vet` and `go test` for the backend, the editor extension's typecheck, tests and build, and the frontend's lint and build. Each runs as its own job on Ubuntu, so tests must not depend on Windows behavior such as CRLF line endings or file permissions.
+
 There are two kinds of backend tests:
 
 - **Scenario tests** (`backend/game/scenario_*_test.go`) play the game the way a player does. They type commands, let the game run updates, and check the messages the player receives. They only use the player-facing surface (command text in, message text and heartbeats out), so they keep passing when `world/` internals are refactored, and fail when behavior a player would notice changes. Write one for any feature that spans commands, game updates and the world, and for any bug a player could report.

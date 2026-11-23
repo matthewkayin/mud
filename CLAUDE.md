@@ -29,6 +29,8 @@ The branch `kayin/mudkit-refactor` is rebuilding the project from scratch. The g
 
 ## Commands
 
+CI (`.github/workflows/ci.yml`) runs the backend's vet and tests, the editor's typecheck, tests and build, and the frontend's lint and build on every pull request and push to `main`. Before opening a PR, run the commands below for the parts you changed.
+
 Backend (run from `backend/`, since it reads `./.env` and writes `./logs` and `./saves` relative to the working directory):
 ```
 go run .
