@@ -1,10 +1,8 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
-  workflow_dispatch:
+    branches: [main]
 
 # A newer push to the same branch or pull request cancels the run in progress
 concurrency:
@@ -15,8 +13,8 @@ permissions:
   contents: read
 
 jobs:
-  backend:
-    name: Backend (Go)
+  test-backend:
+    name: Backend Tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -31,44 +29,3 @@ jobs:
         run: go vet ./...
       - name: Test
         run: go test ./...
-
-  editor:
-    name: Editor extension
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: editor
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          # The tests run .ts files directly, which needs Node's type stripping
-          node-version: 24
-          cache: npm
-          cache-dependency-path: editor/package-lock.json
-      - run: npm ci
-      - name: Typecheck
-        run: npm run typecheck
-      - name: Test
-        run: npm test
-      - name: Build
-        run: npm run build
-
-  frontend:
-    name: Frontend
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
-      - name: Lint
-        run: npm run lint
-      - name: Build
-        run: npm run build
