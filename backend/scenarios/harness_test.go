@@ -1,9 +1,10 @@
-package game
+package scenarios
 
 import (
 	"io"
 	"fmt"
 	"math/rand/v2"
+	"mud/game"
 	"mud/world"
 	"os"
 	"regexp"
@@ -11,24 +12,24 @@ import (
 	"testing"
 )
 
-// A game for scenario tests. Tests drive it through the same calls the game loop makes (registerPlayer, handleCommand,
-// update), on the test's goroutine, so a scenario runs the same way every time
+// A game for scenario tests. Tests drive it through the same calls the game loop makes (RegisterPlayer, HandleCommand,
+// Update), on the test's goroutine, so a scenario runs the same way every time
 type testGame struct {
 	t *testing.T
-	gamestate *GameState
+	gamestate *game.GameState
 	clients []*testClient
 }
 
 // A connected player in a scenario test. It records every message the server sends it, with color tags removed
 type testClient struct {
-	game *testGame
+	testgame *testGame
 	key string
-	inbox chan SocketMessage
+	inbox chan game.SocketMessage
 	messages []string
 	// Index into messages of the first message that expectSaw and expectNotSaw haven't searched yet
 	cursor int
 	// The most recent character sheet the server sent in a heartbeat
-	lastSheet *SocketCharacterSheet
+	lastSheet *game.SocketCharacterSheet
 }
 
 const TEST_RANDOM_SEED = 1
@@ -36,7 +37,7 @@ const TEST_CLIENT_INBOX_SIZE = 4096
 
 var testColorTagPattern = regexp.MustCompile(`</?[a-z]+>`)
 
-// Loads the world in worldFolder (relative to the test's package folder), seeds its RNG, and points character saves
+// Loads the world in worldFolder (relative to backend/scenarios), seeds its RNG, and points character saves
 // at a temporary folder. Fails the test if the world data has any errors
 func newTestGame(t *testing.T, worldFolder string) *testGame {
 	t.Helper()
@@ -62,43 +63,43 @@ func newTestGame(t *testing.T, worldFolder string) *testGame {
 
 	return &testGame {
 		t: t,
-		gamestate: newGameState("test", nil, testWorld),
+		gamestate: game.NewGameState("test", nil, testWorld),
 		clients: make([]*testClient, 0, 1),
 	}
 }
 
 // Connects a new player with the given account key. They start at the login menu
-func (game *testGame) connect(key string) *testClient {
-	game.t.Helper()
+func (testgame *testGame) connect(key string) *testClient {
+	testgame.t.Helper()
 
 	client := &testClient {
-		game: game,
+		testgame: testgame,
 		key: key,
-		inbox: make(chan SocketMessage, TEST_CLIENT_INBOX_SIZE),
+		inbox: make(chan game.SocketMessage, TEST_CLIENT_INBOX_SIZE),
 		messages: make([]string, 0, 64),
 	}
-	game.clients = append(game.clients, client)
+	testgame.clients = append(testgame.clients, client)
 
-	game.gamestate.registerPlayer(key, &client.inbox)
-	game.drain()
+	testgame.gamestate.RegisterPlayer(key, &client.inbox)
+	testgame.drain()
 
 	return client
 }
 
 // Runs the given number of game updates
-func (game *testGame) tick(count int) {
-	game.t.Helper()
+func (testgame *testGame) tick(count int) {
+	testgame.t.Helper()
 
 	for range count {
-		game.gamestate.update()
-		game.drain()
+		testgame.gamestate.Update()
+		testgame.drain()
 	}
 }
 
 // Moves everything the server sent each client into its messages. The game's sends block when an inbox is full,
 // so this runs after every step
-func (game *testGame) drain() {
-	for _, client := range game.clients {
+func (testgame *testGame) drain() {
+	for _, client := range testgame.clients {
 		client.drain()
 	}
 }
@@ -126,50 +127,50 @@ func (client *testClient) drain() {
 
 // Sends a command as if the player typed it
 func (client *testClient) do(command string) {
-	client.game.t.Helper()
+	client.testgame.t.Helper()
 
-	client.game.gamestate.handleCommand(client.key, command)
-	client.game.drain()
+	client.testgame.gamestate.HandleCommand(client.key, command)
+	client.testgame.drain()
 }
 
 // Fails unless a message since the last expectation contains text. Moves past the matching message
 func (client *testClient) expectSaw(text string) {
-	client.game.t.Helper()
+	client.testgame.t.Helper()
 
 	index := client.findSince(client.cursor, text)
 	if index == -1 {
-		client.game.t.Fatalf("%s expected to see %q.\n%s", client.key, text, client.transcript())
+		client.testgame.t.Fatalf("%s expected to see %q.\n%s", client.key, text, client.transcript())
 	}
 	client.cursor = index + 1
 }
 
 // Fails if a message since the last expectation contains text. Moves past every message received so far
 func (client *testClient) expectNotSaw(text string) {
-	client.game.t.Helper()
+	client.testgame.t.Helper()
 
 	index := client.findSince(client.cursor, text)
 	if index != -1 {
-		client.game.t.Fatalf("%s expected not to see %q.\n%s", client.key, text, client.transcript())
+		client.testgame.t.Fatalf("%s expected not to see %q.\n%s", client.key, text, client.transcript())
 	}
 	client.cursor = len(client.messages)
 }
 
 // Runs game updates until a new message contains text, failing if it doesn't appear within maxTicks updates
 func (client *testClient) tickUntilSaw(text string, maxTicks int) {
-	client.game.t.Helper()
+	client.testgame.t.Helper()
 
 	for range maxTicks {
 		if client.findSince(client.cursor, text) != -1 {
 			break
 		}
-		client.game.tick(1)
+		client.testgame.tick(1)
 	}
 	client.expectSaw(text)
 }
 
 // Creates a character through the character creation menu. The client must be at the login menu
 func (client *testClient) createCharacter(name string, race string, class string) {
-	client.game.t.Helper()
+	client.testgame.t.Helper()
 
 	client.do("create")
 	client.do(name)
@@ -181,7 +182,7 @@ func (client *testClient) createCharacter(name string, race string, class string
 
 // Logs in to one of the client's characters. The client must be at the login menu
 func (client *testClient) login(name string) {
-	client.game.t.Helper()
+	client.testgame.t.Helper()
 
 	client.do("login " + name)
 	client.expectSaw("Welcome, " + name)

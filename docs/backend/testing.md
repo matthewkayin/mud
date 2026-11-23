@@ -2,18 +2,23 @@
 
 Run the backend tests from `backend/` with `go test ./...`.
 
-CI (`.github/workflows/ci.yml`) runs on every pull request and every push to `main`. It runs `go vet` and `go test` for the backend, the editor extension's typecheck, tests and build, and the frontend's lint and build. Each runs as its own job on Ubuntu, so tests must not depend on Windows behavior such as CRLF line endings or file permissions.
+CI (`.github/workflows/ci.yml`) runs the backend's `go vet ./...` and `go test ./...` on Ubuntu for every pull request to `main`, so tests must not depend on Windows behavior such as CRLF line endings or file permissions.
 
 There are two kinds of backend tests:
 
-- **Scenario tests** (`backend/game/scenario_*_test.go`) play the game the way a player does. They type commands, let the game run updates, and check the messages the player receives. They only use the player-facing surface (command text in, message text and heartbeats out), so they keep passing when `world/` internals are refactored, and fail when behavior a player would notice changes. Write one for any feature that spans commands, game updates and the world, and for any bug a player could report.
-- **Unit tests** (the other `_test.go` files) call one function directly. Use them for pure logic with many edge cases and a stable contract, such as fuzzy matching (`game/fuzzy_test.go`) or layout parsing (`world/layout_test.go`). Avoid unit tests that build internal structs by hand to reach deep behavior, because they break whenever those structs change. Use a scenario test instead.
+- **Scenario tests** (`backend/scenarios/*_test.go`) play the game the way a player does. They type commands, let the game run updates, and check the messages the player receives. They only use the player-facing surface (command text in, message text and heartbeats out), so they keep passing when `world/` internals are refactored, and fail when behavior a player would notice changes. Write one for any feature that spans commands, game updates and the world, and for any bug a player could report.
+- **Unit tests** (`_test.go` files next to the code they test) call one function directly. Use them for pure logic with many edge cases and a stable contract, such as fuzzy matching (`game/fuzzy_test.go`) or layout parsing (`world/layout_test.go`). Avoid unit tests that build internal structs by hand to reach deep behavior, because they break whenever those structs change. Use a scenario test instead.
 
 When you fix a bug, first write a test that reproduces it and watch it fail.
 
 ## Scenario harness
 
-The harness is in `backend/game/testgame_test.go`. It calls the same `GameState` methods that the game loop (`GameState.Run`) dispatches to: `registerPlayer`, `handleCommand` and `update`. It calls them directly on the test's goroutine, so there are no channels, tickers or timing involved.
+Scenario tests are their own package, `backend/scenarios/`, which has only test files, so they stay out of the way of the game code. Being outside `game`, they can only use its exported API:
+
+- `game.NewGameState(version, welcomeBannerLines, world)` builds a `GameState` around an already loaded world, without the file loading that `game.Init` does.
+- `RegisterPlayer`, `RemovePlayer`, `HandleCommand` and `Update` are the handlers that the game loop (`GameState.Run`) dispatches socket events and ticks to. Only the goroutine that owns the game state may call them: `Run`'s, or a test's. HTTP handlers and websocket goroutines must send `SocketEvents` instead.
+
+The harness is in `backend/scenarios/harness_test.go`. It calls those handlers directly on the test's goroutine, so there are no channels, tickers or timing involved. A scenario that needs something the exported API doesn't offer should get a new exported method on `GameState` or `World` that a player-facing feature could also use, not access to internals.
 
 ```go
 game := newTestGame(test, "testdata/worlds/arena")
@@ -46,7 +51,7 @@ The harness doesn't cover `Run` itself, the websocket read and write loops, or t
 
 ## Fixture worlds
 
-Scenario tests load small worlds from `backend/game/testdata/worlds/<name>/`, not from `backend/data/`, so changing game content doesn't break tests. A fixture world has the same layout as the real data folder (see [world_data.md](world_data.md)), and every core folder (`classes`, `items`, `npcs`, `races`, `rooms`, `spells`) must have at least one script, because a missing folder is a load error. Keep fixtures minimal and name their contents for what the test needs (e.g. a "Training Dummy" with known health and damage).
+Scenario tests load small worlds from `backend/scenarios/testdata/worlds/<name>/`, not from `backend/data/`, so changing game content doesn't break tests. A fixture world has the same layout as the real data folder (see [world_data.md](world_data.md)), and every core folder (`classes`, `items`, `npcs`, `races`, `rooms`, `spells`) must have at least one script, because a missing folder is a load error. Keep fixtures minimal and name their contents for what the test needs (e.g. a "Training Dummy" with known health and damage).
 
 | World | Contents |
 |---|---|

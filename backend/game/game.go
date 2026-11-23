@@ -63,11 +63,12 @@ func Init(version string) *GameState {
 		log.Fatalf("Failed to load characters: %s", err.Error())
 	}
 
-	return newGameState(version, welcomeBannerLines, newWorld)
+	return NewGameState(version, welcomeBannerLines, newWorld)
 }
 
-// Builds the game state around an already loaded world. Init calls this after loading files, and tests call it directly
-func newGameState(version string, welcomeBannerLines []string, newWorld *world.World) *GameState {
+// Builds the game state around an already loaded world. Init calls this after loading files, and scenario tests
+// (backend/scenarios) call it directly
+func NewGameState(version string, welcomeBannerLines []string, newWorld *world.World) *GameState {
 	gamestate := &GameState {
 		serverMode: SERVER_MODE_RUNNING,
 		version: version,
@@ -115,15 +116,15 @@ func (gamestate *GameState) Run(ctx context.Context) {
 			case event := <- gamestate.SocketEvents: {
 				switch event.Type {
 					case SOCKET_EVENT_TYPE_CONNECT: {
-						gamestate.registerPlayer(event.PlayerKey, event.Inbox)
+						gamestate.RegisterPlayer(event.PlayerKey, event.Inbox)
 					}
 
 					case SOCKET_EVENT_TYPE_DISCONNECT: {
-						gamestate.removePlayer(event.PlayerKey, event.Inbox)
+						gamestate.RemovePlayer(event.PlayerKey, event.Inbox)
 					}
 
 					case SOCKET_EVENT_TYPE_COMMAND: {
-						gamestate.handleCommand(event.PlayerKey, event.Command)
+						gamestate.HandleCommand(event.PlayerKey, event.Command)
 					}
 
 					default: {
@@ -133,7 +134,7 @@ func (gamestate *GameState) Run(ctx context.Context) {
 			}
 
 			case <- ticker.C: {
-				gamestate.update()
+				gamestate.Update()
 			}
 
 			case <- saveTicker.C: {
@@ -149,7 +150,11 @@ func (gamestate *GameState) Run(ctx context.Context) {
 
 // PLAYERS
 
-func (gamestate *GameState) registerPlayer(playerKey string, playerInbox *chan SocketMessage) {
+// RegisterPlayer, RemovePlayer, HandleCommand and Update are the game loop's event handlers. They are exported so that
+// scenario tests can drive the game without Run. Only the goroutine that owns the game state (Run's, or a test's) may
+// call them. HTTP handlers and websocket goroutines must send SocketEvents instead
+
+func (gamestate *GameState) RegisterPlayer(playerKey string, playerInbox *chan SocketMessage) {
 	// Refuse connections during maintenance
 	if gamestate.serverMode == SERVER_MODE_MAINTENANCE {
 		message := "The server is down for maintenance. Please try again later."
@@ -163,7 +168,7 @@ func (gamestate *GameState) registerPlayer(playerKey string, playerInbox *chan S
 	if existingPlayer != nil && existingPlayer.inbox != playerInbox {
 		log.Printf("Player %s connected from another location. Kicking previous connection.", playerKey)
 		existingPlayer.send("You have been disconnected because you logged in from another location.")
-		gamestate.removePlayer(playerKey, existingPlayer.inbox)
+		gamestate.RemovePlayer(playerKey, existingPlayer.inbox)
 	}
 
 	// Init player and add them to the player list
@@ -182,7 +187,7 @@ func (gamestate *GameState) registerPlayer(playerKey string, playerInbox *chan S
 	playerPtr.setMenuLogin(gamestate)
 }
 
-func (gamestate *GameState) removePlayer(playerKey string, playerInbox *chan SocketMessage) {
+func (gamestate *GameState) RemovePlayer(playerKey string, playerInbox *chan SocketMessage) {
 	// Get the player index (and double-check that they event exist)
 	playerIndex, exists := gamestate.playerKeyToIndexMap[playerKey]
 	if !exists {
@@ -282,7 +287,7 @@ func (gamestate *GameState) savePlayers() {
 
 // HANDLE COMMAND
 
-func (gamestate *GameState) handleCommand(playerKey string, command string) {
+func (gamestate *GameState) HandleCommand(playerKey string, command string) {
 	// Lookup player index
 	player := gamestate.getPlayerByKey(playerKey)
 	if player == nil {
@@ -296,7 +301,7 @@ func (gamestate *GameState) handleCommand(playerKey string, command string) {
 
 // UPDATE
 
-func (gamestate *GameState) update() {
+func (gamestate *GameState) Update() {
 	gamestate.world.Update()
 
 	// Player update
