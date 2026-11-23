@@ -1,6 +1,8 @@
 {
     "start": { "x": 0, "y": 0, "z": 0 },
     "rooms": [
-        { "position": { "x": 0, "y": 0, "z": 0 }, "path": "arena.lua", "exits": [] }
+        { "position": { "x": 0, "y": 0, "z": 0 }, "path": "arena.lua", "exits": ["north"] },
+        { "position": { "x": 0, "y": -1, "z": 0 }, "path": "room2.lua", "exits": ["north", "south"] },
+        { "position": { "x": 0, "y": -2, "z": 0 }, "path": "room3.lua", "exits": ["south"] }
     ]
 }

@@ -34,6 +34,8 @@ func TestInitiative(test *testing.T) {
 	player.createCharacter("Bufo", "human", "warrior")
 	player.login("Bufo")
 
+	// BUFO vs FAST DUMMY
+
 	// Wait for first update so that the dummy is spawned
 	game.tick(1)
 
@@ -42,12 +44,53 @@ func TestInitiative(test *testing.T) {
 	game.tick(1)
 
 	// In the first round, player should hit first,
-	player.expectSaw("Bufo struck Training Dummy")
+	player.expectSaw("Bufo struck Fast Dummy")
 	// and dummy should not hit back yet because because the dummy's turn should have happened first
-	player.expectNotSaw("Training Dummy struck Bufo")
+	player.expectNotSaw("Fast Dummy struck Bufo")
 
 	// In the second round, dummy should hit first, then player second
 	game.tick(1)
-	player.expectSaw("Training Dummy struck Bufo")
-	player.expectSaw("Bufo struck Training Dummy")
+	player.expectSaw("Fast Dummy struck Bufo")
+	player.expectSaw("Bufo struck Fast Dummy")
+
+	// Simulate combat until fast dummy is dead (this is done so that the test doesn't fail on escape check failure)
+	player.tickUntilSaw("Bufo has slain Fast Dummy", 30)
+
+	// BUFO vs EQUAL DUMMY
+
+	// Move into the next room, where an equal-initiative enemy awaits
+	player.do("north")
+	player.expectSaw("Dummy is here")
+
+	// Attack dummy, since Bufo is last Mob in the occupants list, Bufo should go last this round
+	// and dummy should not get a hit in until the next turn
+	player.do("attack dummy")
+	game.tick(1)
+	player.expectSaw("Bufo struck Dummy")
+	player.expectNotSaw("Dummy struck Bufo")
+
+	// In the second round, dummy should hit first and bufo second, since bufo is the last mob in the list
+	game.tick(1)
+	player.expectSaw("Dummy struck Bufo")
+	player.expectSaw("Bufo struck Dummy")
+
+	// Simulate combat until dummy is dead
+	player.tickUntilSaw("Bufo has slain Dummy", 30)
+
+	// BUFO vs SLOW DUMMY
+
+	// Move into the next room, where a slow enemy awaits
+	player.do("north")
+	player.expectSaw("Slow Dummy is here")
+
+	// Attack dummy, since Bufo is faster, the dummy should get a hit in before the end of the round
+	player.do("attack dummy")
+	game.tick(1)
+	player.expectSaw("Bufo struck Slow Dummy")
+	player.expectSaw("Slow Dummy struck Bufo")
+
+	// In the second round, Bufo should hit first and dummy second, since Bufo is faster
+	game.tick(1)
+	player.expectSaw("Bufo struck Slow Dummy")
+	player.expectSaw("Slow Dummy struck Bufo")
 }

@@ -4,7 +4,7 @@ room.name = "Arena"
 room.description = "A sandy pit for testing combat."
 
 room.npcs = {
-    { id = "training_dummy" }
+    { id = "fast_dummy" }
 }
 
 return room

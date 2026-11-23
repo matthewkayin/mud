@@ -121,9 +121,11 @@ func (room *Room) sortOccupantsByInitiativeOrder(world *World) []MobHandle {
 		mobI := world.Mobs.Get(occupants[i])
 		mobJ := world.Mobs.Get(occupants[j])
 
-		// If they have the same agility, choose a random one to go first
+		// If they have the same agility, choose the one with the lowest index
+		// This ensures a fair initiative over subsequent rounds, otherwise we end up with
+		// unfair initiatives like A B B A, where B gets two turns in a row over A
 		if mobI.Stat(STAT_INITIATIVE) == mobJ.Stat(STAT_INITIATIVE) {
-			return world.Random.IntN(2) == 0
+			return i < j
 		}
 
 		return mobI.Stat(STAT_INITIATIVE) > mobJ.Stat(STAT_INITIATIVE)
