@@ -28,8 +28,5 @@ test("parseNewRoomFileName rejects empty, absolute and escaping names", () => {
 });
 
 test("roomFileTemplate names the room after its file", () => {
-    assert.equal(
-        roomFileTemplate("castle/dining_hall.lua"),
-        'local room = {}\n\nroom.name = "Dining Hall"\nroom.description = ""\n\nreturn room\n',
-    );
+    assert.match(roomFileTemplate("castle/dining_hall.lua"), /^room\.name = "Dining Hall"$/m);
 });

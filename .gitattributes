@@ -1,0 +1,2 @@
+# The editor writes layout.json with LF line endings, so keep it LF on disk on every platform
+layout.json text eol=lf

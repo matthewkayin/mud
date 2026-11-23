@@ -1,9 +1,5 @@
 package world
 
-import (
-	"math/rand/v2"
-)
-
 const CHECK_CHANCE_MIN float32 = 0.05
 const CHECK_CHANCE_MAX float32 = 0.95
 
@@ -17,11 +13,11 @@ func contestedCheckChance(rank int32, difficulty int32, weight float32) float32 
 	return max(min(chance, CHECK_CHANCE_MAX), CHECK_CHANCE_MIN)
 }
 
-func rollCheck(chance float32) bool {
-	return rand.Float32() < chance
+func rollCheck(world *World, chance float32) bool {
+	return world.Random.Float32() < chance
 }
 
-func (mob *Mob) rollTaunt(targetMob *Mob) bool {
+func (mob *Mob) rollTaunt(world *World, targetMob *Mob) bool {
 	// Redundant check, should be unnecessary, but better safe than to crash the server
 	if !mob.IsPlayer() || !targetMob.IsEvil() {
 		return false
@@ -30,14 +26,14 @@ func (mob *Mob) rollTaunt(targetMob *Mob) bool {
 	chance := contestedCheckChance(mob.Character.Attribute(ATTR_STR), targetMob.Stat(STAT_FOCUS), 1.0)
 	chance *= (1.0 - mob.tauntCooldown)
 
-	return rollCheck(chance)
+	return rollCheck(world, chance)
 }
 
-func (mob *Mob) rollToHit(defender *Mob) bool {
+func (mob *Mob) rollToHit(world *World, defender *Mob) bool {
 	chance := contestedCheckChance(mob.Stat(STAT_ACCURACY), defender.Stat(STAT_EVASION), CHECK_TO_HIT_WEIGHT)
-	return rollCheck(chance)
+	return rollCheck(world, chance)
 }
 
-func (mob *Mob) rollCrit() bool {
-	return rollCheck(float32(mob.Stat(STAT_CRIT_CHANCE)) / 100.0)
+func (mob *Mob) rollCrit(world *World) bool {
+	return rollCheck(world, float32(mob.Stat(STAT_CRIT_CHANCE)) / 100.0)
 }

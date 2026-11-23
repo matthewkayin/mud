@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 	"io/fs"
+	"math/rand/v2"
 	"slices"
 	"strings"
 	"github.com/mmcdole/lunar"
@@ -17,6 +18,8 @@ type World struct {
 	// Called when the world changes a player's inventory, so the game can update the player's inventory view
 	PlayerInventoryChanged func(playerKey string)
 	tick uint32
+	// Every random roll in the world (combat, loot, initiative) uses this, so tests can seed it
+	Random *rand.Rand
 
 	dataFolder fs.FS
 	// Where scripts that call print write to
@@ -24,6 +27,8 @@ type World struct {
 	luaState *lua.State
 	mobHandleType *lua.UserDataType[MobHandle]
 
+	// The folder character saves are read from and written to. Defaults to CHARACTER_SAVES_FOLDER
+	CharacterSavesFolder string
 	Characters map[string]*Character
 	PlayerCharacters map[string][]string
 
@@ -54,6 +59,8 @@ func NewWorld(dataFolder fs.FS, scriptStdout io.Writer) (*World, []ScriptProblem
 	world := &World{
 		dataFolder: dataFolder,
 		scriptStdout: scriptStdout,
+		Random: rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64())),
+		CharacterSavesFolder: CHARACTER_SAVES_FOLDER,
 	}
 
 	// Init script state
@@ -123,7 +130,7 @@ func (world *World) RemoveCharacter(character *Character) {
 	}
 
 	delete(world.Characters, strings.ToLower(character.Name))
-	deleteCharacter(character)
+	world.deleteCharacter(character)
 }
 
 func (world *World) MessageRoom(roomIndex int, message string) {

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"math/rand/v2"
 	"github.com/mmcdole/lunar"
 )
 
@@ -418,7 +417,7 @@ func (mob *Mob) update(world *World) {
 			world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> taunted <y>%s</y>!", mob.Name, targetMob.Name))
 
 			// Roll taunt
-			success := mob.rollTaunt(targetMob)
+			success := mob.rollTaunt(world, targetMob)
 			if success {
 				targetMob.Npc.setHighestThreat(world, mob.Handle, mob.Character.Attribute(ATTR_STR))
 				targetMob.SetModeAttack(world, mob.Handle)
@@ -478,21 +477,21 @@ func (mob *Mob) magicHeal(world *World, caster *Mob, baseHealing int32) int32 {
 
 func (mob *Mob) attackTarget(world *World, targetMob *Mob, attack MobAttack) {
 	// Roll to hit
-	hit := mob.rollToHit(targetMob)
+	hit := mob.rollToHit(world, targetMob)
 	if !hit {
 		world.MessageRoom(mob.Room, fmt.Sprintf("<y>%s</y> dodged <y>%s's</y> attack!", targetMob.Name, mob.Name))
 		return
 	}
 
 	// Roll crit
-	crit := mob.rollCrit()
+	crit := mob.rollCrit(world)
 
 	// Check for deflection
 	deflect := false
 	if !crit {
 		deflectChance := (targetMob.Stat(STAT_DEFLECTION) - attack.penetration) * MOB_DEFLECTION_PER_POINT
 		deflectChance = max(min(deflectChance, 100), 0)
-		deflect = rand.Float32() < (float32(deflectChance) / 100.0)
+		deflect = world.Random.Float32() < (float32(deflectChance) / 100.0)
 	}
 
 	// On deflect, subtract armor

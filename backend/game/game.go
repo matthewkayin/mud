@@ -63,6 +63,11 @@ func Init(version string) *GameState {
 		log.Fatalf("Failed to load characters: %s", err.Error())
 	}
 
+	return newGameState(version, welcomeBannerLines, newWorld)
+}
+
+// Builds the game state around an already loaded world. Init calls this after loading files, and tests call it directly
+func newGameState(version string, welcomeBannerLines []string, newWorld *world.World) *GameState {
 	gamestate := &GameState {
 		serverMode: SERVER_MODE_RUNNING,
 		version: version,
@@ -282,6 +287,7 @@ func (gamestate *GameState) handleCommand(playerKey string, command string) {
 	player := gamestate.getPlayerByKey(playerKey)
 	if player == nil {
 		log.Printf("warn: received command from player %s, but they don't exist.", playerKey)
+		return
 	}
 
 	player.menu.handleCommand(gamestate, player, command)

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"slices"
-	"math/rand"
 	"mud/bitset"
 )
 
@@ -314,7 +313,7 @@ func (character *Character) FindItem(id ItemId) (*Item, bool) {
 }
 
 // Called on death, performs random durability damage to equipment and dumps the equipment into the inventory
-func (character *Character) dumpEquipment() {
+func (character *Character) dumpEquipment(world *World) {
 	for index := range EQUIPMENT_SLOT_COUNT {
 		slot := EquipmentSlot(index)
 		item, exists := character.Equipment.Unequip(slot)
@@ -323,7 +322,7 @@ func (character *Character) dumpEquipment() {
 		}
 
 		halfMaxDurability := item.MaxDurability() / 2
-		item.Durability -= halfMaxDurability + int32(rand.Intn(int(halfMaxDurability)))
+		item.Durability -= halfMaxDurability + world.Random.Int32N(halfMaxDurability)
 		if item.Durability <= 0 {
 			continue
 		}

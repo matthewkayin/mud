@@ -50,14 +50,14 @@ type EquipmentSlotJson struct {
 
 var CHARACTER_SAVES_FOLDER = filepath.Join(database.SAVES_FOLDER, "characters")
 
-func characterSavePath(character *Character) string {
+func (world *World) characterSavePath(character *Character) string {
 	filename := fmt.Sprintf("%s.json", strings.ToLower(strings.ReplaceAll(character.Name, " ", "_")))
-	return filepath.Join(CHARACTER_SAVES_FOLDER, filename)
+	return filepath.Join(world.CharacterSavesFolder, filename)
 }
 
 func (world *World) SaveCharacter(character *Character) {
 	// Convert character to json struct
-	path := characterSavePath(character)
+	path := world.characterSavePath(character)
 	characterJson := world.characterToJson(character)
 
 	// Write the JSON
@@ -74,14 +74,14 @@ func (world *World) LoadCharacters() error {
 	world.Characters = make(map[string]*Character)
 	world.PlayerCharacters = make(map[string][]string)
 
-	files, err := os.ReadDir(CHARACTER_SAVES_FOLDER)
+	files, err := os.ReadDir(world.CharacterSavesFolder)
 	if err != nil {
 		return fmt.Errorf("Failed to read character save folder: %s", err.Error())
 	}
 
 	var problems []error
 	for _, fileEntry := range files {
-		path := filepath.Join(CHARACTER_SAVES_FOLDER, fileEntry.Name())
+		path := filepath.Join(world.CharacterSavesFolder, fileEntry.Name())
 
 		if !strings.HasSuffix(path, ".json") {
 			log.Printf("Ignoring non-JSON file %s in character saves folder.", path)
@@ -119,8 +119,8 @@ func (world *World) loadCharacter(path string) (*Character, error) {
 	return character, err
 }
 
-func deleteCharacter(character *Character) {
-	path := characterSavePath(character)
+func (world *World) deleteCharacter(character *Character) {
+	path := world.characterSavePath(character)
 	err := os.Remove(path)
 	if err != nil {
 		log.Printf("Error deleting character save %s: %s", path, err.Error())

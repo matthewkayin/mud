@@ -4,6 +4,7 @@ import (
 	"os"
 	"errors"
 	"io/fs"
+	"runtime"
 	"testing"
 	"path/filepath"
 	"encoding/json"
@@ -57,12 +58,15 @@ func TestWriteJsonAtomicallyExclusiveCreate(test *testing.T) {
 		test.Fatalf("second create changed the file: Value is %d", saveData.Value)
 	}
 
-	info, err := os.Stat(path)
-	if err != nil {
-		test.Fatalf("stat %s: %s", path, err.Error())
-	}
-	if info.Mode().Perm() != SAVE_FILE_MODE {
-		test.Fatalf("file mode is %o, expected %o", info.Mode().Perm(), SAVE_FILE_MODE)
+	// Windows has no Unix permissions, so Go always reports files there as 0666
+	if runtime.GOOS != "windows" {
+		info, err := os.Stat(path)
+		if err != nil {
+			test.Fatalf("stat %s: %s", path, err.Error())
+		}
+		if info.Mode().Perm() != SAVE_FILE_MODE {
+			test.Fatalf("file mode is %o, expected %o", info.Mode().Perm(), SAVE_FILE_MODE)
+		}
 	}
 
 	requireNoTempFiles(test, folder)
