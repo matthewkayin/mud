@@ -64,6 +64,9 @@ func (parser *ScriptParser) parseItemType(world *World, table *lua.Table) *ItemT
 	itemType.Kind, ok = util.EnumFromString[ItemKind](kindString, ITEM_KIND_COUNT)
 	if !ok {
 		parser.addProblem("kind", fmt.Errorf("Invalid item kind '%s'.", kindString))
+		// The kind decides which other fields are expected, so they can't be checked
+		parser.markAllFieldsRead(table)
+		return nil
 	}
 
 	if itemType.IsEquipment() {

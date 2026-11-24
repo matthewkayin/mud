@@ -141,11 +141,30 @@ func (parser *ScriptParser) forEachField(table *lua.Table, handler func (key lua
 	}
 }
 
-// Marks every field of table as read, for tables that already have a problem reported about their contents
+// Marks every field of table as read, for tables that already have a problem reported about their contents.
+// Tables nested inside it are not tracked, so their fields aren't reported either
 func (parser *ScriptParser) markAllFieldsRead(table *lua.Table) {
-	parser.forEachField(table, func (key lua.Value, value lua.Value) bool {
-		return true
-	})
+	reads := parser.readsOf(table)
+
+	nextKey := lua.Nil()
+	for {
+		key, _, ok, err := table.Next(nextKey)
+		if err != nil || !ok {
+			return
+		}
+		nextKey = key
+		parser.markKeyRead(reads, key)
+	}
+}
+
+// Marks every field of value as read if it is a table. Used when value has the wrong type, since the type problem
+// already covers it and its contents shouldn't also be reported
+func (parser *ScriptParser) markWrongTypeValueRead(value lua.Value) {
+	valueTable, isTable := value.AsTable()
+	if !isTable {
+		return
+	}
+	parser.markAllFieldsRead(valueTable)
 }
 
 func (parser *ScriptParser) markKeyRead(reads *scriptTableReads, key lua.Value) {
@@ -234,6 +253,7 @@ func (parser *ScriptParser) getTypedValue(table *lua.Table, key string, kind lua
 	}
 	if value.Kind() != kind {
 		parser.addProblem(key, fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, kind, value.Kind().String()))
+		parser.markWrongTypeValueRead(value)
 	}
 
 	return value
@@ -261,6 +281,7 @@ func (parser *ScriptParser) getOptionalInt(table *lua.Table, key string, fallbac
 	}
 	if value.Kind() != lua.NumberKind {
 		parser.addProblem(key, fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, lua.NumberKind.String(), value.Kind().String()))
+		parser.markWrongTypeValueRead(value)
 	}
 	result, _ := value.AsNumber()
 	if math.Trunc(result) != result {
@@ -283,6 +304,7 @@ func (parser *ScriptParser) getOptionalInt32(table *lua.Table, key string, fallb
 	}
 	if value.Kind() != lua.NumberKind {
 		parser.addProblem(key, fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, lua.NumberKind.String(), value.Kind().String()))
+		parser.markWrongTypeValueRead(value)
 	}
 	result, _ := value.AsNumber()
 	parser.checkNumberIsInt32(result, key, key)
@@ -321,6 +343,7 @@ func (parser *ScriptParser) getOptionalFunction(table *lua.Table, key string) *l
 	result, ok := value.AsFunction()
 	if !ok {
 		parser.addProblem(key, fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, lua.FunctionKind, value.Kind().String()))
+		parser.markWrongTypeValueRead(value)
 		return nil
 	}
 
@@ -548,6 +571,7 @@ func (parser *ScriptParser) getSkill(table *lua.Table, key string) Skill {
 	skillName, ok := value.AsString()
 	if !ok {
 		parser.addProblem(key, fmt.Errorf("invalid type for '%s'. expected %s, got %s", key, lua.StringKind.String(), value.Kind().String()))
+		parser.markWrongTypeValueRead(value)
 		return SKILL_COUNT
 	}
 
