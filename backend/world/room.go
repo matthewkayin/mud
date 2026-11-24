@@ -57,8 +57,9 @@ func (room *Room) RemoveOccupant(handle MobHandle) {
 	room.removeOccupantByIndex(occupantIndex)
 }
 
+// Occupants are removed using ordered removal because it preserves the order for the "view mobs" panel
 func (room *Room) removeOccupantByIndex(index int) {
-	room.Occupants = util.RemoveAtUnordered(room.Occupants, index)
+	room.Occupants = slices.Delete(room.Occupants, index, index + 1)
 }
 
 func (room *Room) Reset(world *World) {
@@ -92,7 +93,7 @@ func (room *Room) update(world *World) {
 		occupantHandle := room.Occupants[index]
 		occupant := world.Mobs.Get(occupantHandle)
 		if occupant.isDead() {
-			room.Occupants = slices.Delete(room.Occupants, index, index + 1)
+			room.removeOccupantByIndex(index)
 			room.grantExperienceFrom(world, occupant)
 			room.createCorpse(world, occupant)
 			world.Mobs.Remove(occupantHandle)
