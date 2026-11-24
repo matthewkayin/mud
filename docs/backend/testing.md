@@ -71,6 +71,7 @@ Keep fixtures minimal and name their contents for what the test needs (e.g. a "T
 | `base` | The human race, the warrior class and the Firebolt spell. |
 | `arena` | One room, "Arena", with no exits. It spawns one neutral "Training Dummy" (15 HP, 1 damage, worth 10 experience, drops 1 Leather). It has the Leather item. |
 | `durability` | One room, "Arena", with no exits. It spawns a neutral "Training Dummy" (30 HP, 1 damage, 100 accuracy) and has six chests (Cracked, Worn, Scuffed, Plain, Honed and Masterwork Chest) that each hold an Iron Sword, a Wooden Shield and Leather Armor (max durability 100) at 1, 25, 50, 100, 101 and 200 durability. |
+| `combat_state` | Three rooms. "Arena" spawns a neutral "Training Dummy" (15 HP, 1 damage, 100 accuracy) and its room loot is one Leather Armor. "Hallway" (north of the Arena) is empty. "Lair" (east of the Arena) spawns a hostile "Goblin" (30 HP, 1 damage, 100 accuracy). Adds the "Troll" race (VIT +30), so a player survives long fights. |
 
 ## Determinism
 

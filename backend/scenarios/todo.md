@@ -6,48 +6,10 @@ Fixture notes say what each scenario needs that the `arena` world doesn't have. 
 classes and spells in `testdata/base/` for free). Remove an
 entry once its scenario exists.
 
-## Known bugs (these should fail until the bug is fixed)
-
-- [ ] **Initiative decides who acts first.** Put a player and an NPC with clearly different initiative in a room and
-  start a fight. The higher-initiative mob's attack message should come first every round. Today
-  `Room.update` (`world/room.go`) sorts the occupants by initiative into `occupants`, then loops over the unsorted
-  `room.Occupants`, so the order is ignored. Assert the order of two messages within one tick, which needs a small
-  harness helper (e.g. the index of each message after one `tick(1)`).
-  *Fixture:* an NPC with high `INITIATIVE` (e.g. 50) and one with 0. Run it both ways: player faster than NPC, and NPC
-  faster than player.
-- [ ] **A broken weapon's message only goes to its owner.** Two players in a room. Alice fights with a weapon that's
-  about to break. Bob should not see "Your <weapon> broke!", which `subtractDurabilityFromEquipment`
-  (`world/character.go`) currently sends to the whole room with `MessageRoom`. Also check that the weapon is unequipped
-  and gone from Alice's equipment view.
-  *Fixture:* a weapon with `max_durability = 1`, room loot that hands it out, and a dummy.
-
 ## Replacing unit tests
 
 Each of these replaces tests that build `world` internals by hand. Write the scenario, check that it catches the same
-bug (e.g. temporarily undo the fix from commit `f9f409c` for the `IsInCombat` ones), then delete the old test.
-
-Combat state, which players see because equip, remove, prepare and forget are refused during combat
-("You cannot equip items while you are in combat."). Replaces `world/combat_state_test.go`:
-
-- [ ] **A hostile NPC in the room blocks equipping.** Log in to a room with a hostile NPC. `equip` is refused, even
-  before the NPC has attacked. (`TestHostileNpcPutsBothInCombat`)
-- [ ] **A calm neutral NPC doesn't block equipping.** The training dummy is in the room and nobody has attacked.
-  `equip` works. (`TestNeutralNpcWithoutThreatIsNotCombat`)
-- [ ] **Attacking a neutral NPC starts combat both ways.** Attack the dummy, then `stop`. The dummy hits back
-  ("Training Dummy struck Hero"), and `equip` is refused while it's angry. (`TestNeutralNpcWithThreatPutsBothInCombat`)
-- [ ] **Combat ends when you leave the room.** Attack the dummy, `stop`, walk to the next room. `equip` works there,
-  even though the dummy still has threat on you. (`TestThreatInAnotherRoomIsNotCombat`)
-- [ ] **Killing the hostile NPC ends combat.** Kill a hostile NPC, then `equip` works in the same room.
-  (`TestDeadHostileNpcIsNotCombat`)
-- [ ] **A neutral NPC calms down.** Hit the dummy once, `stop`, and keep ticking. It eventually announces "Training
-  Dummy stopped attacking Hero." and stops attacking, and `equip` works again.
-  (`TestNeutralNpcStopsAttackingWhenThreatIsGone`)
-- [ ] **A hostile NPC doesn't calm down.** Fight a hostile NPC, `stop`, tick for longer than the dummy took to calm
-  down. It's still attacking. (`TestHostileNpcKeepsAttacking`)
-
-*Fixture for this group:* a second room connected to the arena, a hostile NPC (in its own room so it doesn't interfere
-with the dummy scenarios), an equippable item in room loot, and a sturdy player (or a weak NPC) so the player survives
-long waits.
+bug, then delete the old test.
 
 Item reach. Replaces `world/item_target_test.go`:
 
