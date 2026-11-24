@@ -5,7 +5,8 @@ room.description = "There is a blue octopus in this room"
 
 room.npcs = {
     { id = "happy_cow" },
-    { id = "happy_cow" }
+    { id = "small_cow" },
+    { id = "brown_cow" }
 }
 
 room.loot = {

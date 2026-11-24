@@ -23,7 +23,7 @@ Scenario tests are their own package, `backend/scenarios/`, which has only test 
 The harness is in `backend/scenarios/harness_test.go`. It calls those handlers directly on the test's goroutine, so there are no channels, tickers or timing involved. A scenario that needs something the exported API doesn't offer should get a new exported method on `GameState` or `World` that a player-facing feature could also use, not access to internals.
 
 ```go
-game := newTestGame(test, "testdata/arena")
+game := newTestGame(test, "testdata/arena", 1)
 alice := game.connect("alice")                   // a new connection, at the login menu
 alice.createCharacter("Hero", "human", "warrior") // create → name → race → class → finish
 alice.login("Hero")
@@ -35,19 +35,24 @@ alice.do("look")
 alice.expectSaw("Training Dummy's Corpse")
 ```
 
+Expectations check the output of the latest **step**. Each `client.do`, `game.tick(count)` (all `count` updates together) and `client.tickUntilSaw` call is a step, and it starts a new window for every connected client, because any of them can receive its output. Positive expectations (`expectSaw`, `expectSawStartingWith`, `expectSawAll`) search the window from the end of the last match and move past what they match, so consecutive ones check message order. Negative expectations (`expectNotSaw`, `expectNotSawAll`) search the whole window and don't move, so they mean "this step didn't produce it" wherever they appear. Check a step's output before starting the next one, because output from earlier steps can't be matched.
+
 | Helper | What it does |
 |---|---|
-| `newTestGame(test, worldFolder)` | Loads a fixture world on top of the base world. Fails the test with every problem if the world data has errors. |
+| `newTestGame(test, worldFolder, randomSeed)` | Loads a fixture world on top of the base world and seeds `World.Random` with `randomSeed`. Fails the test with every problem if the world data has errors. |
 | `game.connect(key)` | Connects a player with account key `key`. |
-| `game.tick(count)` | Runs `count` world updates. |
-| `client.do(command)` | Sends a command. |
-| `client.expectSaw(text)` | Fails unless a message received since the last expectation contains `text`, then moves past that message. |
-| `client.expectNotSaw(text)` | Fails if a message received since the last expectation contains `text`, then moves past every message received so far. |
-| `client.tickUntilSaw(text, maxTicks)` | Runs updates until `text` appears, failing after `maxTicks` updates. |
+| `game.tick(count)` | Runs `count` world updates as one step. |
+| `client.do(command)` | Sends a command as a new step. |
+| `client.expectSaw(text)` | Fails unless a message in the latest step, after the last match, contains `text`, then moves past that message. |
+| `client.expectSawStartingWith(prefix)` | Like `expectSaw`, but the message must start with `prefix`. Use it when the expected text is also part of a message you don't expect, such as `Iron Sword (` in `Damaged Iron Sword (...)`. |
+| `client.expectSawAll(texts...)` | Fails unless every text is in a message in the latest step, after the last match, in any order, then moves past the last match. |
+| `client.expectNotSaw(text)` | Fails if any message in the latest step contains `text`. Doesn't move. |
+| `client.expectNotSawAll(texts...)` | Fails if any message in the latest step contains any of the texts. Doesn't move. |
+| `client.tickUntilSaw(text, maxTicks)` | Runs updates as one new step until `text` appears, failing after `maxTicks` updates. |
 | `client.createCharacter(name, race, class)`, `client.login(name)` | Go through character creation and login. |
 | `client.lastSheet` | The last character sheet the server sent in a heartbeat. |
 
-Messages are stored with color tags removed (`<y>Hero</y>` becomes `Hero`), so assertions match what the player reads. Only the single-letter color tags (`w`, `r`, `g`, `b`, `y`, `p`, from `frontend/src/game/text_color.ts`) are removed, so other text in angle brackets, such as `<target>` in usage messages, is kept. When an expectation fails, the test prints the client's whole transcript and marks where the search started.
+Messages are stored with color tags removed (`<y>Hero</y>` becomes `Hero`), so assertions match what the player reads. Only the single-letter color tags (`w`, `r`, `g`, `b`, `y`, `p`, from `frontend/src/game/text_color.ts`) are removed, so other text in angle brackets, such as `<target>` in usage messages, is kept. When an expectation fails, the test prints the client's whole transcript and marks where the latest step starts and where the next positive expectation starts searching.
 
 The harness doesn't cover `Run` itself, the websocket read and write loops, or the HTTP routes.
 
@@ -68,10 +73,14 @@ Keep fixtures minimal and name their contents for what the test needs (e.g. a "T
 |---|---|
 | `base` | The human race, the warrior class and the Firebolt spell. |
 | `arena` | One room, "Arena", with no exits. It spawns one neutral "Training Dummy" (15 HP, 1 damage, worth 10 experience, drops 1 Leather). It has the Leather item. |
+| `durability` | One room, "Arena", with no exits. It spawns a neutral "Training Dummy" (30 HP, 1 damage, 100 accuracy) and has six chests (Cracked, Worn, Scuffed, Plain, Honed and Masterwork Chest) that each hold an Iron Sword, a Wooden Shield and Leather Armor (max durability 100) at 1, 25, 50, 100, 101 and 200 durability. |
+| `combat_state` | Three rooms. "Arena" spawns a neutral "Training Dummy" (15 HP, 1 damage, 100 accuracy) and its room loot is one Leather Armor. "Hallway" (north of the Arena) is empty. "Lair" (east of the Arena) spawns a hostile "Goblin" (30 HP, 1 damage, 100 accuracy). Adds the "Troll" race (VIT +30), so a player survives long fights. |
+| `initiative` | Three rooms in a line going north, each spawning one neutral dummy (15 HP, 1 damage, 100 accuracy, drops 1 Leather). "Arena" has "Fast Dummy" (initiative 100), "Room 2" has "Dummy" (initiative 4, the same as a human warrior) and "Room 3" has "Slow Dummy" (initiative 1). |
 
 ## Determinism
 
-- Every random roll in `world/` (to-hit, crit, deflection, loot drops and amounts, initiative ties, death durability loss) uses `World.Random`. `NewWorld` seeds it from the system RNG, and `newTestGame` replaces it with a fixed seed (`TEST_RANDOM_SEED`), so a scenario plays out the same way every run. New code in `world/` must use `world.Random` instead of the `math/rand` package functions.
+- Every random roll in `world/` (to-hit, crit, deflection, loot drops and amounts, death durability loss) uses `World.Random`. `NewWorld` seeds it from the system RNG, and `newTestGame` replaces it with one seeded from its `randomSeed` argument, so a scenario plays out the same way every run. New code in `world/` must use `world.Random` instead of the `math/rand` package functions.
+- Initiative ties are not random. `Room.sortOccupantsByInitiativeOrder` (`backend/world/room.go`) uses a stable sort, so mobs with equal initiative act in their order in `room.Occupants`.
 - Assert outcomes, not exact roll sequences. Write "the dummy dies within 30 updates", not "the third attack crits". Adding or reordering a roll changes which numbers each roll gets, and a test that depends on exact rolls would break even though nothing a player relies on changed.
 - Lua's `math.random` is not seeded by the harness. Fixture NPCs and rooms shouldn't use it in anything a test checks.
 

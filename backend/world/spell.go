@@ -74,7 +74,7 @@ func (world *World) loadSpells() []ScriptProblem {
 
 	for _, file := range files {
 		// Parse spell
-		parser := ScriptParser{ path: file.path }
+		parser := newScriptParser(file.path, file.table)
 		spell := parser.parseSpell(file.table)
 		if spell == nil {
 			problems = append(problems, parser.problems...)
@@ -117,6 +117,8 @@ func (parser *ScriptParser) parseSpell(table *lua.Table) *Spell {
 	}
 
 	spell.onCast = parser.getFunction(table, "on_cast")
+
+	parser.reportUnreadFields()
 
 	if len(parser.problems) != 0 {
 		return nil

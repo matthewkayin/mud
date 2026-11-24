@@ -27,7 +27,7 @@ func (world *World) loadItemTypes() []ScriptProblem {
 
 	for _, file := range files {
 		// Parse item type
-		parser := ScriptParser{ path: file.path }
+		parser := newScriptParser(file.path, file.table)
 		itemType := parser.parseItemType(world, file.table)
 		if itemType == nil {
 			problems = append(problems, parser.problems...)
@@ -64,6 +64,9 @@ func (parser *ScriptParser) parseItemType(world *World, table *lua.Table) *ItemT
 	itemType.Kind, ok = util.EnumFromString[ItemKind](kindString, ITEM_KIND_COUNT)
 	if !ok {
 		parser.addProblem("kind", fmt.Errorf("Invalid item kind '%s'.", kindString))
+		// The kind decides which other fields are expected, so they can't be checked
+		parser.markAllFieldsRead(table)
+		return nil
 	}
 
 	if itemType.IsEquipment() {
@@ -106,6 +109,8 @@ func (parser *ScriptParser) parseItemType(world *World, table *lua.Table) *ItemT
 		data.Spell = parser.getSpell(world, table, "spell")
 		itemType.Data = data
 	}
+
+	parser.reportUnreadFields()
 
 	if len(parser.problems) != 0 {
 		return nil

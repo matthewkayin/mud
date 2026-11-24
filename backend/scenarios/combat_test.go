@@ -43,10 +43,10 @@ func TestInitiative(test *testing.T) {
 	player.do("attack dummy")
 	game.tick(1)
 
-	// In the first round, player should hit first,
-	player.expectSaw("Bufo struck Fast Dummy")
-	// and dummy should not hit back yet because because the dummy's turn should have happened first
+	// In the first round, the dummy should not hit at all, because its turn happened before combat started,
 	player.expectNotSaw("Fast Dummy struck Bufo")
+	// and the player should hit
+	player.expectSaw("Bufo struck Fast Dummy")
 
 	// In the second round, dummy should hit first, then player second
 	game.tick(1)
@@ -66,8 +66,8 @@ func TestInitiative(test *testing.T) {
 	// and dummy should not get a hit in until the next turn
 	player.do("attack dummy")
 	game.tick(1)
-	player.expectSaw("Bufo struck Dummy")
 	player.expectNotSaw("Dummy struck Bufo")
+	player.expectSaw("Bufo struck Dummy")
 
 	// In the second round, dummy should hit first and bufo second, since bufo is the last mob in the list
 	game.tick(1)

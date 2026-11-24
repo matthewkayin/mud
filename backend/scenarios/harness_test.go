@@ -28,7 +28,11 @@ type testClient struct {
 	key string
 	inbox chan game.SocketMessage
 	messages []string
-	// Index into messages of the first message that expectSaw and expectNotSaw haven't searched yet
+	// Index into messages of the first message of the latest step (do, tick or tickUntilSaw). Expectations only
+	// search messages from here on
+	stepStart int
+	// Index into messages where the next positive expectation (expectSaw and friends) starts searching. It starts each
+	// step at stepStart and moves past each match, so consecutive positive expectations check message order
 	cursor int
 	// The most recent character sheet the server sent in a heartbeat
 	lastSheet *game.SocketCharacterSheet
@@ -121,14 +125,29 @@ func (testgame *testGame) connect(key string) *testClient {
 	return client
 }
 
-// Runs the given number of game updates
+// Runs the given number of game updates as a single step
 func (testgame *testGame) tick(count int) {
 	testgame.t.Helper()
 
+	testgame.beginStep()
 	for range count {
-		testgame.gamestate.Update()
-		testgame.drain()
+		testgame.update()
 	}
+}
+
+// Starts a new step for every client, so expectations only search output from here on. Every client is reset, because
+// any of them can receive the step's output
+func (testgame *testGame) beginStep() {
+	for _, client := range testgame.clients {
+		client.stepStart = len(client.messages)
+		client.cursor = client.stepStart
+	}
+}
+
+// Runs one game update without starting a new step
+func (testgame *testGame) update() {
+	testgame.gamestate.Update()
+	testgame.drain()
 }
 
 // Moves everything the server sent each client into its messages. The game's sends block when an inbox is full,
@@ -160,15 +179,16 @@ func (client *testClient) drain() {
 	}
 }
 
-// Sends a command as if the player typed it
+// Sends a command as if the player typed it, as a new step
 func (client *testClient) do(command string) {
 	client.testgame.t.Helper()
 
+	client.testgame.beginStep()
 	client.testgame.gamestate.HandleCommand(client.key, command)
 	client.testgame.drain()
 }
 
-// Fails unless a message since the last expectation contains text. Moves past the matching message
+// Fails unless a message in the latest step, after the last match, contains text. Moves past the matching message
 func (client *testClient) expectSaw(text string) {
 	client.testgame.t.Helper()
 
@@ -179,26 +199,65 @@ func (client *testClient) expectSaw(text string) {
 	client.cursor = index + 1
 }
 
-// Fails if a message since the last expectation contains text. Moves past every message received so far
+// Fails unless a message in the latest step, after the last match, starts with prefix. Moves past the matching message.
+// Use it when the text you expect is also part of a message you don't (e.g. "Iron Sword (" in "Damaged Iron Sword (")
+func (client *testClient) expectSawStartingWith(prefix string) {
+	client.testgame.t.Helper()
+
+	for index := client.cursor; index < len(client.messages); index++ {
+		if strings.HasPrefix(client.messages[index], prefix) {
+			client.cursor = index + 1
+			return
+		}
+	}
+	client.testgame.t.Fatalf("%s expected to see a message starting with %q.\n%s", client.key, prefix, client.transcript())
+}
+
+// Fails unless each text is in a message in the latest step, after the last match, in any order. Moves past the last matching message
+func (client *testClient) expectSawAll(texts ...string) {
+	client.testgame.t.Helper()
+
+	lastIndex := client.cursor - 1
+	for _, text := range texts {
+		index := client.findSince(client.cursor, text)
+		if index == -1 {
+			client.testgame.t.Fatalf("%s expected to see %q.\n%s", client.key, text, client.transcript())
+		}
+		lastIndex = max(lastIndex, index)
+	}
+	client.cursor = lastIndex + 1
+}
+
+// Fails if any message in the latest step contains text. Doesn't move the cursor
 func (client *testClient) expectNotSaw(text string) {
 	client.testgame.t.Helper()
 
-	index := client.findSince(client.cursor, text)
+	index := client.findSince(client.stepStart, text)
 	if index != -1 {
 		client.testgame.t.Fatalf("%s expected not to see %q.\n%s", client.key, text, client.transcript())
 	}
-	client.cursor = len(client.messages)
 }
 
-// Runs game updates until a new message contains text, failing if it doesn't appear within maxTicks updates
+// Fails if any message in the latest step contains any of the texts. Doesn't move the cursor
+func (client *testClient) expectNotSawAll(texts ...string) {
+	client.testgame.t.Helper()
+
+	for _, text := range texts {
+		client.expectNotSaw(text)
+	}
+}
+
+// Runs game updates as a single step until a message contains text, failing if it doesn't appear within maxTicks
+// updates. Output from earlier steps doesn't count
 func (client *testClient) tickUntilSaw(text string, maxTicks int) {
 	client.testgame.t.Helper()
 
+	client.testgame.beginStep()
 	for range maxTicks {
+		client.testgame.update()
 		if client.findSince(client.cursor, text) != -1 {
 			break
 		}
-		client.testgame.tick(1)
 	}
 	client.expectSaw(text)
 }
@@ -232,18 +291,21 @@ func (client *testClient) findSince(start int, text string) int {
 	return -1
 }
 
-// Every message the client received, with a marker where the next expectation will start searching
+// Every message the client received, with markers where the latest step starts and where the next positive
+// expectation will start searching
 func (client *testClient) transcript() string {
 	var builder strings.Builder
 	fmt.Fprintf(&builder, "--- transcript for %s ---\n", client.key)
-	for index, message := range client.messages {
+	for index := 0; index <= len(client.messages); index++ {
+		if index == client.stepStart {
+			builder.WriteString("--- (latest step starts here) ---\n")
+		}
 		if index == client.cursor {
 			builder.WriteString("--- (searching from here) ---\n")
 		}
-		fmt.Fprintf(&builder, "  %s\n", message)
-	}
-	if client.cursor >= len(client.messages) {
-		builder.WriteString("--- (searching from here) ---\n")
+		if index < len(client.messages) {
+			fmt.Fprintf(&builder, "  %s\n", client.messages[index])
+		}
 	}
 	return builder.String()
 }

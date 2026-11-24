@@ -71,7 +71,7 @@ func (world *World) loadNpcData() []ScriptProblem {
 		id := strings.TrimSuffix(path.Base(file.path), ".lua")
 
 		// Parse NPC data
-		parser := ScriptParser{ path: file.path }
+		parser := newScriptParser(file.path, file.table)
 		npcData := parser.parserNpc(world, file.table, id)
 		if npcData == nil {
 			problems = append(problems, parser.problems...)
@@ -147,13 +147,13 @@ func (parser *ScriptParser) parserNpc(world *World, table *lua.Table, id string)
 
 	// Wares
 	npcData.wares = make([]*ItemType, 0, 1)
-	waresTable, ok := table.RawGetString("wares").AsTable()
+	waresTable, ok := parser.rawGetField(table, "wares").AsTable()
 	if ok {
-		wareCount := waresTable.RawLen()
+		wareCount := parser.rawLen(waresTable)
 		npcData.wares = make([]*ItemType, 0, wareCount)
 
 		for index := 1; index <= wareCount; index++ {
-			itemName, ok := waresTable.RawGetInt(index).AsString()
+			itemName, ok := parser.rawGetIndex(waresTable, index).AsString()
 			if !ok {
 				parser.addProblem("wares", fmt.Errorf("wares[%d] must be an item name", index))
 				continue
@@ -178,6 +178,8 @@ func (parser *ScriptParser) parserNpc(world *World, table *lua.Table, id string)
 
 	npcData.init = parser.getOptionalFunction(table, "init")
 	npcData.update = parser.getOptionalFunction(table, "update")
+
+	parser.reportUnreadFields()
 
 	if len(parser.problems) != 0 {
 		return nil

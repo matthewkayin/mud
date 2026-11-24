@@ -22,7 +22,7 @@ func (world *World) loadRaceData() []ScriptProblem {
 
 	for _, file := range files {
 		// Parse race data
-		parser := ScriptParser{ path: file.path }
+		parser := newScriptParser(file.path, file.table)
 		raceData := parser.parseRace(file.table)
 		if raceData == nil {
 			problems = append(problems, parser.problems...)
@@ -50,6 +50,8 @@ func (parser *ScriptParser) parseRace(table *lua.Table) *RaceData {
 	raceData.Description = parser.getString(table, "description")
 	raceData.Attributes = parser.getAttributeBlock(table, "attributes")
 	raceData.Skills = parser.getSkillFlags(table, "skills")
+
+	parser.reportUnreadFields()
 
 	if len(parser.problems) != 0 {
 		return nil

@@ -15,7 +15,7 @@ func (world *World) loadRoomData() []ScriptProblem {
 	roomFiles := make(map[string]*Room, len(files))
 	world.RoomFileNames = make(map[string]string, len(files))
 	for _, file := range files {
-		parser := ScriptParser{ path: file.path }
+		parser := newScriptParser(file.path, file.table)
 		room := parser.parseRoom(world, file.table)
 		if room == nil {
 			problems = append(problems, parser.problems...)
@@ -134,6 +134,8 @@ func (parser *ScriptParser) parseRoom(world *World, table *lua.Table) *Room {
 	room.npcSpawners = parser.getRoomNpcs(world, table, "npcs")
 	room.Chests = parser.getRoomChests(world, table, "chests")
 
+	parser.reportUnreadFields()
+
 	if len(parser.problems) != 0 {
 		return nil
 	}
@@ -144,41 +146,31 @@ func (parser *ScriptParser) parseRoom(world *World, table *lua.Table) *Room {
 func (parser *ScriptParser) getRoomDetails(table *lua.Table, key string) map[string]string {
 	details := make(map[string]string)
 
-	detailsTableValue := table.RawGetString(key)
-	detailsTable, ok := detailsTableValue.AsTable()
-	if !ok {
+	detailsTable := parser.getOptionalTable(table, key)
+	if detailsTable == nil {
 		return details
 	}
 
-	nextKey := lua.Nil()
-	for {
-		// Get next key / value from the table
-		detailKey, detailValue, ok, err := detailsTable.Next(nextKey)
-		if err != nil {
-			parser.addProblem("details", fmt.Errorf("Error while iterating through details table: %s", err.Error()))
-			break
-		}
-		if !ok {
-			break
-		}
-
+	err := parser.forEachField(detailsTable, func (detailKey lua.Value, detailValue lua.Value) bool {
 		// Validate that key is a string
 		detailName, ok := detailKey.AsString()
 		if !ok {
-			parser.addProblem("details", fmt.Errorf("Keys in the details table must be strings."))
-			break
+			parser.addProblem(key, fmt.Errorf("Keys in the details table must be strings."))
+			return true
 		}
 
 		// Validate that the value is a string
 		detail, ok := detailValue.AsString()
 		if !ok {
-			parser.addProblem("details", fmt.Errorf("Details table value of '%s' is not a string, but it should be.", detailName))
+			parser.addProblem(key, fmt.Errorf("Details table value of '%s' is not a string, but it should be.", detailName))
 		}
 
 		// Add detail to room
 		details[detailName] = detail
-
-		nextKey = detailKey
+		return true
+	})
+	if err != nil {
+		parser.addProblem(key, fmt.Errorf("Error while iterating through details table: %s", err.Error()))
 	}
 
 	return details
@@ -187,49 +179,39 @@ func (parser *ScriptParser) getRoomDetails(table *lua.Table, key string) map[str
 func (parser *ScriptParser) getRoomInteractions(table *lua.Table, key string) map[string]*lua.Function {
 	interactions := make(map[string]*lua.Function)
 
-	interactionsTableValue := table.RawGetString(key)
-	interactionsTable, ok := interactionsTableValue.AsTable()
-	if !ok {
+	interactionsTable := parser.getOptionalTable(table, key)
+	if interactionsTable == nil {
 		return interactions
 	}
 
-	nextKey := lua.Nil()
-	for {
-		// Get next key / value from the table
-		interactionKey, interactionValue, ok, err := interactionsTable.Next(nextKey)
-		if err != nil {
-			parser.addProblem("interactions", fmt.Errorf("Error while iterating through interactions table: %s", err.Error()))
-			break
-		}
-		if !ok {
-			break
-		}
-
+	err := parser.forEachField(interactionsTable, func (interactionKey lua.Value, interactionValue lua.Value) bool {
 		// Validate that key is a string
 		interactionVerb, ok := interactionKey.AsString()
 		if !ok {
-			parser.addProblem("interactions", fmt.Errorf("Keys in the interactions table must be strings."))
-			break
+			parser.addProblem(key, fmt.Errorf("Keys in the interactions table must be strings."))
+			return true
 		}
 
 		// Validate that verb is lowercase and alphabetic
 		for index := range len(interactionVerb) {
 			c := interactionVerb[index]
 			if c < 'a' || c > 'z' {
-				parser.addProblem("interactions", fmt.Errorf("Unexpected char '%c' in interaction verb %s.", c, interactionVerb))
+				parser.addProblem(key, fmt.Errorf("Unexpected char '%c' in interaction verb %s.", c, interactionVerb))
 				break
 			}
 		}
 
-		// Validate that the value is a string
+		// Validate that the value is a function
 		interaction, ok := interactionValue.AsFunction()
 		if !ok {
-			parser.addProblem("interactions", fmt.Errorf("Interaction table value of '%s' is not a function, but it should be.", interactionKey))
+			parser.addProblem(key, fmt.Errorf("Interaction table value of '%s' is not a function, but it should be.", interactionVerb))
 		}
 
 		interactions[interactionVerb] = interaction
-
-		nextKey = interactionKey
+		return true
+	})
+	if err != nil {
+		parser.addProblem(key, fmt.Errorf("Error while iterating through interactions table: %s", err.Error()))
 	}
 
 	return interactions
@@ -241,25 +223,26 @@ func (parser *ScriptParser) getRoomNpcs(world *World, table *lua.Table, key stri
 		return []NpcSpawner{}
 	}
 
-	npcCount := npcTable.RawLen()
+	npcCount := parser.rawLen(npcTable)
 	npcSpawners := make([]NpcSpawner, 0, npcCount)
 
 	for index := 1; index <= npcCount; index++ {
 		// Get NPC table
-		npc, ok := npcTable.RawGetInt(index).AsTable()
+		npc, ok := parser.rawGetIndex(npcTable, index).AsTable()
 		if !ok {
 			parser.addProblem("npcs", fmt.Errorf("npcs[%d] must be a table", index))
 			continue
 		}
 
+		// Read every field before checking the ID, so that an unknown ID doesn't also report its fields as unknown
 		id := parser.getString(npc, "id")
+		respawnDuration := parser.getOptionalInt(npc, "respawn_duration", NPC_RESPAWN_DURATION)
+
 		npcData, exists := world.NpcData[id]
 		if !exists {
 			parser.addProblem("npcs", fmt.Errorf("npcs[%d] has id '%s' which does not match any NPC.", index, id))
 			continue
 		}
-
-		respawnDuration := parser.getOptionalInt(npc, "respawn_duration", NPC_RESPAWN_DURATION)
 
 		npcSpawners = append(npcSpawners, NpcSpawner {
 			npcData: npcData,
@@ -278,12 +261,12 @@ func (parser *ScriptParser) getRoomChests(world *World, table *lua.Table, key st
 		return []Chest{}
 	}
 
-	chestCount := chestsTable.RawLen()
+	chestCount := parser.rawLen(chestsTable)
 	chests := make([]Chest, 0, chestCount)
 
 	for index := 1; index <= chestCount; index++ {
 		// Get chest table
-		chest, ok := chestsTable.RawGetInt(index).AsTable()
+		chest, ok := parser.rawGetIndex(chestsTable, index).AsTable()
 		if !ok {
 			parser.addProblem("chests", fmt.Errorf("chests[%d] must be a table", index))
 			continue

@@ -57,8 +57,9 @@ func (room *Room) RemoveOccupant(handle MobHandle) {
 	room.removeOccupantByIndex(occupantIndex)
 }
 
+// Occupants are removed using ordered removal because it preserves the order for the "view mobs" panel
 func (room *Room) removeOccupantByIndex(index int) {
-	room.Occupants = util.RemoveAtUnordered(room.Occupants, index)
+	room.Occupants = slices.Delete(room.Occupants, index, index + 1)
 }
 
 func (room *Room) Reset(world *World) {
@@ -92,7 +93,7 @@ func (room *Room) update(world *World) {
 		occupantHandle := room.Occupants[index]
 		occupant := world.Mobs.Get(occupantHandle)
 		if occupant.isDead() {
-			room.Occupants = util.RemoveAtUnordered(room.Occupants, index)
+			room.removeOccupantByIndex(index)
 			room.grantExperienceFrom(world, occupant)
 			room.createCorpse(world, occupant)
 			world.Mobs.Remove(occupantHandle)
@@ -117,15 +118,15 @@ func (room *Room) update(world *World) {
 
 func (room *Room) sortOccupantsByInitiativeOrder(world *World) []MobHandle {
 	occupants := slices.Clone(room.Occupants)
-	sort.Slice(occupants, func(i int, j int) bool {
+	sort.SliceStable(occupants, func(i int, j int) bool {
 		mobI := world.Mobs.Get(occupants[i])
 		mobJ := world.Mobs.Get(occupants[j])
 
-		// If they have the same agility, choose the one with the lowest index
+		// The sort is stable, so mobs with the same initiative keep their order in room.Occupants.
 		// This ensures a fair initiative over subsequent rounds, otherwise we end up with
 		// unfair initiatives like A B B A, where B gets two turns in a row over A
 		if mobI.Stat(STAT_INITIATIVE) == mobJ.Stat(STAT_INITIATIVE) {
-			return i < j
+			return false
 		}
 
 		return mobI.Stat(STAT_INITIATIVE) > mobJ.Stat(STAT_INITIATIVE)
