@@ -145,7 +145,7 @@ A room file describes what is in a room, not where the room is. `layout.json` pl
 | `details` | table | Optional. Maps a detail name to the text shown when a player looks at it. |
 | `interactions` | table | Optional. Maps a lowercase verb to a function `(state, player, arg)` that runs when a player in the room types that verb. |
 | `reset` | function | Optional. Called each time the room resets, every 5 minutes. |
-| `loot` | array | Optional. Items the room restocks on reset. Each entry has `item` (an item name), `amount` (an integer or `{ min, max }`), `drop_chance_percent`, and an optional `durability_percent` (defaults to 100). |
+| `loot` | array | Optional. Items the room restocks on reset. Each entry has `item` (an item name), `amount` (an integer or `{ min, max }`), `drop_chance_percent`, and an optional `durability_percent` (an integer or `{ min, max }`, defaults to 100). It is a percent of the item's `max_durability` and can be above 100, which gives a reinforced item (shown with its `reinforced_prefix`). |
 | `npcs` | array | Optional. NPCs that spawn in the room. Each entry has `id` (an NPC id) and an optional `respawn_duration` in world updates (defaults to 5 minutes). Each NPC spawns when the server starts and respawns after it is gone. |
 
 Rooms with a `reset` function get a `state` table, which is passed to their interactions.

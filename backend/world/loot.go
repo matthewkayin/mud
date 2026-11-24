@@ -122,8 +122,8 @@ func (parser *ScriptParser) getOptionalLootTable(world *World, table *lua.Table,
 			dropChancePercent: parser.getInt32(entryTable, "drop_chance_percent"),
 		}
 
-		parser.checkInt32IsPositivePercent(entry.durabilityPercentRange.Min, "durability_percent")
-		parser.checkInt32IsPositivePercent(entry.durabilityPercentRange.Max, "durability_percent")
+		parser.checkInt32Positive(entry.durabilityPercentRange.Min, "durability_percent")
+		parser.checkInt32Positive(entry.durabilityPercentRange.Max, "durability_percent")
 		parser.checkInt32IsPositivePercent(entry.dropChancePercent, "drop_chance_percent")
 
 		lootTable.Entries = append(lootTable.Entries, entry)

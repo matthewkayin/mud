@@ -179,6 +179,35 @@ func (client *testClient) expectSaw(text string) {
 	client.cursor = index + 1
 }
 
+// Fails unless a message since the last expectation starts with prefix. Moves past the matching message.
+// Use it when the text you expect is also part of a message you don't (e.g. "Iron Sword (" in "Damaged Iron Sword (")
+func (client *testClient) expectSawStartingWith(prefix string) {
+	client.testgame.t.Helper()
+
+	for index := client.cursor; index < len(client.messages); index++ {
+		if strings.HasPrefix(client.messages[index], prefix) {
+			client.cursor = index + 1
+			return
+		}
+	}
+	client.testgame.t.Fatalf("%s expected to see a message starting with %q.\n%s", client.key, prefix, client.transcript())
+}
+
+// Fails unless each text is in a message since the last expectation, in any order. Moves past the last matching message
+func (client *testClient) expectSawAll(texts ...string) {
+	client.testgame.t.Helper()
+
+	lastIndex := client.cursor - 1
+	for _, text := range texts {
+		index := client.findSince(client.cursor, text)
+		if index == -1 {
+			client.testgame.t.Fatalf("%s expected to see %q.\n%s", client.key, text, client.transcript())
+		}
+		lastIndex = max(lastIndex, index)
+	}
+	client.cursor = lastIndex + 1
+}
+
 // Fails if a message since the last expectation contains text. Moves past every message received so far
 func (client *testClient) expectNotSaw(text string) {
 	client.testgame.t.Helper()
@@ -188,6 +217,20 @@ func (client *testClient) expectNotSaw(text string) {
 		client.testgame.t.Fatalf("%s expected not to see %q.\n%s", client.key, text, client.transcript())
 	}
 	client.cursor = len(client.messages)
+}
+
+func (client *testClient) expectNotSawAll(texts ...string) {
+	client.testgame.t.Helper()
+
+	lastIndex := client.cursor - 1
+	for _, text := range texts {
+		index := client.findSince(client.cursor, text)
+		if index != -1 {
+			client.testgame.t.Fatalf("%s expected not to see %q.\n%s", client.key, text, client.transcript())
+		}
+		lastIndex = max(lastIndex, index)
+	}
+	client.cursor = lastIndex + 1
 }
 
 // Runs game updates until a new message contains text, failing if it doesn't appear within maxTicks updates

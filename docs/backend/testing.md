@@ -42,6 +42,8 @@ alice.expectSaw("Training Dummy's Corpse")
 | `game.tick(count)` | Runs `count` world updates. |
 | `client.do(command)` | Sends a command. |
 | `client.expectSaw(text)` | Fails unless a message received since the last expectation contains `text`, then moves past that message. |
+| `client.expectSawStartingWith(prefix)` | Like `expectSaw`, but the message must start with `prefix`. Use it when the expected text is also part of a message you don't expect, such as `Iron Sword (` in `Damaged Iron Sword (...)`. |
+| `client.expectSawAll(texts...)` | Fails unless every text is in a message received since the last expectation, in any order, then moves past the last match. |
 | `client.expectNotSaw(text)` | Fails if a message received since the last expectation contains `text`, then moves past every message received so far. |
 | `client.tickUntilSaw(text, maxTicks)` | Runs updates until `text` appears, failing after `maxTicks` updates. |
 | `client.createCharacter(name, race, class)`, `client.login(name)` | Go through character creation and login. |
@@ -68,6 +70,7 @@ Keep fixtures minimal and name their contents for what the test needs (e.g. a "T
 |---|---|
 | `base` | The human race, the warrior class and the Firebolt spell. |
 | `arena` | One room, "Arena", with no exits. It spawns one neutral "Training Dummy" (15 HP, 1 damage, worth 10 experience, drops 1 Leather). It has the Leather item. |
+| `durability` | One room, "Arena", with no exits. It spawns a neutral "Training Dummy" (30 HP, 1 damage, 100 accuracy) and has six chests (Cracked, Worn, Scuffed, Plain, Honed and Masterwork Chest) that each hold an Iron Sword, a Wooden Shield and Leather Armor (max durability 100) at 1, 25, 50, 100, 101 and 200 durability. |
 
 ## Determinism
 
