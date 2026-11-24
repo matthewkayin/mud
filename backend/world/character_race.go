@@ -30,7 +30,7 @@ func (world *World) loadRaceData() []ScriptProblem {
 		}
 
 		// Check for duplicates
-		_, duplicateName := world.RaceData[raceData.Name]
+		_, duplicateName := world.RaceData[strings.ToLower(raceData.Name)]
 		if duplicateName {
 			parser.addProblem("name", fmt.Errorf("Race has name '%s' which is a duplicate of another race.", raceData.Name))
 			problems = append(problems, parser.problems...)
