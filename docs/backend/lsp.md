@@ -20,7 +20,7 @@ The data folder is relative to the working directory. Stdout carries the protoco
 
 ## What it validates
 
-Everything `world.NewWorld` reports as a `ScriptProblem`: Lua syntax and runtime errors in the top level of scripts, missing or invalid fields, references to data that doesn't exist (such as an unknown item in a loot table), missing core folders, and every `layout.json` problem. Errors and warnings keep their severity.
+Everything `world.NewWorld` reports as a `ScriptProblem`: Lua syntax and runtime errors in the top level of scripts, missing, invalid or unknown fields, references to data that doesn't exist (such as an unknown item in a loot table), missing core folders, and every `layout.json` problem. Errors and warnings keep their severity.
 
 It doesn't run behavior functions such as a room's `reset`, so errors inside them only show up when the game runs them.
 

@@ -11,7 +11,7 @@ The game's content is loaded from the data folder, `backend/data/`, when the ser
 Loading doesn't stop at the first bad file. `NewWorld` returns every problem it finds as a list of `ScriptProblem`s (`backend/world/script_problem.go`), along with the world. Each problem has:
 
 - `Path`: the file it is about, relative to the data folder (or the core folder, if the folder is missing).
-- `Key`: the field it is about, if any (for example `item` in a loot entry). Problems inside `attributes`, `skills`, `details`, `interactions` and `loot` use that table's key.
+- `Key`: the field it is about, if any (for example `item` in a loot entry). Problems inside `attributes`, `skills`, `details`, `interactions` and `loot` use that table's key. An unknown field's problem uses the unknown key itself.
 - `Line`: the line Lua reported, for syntax errors and errors raised while the script runs. 0 otherwise.
 - `RoomIndex`: for `layout.json` problems, the index of the room entry. -1 otherwise.
 - `Severity`: error or warning.
@@ -38,6 +38,10 @@ Files load in this order: items, npcs, races, backgrounds, rooms (including the 
 Scripts run in a restricted Lua state. The base, math, string and table libraries are available, along with the `world` table (see `backend/world/script_library.go` and the generated `world.d.lua`). Reading or creating an undefined global is an error, so declare variables `local`.
 
 Required fields must be present. There are no defaults for them.
+
+Unknown fields are an error, in the script's own table and in every table inside it (loot entries, chests, room NPCs, `{ min, max }` ranges, lists such as `skills`). The message names where the field is, for example `unknown field 'lot' in 'chests[2]'`. A field the loader doesn't use for that kind of data is unknown too, such as `damage` on armor. Fields whose names start with `_` are never reported, so a script can keep its own helpers and data on its table (`room._make_chest = function ... end`). A list with extra entries, or a table of fields with list entries, reports them as `unexpected entry [n]`.
+
+`ScriptParser` (`backend/world/script_parser.go`) makes this work by recording every key the loaders read. After a script is parsed, `reportUnreadFields` reports every key no loader read. Loaders must therefore read Lua tables only through the parser (`rawGetField`, `rawGetIndex`, `rawLen`, `forEachField` and the helpers built on them), which `TestScriptParserIsTheOnlyRawTableReader` enforces, and must read all of an entry's fields before skipping it for another error, so that the error doesn't also report those fields as unknown.
 
 ## Core folders
 
@@ -145,7 +149,7 @@ A room file describes what is in a room, not where the room is. `layout.json` pl
 | `details` | table | Optional. Maps a detail name to the text shown when a player looks at it. |
 | `interactions` | table | Optional. Maps a lowercase verb to a function `(state, player, arg)` that runs when a player in the room types that verb. |
 | `reset` | function | Optional. Called each time the room resets, every 5 minutes. |
-| `loot` | array | Optional. Items the room restocks on reset. Each entry has `item` (an item name), `amount` (an integer or `{ min, max }`), `drop_chance_percent`, and an optional `durability_percent` (an integer or `{ min, max }`, defaults to 100). It is a percent of the item's `max_durability` and can be above 100, which gives a reinforced item (shown with its `reinforced_prefix`). |
+| `loot` | array | Optional. Items the room restocks on reset. It is a list of entries, even with one entry: `loot = { { item = "Bread", amount = 12, drop_chance_percent = 100 } }`. Each entry has `item` (an item name), `amount` (an integer or `{ min, max }`), `drop_chance_percent`, and an optional `durability_percent` (an integer or `{ min, max }`, defaults to 100). It is a percent of the item's `max_durability` and can be above 100, which gives a reinforced item (shown with its `reinforced_prefix`). |
 | `npcs` | array | Optional. NPCs that spawn in the room. Each entry has `id` (an NPC id) and an optional `respawn_duration` in world updates (defaults to 5 minutes). Each NPC spawns when the server starts and respawns after it is gone. |
 
 Rooms with a `reset` function get a `state` table, which is passed to their interactions.

@@ -23,7 +23,7 @@ func (world *World) loadClassData() []ScriptProblem {
 
 	for _, file := range files {
 		// Parse class data
-		parser := ScriptParser{ path: file.path }
+		parser := newScriptParser(file.path, file.table)
 		classData := parser.parseClass(file.table)
 		if classData == nil {
 			problems = append(problems, parser.problems...)
@@ -51,6 +51,8 @@ func (parser *ScriptParser) parseClass(table *lua.Table) *ClassData {
 	classData.Description = parser.getString(table, "description")
 	classData.Attributes = parser.getAttributeBlock(table, "attributes")
 	classData.Skills = parser.getSkillFlags(table, "skills")
+
+	parser.reportUnreadFields()
 
 	if len(parser.problems) != 0 {
 		return nil

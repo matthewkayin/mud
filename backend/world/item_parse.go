@@ -27,7 +27,7 @@ func (world *World) loadItemTypes() []ScriptProblem {
 
 	for _, file := range files {
 		// Parse item type
-		parser := ScriptParser{ path: file.path }
+		parser := newScriptParser(file.path, file.table)
 		itemType := parser.parseItemType(world, file.table)
 		if itemType == nil {
 			problems = append(problems, parser.problems...)
@@ -106,6 +106,8 @@ func (parser *ScriptParser) parseItemType(world *World, table *lua.Table) *ItemT
 		data.Spell = parser.getSpell(world, table, "spell")
 		itemType.Data = data
 	}
+
+	parser.reportUnreadFields()
 
 	if len(parser.problems) != 0 {
 		return nil

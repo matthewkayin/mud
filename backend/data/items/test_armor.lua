@@ -9,10 +9,6 @@ item.size = 1
 item.max_durability = 100
 item.reinforced_prefix = "badass"
 
-item.deflection = 6
-item.deflection_bonus = 4
-item.resistance = 0
-
 item.stats = {
     [world.Stat.DEFLECTION] = 6,
     [world.Stat.DEFLECTION_AMOUNT] = 4,
