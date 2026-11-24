@@ -222,15 +222,13 @@ func (client *testClient) expectNotSaw(text string) {
 func (client *testClient) expectNotSawAll(texts ...string) {
 	client.testgame.t.Helper()
 
-	lastIndex := client.cursor - 1
 	for _, text := range texts {
 		index := client.findSince(client.cursor, text)
 		if index != -1 {
 			client.testgame.t.Fatalf("%s expected not to see %q.\n%s", client.key, text, client.transcript())
 		}
-		lastIndex = max(lastIndex, index)
 	}
-	client.cursor = lastIndex + 1
+	client.cursor = len(client.messages)
 }
 
 // Runs game updates until a new message contains text, failing if it doesn't appear within maxTicks updates
