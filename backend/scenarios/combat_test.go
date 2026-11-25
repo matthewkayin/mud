@@ -94,3 +94,58 @@ func TestInitiative(test *testing.T) {
 	player.expectSaw("Bufo struck Slow Dummy")
 	player.expectSaw("Slow Dummy struck Bufo")
 }
+
+func TestHealingAggro(test *testing.T) {
+	game := newTestGame(test, "testdata/arena", 1)
+	hero := game.connect("hero")
+	hero.createCharacter("Hero", "human", "warrior")
+	hero.login("Hero")
+
+	priest := game.connect("priest")
+	priest.createCharacter("Priest", "human", "priest")
+	priest.login("Priest")
+
+	// Wait for the dummy to spawn
+	game.tick(1)
+	hero.do("look")
+	hero.expectSaw("Priest and Training Dummy are here")
+
+	// Have priest pick up and learn spell
+	priest.do("take heal book")
+	priest.do("take focus")
+	priest.do("equip focus in main hand")
+	priest.do("use heal book")
+	priest.do("prepare heal")
+	priest.expectSaw("You prepared Heal")
+
+	// Give the dummy a chance to attack
+	game.tick(5)
+	// But assert that it does not attack, because the Dummy is neutral and has not aggroed the player
+	hero.expectNotSaw("Training Dummy struck Hero")
+	hero.expectNotSaw("Training Dummy struck Priest")
+
+	// Have Hero attack the Dummy
+	hero.do("attack dummy")
+	game.tick(1)
+	hero.expectSaw("Hero struck Training Dummy")
+
+	// Have priest heal hero
+	priest.do("cast heal on hero")
+	game.tick(1)
+	priest.expectSawAll(
+		"Training Dummy dodged Hero's attack",
+		"Hero dodged Training Dummy's attack",
+		"Priest cast Heal",
+		"Hero regained",
+	)
+
+	hero.do("stop")
+	priest.do("cast heal on hero")
+	game.tick(1)
+
+	hero.do("stop")
+	priest.do("cast heal on hero")
+	game.tick(1)
+
+	priest.expectSaw("Priest dodged Training Dummy's attack")
+}
