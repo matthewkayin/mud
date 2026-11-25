@@ -458,6 +458,7 @@ func (mob *Mob) magicHeal(world *World, caster *Mob, baseHealing int32) int32 {
 	mob.Health += healing
 
 	// Raise threat on the healer
+	// Mobs raise their threat on the healer if the person being healed is considered a threat by the enemy mob
 	if caster.IsPlayer() {
 		threatAmount := healing / 2
 		room := &world.Rooms[caster.Room]
@@ -466,7 +467,7 @@ func (mob *Mob) magicHeal(world *World, caster *Mob, baseHealing int32) int32 {
 			if !occupant.IsNpc() {
 				continue
 			}
-			if len(occupant.Npc.threats) != 0 {
+			if occupant.isHostileTo(mob) {
 				occupant.Npc.addThreat(caster.Handle, threatAmount)
 			}
 		}
