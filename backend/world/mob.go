@@ -490,9 +490,7 @@ func (mob *Mob) attackTarget(world *World, targetMob *Mob, attack MobAttack) {
 	// Check for deflection
 	deflect := false
 	if !crit {
-		deflectChance := (targetMob.Stat(STAT_DEFLECTION) - attack.penetration) * MOB_DEFLECTION_PER_POINT
-		deflectChance = max(min(deflectChance, 100), 0)
-		deflect = world.Random.Float32() < (float32(deflectChance) / 100.0)
+		deflect = targetMob.rollDeflect(world, attack)
 	}
 
 	// On deflect, subtract armor

@@ -1,6 +1,7 @@
 package scenarios
 
 import (
+	"mud/world"
 	"testing"
 )
 
@@ -124,13 +125,15 @@ func newCombatStateGame(test *testing.T) (*testGame, *testClient) {
 	return game, player
 }
 
-// Attacks the dummy until Hero deals damage to it once (only damage builds threat, so a dodged attack doesn't count),
-// then stops, so the dummy has threat on Hero
+// Attacks the dummy, forcing Hero's first attack to hit (only damage builds threat), then stops, so the dummy has
+// threat on Hero
 func hitDummyOnceAndStop(player *testClient) {
 	player.testgame.t.Helper()
 
 	player.do("attack dummy")
-	player.tickUntilSawHit("Hero", "Training Dummy", 10)
+	player.testgame.pushCheckResult(world.CHECK_TO_HIT, true)
+	player.testgame.tick(1)
+	player.expectSawHit("Hero", "Training Dummy")
 	player.do("stop")
 	player.expectSaw("Hero stopped attacking Training Dummy")
 }

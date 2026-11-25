@@ -1,6 +1,7 @@
 package scenarios
 
 import (
+	"mud/world"
 	"testing"
 )
 
@@ -39,8 +40,10 @@ func TestInitiative(test *testing.T) {
 	// Wait for first update so that the dummy is spawned
 	game.tick(1)
 
-	// Attack the dummy and wait for combat
+	// Attack the dummy and wait for combat. The dummy is neutral and only fights back once Bufo's attack deals damage,
+	// so Bufo's opening attack (the first to-hit check this round) must hit
 	player.do("attack dummy")
+	game.pushCheckResult(world.CHECK_TO_HIT, true)
 	game.tick(1)
 
 	// In the first round, the dummy should not hit at all, because its turn happened before combat started,
@@ -65,6 +68,7 @@ func TestInitiative(test *testing.T) {
 	// Attack dummy, since Bufo is last Mob in the occupants list, Bufo should go last this round
 	// and dummy should not get a hit in until the next turn
 	player.do("attack dummy")
+	game.pushCheckResult(world.CHECK_TO_HIT, true)
 	game.tick(1)
 	player.expectNotSawAttack("Dummy", "Bufo")
 	player.expectSawAttack("Bufo", "Dummy")
@@ -85,6 +89,7 @@ func TestInitiative(test *testing.T) {
 
 	// Attack dummy, since Bufo is faster, the dummy should get a hit in before the end of the round
 	player.do("attack dummy")
+	game.pushCheckResult(world.CHECK_TO_HIT, true)
 	game.tick(1)
 	player.expectSawAttack("Bufo", "Slow Dummy")
 	player.expectSawAttack("Slow Dummy", "Bufo")
@@ -195,4 +200,39 @@ func TestHealingAggroOnlyFromHealingThreats(test *testing.T) {
 	// The dummy has no reason to fight Priest or Squire, because Squire was never a threat to it
 	priest.expectNotSawAll("Training Dummy struck Priest", "Priest dodged Training Dummy's attack")
 	squire.expectNotSawAll("Training Dummy struck Squire", "Squire dodged Training Dummy's attack")
+}
+
+func TestDeflectedAttackGlancesOff(test *testing.T) {
+	game := newTestGame(test, "testdata/arena", 1)
+	player := game.connect("player")
+	player.createCharacter("Hero", "human", "warrior")
+	player.login("Hero")
+
+	// Wait for first update so that the dummy is spawned
+	game.tick(1)
+
+	player.do("attack dummy")
+	game.pushCheckResult(world.CHECK_TO_HIT, true)
+	game.pushCheckResult(world.CHECK_CRIT, false)
+	game.pushCheckResult(world.CHECK_DEFLECT, true)
+	game.tick(1)
+	player.expectSawStartingWith("Hero's attack glanced off Training Dummy for")
+}
+
+func TestCriticalHit(test *testing.T) {
+	game := newTestGame(test, "testdata/arena", 1)
+	player := game.connect("player")
+	player.createCharacter("Hero", "human", "warrior")
+	player.login("Hero")
+
+	// Wait for first update so that the dummy is spawned
+	game.tick(1)
+
+	// A crit can't be deflected, so the deflection check isn't rolled. Forcing CHECK_DEFLECT here would fail the
+	// step for leaving a forced result unused
+	player.do("attack dummy")
+	game.pushCheckResult(world.CHECK_TO_HIT, true)
+	game.pushCheckResult(world.CHECK_CRIT, true)
+	game.tick(1)
+	player.expectSawStartingWith("Critical hit! Hero struck Training Dummy for")
 }

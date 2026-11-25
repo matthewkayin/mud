@@ -19,6 +19,7 @@ import (
 type testGame struct {
 	t *testing.T
 	gamestate *game.GameState
+	world *world.World
 	clients []*testClient
 }
 
@@ -70,11 +71,21 @@ func newTestGame(t *testing.T, worldFolder string, randomSeed uint64) *testGame 
 	testWorld.Characters = make(map[string]*world.Character)
 	testWorld.PlayerCharacters = make(map[string][]string)
 
-	return &testGame {
+	testgame := &testGame {
 		t: t,
 		gamestate: game.NewGameState("test", nil, testWorld),
+		world: testWorld,
 		clients: make([]*testClient, 0, 1),
 	}
+	// Catches results pushed after the last step. Skipped if the test already failed, since the step that would have
+	// used them may not have run
+	t.Cleanup(func() {
+		if !t.Failed() {
+			testgame.expectCheckResultsUsed()
+		}
+	})
+
+	return testgame
 }
 
 // Builds a world data folder from the base world with worldFolder laid over it. A file in worldFolder replaces the
@@ -133,6 +144,37 @@ func (testgame *testGame) tick(count int) {
 	for range count {
 		testgame.update()
 	}
+	testgame.expectCheckResultsUsed()
+}
+
+// Makes the world's next check of checkType pass (true) or fail (false) instead of rolling. Push results before the
+// step that should use them: the step fails if any are left unused when it ends. Forced results go to checks of their
+// type in the order the checks happen, whichever mob makes them
+func (testgame *testGame) pushCheckResult(checkType world.CheckType, result bool) {
+	testgame.world.PushCheckResult(checkType, result)
+}
+
+// Fails if any result pushed with pushCheckResult hasn't been used by a check yet. The harness calls it at the end of
+// every step
+func (testgame *testGame) expectCheckResultsUsed() {
+	testgame.t.Helper()
+
+	unused := make([]string, 0)
+	for checkType := range world.CHECK_TYPE_COUNT {
+		count := testgame.world.UnusedCheckResultCount(checkType)
+		if count != 0 {
+			unused = append(unused, fmt.Sprintf("%d %s", count, checkType.String()))
+		}
+	}
+	if len(unused) == 0 {
+		return
+	}
+
+	var transcripts strings.Builder
+	for _, client := range testgame.clients {
+		transcripts.WriteString(client.transcript())
+	}
+	testgame.t.Fatalf("Forced check results were left unused by the step: %s.\n%s",strings.Join(unused, ", "), transcripts.String())
 }
 
 // Starts a new step for every client, so expectations only search output from here on. Every client is reset, because
@@ -186,6 +228,7 @@ func (client *testClient) do(command string) {
 	client.testgame.beginStep()
 	client.testgame.gamestate.HandleCommand(client.key, command)
 	client.testgame.drain()
+	client.testgame.expectCheckResultsUsed()
 }
 
 // Fails unless a message in the latest step, after the last match, contains text. Moves past the matching message
@@ -311,13 +354,16 @@ func (client *testClient) tickUntilSawHit(attacker string, defender string, maxT
 
 // Runs game updates as a single new step until found returns true or maxTicks updates have run
 func (client *testClient) tickUntil(found func() bool, maxTicks int) {
+	client.testgame.t.Helper()
+
 	client.testgame.beginStep()
 	for range maxTicks {
 		client.testgame.update()
 		if found() {
-			return
+			break
 		}
 	}
+	client.testgame.expectCheckResultsUsed()
 }
 
 // Fails unless a message in the latest step, after the last match, matches one of the patterns. Moves past the

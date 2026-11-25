@@ -20,7 +20,7 @@ Scenario tests are their own package, `backend/scenarios/`, which has only test 
 - `game.NewGameState(version, welcomeBannerLines, world)` builds a `GameState` around an already loaded world, without the file loading that `game.Init` does.
 - `RegisterPlayer`, `RemovePlayer`, `HandleCommand` and `Update` are the handlers that the game loop (`GameState.Run`) dispatches socket events and ticks to. Only the goroutine that owns the game state may call them: `Run`'s, or a test's. HTTP handlers and websocket goroutines must send `SocketEvents` instead.
 
-The harness is in `backend/scenarios/harness_test.go`. It calls those handlers directly on the test's goroutine, so there are no channels, tickers or timing involved. A scenario that needs something the exported API doesn't offer should get a new exported method on `GameState` or `World` that a player-facing feature could also use, not access to internals.
+The harness is in `backend/scenarios/harness_test.go`. It calls those handlers directly on the test's goroutine, so there are no channels, tickers or timing involved. A scenario that needs something the exported API doesn't offer should get a new exported method on `GameState` or `World` that a player-facing feature could also use, not access to internals. The one exception is `World.PushCheckResult` and `World.UnusedCheckResultCount` (see [Determinism](#determinism)): tests need to control randomness, and nothing in the game does.
 
 ```go
 game := newTestGame(test, "testdata/arena", 1)
@@ -49,6 +49,11 @@ Expectations check the output of the latest **step**. Each `client.do`, `game.ti
 | `client.expectNotSaw(text)` | Fails if any message in the latest step contains `text`. Doesn't move. |
 | `client.expectNotSawAll(texts...)` | Fails if any message in the latest step contains any of the texts. Doesn't move. |
 | `client.tickUntilSaw(text, maxTicks)` | Runs updates as one new step until `text` appears, failing after `maxTicks` updates. |
+| `client.expectSawAttack(attacker, defender)` | Like `expectSaw`, but matches any attack by `attacker` on `defender`, whatever its outcome: a hit, a crit, a deflected attack (`glanced off`) or a dodge. |
+| `client.expectSawHit(attacker, defender)` | Like `expectSawAttack`, but only for attacks that dealt damage (not dodges). Use it when the defender must take damage, such as to give a neutral NPC threat. |
+| `client.expectNotSawAttack(attacker, defender)` | Like `expectNotSaw`, for any attack by `attacker` on `defender`. |
+| `client.tickUntilSawAttack(attacker, defender, maxTicks)`, `client.tickUntilSawHit(attacker, defender, maxTicks)` | Like `tickUntilSaw`, for an attack or a hit. |
+| `game.pushCheckResult(checkType, result)` | Forces the world's next check of `checkType` (a `world.CheckType`) to pass or fail instead of rolling. See [Determinism](#determinism). |
 | `client.createCharacter(name, race, class)`, `client.login(name)` | Go through character creation and login. |
 | `client.lastSheet` | The last character sheet the server sent in a heartbeat. |
 
@@ -81,7 +86,12 @@ Keep fixtures minimal and name their contents for what the test needs (e.g. a "T
 
 - Every random roll in `world/` (to-hit, crit, deflection, loot drops and amounts, death durability loss) uses `World.Random`. `NewWorld` seeds it from the system RNG, and `newTestGame` replaces it with one seeded from its `randomSeed` argument, so a scenario plays out the same way every run. New code in `world/` must use `world.Random` instead of the `math/rand` package functions.
 - Initiative ties are not random. `Room.sortOccupantsByInitiativeOrder` (`backend/world/room.go`) uses a stable sort, so mobs with equal initiative act in their order in `room.Occupants`.
-- Assert outcomes, not exact roll sequences. Write "the dummy dies within 30 updates", not "the third attack crits". Adding or reordering a roll changes which numbers each roll gets, and a test that depends on exact rolls would break even though nothing a player relies on changed.
+- Assert combat flow (who attacks whom, and in what order) with the attack helpers (`expectSawAttack` and friends), not by matching `struck` messages. A `"X struck Y"` assertion only passes if that attack wasn't dodged or deflected. The helpers match whole messages, so `Dummy` doesn't match `Fast Dummy`. The message formats they match are in `attackMessagePatterns` and `hitMessagePatterns` in the harness, and must be kept in sync with `Mob.attackTarget`.
+- Every pass/fail roll (to-hit, crit, deflection, taunt) goes through `rollCheck` (`backend/world/mob_checks.go`) with a `CheckType` (`CHECK_TO_HIT`, `CHECK_CRIT`, `CHECK_DEFLECT`, `CHECK_TAUNT`). New pass/fail rolls must do the same, with a new `CheckType` for each new kind of check. Rolls that pick an amount (death durability loss) or use their own rule (loot drops) use `World.Random` directly.
+- A test that depends on a roll's outcome forces it with `game.pushCheckResult(checkType, result)` instead of relying on what the seed happens to produce. Push results before the step (`do`, `tick`, `tickUntilSaw...`) that should use them. Each check uses the oldest forced result for its type, whichever mob makes it, so in a step where several mobs attack, push one result per check in turn order. Checks with no forced result roll normally.
+- Every forced result must be used: the harness fails the step if any are left when it ends (and the test, for results pushed after the last step). This catches a test that forces a check its scenario never reaches, such as `CHECK_DEFLECT` on an attack that crits, since a crit skips the deflection roll.
+- `rollCheck` draws from `World.Random` even when the result is forced, so forcing a check doesn't change the numbers later rolls get.
+- No test should depend on which seed it uses: assert combat flow with the attack helpers, force the checks an outcome depends on, and give waits like "the dummy dies within 30 updates" generous limits. The seed only makes failures reproducible. Adding or reordering a roll changes which numbers each roll gets, and that must not break a test when nothing a player relies on changed.
 - Lua's `math.random` is not seeded by the harness. Fixture NPCs and rooms shouldn't use it in anything a test checks.
 
 ## Saves
