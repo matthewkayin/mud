@@ -20,6 +20,8 @@ type World struct {
 	tick uint32
 	// Every random roll in the world (combat, loot, initiative) uses this, so tests can seed it
 	Random *rand.Rand
+	// Results that tests forced for the next pass/fail checks of each type, used in order by rollCheck
+	forcedCheckResults [CHECK_TYPE_COUNT][]bool
 
 	dataFolder fs.FS
 	// Where scripts that call print write to

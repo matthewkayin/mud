@@ -19,6 +19,7 @@ import (
 type testGame struct {
 	t *testing.T
 	gamestate *game.GameState
+	world *world.World
 	clients []*testClient
 }
 
@@ -70,11 +71,21 @@ func newTestGame(t *testing.T, worldFolder string, randomSeed uint64) *testGame 
 	testWorld.Characters = make(map[string]*world.Character)
 	testWorld.PlayerCharacters = make(map[string][]string)
 
-	return &testGame {
+	testgame := &testGame {
 		t: t,
 		gamestate: game.NewGameState("test", nil, testWorld),
+		world: testWorld,
 		clients: make([]*testClient, 0, 1),
 	}
+	// Catches results pushed after the last step. Skipped if the test already failed, since the step that would have
+	// used them may not have run
+	t.Cleanup(func() {
+		if !t.Failed() {
+			testgame.expectCheckResultsUsed()
+		}
+	})
+
+	return testgame
 }
 
 // Builds a world data folder from the base world with worldFolder laid over it. A file in worldFolder replaces the
@@ -133,6 +144,37 @@ func (testgame *testGame) tick(count int) {
 	for range count {
 		testgame.update()
 	}
+	testgame.expectCheckResultsUsed()
+}
+
+// Makes the world's next check of checkType pass (true) or fail (false) instead of rolling. Push results before the
+// step that should use them: the step fails if any are left unused when it ends. Forced results go to checks of their
+// type in the order the checks happen, whichever mob makes them
+func (testgame *testGame) pushCheckResult(checkType world.CheckType, result bool) {
+	testgame.world.PushCheckResult(checkType, result)
+}
+
+// Fails if any result pushed with pushCheckResult hasn't been used by a check yet. The harness calls it at the end of
+// every step
+func (testgame *testGame) expectCheckResultsUsed() {
+	testgame.t.Helper()
+
+	unused := make([]string, 0)
+	for checkType := range world.CHECK_TYPE_COUNT {
+		count := testgame.world.UnusedCheckResultCount(checkType)
+		if count != 0 {
+			unused = append(unused, fmt.Sprintf("%d %s", count, checkType.String()))
+		}
+	}
+	if len(unused) == 0 {
+		return
+	}
+
+	var transcripts strings.Builder
+	for _, client := range testgame.clients {
+		transcripts.WriteString(client.transcript())
+	}
+	testgame.t.Fatalf("Forced check results were left unused by the step: %s.\n%s",strings.Join(unused, ", "), transcripts.String())
 }
 
 // Starts a new step for every client, so expectations only search output from here on. Every client is reset, because
@@ -186,6 +228,7 @@ func (client *testClient) do(command string) {
 	client.testgame.beginStep()
 	client.testgame.gamestate.HandleCommand(client.key, command)
 	client.testgame.drain()
+	client.testgame.expectCheckResultsUsed()
 }
 
 // Fails unless a message in the latest step, after the last match, contains text. Moves past the matching message
@@ -252,14 +295,107 @@ func (client *testClient) expectNotSawAll(texts ...string) {
 func (client *testClient) tickUntilSaw(text string, maxTicks int) {
 	client.testgame.t.Helper()
 
+	client.tickUntil(func() bool {
+		return client.findSince(client.cursor, text) != -1
+	}, maxTicks)
+	client.expectSaw(text)
+}
+
+// Fails unless a message in the latest step, after the last match, is an attack by attacker on defender, whatever
+// its outcome (hit, crit, deflected or dodged). Moves past the matching message
+func (client *testClient) expectSawAttack(attacker string, defender string) {
+	client.testgame.t.Helper()
+
+	client.expectSawMatching(attackMessagePatterns(attacker, defender), fmt.Sprintf("%s attack %s", attacker, defender))
+}
+
+// Fails unless a message in the latest step, after the last match, is an attack by attacker that dealt damage to
+// defender (hit, crit or deflected, but not dodged). Moves past the matching message
+func (client *testClient) expectSawHit(attacker string, defender string) {
+	client.testgame.t.Helper()
+
+	client.expectSawMatching(hitMessagePatterns(attacker, defender), fmt.Sprintf("%s hit %s", attacker, defender))
+}
+
+// Fails if any message in the latest step is an attack by attacker on defender, whatever its outcome. Doesn't move
+// the cursor
+func (client *testClient) expectNotSawAttack(attacker string, defender string) {
+	client.testgame.t.Helper()
+
+	index := client.findMatchingSince(client.stepStart, attackMessagePatterns(attacker, defender))
+	if index != -1 {
+		client.testgame.t.Fatalf("%s expected not to see %s attack %s, but saw %q.\n%s", client.key, attacker, defender, client.messages[index], client.transcript())
+	}
+}
+
+// Runs game updates as a single step until attacker attacks defender, whatever the outcome, failing if it doesn't
+// happen within maxTicks updates
+func (client *testClient) tickUntilSawAttack(attacker string, defender string, maxTicks int) {
+	client.testgame.t.Helper()
+
+	patterns := attackMessagePatterns(attacker, defender)
+	client.tickUntil(func() bool {
+		return client.findMatchingSince(client.cursor, patterns) != -1
+	}, maxTicks)
+	client.expectSawAttack(attacker, defender)
+}
+
+// Runs game updates as a single step until attacker deals damage to defender with an attack, failing if it doesn't
+// happen within maxTicks updates
+func (client *testClient) tickUntilSawHit(attacker string, defender string, maxTicks int) {
+	client.testgame.t.Helper()
+
+	patterns := hitMessagePatterns(attacker, defender)
+	client.tickUntil(func() bool {
+		return client.findMatchingSince(client.cursor, patterns) != -1
+	}, maxTicks)
+	client.expectSawHit(attacker, defender)
+}
+
+// Runs game updates as a single new step until found returns true or maxTicks updates have run
+func (client *testClient) tickUntil(found func() bool, maxTicks int) {
+	client.testgame.t.Helper()
+
 	client.testgame.beginStep()
 	for range maxTicks {
 		client.testgame.update()
-		if client.findSince(client.cursor, text) != -1 {
+		if found() {
 			break
 		}
 	}
-	client.expectSaw(text)
+	client.testgame.expectCheckResultsUsed()
+}
+
+// Fails unless a message in the latest step, after the last match, matches one of the patterns. Moves past the
+// matching message. description names what was expected in the failure message
+func (client *testClient) expectSawMatching(patterns []*regexp.Regexp, description string) {
+	client.testgame.t.Helper()
+
+	index := client.findMatchingSince(client.cursor, patterns)
+	if index == -1 {
+		client.testgame.t.Fatalf("%s expected to see %s.\n%s", client.key, description, client.transcript())
+	}
+	client.cursor = index + 1
+}
+
+// The messages Mob.attackTarget (backend/world/mob.go) sends when attacker's attack deals damage to defender: a hit,
+// a crit or a deflected attack. Keep these in sync with attackTarget. They match the whole message, because one name
+// can contain another (e.g. "Dummy" in "Fast Dummy")
+func hitMessagePatterns(attacker string, defender string) []*regexp.Regexp {
+	quotedAttacker := regexp.QuoteMeta(attacker)
+	quotedDefender := regexp.QuoteMeta(defender)
+	return []*regexp.Regexp{
+		regexp.MustCompile(`^` + quotedAttacker + ` struck ` + quotedDefender + ` for \d+ damage\.$`),
+		regexp.MustCompile(`^Critical hit! ` + quotedAttacker + ` struck ` + quotedDefender + ` for \d+ damage\.$`),
+		regexp.MustCompile(`^` + quotedAttacker + `'s attack glanced off ` + quotedDefender + ` for \d+ damage\.$`),
+	}
+}
+
+// Every message Mob.attackTarget (backend/world/mob.go) sends for an attack by attacker on defender: the hit messages
+// and the dodge message
+func attackMessagePatterns(attacker string, defender string) []*regexp.Regexp {
+	dodgePattern := regexp.MustCompile(`^` + regexp.QuoteMeta(defender) + ` dodged ` + regexp.QuoteMeta(attacker) + `'s attack!$`)
+	return append(hitMessagePatterns(attacker, defender), dodgePattern)
 }
 
 // Creates a character through the character creation menu. The client must be at the login menu
@@ -286,6 +422,17 @@ func (client *testClient) findSince(start int, text string) int {
 	for index := start; index < len(client.messages); index++ {
 		if strings.Contains(client.messages[index], text) {
 			return index
+		}
+	}
+	return -1
+}
+
+func (client *testClient) findMatchingSince(start int, patterns []*regexp.Regexp) int {
+	for index := start; index < len(client.messages); index++ {
+		for _, pattern := range patterns {
+			if pattern.MatchString(client.messages[index]) {
+				return index
+			}
 		}
 	}
 	return -1

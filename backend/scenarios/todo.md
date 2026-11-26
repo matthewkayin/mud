@@ -49,8 +49,8 @@ Item reach. Replaces `world/item_target_test.go`:
   with higher attributes and stats.
 - [ ] **Experience is split between players.** Two players in the room when an NPC dies each get half its experience.
 - [ ] **Taunting.** A warrior `taunt`s a hostile NPC that's attacking another player. It either switches to the taunter
-  or ignores the taunt, and a second taunt right away has no effect while the cooldown recovers. Assert both outcomes
-  are possible over many tries with different seeds, not which one a seed produces.
+  or ignores the taunt, and a second taunt right away has no effect while the cooldown recovers. Force each outcome
+  with `game.pushCheckResult(world.CHECK_TAUNT, ...)` and check its message.
 - [ ] **Players can't attack friendly NPCs.** `attack` on a friendly NPC says it's not an enemy.
 - [ ] **Unarmed fallback and full hands.** With a two-handed weapon equipped, `attack` uses the weapon. With both hands
   holding non-weapons, `attack` says "Your hands are full!".

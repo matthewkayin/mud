@@ -1,6 +1,7 @@
 package scenarios
 
 import (
+	"mud/world"
 	"testing"
 )
 
@@ -14,7 +15,7 @@ func TestHostileNpcInRoomBlocksEquipping(test *testing.T) {
 	player.do("east")
 	player.expectSaw("Goblin is here")
 	// No update has run since Hero entered, so the goblin hasn't attacked yet
-	player.expectNotSaw("Goblin struck Hero")
+	player.expectNotSawAttack("Goblin", "Hero")
 
 	player.do("equip leather armor")
 	player.expectSaw("You cannot equip items while you are in combat.")
@@ -36,7 +37,7 @@ func TestAttackingNeutralNpcStartsCombat(test *testing.T) {
 	hitDummyOnceAndStop(player)
 
 	// Hero stopped, but the dummy is angry and hits back
-	player.tickUntilSaw("Training Dummy struck Hero", 5)
+	player.tickUntilSawAttack("Training Dummy", "Hero", 5)
 
 	player.do("equip leather armor")
 	player.expectSaw("You cannot equip items while you are in combat.")
@@ -46,7 +47,7 @@ func TestLeavingRoomEndsCombat(test *testing.T) {
 	_, player := newCombatStateGame(test)
 
 	hitDummyOnceAndStop(player)
-	player.tickUntilSaw("Training Dummy struck Hero", 5)
+	player.tickUntilSawAttack("Training Dummy", "Hero", 5)
 
 	// The dummy still has threat on Hero, but it's in another room
 	player.do("north")
@@ -72,12 +73,12 @@ func TestNeutralNpcCalmsDown(test *testing.T) {
 	game, player := newCombatStateGame(test)
 
 	hitDummyOnceAndStop(player)
-	player.tickUntilSaw("Training Dummy struck Hero", 5)
+	player.tickUntilSawAttack("Training Dummy", "Hero", 5)
 
 	// The dummy's threat on Hero decays each update until it gives up
 	player.tickUntilSaw("Training Dummy stopped attacking Hero.", 120)
 	game.tick(5)
-	player.expectNotSaw("Training Dummy struck Hero")
+	player.expectNotSawAttack("Training Dummy", "Hero")
 
 	player.do("equip leather armor")
 	player.expectSaw("You equipped Leather Armor")
@@ -88,7 +89,7 @@ func TestHostileNpcDoesNotCalmDown(test *testing.T) {
 
 	player.do("east")
 	player.do("attack goblin")
-	player.tickUntilSaw("Hero struck Goblin", 10)
+	player.tickUntilSawAttack("Hero", "Goblin", 10)
 	player.do("stop")
 	player.expectSaw("Hero stopped attacking Goblin")
 
@@ -98,7 +99,7 @@ func TestHostileNpcDoesNotCalmDown(test *testing.T) {
 
 	// The Goblin is still attacking the Hero
 	game.tick(1)
-	player.expectSaw("Goblin struck Hero")
+	player.expectSawAttack("Goblin", "Hero")
 
 	player.do("equip leather armor")
 	player.expectSaw("You cannot equip items while you are in combat.")
@@ -124,12 +125,15 @@ func newCombatStateGame(test *testing.T) (*testGame, *testClient) {
 	return game, player
 }
 
-// Attacks the dummy until Hero hits it once, then stops, so the dummy has threat on Hero
+// Attacks the dummy, forcing Hero's first attack to hit (only damage builds threat), then stops, so the dummy has
+// threat on Hero
 func hitDummyOnceAndStop(player *testClient) {
 	player.testgame.t.Helper()
 
 	player.do("attack dummy")
-	player.tickUntilSaw("Hero struck Training Dummy", 10)
+	player.testgame.pushCheckResult(world.CHECK_TO_HIT, true)
+	player.testgame.tick(1)
+	player.expectSawHit("Hero", "Training Dummy")
 	player.do("stop")
 	player.expectSaw("Hero stopped attacking Training Dummy")
 }
