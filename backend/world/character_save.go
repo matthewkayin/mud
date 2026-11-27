@@ -30,6 +30,7 @@ type CharacterJson struct {
 
 	Health int32
 	Mana int32
+	Conditions []ConditionJson
 
 	Inventory []ItemJson
 	Equipment []EquipmentSlotJson
@@ -46,6 +47,11 @@ type ItemJson struct {
 type EquipmentSlotJson struct {
 	Slot string
 	Item ItemJson
+}
+
+type ConditionJson struct {
+	Type string
+	TimeToLive int
 }
 
 var CHARACTER_SAVES_FOLDER = filepath.Join(database.SAVES_FOLDER, "characters")
@@ -147,11 +153,18 @@ func (world *World) characterToJson(character *Character) CharacterJson {
 
 		Health: character.Health,
 		Mana: character.Mana,
+		Conditions: make([]ConditionJson, 0, len(character.Conditions)),
 
 		Inventory: make([]ItemJson, 0, len(character.Inventory.Items)),
 		Equipment: make([]EquipmentSlotJson, 0, EQUIPMENT_SLOT_COUNT),
 		SpellsKnown: world.SpellListToStringArray(character.SpellsKnown),
 		SpellsPrepared: make([]string, 0, len(character.SpellsPrepared)),
+	}
+
+	// Conditions
+	for index := range len(character.Conditions) {
+		conditionJson := conditionToJson(&character.Conditions[index])
+		characterJson.Conditions = append(characterJson.Conditions, conditionJson)
 	}
 
 	// Rooms discovered
@@ -239,6 +252,17 @@ func (world *World) characterFromJson(characterJson *CharacterJson) (*Character,
 		return nil, err
 	}
 
+	// Conditions
+	character.Conditions = make([]Condition, 0, len(characterJson.Conditions))
+	for index := range len(characterJson.Conditions) {
+		condition, err := world.conditionFromJson(&characterJson.Conditions[index])
+		if err != nil {
+			return nil, err
+		}
+
+		character.Conditions = append(character.Conditions, condition)
+	}
+
 	// Inventory
 	character.Inventory = NewInventory()
 	for index := range characterJson.Inventory {
@@ -306,4 +330,23 @@ func (world *World) itemFromJson(itemJson *ItemJson) (Item, error) {
 		amount: itemJson.Amount,
 		durability: itemJson.Durability,
 	}), nil
+}
+
+func conditionToJson(condition *Condition) ConditionJson {
+	return ConditionJson {
+		Type: condition.Type.Name,
+		TimeToLive: condition.TimeToLive,
+	}
+}
+
+func (world *World) conditionFromJson(conditionJson *ConditionJson) (Condition, error) {
+	conditionType, exists := world.ConditionTypes[conditionJson.Type]
+	if !exists {
+		return Condition{}, fmt.Errorf("Character has condition %s which does not exist.", conditionJson.Type)
+	}
+
+	return Condition {
+		Type: conditionType,
+		TimeToLive: conditionJson.TimeToLive,
+	}, nil
 }

@@ -2,8 +2,9 @@ package generate
 
 // Generates data/world.d.lua, a Lua language server definition file for the world table that the
 // backend exposes to scripts. Constants come from world.ScriptFreeConstants() and
-// world.ScriptConstantTables(), and function stubs come from the SCRIPT_LIBRARY entries in
-// world/script_library.go, documented with the comment above each entry.
+// world.ScriptConstantTables(), and function stubs come from the SCRIPT_LIBRARY entries, documented
+// with the comment above each entry. SCRIPT_LIBRARY (world/script_library.go) is either a map literal
+// or a util.MergeMaps call over map literal vars, which may be in any file in world/.
 
 import (
 	"bytes"
@@ -14,6 +15,7 @@ import (
 	"go/token"
 	"mud/world"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -21,7 +23,7 @@ import (
 	"github.com/mmcdole/lunar"
 )
 
-const LUA_DEFS_SCRIPT_LIBRARY_PATH = "world/script_library.go"
+const LUA_DEFS_SCRIPT_LIBRARY_FOLDER = "world"
 const LUA_DEFS_SCRIPT_LIBRARY_NAME = "SCRIPT_LIBRARY"
 
 type luaDefsFunction struct {
@@ -29,8 +31,13 @@ type luaDefsFunction struct {
 	commentLines []string
 }
 
+type luaDefsFileLine struct {
+	filename string
+	line int
+}
+
 func LuaDefs(path string) error {
-	functions, err := luaDefsParseScriptLibrary(LUA_DEFS_SCRIPT_LIBRARY_PATH)
+	functions, err := luaDefsParseScriptLibrary(LUA_DEFS_SCRIPT_LIBRARY_FOLDER)
 	if err != nil {
 		return err
 	}
@@ -89,8 +96,8 @@ func LuaDefs(path string) error {
 
 			if strings.HasPrefix(line, "@param ") {
 				fields := strings.Fields(line)
-				if len(fields) < 2 {
-					return fmt.Errorf("function '%s' has a @param with no name", function.name)
+				if len(fields) < 3 {
+					return fmt.Errorf("function '%s' has a @param without a name and type", function.name)
 				}
 				paramNames = append(paramNames, strings.TrimSuffix(fields[1], "?"))
 			}
@@ -102,59 +109,95 @@ func LuaDefs(path string) error {
 }
 
 // Returns each entry of the script library along with its doc comment, sorted by name
-func luaDefsParseScriptLibrary(path string) ([]luaDefsFunction, error) {
+func luaDefsParseScriptLibrary(folderPath string) ([]luaDefsFunction, error) {
 	fileSet := token.NewFileSet()
-	file, err := parser.ParseFile(fileSet, path, nil, parser.ParseComments)
+	files, err := luaDefsParseFolder(fileSet, folderPath)
 	if err != nil {
 		return nil, err
 	}
 
-	libraryLiteral := luaDefsFindScriptLibrary(file)
-	if libraryLiteral == nil {
-		return nil, fmt.Errorf("could not find %s in %s", LUA_DEFS_SCRIPT_LIBRARY_NAME, path)
+	// Comments inside a composite literal aren't attached to any node, so map each comment
+	// group by the file and line it ends on and look up the group directly above each entry
+	commentGroupsByEndLine := make(map[luaDefsFileLine]*ast.CommentGroup)
+	for _, file := range files {
+		for _, commentGroup := range file.Comments {
+			endPosition := fileSet.Position(commentGroup.End())
+			commentGroupsByEndLine[luaDefsFileLine{filename: endPosition.Filename, line: endPosition.Line}] = commentGroup
+		}
 	}
 
-	// Comments inside a composite literal aren't attached to any node, so map each comment
-	// group by the line it ends on and look up the group directly above each entry
-	commentGroupsByEndLine := make(map[int]*ast.CommentGroup)
-	for _, commentGroup := range file.Comments {
-		commentGroupsByEndLine[fileSet.Position(commentGroup.End()).Line] = commentGroup
+	libraryValue := luaDefsFindVarValue(files, LUA_DEFS_SCRIPT_LIBRARY_NAME)
+	if libraryValue == nil {
+		return nil, fmt.Errorf("could not find %s in %s", LUA_DEFS_SCRIPT_LIBRARY_NAME, folderPath)
+	}
+
+	// SCRIPT_LIBRARY is either a map literal or a util.MergeMaps call over map literal vars
+	libraryLiterals := []*ast.CompositeLit{}
+	switch value := libraryValue.(type) {
+	case *ast.CompositeLit:
+		libraryLiterals = append(libraryLiterals, value)
+	case *ast.CallExpr:
+		selector, ok := value.Fun.(*ast.SelectorExpr)
+		if !ok || selector.Sel.Name != "MergeMaps" {
+			return nil, fmt.Errorf("%s: %s must be a map literal or a util.MergeMaps call", fileSet.Position(value.Pos()), LUA_DEFS_SCRIPT_LIBRARY_NAME)
+		}
+		for _, argument := range value.Args {
+			identifier, ok := argument.(*ast.Ident)
+			if !ok {
+				return nil, fmt.Errorf("%s: %s arguments must be variable names", fileSet.Position(argument.Pos()), LUA_DEFS_SCRIPT_LIBRARY_NAME)
+			}
+			literal, ok := luaDefsFindVarValue(files, identifier.Name).(*ast.CompositeLit)
+			if !ok {
+				return nil, fmt.Errorf("%s: could not find a map literal for %s", fileSet.Position(argument.Pos()), identifier.Name)
+			}
+			libraryLiterals = append(libraryLiterals, literal)
+		}
+	default:
+		return nil, fmt.Errorf("%s: %s must be a map literal or a util.MergeMaps call", fileSet.Position(libraryValue.Pos()), LUA_DEFS_SCRIPT_LIBRARY_NAME)
 	}
 
 	functions := []luaDefsFunction{}
-	for _, element := range libraryLiteral.Elts {
-		keyValue, ok := element.(*ast.KeyValueExpr)
-		if !ok {
-			return nil, fmt.Errorf("%s: unexpected element in %s", fileSet.Position(element.Pos()), LUA_DEFS_SCRIPT_LIBRARY_NAME)
-		}
-		keyLiteral, ok := keyValue.Key.(*ast.BasicLit)
-		if !ok || keyLiteral.Kind != token.STRING {
-			return nil, fmt.Errorf("%s: %s keys must be string literals", fileSet.Position(keyValue.Pos()), LUA_DEFS_SCRIPT_LIBRARY_NAME)
-		}
-		name, err := strconv.Unquote(keyLiteral.Value)
-		if err != nil {
-			return nil, err
-		}
-
-		commentGroup := commentGroupsByEndLine[fileSet.Position(keyValue.Pos()).Line - 1]
-		if commentGroup == nil {
-			return nil, fmt.Errorf("%s: script library function '%s' has no doc comment", fileSet.Position(keyValue.Pos()), name)
-		}
-
-		function := luaDefsFunction {
-			name: name,
-			commentLines: make([]string, 0, len(commentGroup.List)),
-		}
-		for _, comment := range commentGroup.List {
-			if !strings.HasPrefix(comment.Text, "//") {
-				return nil, fmt.Errorf("%s: doc comment for '%s' must use // comments", fileSet.Position(comment.Pos()), name)
+	functionNames := make(map[string]bool)
+	for _, libraryLiteral := range libraryLiterals {
+		for _, element := range libraryLiteral.Elts {
+			keyValue, ok := element.(*ast.KeyValueExpr)
+			if !ok {
+				return nil, fmt.Errorf("%s: unexpected element in %s", fileSet.Position(element.Pos()), LUA_DEFS_SCRIPT_LIBRARY_NAME)
 			}
-			line := strings.TrimPrefix(comment.Text, "//")
-			line = strings.TrimPrefix(line, " ")
-			function.commentLines = append(function.commentLines, strings.TrimRight(line, " \t"))
-		}
+			keyLiteral, ok := keyValue.Key.(*ast.BasicLit)
+			if !ok || keyLiteral.Kind != token.STRING {
+				return nil, fmt.Errorf("%s: %s keys must be string literals", fileSet.Position(keyValue.Pos()), LUA_DEFS_SCRIPT_LIBRARY_NAME)
+			}
+			name, err := strconv.Unquote(keyLiteral.Value)
+			if err != nil {
+				return nil, err
+			}
+			if functionNames[name] {
+				return nil, fmt.Errorf("%s: duplicate script library function '%s'", fileSet.Position(keyValue.Pos()), name)
+			}
+			functionNames[name] = true
 
-		functions = append(functions, function)
+			keyPosition := fileSet.Position(keyValue.Pos())
+			commentGroup := commentGroupsByEndLine[luaDefsFileLine{filename: keyPosition.Filename, line: keyPosition.Line - 1}]
+			if commentGroup == nil {
+				return nil, fmt.Errorf("%s: script library function '%s' has no doc comment", keyPosition, name)
+			}
+
+			function := luaDefsFunction {
+				name: name,
+				commentLines: make([]string, 0, len(commentGroup.List)),
+			}
+			for _, comment := range commentGroup.List {
+				if !strings.HasPrefix(comment.Text, "//") {
+					return nil, fmt.Errorf("%s: doc comment for '%s' must use // comments", fileSet.Position(comment.Pos()), name)
+				}
+				line := strings.TrimPrefix(comment.Text, "//")
+				line = strings.TrimPrefix(line, " ")
+				function.commentLines = append(function.commentLines, strings.TrimRight(line, " \t"))
+			}
+
+			functions = append(functions, function)
+		}
 	}
 
 	if len(functions) == 0 {
@@ -168,21 +211,42 @@ func luaDefsParseScriptLibrary(path string) ([]luaDefsFunction, error) {
 	return functions, nil
 }
 
-func luaDefsFindScriptLibrary(file *ast.File) *ast.CompositeLit {
-	for _, declaration := range file.Decls {
-		genDecl, ok := declaration.(*ast.GenDecl)
-		if !ok || genDecl.Tok != token.VAR {
+// Parses every non-test Go file in the folder
+func luaDefsParseFolder(fileSet *token.FileSet, folderPath string) ([]*ast.File, error) {
+	entries, err := os.ReadDir(folderPath)
+	if err != nil {
+		return nil, err
+	}
+
+	files := []*ast.File{}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") || strings.HasSuffix(entry.Name(), "_test.go") {
 			continue
 		}
-		for _, spec := range genDecl.Specs {
-			valueSpec := spec.(*ast.ValueSpec)
-			for index, name := range valueSpec.Names {
-				if name.Name != LUA_DEFS_SCRIPT_LIBRARY_NAME || index >= len(valueSpec.Values) {
-					continue
-				}
-				literal, ok := valueSpec.Values[index].(*ast.CompositeLit)
-				if ok {
-					return literal
+		file, err := parser.ParseFile(fileSet, filepath.Join(folderPath, entry.Name()), nil, parser.ParseComments)
+		if err != nil {
+			return nil, err
+		}
+		files = append(files, file)
+	}
+
+	return files, nil
+}
+
+// Returns the value expression of the package-level var with the given name, or nil
+func luaDefsFindVarValue(files []*ast.File, varName string) ast.Expr {
+	for _, file := range files {
+		for _, declaration := range file.Decls {
+			genDecl, ok := declaration.(*ast.GenDecl)
+			if !ok || genDecl.Tok != token.VAR {
+				continue
+			}
+			for _, spec := range genDecl.Specs {
+				valueSpec := spec.(*ast.ValueSpec)
+				for index, name := range valueSpec.Names {
+					if name.Name == varName && index < len(valueSpec.Values) {
+						return valueSpec.Values[index]
+					}
 				}
 			}
 		}

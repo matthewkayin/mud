@@ -110,6 +110,19 @@ func ScriptConstantTables() []ScriptConstantTable {
 		})
 	}
 
+	// Condition Effect Type
+	conditionEffectTypeTable := ScriptConstantTable {
+		Name: "ConditionEffectType",
+		Constants: make([]ScriptConstant, 0, CONDITION_EFFECT_TYPE_COUNT),
+	}
+	for index := range CONDITION_EFFECT_TYPE_COUNT {
+		conditionEffectType := ConditionEffectType(index)
+		conditionEffectTypeTable.Constants = append(conditionEffectTypeTable.Constants, ScriptConstant {
+			Name: strings.ReplaceAll(strings.ToUpper(conditionEffectType.String()), " ", "_"),
+			Value: lua.String(conditionEffectType.String()),
+		})
+	}
+
 	return []ScriptConstantTable {
 		itemKindTable,
 		targetTypeTable,
@@ -118,5 +131,6 @@ func ScriptConstantTables() []ScriptConstantTable {
 		statTable,
 		skillTable,
 		npcDispositionTable,
+		conditionEffectTypeTable,
 	}
 }

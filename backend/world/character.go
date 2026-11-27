@@ -192,8 +192,10 @@ func (character *Character) calculateStats() {
 		}
 
 		equipmentStats := item.ItemType.Data.(ItemDataEquipment).stats
-		stats = stats.Add(&equipmentStats)
+		stats = stats.Add(equipmentStats)
 	}
+
+	stats = stats.Add(character.getConditionStatChanges())
 
 	character.Stats = stats
 }

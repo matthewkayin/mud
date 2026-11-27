@@ -134,4 +134,77 @@ var SCRIPT_LIBRARY_MOB = map[string]lua.NativeFunc {
 		healing := target.magicHeal(__world, caster, int32(baseHealing))
 		return frame.ReturnNumber(float64(healing))
 	},
+
+	// Gives the mob the specified condition with the specified duration
+	//
+	// @param mob MobHandle
+	// @param condition string
+	// @param duration integer
+	"mob_add_condition": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+
+		conditionName, ok := frame.String(1)
+		if !ok {
+			frame.ThrowArgTypeError(1)
+		}
+		condition, ok := __world.ConditionTypes[conditionName]
+		if !ok {
+			frame.ThrowArgError(1, fmt.Sprintf("Unrecognized condition '%s'.", conditionName))
+		}
+
+		duration, ok := frame.Number(2)
+		if !ok {
+			frame.ThrowArgTypeError(2)
+		}
+
+		mob.addCondition(__world, Condition {
+			Type: condition,
+			TimeToLive: int(duration),
+		})
+
+		return frame.Return()
+	},
+
+	// Removes a condition matching the specified type, if the mob has that condition
+	//
+	// @param mob MobHandle
+	// @param condition string
+	"mob_remove_condition": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+
+		conditionName, ok := frame.String(1)
+		if !ok {
+			frame.ThrowArgTypeError(1)
+		}
+		condition, ok := __world.ConditionTypes[conditionName]
+		if !ok {
+			frame.ThrowArgError(1, fmt.Sprintf("Unrecognized condition '%s'.", conditionName))
+		}
+
+		index := mob.findCondition(condition)
+		mob.removeCondition(__world, index)
+
+		return frame.Return()
+	},
+
+	// Returns true if the mob has the specified condition
+	//
+	// @param mob MobHandle
+	// @param condition string
+	// @return bool
+	"mob_has_condition": func(frame lua.Frame) lua.Outcome {
+		mob := frameGetMobArg(&frame, 0)
+
+		conditionName, ok := frame.String(1)
+		if !ok {
+			frame.ThrowArgTypeError(1)
+		}
+		condition, ok := __world.ConditionTypes[conditionName]
+		if !ok {
+			frame.ThrowArgError(1, fmt.Sprintf("Unrecognized condition '%s'.", conditionName))
+		}
+
+		index := mob.findCondition(condition)
+		return frame.ReturnBool(index != -1)
+	},
 }

@@ -77,7 +77,7 @@ func (stat Stat) IsPercentage() bool {
 	}
 }
 
-func (stats *StatBlock) Add(other *StatBlock) StatBlock {
+func (stats *StatBlock) Add(other StatBlock) StatBlock {
 	result := *stats
 	for index := range STAT_COUNT {
 		result.Values[index] += other.Values[index]

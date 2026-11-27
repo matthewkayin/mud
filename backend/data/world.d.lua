@@ -13,6 +13,9 @@ world = {}
 ---@field amount integer
 ---@field durability integer
 
+---@type number
+world.SPELL_CAST_TIME_INSTANT = 0
+
 ---@enum ItemKind
 world.ItemKind = {
 	CONSUMABLE = "Consumable",
@@ -30,6 +33,8 @@ world.ItemKind = {
 	LIGHT_ARMOR = "Light Armor",
 	HEAVY_ARMOR = "Heavy Armor",
 	ACCESSORY = "Accessory",
+	FOCUS = "Magic Focus",
+	SPELLBOOK = "Spellbook",
 }
 
 ---@enum TargetType
@@ -68,9 +73,12 @@ world.Stat = {
 	INITIATIVE = "Initiative",
 	ACCURACY = "Accuracy",
 	EVASION = "Evasion",
+	CRIT_CHANCE = "Crit Chance",
+	STEALTH = "Stealth",
 	DEFLECTION = "Deflection",
 	DEFLECTION_AMOUNT = "Deflection Amount",
 	RESISTANCE = "Resistance",
+	MAGIC_DAMAGE = "Magic Damage",
 	MAGIC_RESISTANCE = "Magic Resistance",
 	FOCUS = "Focus",
 }
@@ -105,6 +113,12 @@ world.NpcDisposition = {
 	HOSTILE = "Hostile",
 }
 
+---@enum ConditionEffectType
+world.ConditionEffectType = {
+	DAMAGE_OVER_TIME = "Damage Over Time",
+	STAT_CHANGE = "Stat Change",
+}
+
 --- Returns the current world tick
 ---
 ---@return integer
@@ -127,6 +141,13 @@ function world.message_player(player, message) end
 ---@param message string
 function world.message_room(room, message) end
 
+--- Gives the mob the specified condition with the specified duration
+---
+---@param mob MobHandle
+---@param condition string
+---@param duration integer
+function world.mob_add_condition(mob, condition, duration) end
+
 --- Returns true if the mob exists
 ---
 ---@param handle MobHandle
@@ -145,18 +166,6 @@ function world.mob_get_health(handle) end
 ---@return integer
 function world.mob_get_mana(handle) end
 
---- Returns the mob's max health
----
----@param handle MobHandle
----@return integer
-function world.mob_get_max_health(handle) end
-
---- Returns the mob's max mana
----
----@param handle MobHandle
----@return integer
-function world.mob_get_max_mana(handle) end
-
 --- Returns the mob's name
 ---
 ---@param handle MobHandle
@@ -169,11 +178,59 @@ function world.mob_get_name(handle) end
 ---@return integer
 function world.mob_get_room(handle) end
 
+--- Returns mob's value in the specified stat
+---
+---@param handle MobHandle
+---@param stat string
+---@return integer
+function world.mob_get_stat(handle, stat) end
+
+--- Returns true if the mob has the specified condition
+---
+---@param mob MobHandle
+---@param condition string
+---@return bool
+function world.mob_has_condition(mob, condition) end
+
 --- Returns true if the mob is dead
 ---
 ---@param handle MobHandle
 ---@return boolean
 function world.mob_is_dead(handle) end
+
+--- Returns true if the mob is evil
+---
+---@param handle MobHandle
+---@return boolean
+function world.mob_is_evil(handle) end
+
+--- Returns true if the mob is an NPC
+---
+---@param handle MobHandle
+---@return boolean
+function world.mob_is_npc(handle) end
+
+--- Deals magic damage to the target mob. Returns the number of damage dealt.
+---
+---@param caster MobHandle
+---@param target MobHandle
+---@param base_damage integer
+---@return number
+function world.mob_magic_damage(caster, target, base_damage) end
+
+--- Gives magic healing to the target mob. Returns the amount of healing given.
+---
+---@param caster MobHandle
+---@param target MobHandle
+---@param base_healing integer
+---@return number
+function world.mob_magic_heal(caster, target, base_healing) end
+
+--- Removes a condition matching the specified type, if the mob has that condition
+---
+---@param mob MobHandle
+---@param condition string
+function world.mob_remove_condition(mob, condition) end
 
 --- Returns the NPC's disposition
 ---
@@ -195,8 +252,26 @@ function world.npc_has_threats(handle) end
 --- Sets the NPC's disposition
 ---
 ---@param handle MobHandle
----@param string
-function world.npc_set_disposition(handle, string) end
+---@param disposition string
+function world.npc_set_disposition(handle, disposition) end
+
+--- Returns the player's class
+---
+---@param player MobHandle
+---@return string
+function world.player_get_class(player) end
+
+--- Returns the player's race
+---
+---@param player MobHandle
+---@return string
+function world.player_get_race(player) end
+
+--- Grants the player the specified amount of experience
+---
+---@param handle MobHandle
+---@param amount integer
+function world.player_grant_experience(handle, amount) end
 
 --- Sends a dialog message to a specified player.
 --- Dialog messages are prefixed with the speakers name:

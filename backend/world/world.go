@@ -38,6 +38,7 @@ type World struct {
 	ClassData map[string]*ClassData
 
 	Spells map[string]*Spell
+	ConditionTypes map[string]*ConditionType
 
 	ItemTypes map[string]*ItemType
 	NextItemId ItemId
@@ -75,6 +76,7 @@ func NewWorld(dataFolder fs.FS, scriptStdout io.Writer) (*World, []ScriptProblem
 	// Load script data
 	problems := make([]ScriptProblem, 0)
 	loaders := []func() []ScriptProblem {
+		world.loadConditions,
 		world.loadSpells,
 		world.loadItemTypes,
 		world.loadNpcData,

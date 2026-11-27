@@ -17,7 +17,7 @@ Because it is a standard language server, it works in any editor with LSP suppor
 
 ### 2. Lua definitions for the script API
 
-`backend/data/world.d.lua` is a LuaLS definition file generated from `backend/world/script_library.go` by `backend/generate/luadefs.go` (`go generate` in `backend/`, which runs `go run . -generate-lua-defs data/world.d.lua`). LuaLS uses it to complete `world.` functions and constants and to warn when a script calls one that doesn't exist.
+`backend/data/world.d.lua` is a LuaLS definition file generated from the `SCRIPT_LIBRARY` functions (merged in `backend/world/script_library.go` from the `SCRIPT_LIBRARY_*` maps in `backend/world/script_library*.go`, each documented by the comment above it) by `backend/generate/luadefs.go` (`go generate` in `backend/`, which runs `go run . -generate-lua-defs data/world.d.lua`). LuaLS uses it to complete `world.` functions and constants and to warn when a script calls one that doesn't exist.
 
 ### 3. VS Code extension
 

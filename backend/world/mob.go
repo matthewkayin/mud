@@ -3,7 +3,10 @@ package world
 import (
 	"fmt"
 	"log"
+	"mud/util"
 	"strings"
+	"slices"
+
 	"github.com/mmcdole/lunar"
 )
 
@@ -170,6 +173,15 @@ func (mob *Mob) Stat(stat Stat) int32 {
 	return mob.Stats.Values[stat]
 }
 
+func (mob *Mob) calculateStats() {
+	if mob.IsPlayer() {
+		mob.Character.calculateStats()
+		return
+	}
+
+	mob.Npc.calculateStats()
+}
+
 func (mob *Mob) InventoryCapacity() int32 {
 	if mob.IsPlayer() {
 		return mob.Character.InventoryCapacity()
@@ -330,6 +342,25 @@ func (mob *Mob) update(world *World) {
 	mob.escapeChance = min(mob.escapeChance + MOB_ESCAPE_CHANCE_RECOVERY_RATE, MOB_ESCAPE_CHANCE_MAX)
 	mob.alertness = max(mob.alertness - MOB_ALERTNESS_COOLDOWN_RATE, 0.0)
 	mob.tauntCooldown = max(mob.tauntCooldown - MOB_TAUNT_COOLDOWN_RATE, 0.0)
+
+	// Update conditions
+	conditionIndex := 0
+	for conditionIndex < len(mob.Conditions) {
+		condition := &mob.Conditions[conditionIndex]
+
+		// Keep infinite conditions
+		if condition.TimeToLive != CONDITION_TTL_INFINITE {
+			continue
+		}
+
+		// Decrement time to live
+		condition.TimeToLive--
+		if condition.TimeToLive == 0 {
+			mob.Conditions = util.RemoveAtUnordered(mob.Conditions, conditionIndex)
+		} else {
+			conditionIndex++
+		}
+	}
 
 	switch mob.Mode {
 		// ATTACK
@@ -580,7 +611,7 @@ func (mob *Mob) useItem(world *World) {
 	success := false
 	switch itemType.Kind {
 		case ITEM_KIND_CONSUMABLE: {
-			consumableData := itemType.Data.(*ItemDataConsumable)
+			consumableData := itemType.Data.(ItemDataConsumable)
 			success = mob.onUseOrCast(world, MobOnUseOrCastParams {
 				targetType: consumableData.TargetType,
 				hook: consumableData.onUse,
@@ -737,4 +768,73 @@ func (mob *Mob) buildTargetHookArgs(world *World, target MobTarget) ([]lua.Value
 	}
 
 	return args, true
+}
+
+// CONDITIONS
+
+func (mob *Mob) updateCondition(condition *Condition) {
+	// Update condition effects
+	for index := range len(condition.Type.Effects) {
+		effect := &condition.Type.Effects[index]
+
+		switch effect.Type {
+			case CONDITION_EFFECT_TYPE_DAMAGE_OVER_TIME: {
+				mob.Health -= effect.Value.(int32)
+			}
+		}
+	}
+
+	// Update TTL
+	if condition.TimeToLive != CONDITION_TTL_INFINITE {
+		condition.TimeToLive--
+	}
+}
+
+// Returns the index in the condition array of the condition matching the type
+// Returns -1 if the mob does not have the condition
+func (mob *Mob) findCondition(conditionType *ConditionType) int {
+	return slices.IndexFunc(mob.Conditions, func (condition Condition) bool {
+		return condition.Type == conditionType
+	})
+}
+
+func (mob *Mob) addCondition(world *World, condition Condition) {
+	index := mob.findCondition(condition.Type)
+
+	// Add condition
+	if index == -1 {
+		mob.Conditions = append(mob.Conditions, condition)
+		if mob.IsPlayer() {
+			world.MessagePlayer(mob.Character.PlayerKey, condition.Type.StartMessage)
+		}
+
+		mob.calculateStats()
+		return
+	}
+
+	// Extend condition
+	existingCondition := &mob.Conditions[index]
+
+	// If the existing condition is already infinite, then nothing changes
+	if existingCondition.TimeToLive == CONDITION_TTL_INFINITE {
+		return
+	}
+
+	// If the incoming condition is infinite, then extend the existing to be infinite
+	if condition.TimeToLive == CONDITION_TTL_INFINITE {
+		existingCondition.TimeToLive = condition.TimeToLive
+		return
+	}
+
+	// Otherwise, make the TTL the max of the two
+	existingCondition.TimeToLive = max(existingCondition.TimeToLive, condition.TimeToLive)
+}
+
+func (mob *Mob) removeCondition(world *World, index int) {
+	if mob.IsPlayer() {
+		world.MessagePlayer(mob.Character.PlayerKey, mob.Conditions[index].Type.EndMessage)
+	}
+
+	mob.Conditions = util.RemoveAtUnordered(mob.Conditions, index)
+	mob.calculateStats()
 }

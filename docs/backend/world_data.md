@@ -35,7 +35,7 @@ data/
 
 Files load in this order: items, npcs, races, backgrounds, rooms (including the layout). Each of these core folders must exist, or it's an error. A loader can refer to data loaded before it. For example, room loot tables name items. Every `.lua` file under a core folder is loaded, including files in subfolders. Other files are skipped.
 
-Scripts run in a restricted Lua state. The base, math, string and table libraries are available, along with the `world` table (see `backend/world/script_library.go` and the generated `world.d.lua`). Reading or creating an undefined global is an error, so declare variables `local`.
+Scripts run in a restricted Lua state. The base, math, string and table libraries are available, along with the `world` table (see `backend/world/script_library*.go` and the generated `world.d.lua`). Reading or creating an undefined global is an error, so declare variables `local`.
 
 Required fields must be present. There are no defaults for them.
 

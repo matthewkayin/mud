@@ -154,6 +154,12 @@ func (npc *Npc) update(world *World) {
 
 // COMBAT
 
+func (npc *Npc) calculateStats() {
+	npc.Stats = StatBlock{}
+	npc.Stats = npc.Stats.Add(npc.data.stats)
+	npc.Stats = npc.Stats.Add(npc.getConditionStatChanges())
+}
+
 func (npc *Npc) GetAttacks() []MobAttack {
 	attacks := make([]MobAttack, 0, npc.data.attacksPerRound)
 	for _ = range npc.data.attacksPerRound {

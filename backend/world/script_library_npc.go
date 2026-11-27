@@ -19,7 +19,7 @@ var SCRIPT_LIBRARY_NPC = map[string]lua.NativeFunc {
 	// Sets the NPC's disposition
 	//
 	// @param handle MobHandle
-	// @param string
+	// @param disposition string
 	"npc_set_disposition": func(frame lua.Frame) lua.Outcome {
 		mob := frameGetNpcArg(&frame, 0)
 		dispositionString, ok := frame.String(1)
